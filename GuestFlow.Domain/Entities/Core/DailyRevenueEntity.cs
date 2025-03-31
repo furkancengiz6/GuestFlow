@@ -1,15 +1,21 @@
-﻿using GuestFlow.Domain.Entities.Core.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿// GuestFlow.Domain/Entities/Core/DailyRevenueEntity.cs
+using GuestFlow.Domain.Entities.Interfaces;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace GuestFlow.Domain.Entities.Core
 {
-    public class DailyRevenueEntity:BaseEntity,IDailyRevenue
+    public class DailyRevenueEntity : BaseEntity, IDailyRevenue
     {
-      public  DateTime Date { get; set; }
-       public decimal TotalRevenue { get; set; }
+        public DateTime Date { get; set; }
+        public decimal TotalRevenue { get; set; }
+    }
+
+    public class DailyRevenueConfiguration : BaseConfiguration<DailyRevenueEntity>
+    {
+        public override void Configure(EntityTypeBuilder<DailyRevenueEntity> builder)
+        {
+            base.Configure(builder);
+            
+        }
     }
 }

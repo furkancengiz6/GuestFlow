@@ -7,8 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\GuestFlow.Application\GuestFlow.Application.csproj" />
-    <ProjectReference Include="..\GuestFlow.Domain\GuestFlow.Domain.csproj" />
+	  <ProjectReference Include="..\GuestFlow.Application\GuestFlow.Application.csproj" />
+	  <ProjectReference Include="..\GuestFlow.Domain\GuestFlow.Domain.csproj" />
   </ItemGroup>
 
 </Project>
