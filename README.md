@@ -85,7 +85,7 @@ Before running the project, ensure you have the following installed:
 
 1. **Clone the Repository**
    ```bash
-   git clone https://github.com/yourusername/guestflow-api.git
+   git clone https://github.com/furkancengiz6/guestflow-api.git
    cd guestflow-api
    ```
 2. **Restore Dependencies**
@@ -208,4 +208,8 @@ This project is licensed under the **MIT License**.
 ## GuestFlow API Endpoints
 
 ![indir](https://github.com/user-attachments/assets/e01ef2a1-b7d9-48f2-8852-40c6c890cc40)
+
+## GuestFlow Db Diagram
+
+![resim](https://github.com/user-attachments/assets/3c534d60-cde1-43d0-81d0-b241034115a6)
 
