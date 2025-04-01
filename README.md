@@ -204,5 +204,8 @@ _For a full list of endpoints, check the Swagger documentation._
 ## 📜 License
 
 This project is licensed under the **MIT License**.
- ![GuestFlow API Endpoints](![indir](https://github.com/user-attachments/assets/541b140e-6524-4638-b1c3-678c975c77f1))
+
+## GuestFlow API Endpoints
+
+![indir](https://github.com/user-attachments/assets/e01ef2a1-b7d9-48f2-8852-40c6c890cc40)
 
