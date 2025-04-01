@@ -9,26 +9,28 @@ namespace GuestFlow.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Staff,Admin")]
+    [Authorize(Roles = "Staff,Admin")] // Bu controller'a sadece Staff ve Admin rolleri erişebilir.
     public class TransfersController : ControllerBase
     {
+        // Burada kullanacağım değişkeni tanımlıyorum.
+        // _transferService: Transfer işlemleriyle ilgili işlemleri yapmak için kullanıyorum.
         private readonly ITransferService _transferService;
 
+        // Constructor: Bu sınıf oluşturulurken bağımlılıkları buradan alıyorum.
         public TransfersController(ITransferService transferService)
         {
             _transferService = transferService;
         }
 
+        // Bu metodumla yeni bir transfer kaydı ekliyorum.
         [HttpPost]
-        public async Task<IActionResult> Add( AddTransferRequest request)
+        public async Task<IActionResult> Add(AddTransferRequest request)
         {
-            // Model doğrulama kontrolü
+            // Gelen isteğin doğruluğunu kontrol ediyorum. Eğer model geçersizse, hata döndürüyorum.
             if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState); // Hatalı istek durumunda 400 döner
-            }
+                return BadRequest(ModelState);
 
-            // Request modelini DTO'ya çevirme
+            // Gelen isteği bir DTO'ya çeviriyorum ki serviste kullanabileyim.
             var dto = new AddTransferDto
             {
                 TransferDate = request.TransferDate,
@@ -44,50 +46,44 @@ namespace GuestFlow.Api.Controllers
                 IsFromAirport = request.IsFromAirport,
                 PickupCityId = request.PickupCityId,
                 DropoffCityId = request.DropoffCityId,
-                CreateInvoice = request.CreateInvoice, // Fatura oluşturma isteği
-                DiscountPercentage = request.DiscountPercentage, // İndirim yüzdesi
-                InvoiceDescription = request.InvoiceDescription // Fatura açıklaması
+                CreateInvoice = request.CreateInvoice,
+                DiscountPercentage = request.DiscountPercentage,
+                InvoiceDescription = request.InvoiceDescription
             };
 
-            // Service katmanını çağırarak transfer ekleme işlemini gerçekleştir
+            // Transferi eklemek için servisi çağırıyorum.
             var result = await _transferService.AddTransfer(dto);
-
-            // Sonuca göre yanıt döndür
-            if (result.IsSuccess)
-            {
-                return Ok(new { Message = result.Message }); // Başarılıysa 200 ve mesaj döner
-            }
-            else
-            {
-                return BadRequest(new { Message = result.Message }); // Başarısızsa 400 ve hata mesajı döner
-            }
+            // Eğer işlem başarılıysa, başarı mesajını JSON formatında döndürüyorum; değilse hata mesajı döndürüyorum.
+            return result.IsSuccess ? Ok(new { Message = result.Message }) : BadRequest(new { Message = result.Message });
         }
+
+        // Bu metodumla tüm transferleri getiriyorum.
         [HttpGet]
         public async Task<IActionResult> GetTransfers()
         {
+            // Servisten tüm transferleri alıyorum ve JSON formatında döndürüyorum.
             var result = await _transferService.GetTransfers();
             return Ok(result);
         }
 
+        // Bu metodumla belirli bir transferi ID'sine göre getiriyorum.
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
+            // Servisten transferi ID'sine göre alıyorum.
             var result = await _transferService.GetTransferById(id);
-            if (result == null)
-            {
-                return NotFound("Transfer bulunamadı.");
-            }
-            return Ok(result);
+            // Eğer transfer bulunamazsa, 404 Not Found ile hata mesajı döndürüyorum; bulunursa sonucu JSON formatında döndürüyorum.
+            return result == null ? NotFound(new { Message = "Transfer bulunamadı." }) : Ok(result);
         }
 
+        // Bu metodumla bir transferi güncelliyorum.
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, UpdateTransferRequest request)
         {
             if (!ModelState.IsValid)
-            {
                 return BadRequest(ModelState);
-            }
 
+            // Gelen isteği bir DTO'ya çeviriyorum.
             var updateTransferDto = new UpdateTransferDto
             {
                 Id = id,
@@ -102,32 +98,22 @@ namespace GuestFlow.Api.Controllers
                 Note = request.Note,
                 Status = request.Status,
                 IsFromAirport = request.IsFromAirport,
-                PickupCityId = request.PickupCityId, // Yeni eklenen alan
-                DropoffCityId = request.DropoffCityId // Yeni eklenen alan
+                PickupCityId = request.PickupCityId,
+                DropoffCityId = request.DropoffCityId
             };
 
+            // Transferi güncellemek için servisi çağırıyorum.
             var result = await _transferService.UpdateTransfer(updateTransferDto);
-            if (result.IsSuccess)
-            {
-                return Ok();
-            }
-            else
-            {
-                return BadRequest(result.Message);
-            }
+            return result.IsSuccess ? Ok(new { Message = result.Message }) : BadRequest(new { Message = result.Message });
         }
+
+        // Bu metodumla bir transferi siliyorum.
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
+            // Transferi silmek için servisi çağırıyorum.
             var result = await _transferService.DeleteTransfer(id);
-            if (result.IsSuccess)
-            {
-                return Ok();
-            }
-            else
-            {
-                return BadRequest(result.Message);
-            }
+            return result.IsSuccess ? Ok(new { Message = result.Message }) : BadRequest(new { Message = result.Message });
         }
     }
 }
