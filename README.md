@@ -85,7 +85,7 @@ Before running the project, ensure you have the following installed:
 
 1. **Clone the Repository**
    ```bash
-   git clone https://github.com/yourusername/guestflow-api.git
+   git clone https://github.com/furkancengiz6/guestflow-api.git
    cd guestflow-api
    ```
 2. **Restore Dependencies**
