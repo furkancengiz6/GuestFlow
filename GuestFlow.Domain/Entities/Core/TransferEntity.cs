@@ -1,36 +1,44 @@
-﻿using GuestFlow.Domain.Entities.Core.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using GuestFlow.Domain.Entities.Interfaces;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore;
 
 namespace GuestFlow.Domain.Entities.Core
 {
     public class TransferEntity : BaseEntity, ITransfer
     {
-        public string PickupAdress { get; set; }
-        public string DropoffAdress { get; set; }
+        public string PickupAddress { get; set; } 
+        public string DropoffAddress { get; set; } 
         public DateTime TransferDate { get; set; }
         public decimal Price { get; set; }
-        public string Note { get; set; }
+        public string? Note { get; set; }
         public string Status { get; set; }
         public bool IsFromAirport { get; set; }
-        //RoomNumber için ayrı bir tablo ve bağlantı gerekiyor.
         public int GuestId { get; set; }
         public int PersonnelId { get; set; }
         public int AirportId { get; set; }
         public int VehicleId { get; set; }
+        public int PickupCityId { get; set; } 
+        public int DropoffCityId { get; set; }
+        public decimal? DiscountPercentage { get; set; }
+        public decimal FinalPrice { get; set; }
 
 
-
-
-        //Relational Property
-        public virtual GuestEntity Guest {  get; set; }
+        // Relational Properties
+        public virtual GuestEntity Guest { get; set; }
         public virtual PersonnelEntity Personnel { get; set; }
         public virtual AirportEntity Airport { get; set; }
         public virtual VehicleEntity Vehicle { get; set; }
-
         public virtual ICollection<InvoicesEntity> Invoices { get; set; } = new List<InvoicesEntity>();
+        public virtual CityEntity PickupCity { get; set; }
+        public virtual CityEntity DropoffCity { get; set; }
+    }
+
+    public class TransferConfiguration : BaseConfiguration<TransferEntity>
+    {
+        public override void Configure(EntityTypeBuilder<TransferEntity> builder)
+        {
+            base.Configure(builder);
+           
+        }
     }
 }
