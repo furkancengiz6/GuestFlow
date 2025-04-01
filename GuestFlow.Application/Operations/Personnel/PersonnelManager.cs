@@ -37,10 +37,11 @@ namespace GuestFlow.Application.Operations.Personnel
             {
                 await _unitOfWork.BeginTransactionAsync();
 
-                var hasMail = await _personnelRepository.GetAll(x => x.Email.ToLower() == personnel.Email.ToLower()).AnyAsync();
-                if (hasMail)
+                // Validasyon
+                if (await _personnelRepository.GetAll(x => x.Email.ToLower() == personnel.Email.ToLower()).AnyAsync())
                     return new ServiceMessage { IsSuccess = false, Message = "Bu mail adresi zaten kayıtlı." };
 
+                // Personel oluşturma
                 var personnelEntity = new PersonnelEntity
                 {
                     FullName = personnel.FullName,
@@ -53,14 +54,19 @@ namespace GuestFlow.Application.Operations.Personnel
                 await _unitOfWork.SaveChangesAsync();
                 await _unitOfWork.CommitTransactionAsync();
 
-                _logger.LogInformation("Personel eklendi: {Email}", personnel.Email);
+                _logger.LogInformation($"Personel eklendi: {personnel.Email}");
                 return new ServiceMessage { IsSuccess = true, Message = "Personel başarıyla eklendi." };
             }
             catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                _logger.LogError(ex, "Personel eklenirken hata oluştu.");
-                return new ServiceMessage { IsSuccess = false, Message = "Personel eklenirken hata: " + ex.Message };
+                _logger.LogError(ex, $"Personel eklenirken hata: {ex.Message}. InnerException: {ex.InnerException?.Message}");
+
+                string errorMessage = $"Personel eklenirken hata: {ex.Message}";
+                if (ex.InnerException != null)
+                    errorMessage += $" InnerException: {ex.InnerException.Message}";
+
+                return new ServiceMessage { IsSuccess = false, Message = errorMessage };
             }
         }
 
@@ -68,6 +74,7 @@ namespace GuestFlow.Application.Operations.Personnel
         {
             try
             {
+                // Kullanıcıyı bul
                 var personnel = await _personnelRepository.GetAll(x => x.Email.ToLower() == login.Email.ToLower())
                     .FirstOrDefaultAsync();
 
@@ -78,6 +85,7 @@ namespace GuestFlow.Application.Operations.Personnel
                         Message = "Kullanıcı bulunamadı veya şifre hatalı."
                     };
 
+                // Şifreyi kontrol et
                 var unprotectedPassword = _dataProtection.Unprotect(personnel.Password);
                 if (unprotectedPassword != login.Password)
                     return new ServiceMessage<PersonnelInfoDto>
@@ -86,6 +94,7 @@ namespace GuestFlow.Application.Operations.Personnel
                         Message = "Kullanıcı bulunamadı veya şifre hatalı."
                     };
 
+                // Başarılı giriş
                 return new ServiceMessage<PersonnelInfoDto>
                 {
                     IsSuccess = true,
@@ -101,11 +110,16 @@ namespace GuestFlow.Application.Operations.Personnel
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Giriş yapılırken hata oluştu: {Email}", login.Email);
+                _logger.LogError(ex, $"Giriş yapılırken hata: {ex.Message}. Email: {login.Email}. InnerException: {ex.InnerException?.Message}");
+
+                string errorMessage = $"Giriş sırasında hata: {ex.Message}";
+                if (ex.InnerException != null)
+                    errorMessage += $" InnerException: {ex.InnerException.Message}";
+
                 return new ServiceMessage<PersonnelInfoDto>
                 {
                     IsSuccess = false,
-                    Message = "Giriş sırasında hata: " + ex.Message
+                    Message = errorMessage
                 };
             }
         }
@@ -120,14 +134,19 @@ namespace GuestFlow.Application.Operations.Personnel
                 await _unitOfWork.SaveChangesAsync();
                 await _unitOfWork.CommitTransactionAsync();
 
-                _logger.LogInformation("Personel silindi: {Id}", id);
+                _logger.LogInformation($"Personel silindi: {id}");
                 return new ServiceMessage { IsSuccess = true, Message = "Personel başarıyla silindi." };
             }
             catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                _logger.LogError(ex, "Personel silinirken hata oluştu.");
-                return new ServiceMessage { IsSuccess = false, Message = "Personel silinirken hata: " + ex.Message };
+                _logger.LogError(ex, $"Personel silinirken hata: {ex.Message}. InnerException: {ex.InnerException?.Message}");
+
+                string errorMessage = $"Personel silinirken hata: {ex.Message}";
+                if (ex.InnerException != null)
+                    errorMessage += $" InnerException: {ex.InnerException.Message}";
+
+                return new ServiceMessage { IsSuccess = false, Message = errorMessage };
             }
         }
     }

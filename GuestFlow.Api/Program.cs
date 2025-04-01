@@ -2,6 +2,7 @@ using GuestFlow.Api.Middlewares;
 using GuestFlow.Application.DataProtection;
 using GuestFlow.Application.Operations.Airport;
 using GuestFlow.Application.Operations.CityTour;
+using GuestFlow.Application.Operations.DailyRevenue;
 using GuestFlow.Application.Operations.Guest;
 using GuestFlow.Application.Operations.Invoice;
 using GuestFlow.Application.Operations.Personnel;
@@ -99,7 +100,8 @@ builder.Services.AddScoped<IYachtTourService, YachtTourManager>();
 builder.Services.AddScoped<IInvoiceService, InvoiceManager>();
 builder.Services.AddScoped<ISettingsService, SettingManager>(); 
 var app = builder.Build();
-
+builder.Services.AddScoped<DailyRevenueJob>();
+builder.Services.AddHostedService<DailyRevenueBackgroundService>(); //??
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

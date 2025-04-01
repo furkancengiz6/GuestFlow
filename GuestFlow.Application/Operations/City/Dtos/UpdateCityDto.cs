@@ -11,6 +11,5 @@ namespace GuestFlow.Application.Operations.City.Dtos
         public int Id { get; set; }
         public string CityName { get; set; }
         public string Country { get; set; }
-        public DateTime CreatedDate { get; set; }
     }
 }

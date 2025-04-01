@@ -36,21 +36,22 @@ namespace GuestFlow.Application.Operations.Setting
                     return false;
                 }
 
-                return setting.MainteneceMode; // Yazım hatası düzeltildi: MainteneceMode -> MaintenanceMode
+                return setting.MainteneceMode; 
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Bakım durumu getirilirken hata oluştu.");
-                throw new Exception("Bakım durumu getirilirken bir hata ile karşılaşıldı: " + ex.Message);
+                _logger.LogError(ex, $"Bakım durumu getirilirken hata: {ex.Message}. InnerException: {ex.InnerException?.Message}");
+                throw new Exception($"Bakım durumu getirilirken hata: {ex.Message}{(ex.InnerException != null ? $" InnerException: {ex.InnerException.Message}" : "")}");
             }
         }
 
-        public async Task<ServiceMessage> ToggleMaintenence()
+        public async Task<ServiceMessage> ToggleMaintenance()
         {
             try
             {
                 await _unitOfWork.BeginTransactionAsync();
 
+                // Ayar kontrolü
                 var setting = await _settingRepository.GetAsync(x => x.Id == 1);
                 if (setting == null)
                 {
@@ -58,13 +59,14 @@ namespace GuestFlow.Application.Operations.Setting
                     return new ServiceMessage { IsSuccess = false, Message = "Ayar bulunamadı." };
                 }
 
-                setting.MainteneceMode = !setting.MainteneceMode; // Yazım hatası düzeltildi: MainteneceMode -> MaintenanceMode
+                // Bakım durumunu değiştir
+                setting.MainteneceMode = !setting.MainteneceMode; 
 
                 await _settingRepository.UpdateAsync(setting);
                 await _unitOfWork.SaveChangesAsync();
                 await _unitOfWork.CommitTransactionAsync();
 
-                _logger.LogInformation("Bakım durumu güncellendi: {MaintenanceMode}", setting.MainteneceMode);
+                _logger.LogInformation($"Bakım durumu güncellendi: {setting.MainteneceMode}");
                 return new ServiceMessage
                 {
                     IsSuccess = true,
@@ -74,12 +76,13 @@ namespace GuestFlow.Application.Operations.Setting
             catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                _logger.LogError(ex, "Bakım durumu güncellenirken hata oluştu.");
-                return new ServiceMessage
-                {
-                    IsSuccess = false,
-                    Message = "Bakım durumu güncellenirken bir hata ile karşılaşıldı: " + ex.Message
-                };
+                _logger.LogError(ex, $"Bakım durumu güncellenirken hata: {ex.Message}. InnerException: {ex.InnerException?.Message}");
+
+                string errorMessage = $"Bakım durumu güncellenirken hata: {ex.Message}";
+                if (ex.InnerException != null)
+                    errorMessage += $" InnerException: {ex.InnerException.Message}";
+
+                return new ServiceMessage { IsSuccess = false, Message = errorMessage };
             }
         }
     }

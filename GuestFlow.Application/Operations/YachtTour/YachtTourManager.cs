@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using GuestFlow.Application.Operations.DailyRevenue;
 using GuestFlow.Application.Operations.Invoice.Dtos;
 using GuestFlow.Application.Operations.YachtTour.Dtos;
 using GuestFlow.Application.Types;
@@ -20,6 +21,7 @@ namespace GuestFlow.Application.Operations.YachtTour
         private readonly IRepository<CityEntity> _cityRepository;
         private readonly IRepository<PersonnelEntity> _personnelRepository;
         private readonly IRepository<InvoicesEntity> _invoiceRepository;
+        private readonly DailyRevenueJob _dailyRevenueJob;
         private readonly ILogger<YachtTourManager> _logger;
 
         public YachtTourManager(
@@ -29,6 +31,7 @@ namespace GuestFlow.Application.Operations.YachtTour
             IRepository<CityEntity> cityRepository,
             IRepository<PersonnelEntity> personnelRepository,
             IRepository<InvoicesEntity> invoiceRepository,
+            DailyRevenueJob dailyRevenueJob,
             ILogger<YachtTourManager> logger)
         {
             _unitOfWork = unitOfWork;
@@ -37,30 +40,32 @@ namespace GuestFlow.Application.Operations.YachtTour
             _cityRepository = cityRepository;
             _personnelRepository = personnelRepository;
             _invoiceRepository = invoiceRepository;
+            _dailyRevenueJob = dailyRevenueJob;
             _logger = logger;
         }
+
         public async Task<ServiceMessage> AddYachtTour(AddYachtTourDto yachtTour)
         {
             try
             {
                 await _unitOfWork.BeginTransactionAsync();
 
-                var guestExists = await _guestRepository.GetAll(x => x.Id == yachtTour.OwnerGuestId).AnyAsync();
-                if (!guestExists)
+                // Validasyonlar
+                if (!await _guestRepository.GetAll(x => x.Id == yachtTour.OwnerGuestId).AnyAsync())
                     return new ServiceMessage { IsSuccess = false, Message = "Misafir bulunamadı." };
 
-                var cityExists = await _cityRepository.GetAll(x => x.Id == yachtTour.CityId).AnyAsync();
-                if (!cityExists)
+                if (!await _cityRepository.GetAll(x => x.Id == yachtTour.CityId).AnyAsync())
                     return new ServiceMessage { IsSuccess = false, Message = "Şehir bulunamadı." };
 
-                var personnelExists = await _personnelRepository.GetAll(x => x.Id == yachtTour.PersonnelId).AnyAsync();
-                if (!personnelExists)
+                if (!await _personnelRepository.GetAll(x => x.Id == yachtTour.PersonnelId).AnyAsync())
                     return new ServiceMessage { IsSuccess = false, Message = "Personel bulunamadı." };
 
+                // Fiyat hesaplama
                 decimal finalPrice = yachtTour.Price;
                 if (yachtTour.DiscountPercentage.HasValue)
                     finalPrice -= finalPrice * (yachtTour.DiscountPercentage.Value / 100);
 
+                // Yat turu oluşturma
                 var yachtTourEntity = new YachtTourEntity
                 {
                     TourDate = yachtTour.TourDate,
@@ -78,6 +83,7 @@ namespace GuestFlow.Application.Operations.YachtTour
                 await _yachtTourRepository.AddAsync(yachtTourEntity);
                 await _unitOfWork.SaveChangesAsync();
 
+                // Fatura oluşturma
                 if (yachtTour.CreateInvoice)
                 {
                     var invoice = new InvoicesEntity
@@ -87,7 +93,7 @@ namespace GuestFlow.Application.Operations.YachtTour
                         TotalAmount = finalPrice,
                         Currency = "TRY",
                         Notes = yachtTour.InvoiceDescription ?? "Yat turu faturası",
-                        PdfUrl = "https://example.com/invoices/invoice_" + Guid.NewGuid().ToString() + ".pdf",
+                        PdfUrl = $"https://example.com/invoices/invoice_{Guid.NewGuid()}.pdf",
                         GuestId = yachtTour.OwnerGuestId,
                         YachtTourId = yachtTourEntity.Id,
                         CreatedDate = DateTime.UtcNow,
@@ -98,23 +104,25 @@ namespace GuestFlow.Application.Operations.YachtTour
                     await _unitOfWork.SaveChangesAsync();
                 }
 
+                // Günlük gelir hesaplama
+                await _dailyRevenueJob.CalculateDailyRevenue(yachtTour.TourDate.Date);
+
                 await _unitOfWork.CommitTransactionAsync();
 
-                _logger.LogInformation("Yat turu eklendi: {Id}", yachtTourEntity.Id);
+                _logger.LogInformation($"Yat turu eklendi: {yachtTourEntity.Id}");
                 return new ServiceMessage { IsSuccess = true, Message = "Yat turu başarıyla eklendi." };
             }
             catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                _logger.LogError(ex, "Yat turu eklenirken hata oluştu. InnerException: {InnerException}", ex.InnerException?.Message);
-                return new ServiceMessage { IsSuccess = false, Message = "Yat turu eklenirken hata: " + ex.Message + (ex.InnerException != null ? " InnerException: " + ex.InnerException.Message : "") };
-            }
-        }
+                _logger.LogError(ex, $"Yat turu eklenirken hata: {ex.Message}. InnerException: {ex.InnerException?.Message}");
 
-        private async Task<int> GenerateInvoiceNumber()
-        {
-            var lastInvoice = await _invoiceRepository.GetAll().OrderByDescending(x => x.InvoiceNumber).FirstOrDefaultAsync();
-            return lastInvoice != null ? lastInvoice.InvoiceNumber + 1 : 1000;
+                string errorMessage = $"Yat turu eklenirken hata: {ex.Message}";
+                if (ex.InnerException != null)
+                    errorMessage += $" InnerException: {ex.InnerException.Message}";
+
+                return new ServiceMessage { IsSuccess = false, Message = errorMessage };
+            }
         }
 
         public async Task<ServiceMessage> UpdateYachtTour(UpdateYachtTourDto yachtTour)
@@ -127,18 +135,16 @@ namespace GuestFlow.Application.Operations.YachtTour
                 if (existing == null)
                     return new ServiceMessage { IsSuccess = false, Message = "Yat turu bulunamadı." };
 
-                var guestExists = await _guestRepository.GetAll(x => x.Id == yachtTour.OwnerGuestId).AnyAsync();
-                if (!guestExists)
+                if (!await _guestRepository.GetAll(x => x.Id == yachtTour.OwnerGuestId).AnyAsync())
                     return new ServiceMessage { IsSuccess = false, Message = "Misafir bulunamadı." };
 
-                var cityExists = await _cityRepository.GetAll(x => x.Id == yachtTour.CityId).AnyAsync();
-                if (!cityExists)
+                if (!await _cityRepository.GetAll(x => x.Id == yachtTour.CityId).AnyAsync())
                     return new ServiceMessage { IsSuccess = false, Message = "Şehir bulunamadı." };
 
-                var personnelExists = await _personnelRepository.GetAll(x => x.Id == yachtTour.PersonnelId).AnyAsync();
-                if (!personnelExists)
+                if (!await _personnelRepository.GetAll(x => x.Id == yachtTour.PersonnelId).AnyAsync())
                     return new ServiceMessage { IsSuccess = false, Message = "Personel bulunamadı." };
 
+                // Güncelleme
                 existing.TourDate = yachtTour.TourDate;
                 existing.NumberOfPeople = yachtTour.NumberOfPeople;
                 existing.Price = yachtTour.Price;
@@ -152,14 +158,19 @@ namespace GuestFlow.Application.Operations.YachtTour
                 await _unitOfWork.SaveChangesAsync();
                 await _unitOfWork.CommitTransactionAsync();
 
-                _logger.LogInformation("Yat turu güncellendi: {Id}", yachtTour.Id);
+                _logger.LogInformation($"Yat turu güncellendi: {yachtTour.Id}");
                 return new ServiceMessage { IsSuccess = true, Message = "Yat turu başarıyla güncellendi." };
             }
             catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                _logger.LogError(ex, "Yat turu güncellenirken hata oluştu.");
-                return new ServiceMessage { IsSuccess = false, Message = "Yat turu güncellenirken hata: " + ex.Message };
+                _logger.LogError(ex, $"Yat turu güncellenirken hata: {ex.Message}. InnerException: {ex.InnerException?.Message}");
+
+                string errorMessage = $"Yat turu güncellenirken hata: {ex.Message}";
+                if (ex.InnerException != null)
+                    errorMessage += $" InnerException: {ex.InnerException.Message}";
+
+                return new ServiceMessage { IsSuccess = false, Message = errorMessage };
             }
         }
 
@@ -173,14 +184,19 @@ namespace GuestFlow.Application.Operations.YachtTour
                 await _unitOfWork.SaveChangesAsync();
                 await _unitOfWork.CommitTransactionAsync();
 
-                _logger.LogInformation("Yat turu silindi: {Id}", id);
+                _logger.LogInformation($"Yat turu silindi: {id}");
                 return new ServiceMessage { IsSuccess = true, Message = "Yat turu başarıyla silindi." };
             }
             catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                _logger.LogError(ex, "Yat turu silinirken hata oluştu.");
-                return new ServiceMessage { IsSuccess = false, Message = "Yat turu silinirken hata: " + ex.Message };
+                _logger.LogError(ex, $"Yat turu silinirken hata: {ex.Message}. InnerException: {ex.InnerException?.Message}");
+
+                string errorMessage = $"Yat turu silinirken hata: {ex.Message}";
+                if (ex.InnerException != null)
+                    errorMessage += $" InnerException: {ex.InnerException.Message}";
+
+                return new ServiceMessage { IsSuccess = false, Message = errorMessage };
             }
         }
 
@@ -208,7 +224,7 @@ namespace GuestFlow.Application.Operations.YachtTour
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Yat turu getirilirken hata oluştu: {Id}", id);
+                _logger.LogError(ex, $"Yat turu getirilirken hata: {ex.Message}. Id: {id}");
                 throw;
             }
         }
@@ -217,7 +233,7 @@ namespace GuestFlow.Application.Operations.YachtTour
         {
             try
             {
-                var yachtTours = await _yachtTourRepository.GetAll()
+                return await _yachtTourRepository.GetAll()
                     .Select(yt => new GetYachtTourDto
                     {
                         Id = yt.Id,
@@ -232,14 +248,20 @@ namespace GuestFlow.Application.Operations.YachtTour
                         CreatedDate = yt.CreatedDate
                     })
                     .ToListAsync();
-
-                return yachtTours;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Yat turları listelenirken hata oluştu.");
+                _logger.LogError(ex, $"Yat turları listelenirken hata: {ex.Message}. InnerException: {ex.InnerException?.Message}");
                 throw;
             }
+        }
+
+        private async Task<int> GenerateInvoiceNumber()
+        {
+            var lastInvoice = await _invoiceRepository.GetAll()
+                .OrderByDescending(x => x.InvoiceNumber)
+                .FirstOrDefaultAsync();
+            return lastInvoice != null ? lastInvoice.InvoiceNumber + 1 : 1000;
         }
     }
 }

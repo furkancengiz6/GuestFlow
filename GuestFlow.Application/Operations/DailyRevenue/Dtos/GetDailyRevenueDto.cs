@@ -4,13 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace GuestFlow.Application.Operations.City.Dtos
+namespace GuestFlow.Application.Operations.DailyRevenue.Dtos
 {
-    public class GetCityDto
+    public class GetDailyRevenueDto
     {
         public int Id { get; set; }
-        public string CityName { get; set; }
-        public string Country { get; set; }
+        public DateTime Date { get; set; }
+        public decimal TotalRevenue { get; set; }
         public DateTime CreatedDate { get; set; }
     }
 }

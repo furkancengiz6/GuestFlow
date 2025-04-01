@@ -33,10 +33,11 @@ namespace GuestFlow.Application.Operations.Vehicle
             {
                 await _unitOfWork.BeginTransactionAsync();
 
-                var plateExists = await _vehicleRepository.GetAll(x => x.PlateNumber == vehicle.PlateNumber).AnyAsync();
-                if (plateExists)
+                // Validasyon
+                if (await _vehicleRepository.GetAll(x => x.PlateNumber == vehicle.PlateNumber).AnyAsync())
                     return new ServiceMessage { IsSuccess = false, Message = "Bu plaka numarası zaten kayıtlı." };
 
+                // Araç oluşturma
                 var vehicleEntity = new VehicleEntity
                 {
                     Type = vehicle.Type,
@@ -49,14 +50,19 @@ namespace GuestFlow.Application.Operations.Vehicle
                 await _unitOfWork.SaveChangesAsync();
                 await _unitOfWork.CommitTransactionAsync();
 
-                _logger.LogInformation("Araç eklendi: {PlateNumber}", vehicle.PlateNumber);
+                _logger.LogInformation($"Araç eklendi: {vehicle.PlateNumber}");
                 return new ServiceMessage { IsSuccess = true, Message = "Araç başarıyla eklendi." };
             }
             catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                _logger.LogError(ex, "Araç eklenirken hata oluştu.");
-                return new ServiceMessage { IsSuccess = false, Message = "Araç eklenirken hata: " + ex.Message };
+                _logger.LogError(ex, $"Araç eklenirken hata: {ex.Message}. InnerException: {ex.InnerException?.Message}");
+
+                string errorMessage = $"Araç eklenirken hata: {ex.Message}";
+                if (ex.InnerException != null)
+                    errorMessage += $" InnerException: {ex.InnerException.Message}";
+
+                return new ServiceMessage { IsSuccess = false, Message = errorMessage };
             }
         }
 
@@ -66,14 +72,15 @@ namespace GuestFlow.Application.Operations.Vehicle
             {
                 await _unitOfWork.BeginTransactionAsync();
 
+                // Validasyon
                 var existing = await _vehicleRepository.GetAsync(x => x.Id == vehicle.Id);
                 if (existing == null)
                     return new ServiceMessage { IsSuccess = false, Message = "Araç bulunamadı." };
 
-                var plateExists = await _vehicleRepository.GetAll(x => x.PlateNumber == vehicle.PlateNumber && x.Id != vehicle.Id).AnyAsync();
-                if (plateExists)
+                if (await _vehicleRepository.GetAll(x => x.PlateNumber == vehicle.PlateNumber && x.Id != vehicle.Id).AnyAsync())
                     return new ServiceMessage { IsSuccess = false, Message = "Bu plaka numarası başka bir araçta kullanılıyor." };
 
+                // Güncelleme
                 existing.Type = vehicle.Type;
                 existing.PlateNumber = vehicle.PlateNumber;
                 existing.Capacity = vehicle.Capacity;
@@ -83,14 +90,19 @@ namespace GuestFlow.Application.Operations.Vehicle
                 await _unitOfWork.SaveChangesAsync();
                 await _unitOfWork.CommitTransactionAsync();
 
-                _logger.LogInformation("Araç güncellendi: {Id}", vehicle.Id);
+                _logger.LogInformation($"Araç güncellendi: {vehicle.Id}");
                 return new ServiceMessage { IsSuccess = true, Message = "Araç başarıyla güncellendi." };
             }
             catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                _logger.LogError(ex, "Araç güncellenirken hata oluştu.");
-                return new ServiceMessage { IsSuccess = false, Message = "Araç güncellenirken hata: " + ex.Message };
+                _logger.LogError(ex, $"Araç güncellenirken hata: {ex.Message}. InnerException: {ex.InnerException?.Message}");
+
+                string errorMessage = $"Araç güncellenirken hata: {ex.Message}";
+                if (ex.InnerException != null)
+                    errorMessage += $" InnerException: {ex.InnerException.Message}";
+
+                return new ServiceMessage { IsSuccess = false, Message = errorMessage };
             }
         }
 
@@ -104,14 +116,19 @@ namespace GuestFlow.Application.Operations.Vehicle
                 await _unitOfWork.SaveChangesAsync();
                 await _unitOfWork.CommitTransactionAsync();
 
-                _logger.LogInformation("Araç silindi: {Id}", id);
+                _logger.LogInformation($"Araç silindi: {id}");
                 return new ServiceMessage { IsSuccess = true, Message = "Araç başarıyla silindi." };
             }
             catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                _logger.LogError(ex, "Araç silinirken hata oluştu.");
-                return new ServiceMessage { IsSuccess = false, Message = "Araç silinirken hata: " + ex.Message };
+                _logger.LogError(ex, $"Araç silinirken hata: {ex.Message}. InnerException: {ex.InnerException?.Message}");
+
+                string errorMessage = $"Araç silinirken hata: {ex.Message}";
+                if (ex.InnerException != null)
+                    errorMessage += $" InnerException: {ex.InnerException.Message}";
+
+                return new ServiceMessage { IsSuccess = false, Message = errorMessage };
             }
         }
 
@@ -135,7 +152,7 @@ namespace GuestFlow.Application.Operations.Vehicle
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Araç getirilirken hata oluştu: {Id}", id);
+                _logger.LogError(ex, $"Araç getirilirken hata: {ex.Message}. Id: {id}");
                 throw;
             }
         }
@@ -144,7 +161,7 @@ namespace GuestFlow.Application.Operations.Vehicle
         {
             try
             {
-                var vehicles = await _vehicleRepository.GetAll()
+                return await _vehicleRepository.GetAll()
                     .Select(v => new GetVehicleDto
                     {
                         Id = v.Id,
@@ -155,12 +172,10 @@ namespace GuestFlow.Application.Operations.Vehicle
                         CreatedDate = v.CreatedDate
                     })
                     .ToListAsync();
-
-                return vehicles;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Araçlar listelenirken hata oluştu.");
+                _logger.LogError(ex, $"Araçlar listelenirken hata: {ex.Message}. InnerException: {ex.InnerException?.Message}");
                 throw;
             }
         }

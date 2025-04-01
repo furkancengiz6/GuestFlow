@@ -26,10 +26,6 @@
   </ItemGroup>
   <ItemGroup>
 	  <ProjectReference Include="..\GuestFlow.Application\GuestFlow.Application.csproj" />
-	  <ProjectReference Include="..\GuestFlow.Infrastructure\GuestFlow.Infrastructure.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Models\CityModels\" />
   </ItemGroup>
 
 </Project>

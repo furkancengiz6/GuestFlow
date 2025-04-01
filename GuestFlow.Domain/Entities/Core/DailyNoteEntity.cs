@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GuestFlow.Domain.Entities.Core
 {
-    public class DailyNote : BaseEntity, IDailyNote
+    public class DailyNoteEntity : BaseEntity, IDailyNote
     {
         public DateTime NoteDate { get; set; }
         public int RoomNumber { get; set; }
@@ -15,9 +15,9 @@ namespace GuestFlow.Domain.Entities.Core
         public virtual PersonnelEntity Personnel { get; set; }
     }
 
-    public class DailyNoteConfiguration : BaseConfiguration<DailyNote>
+    public class DailyNoteConfiguration : BaseConfiguration<DailyNoteEntity>
     {
-        public override void Configure(EntityTypeBuilder<DailyNote> builder)
+        public override void Configure(EntityTypeBuilder<DailyNoteEntity> builder)
         {
             base.Configure(builder);
           

@@ -14,7 +14,7 @@ namespace GuestFlow.Persistence.Context
         public DbSet<PersonnelEntity> Personnels => Set<PersonnelEntity>();
         public DbSet<CityEntity> Cities => Set<CityEntity>();
         public DbSet<CityTourEntity> CityTours => Set<CityTourEntity>();
-        public DbSet<DailyNote> DailyNotes => Set<DailyNote>();
+        public DbSet<DailyNoteEntity> DailyNotes => Set<DailyNoteEntity>();
         public DbSet<DailyRevenueEntity> DailyRevenues => Set<DailyRevenueEntity>();
         public DbSet<GuestEntity> Guests => Set<GuestEntity>();
         public DbSet<InvoicesEntity> Invoices => Set<InvoicesEntity>();

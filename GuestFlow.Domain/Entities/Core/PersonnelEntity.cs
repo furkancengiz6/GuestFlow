@@ -17,7 +17,7 @@ namespace GuestFlow.Domain.Entities.Core
         public virtual ICollection<TransferEntity> Transfers { get; set; } = new List<TransferEntity>();
         public virtual ICollection<YachtTourEntity> YachtTours { get; set; } = new List<YachtTourEntity>();
         public virtual ICollection<CityTourEntity> CityTours { get; set; } = new List<CityTourEntity>();
-        public virtual ICollection<DailyNote> DailyNotes { get; set; } = new List<DailyNote>();
+        public virtual ICollection<DailyNoteEntity> DailyNotes { get; set; } = new List<DailyNoteEntity>();
         public virtual ICollection<InvoicesEntity> Invoices { get; set; } = new List<InvoicesEntity>();
     }
 
