@@ -3,6 +3,7 @@ using GuestFlow.Application.DataProtection;
 using GuestFlow.Application.Operations.Airport;
 using GuestFlow.Application.Operations.City;
 using GuestFlow.Application.Operations.CityTour;
+using GuestFlow.Application.Operations.DailyNote;
 using GuestFlow.Application.Operations.DailyRevenue;
 using GuestFlow.Application.Operations.Guest;
 using GuestFlow.Application.Operations.Invoice;
@@ -11,8 +12,6 @@ using GuestFlow.Application.Operations.Setting;
 using GuestFlow.Application.Operations.Transfer;
 using GuestFlow.Application.Operations.Vehicle;
 using GuestFlow.Application.Operations.YachtTour;
-using GuestFlow.Domain.Entities.Core;
-using GuestFlow.Domain.Entities.Interfaces;
 using GuestFlow.Domain.Entities.Repositories;
 using GuestFlow.Domain.UnitOfWork;
 using GuestFlow.Persistence.Context;
@@ -75,7 +74,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuer = true,
             ValidateAudience = true,
             ValidateLifetime = true,
-           // ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]!))
@@ -101,6 +99,8 @@ builder.Services.AddScoped<IYachtTourService, YachtTourManager>();
 builder.Services.AddScoped<IInvoiceService, InvoiceManager>();
 builder.Services.AddScoped<ISettingsService, SettingManager>();
 builder.Services.AddScoped<ICityService, CityManager>();
+builder.Services.AddScoped<IDailyNoteService, DailyNoteManager>();
+builder.Services.AddScoped<IDailyRevenueService, DailyRevenueManager>();
 builder.Services.AddScoped<DailyRevenueJob>();
 builder.Services.AddHostedService<DailyRevenueBackgroundService>(); //
 

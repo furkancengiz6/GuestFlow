@@ -275,26 +275,22 @@ namespace GuestFlow.Application.Operations.Guest
         // Bu metod, her misafir için benzersiz bir GuestCode oluşturuyor.
         private async Task<string> GenerateGuestCodeAsync()
         {
-            // Veritabanındaki son misafiri çekiyoruz IDsine göre sıralayıp en sonuncuyu alıyoruz.
-            var lastGuest = await _guestRepository.GetAll()
-                .OrderByDescending(g => g.Id)
-                .FirstOrDefaultAsync();
+            const string prefix = "GUEST-";
+            int maxNumber = 0;
+            // Veritabanındaki tüm GuestCode'ları al ve en büyük sayıyı bul
+            var existingCodes = await _guestRepository.GetAll()
+                .Select(g => g.GuestCode)
+                .Where(code => code.StartsWith(prefix))
+                .ToListAsync();
 
-            // Eğer hiç misafir yoksa, ilk misafir için kod "GUEST-001" olacak.
-            int nextNumber = 1;
-            if (lastGuest != null)
-            {
-                // Son misafirin GuestCode'unu alıyoruz 
-                string lastCode = lastGuest.GuestCode;
-                // GuestCode'un son kısmını alıyoruz (örneğin, "001").
-                string lastNumber = lastCode.Split('-').Last();
-                // Bu kısmı sayıya çeviriyoruz ve bir artırıyoruz.
-                if (int.TryParse(lastNumber, out int number))
-                    nextNumber = number + 1;
+            if (existingCodes.Any())
+            {// GuestCode'lardan sayısal kısmı çıkar ve en büyüğünü bul
+                maxNumber = existingCodes
+                    .Select(code => int.Parse(code.Replace(prefix, "")))
+                    .Max();
             }
 
-            // Yeni GuestCode'u oluşturuyoruz. D3 formatı, sayıyı 3 haneli yapıyor örneğin, 1 -> 001.
-            return $"GUEST-{nextNumber:D3}";
+            return $"{prefix}{(maxNumber + 1):D3}";
         }
     }
-}
+    }
