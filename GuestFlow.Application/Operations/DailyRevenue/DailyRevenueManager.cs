@@ -38,8 +38,8 @@ namespace GuestFlow.Application.Operations.DailyRevenue
         {
             try
             {
-                // Önce veritabanında bir işlem (transaction) başlatıyorum. Eğer bir hata olursa, yaptığım değişiklikleri geri alacağım.
-                await _unitOfWork.BeginTransactionAsync();
+                
+               
 
                 // Yeni bir günlük gelir nesnesi oluşturuyorum ve DTO'dan gelen bilgileri buraya aktarıyorum.
                 var dailyRevenueEntity = new DailyRevenueEntity
@@ -64,8 +64,8 @@ namespace GuestFlow.Application.Operations.DailyRevenue
             }
             catch (Exception ex)
             {
-                // Eğer bir hata çıkarsa, transaction'ı geri alıyorum (rollback yapıyorum).
-                await _unitOfWork.RollbackTransactionAsync();
+                
+               
                 // Hatayı logluyorum. Eğer bir iç hata (InnerException) varsa, onu da ekliyorum ki daha fazla bilgi alayım.
                 _logger.LogError(ex, $"Günlük gelir eklenirken hata çıktı: {ex.Message}. InnerException: {ex.InnerException?.Message}");
 
@@ -84,8 +84,8 @@ namespace GuestFlow.Application.Operations.DailyRevenue
         {
             try
             {
-                // Veritabanında bir işlem başlatıyorum.
-                await _unitOfWork.BeginTransactionAsync();
+                
+              
 
                 // Güncellenecek günlük geliri ID'sine göre veritabanından çekiyorum.
                 var existing = await _dailyRevenueRepository.GetAsync(x => x.Id == dailyRevenue.Id);
@@ -107,7 +107,7 @@ namespace GuestFlow.Application.Operations.DailyRevenue
             }
             catch (Exception ex)
             {
-                await _unitOfWork.RollbackTransactionAsync();
+                
                 _logger.LogError(ex, $"Günlük gelir güncellenirken hata çıktı: {ex.Message}. InnerException: {ex.InnerException?.Message}");
 
                 string errorMessage = $"Günlük gelir güncellenirken hata: {ex.Message}";
@@ -123,7 +123,7 @@ namespace GuestFlow.Application.Operations.DailyRevenue
         {
             try
             {
-                await _unitOfWork.BeginTransactionAsync();
+                
 
                 // Silinecek günlük geliri ID'sine göre kontrol ediyorum.
                 var dailyRevenue = await _dailyRevenueRepository.GetAsync(x => x.Id == id);
@@ -141,7 +141,7 @@ namespace GuestFlow.Application.Operations.DailyRevenue
             }
             catch (Exception ex)
             {
-                await _unitOfWork.RollbackTransactionAsync();
+                
                 _logger.LogError(ex, $"Günlük gelir silinirken hata çıktı: {ex.Message}. InnerException: {ex.InnerException?.Message}");
 
                 string errorMessage = $"Günlük gelir silinirken hata: {ex.Message}";

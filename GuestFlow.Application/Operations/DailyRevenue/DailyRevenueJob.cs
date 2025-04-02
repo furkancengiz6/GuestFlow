@@ -47,7 +47,7 @@ namespace GuestFlow.Application.Operations.DailyRevenue
             try
             {
                 // Önce veritabanında bir işlem (transaction) başlatıyorum. Eğer bir hata çıkarsa, yaptığım değişiklikleri geri alacağım.
-                await _unitOfWork.BeginTransactionAsync();
+                
 
                 // İlk olarak, o gün için şehir turlarından gelen geliri hesaplıyorum.
                 // Veritabanından şehir turlarını çekiyorum, ama sadece o güne ait olanları (TourDate) ve FinalPrice'ı null olmayanları alıyorum.
@@ -117,10 +117,43 @@ namespace GuestFlow.Application.Operations.DailyRevenue
             catch (Exception ex)
             {
                 // Eğer bir hata çıkarsa, transaction'ı geri alıyorum (rollback yapıyorum).
-                await _unitOfWork.RollbackTransactionAsync();
+                
                 // Hatayı logluyorum. İç hata (InnerException) varsa onu da ekliyorum ki daha fazla bilgi alayım.
                 _logger.LogError(ex, $"Günlük gelir hesaplanırken hata çıktı ({date:yyyy-MM-dd}): {ex.Message}. InnerException: {ex.InnerException?.Message}");
                 // Hata olduğu için bu hatayı yukarıya fırlatıyorum (throw).
+                throw;
+            }
+        }
+        public async Task UpdateDailyRevenue(DateTime date, decimal amount)
+        {
+            try
+            {
+                
+                var dailyRevenue = await _dailyRevenueRepository.GetAsync(x => x.Date.Date == date.Date);
+                if (dailyRevenue == null)
+                {
+                    dailyRevenue = new DailyRevenueEntity
+                    {
+                        Date = date.Date,
+                        TotalRevenue = amount,
+                        CreatedDate = DateTime.UtcNow,
+                        IsDeleted = false
+                    };
+                    await _dailyRevenueRepository.AddAsync(dailyRevenue);
+                    _logger.LogInformation($"Yeni günlük gelir eklendi ({date:yyyy-MM-dd}): {amount}");
+                }
+                else
+                {
+                    dailyRevenue.TotalRevenue += amount;
+                    await _dailyRevenueRepository.UpdateAsync(dailyRevenue);
+                    _logger.LogInformation($"Günlük gelir güncellendi ({date:yyyy-MM-dd}): {dailyRevenue.TotalRevenue}");
+                }
+
+                await _unitOfWork.SaveChangesAsync(); // Mevcut transaction içinde çalışacak
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Günlük gelir güncellenirken hata çıktı ({date:yyyy-MM-dd}): {ex.Message}. InnerException: {ex.InnerException?.Message}");
                 throw;
             }
         }

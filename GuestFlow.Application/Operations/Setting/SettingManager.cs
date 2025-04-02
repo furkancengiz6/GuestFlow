@@ -45,7 +45,7 @@ namespace GuestFlow.Application.Operations.Setting
             }
         }
 
-        public async Task<ServiceMessage> ToggleMaintenance()
+        public async Task<ServiceMessage> ToggleMaintenence()
         {
             try
             {
