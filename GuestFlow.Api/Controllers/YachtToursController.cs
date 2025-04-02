@@ -65,6 +65,9 @@ namespace GuestFlow.Api.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
+            // Test için bir hata fırlatıyorum.
+            if (id == 999)
+                throw new ArgumentException("Geçersiz bir ID değeri: 999");
             // Servisten yat turunu ID'sine göre alıyorum.
             var result = await _yachtTourService.GetYachtTourById(id);
             // Eğer yat turu bulunamazsa, 404 Not Found ile hata mesajı döndürüyorum; bulunursa sonucu JSON formatında döndürüyorum.
