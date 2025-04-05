@@ -113,13 +113,13 @@ The project uses `appsettings.json` for configuration. Example:
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Server=localhost;Database=GuestFlowDb;Trusted_Connection=True;"
+    "DefaultConnection": "Server=localhost;Database=GuestFlowDb;Trusted_Connection=True;TrustServerCertificate=True"
   },
   "Jwt": {
     "SecretKey": "YourSecretKeyHere",
     "Issuer": "GuestFlowApi",
-    "Audience": "GuestFlowApi",
-    "ExpireMinutes": 60
+    "Audience": "GuestFlowApp",
+    "ExpireMinutes": 45
   },
   "Logging": {
     "LogLevel": {
