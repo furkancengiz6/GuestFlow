@@ -78,10 +78,10 @@ namespace GuestFlow.Application.Operations.Guest
                 // Misafire özel bir kod (GuestCode) oluşturuyoruz. Bu kod, her misafir için benzersiz olmalı.
                 string guestCode = await GenerateGuestCodeAsync();
 
-                // Bu GuestCode ile başka bir misafir var mı diye kontrol ediyoruz.
-                var hasGuest = await _guestRepository.GetAll(x => x.GuestCode == guestCode).AnyAsync();
+                // Bu GuestCode ile başka bir misafir var mı diye kontrol ediyoruz.IsDeleted = false ,Sadece aktif misafirleri kontrol ett.
+                var hasGuest = await _guestRepository.GetAll(x => x.GuestCode == guestCode && !x.IsDeleted).AnyAsync();
                 if (hasGuest)
-                    return new ServiceMessage { IsSuccess = false, Message = "Bu GuestCode ile bir misafir zaten mevcut." };
+                return new ServiceMessage { IsSuccess = false, Message = "Bu GuestCode ile bir misafir zaten mevcut." };
 
                 // Yeni bir misafir nesnesi oluşturuyoruz ve DTO'dan gelen bilgileri buraya aktarıyoruz.
                 var newGuest = new GuestEntity
@@ -278,10 +278,11 @@ namespace GuestFlow.Application.Operations.Guest
             const string prefix = "GUEST-";
             int maxNumber = 0;
             // Veritabanındaki tüm GuestCode'ları al ve en büyük sayıyı bul
-            var existingCodes = await _guestRepository.GetAll()
-                .Select(g => g.GuestCode)
-                .Where(code => code.StartsWith(prefix))
-                .ToListAsync();
+            // Sadece aktif kayıtları IsDeleted = false kontrolü
+            var existingCodes = await _guestRepository.GetAll(g => !g.IsDeleted)
+            .Select(g => g.GuestCode)
+            .Where(code => code.StartsWith(prefix))
+            .ToListAsync();
 
             if (existingCodes.Any())
             {// GuestCode'lardan sayısal kısmı çıkar ve en büyüğünü bul
