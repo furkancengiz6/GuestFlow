@@ -1,4 +1,4 @@
-﻿
+
 using GuestFlow.Domain.Entities.Interfaces;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
@@ -21,13 +21,14 @@ namespace GuestFlow.Domain.Entities.Core
         public override void Configure(EntityTypeBuilder<CityEntity> builder)
         {
             base.Configure(builder);
-            // PickupTransfers ilişkisini yapılandırma EFCore  otomotik olarak çözememesinden kaynaklı.
+            builder.Property(c => c.CityName).HasMaxLength(100);
+            builder.Property(c => c.Country).HasMaxLength(100);
+
             builder.HasMany(c => c.PickupTransfers)
                    .WithOne(t => t.PickupCity)
                    .HasForeignKey(t => t.PickupCityId)
                    .OnDelete(DeleteBehavior.Restrict);
 
-            // DropoffTransfers ilişkisini yapılandırma
             builder.HasMany(c => c.DropoffTransfers)
                    .WithOne(t => t.DropoffCity)
                    .HasForeignKey(t => t.DropoffCityId)
