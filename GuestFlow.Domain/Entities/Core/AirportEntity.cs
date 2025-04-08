@@ -1,4 +1,4 @@
-﻿using GuestFlow.Domain.Entities.Interfaces;
+using GuestFlow.Domain.Entities.Interfaces;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,7 +19,8 @@ namespace GuestFlow.Domain.Entities.Core
         public override void Configure(EntityTypeBuilder<AirportEntity> builder)
         {
             base.Configure(builder);
-           
+            builder.Property(a => a.Name).HasMaxLength(100);
+            builder.Property(a => a.Code).HasMaxLength(10);
         }
     }
 }
