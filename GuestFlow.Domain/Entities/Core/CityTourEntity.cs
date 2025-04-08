@@ -1,4 +1,4 @@
-﻿using GuestFlow.Domain.Entities.Interfaces;
+using GuestFlow.Domain.Entities.Interfaces;
 using GuestFlow.Domain.Entities.Operations;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
@@ -32,7 +32,15 @@ namespace GuestFlow.Domain.Entities.Core
         public override void Configure(EntityTypeBuilder<CityTourEntity> builder)
         {
             base.Configure(builder);
-            
+            builder.Property(ct => ct.Language).HasMaxLength(50);
+            builder.Property(ct => ct.Price).HasPrecision(18, 2);
+            builder.Property(ct => ct.DiscountPercentage).HasPrecision(5, 2);
+            builder.Property(ct => ct.FinalPrice).HasPrecision(18, 2);
+
+            builder.HasOne(ct => ct.OwnerGuest)
+               .WithMany(g => g.CityTours) 
+               .HasForeignKey(ct => ct.OwnerGuestId)
+               .OnDelete(DeleteBehavior.NoAction);
         }
     }
 }
