@@ -1,4 +1,3 @@
-﻿// GuestFlow.Domain/Entities/Core/PersonnelEntity.cs
 using GuestFlow.Domain.Entities.Interfaces;
 using GuestFlow.Domain.Entities.Enum;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -26,8 +25,10 @@ namespace GuestFlow.Domain.Entities.Core
         public override void Configure(EntityTypeBuilder<PersonnelEntity> builder)
         {
             base.Configure(builder);
-            builder.HasIndex(x => x.Email)
-               .IsUnique();
+            builder.Property(p => p.FullName).HasMaxLength(200);
+            builder.Property(p => p.Email).HasMaxLength(255);
+            builder.Property(p => p.Password).HasMaxLength(256); // Şifrelenmiş hali için 
+            builder.HasIndex(p => p.Email).IsUnique();
         }
     }
 }
