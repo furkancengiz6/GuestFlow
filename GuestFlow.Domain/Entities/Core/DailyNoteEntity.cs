@@ -1,4 +1,4 @@
-﻿using GuestFlow.Domain.Entities.Interfaces;
+using GuestFlow.Domain.Entities.Interfaces;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,7 +20,7 @@ namespace GuestFlow.Domain.Entities.Core
         public override void Configure(EntityTypeBuilder<DailyNoteEntity> builder)
         {
             base.Configure(builder);
-          
+            builder.Property(dn => dn.NoteText).HasMaxLength(1000);
         }
     }
 }
