@@ -1,4 +1,4 @@
-﻿using GuestFlow.Domain.Entities.Interfaces;
+using GuestFlow.Domain.Entities.Interfaces;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel;
@@ -32,7 +32,13 @@ namespace GuestFlow.Domain.Entities.Core
         public override void Configure(EntityTypeBuilder<InvoicesEntity> builder)
         {
             base.Configure(builder);
-            builder.HasIndex(x => x.InvoiceNumber).IsUnique();
+
+            base.Configure(builder);
+            builder.Property(i => i.Currency).HasMaxLength(3); // USD, EUR, TRY gibi 3 karakterli para birimi kodları için
+            builder.Property(i => i.Notes).HasMaxLength(1000);
+            builder.Property(i => i.PdfUrl).HasMaxLength(500);
+            builder.Property(i => i.TotalAmount).HasPrecision(18, 2);
+            builder.HasIndex(i => i.InvoiceNumber).IsUnique();
         }
     }
 }
