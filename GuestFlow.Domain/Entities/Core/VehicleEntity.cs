@@ -1,4 +1,4 @@
-﻿
+
 using GuestFlow.Domain.Entities.Interfaces;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
@@ -21,7 +21,9 @@ namespace GuestFlow.Domain.Entities.Core
         public override void Configure(EntityTypeBuilder<VehicleEntity> builder)
         {
             base.Configure(builder);
-           
+            builder.Property(v => v.Type).HasMaxLength(50);
+            builder.Property(v => v.PlateNumber).HasMaxLength(20);
+            builder.Property(v => v.DailyPrice).HasPrecision(18, 2);
         }
     }
 }
