@@ -1,4 +1,4 @@
-﻿using GuestFlow.Domain.Entities.Core;
+using GuestFlow.Domain.Entities.Core;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,11 +17,13 @@ namespace GuestFlow.Domain.Entities.Operations
     {
         public override void Configure(EntityTypeBuilder<GuestYachtTour> builder)
         {
-            base.Configure(builder);
-
-            //builder.Ignore(x => x.Id);
-           // builder.HasKey(gyt => new { gyt.GuestId, gyt.YachtTourId });
            
+
+            base.Configure(builder);
+            builder.HasKey(gyt => new { gyt.GuestId, gyt.YachtTourId });
+            builder.Ignore(gyt => gyt.Id); // BaseEntity'den gelen Id'yi yok say
+            builder.Ignore(gct => gct.CreatedDate);
+            builder.Ignore(gct => gct.IsDeleted);
         }
     }
 }
