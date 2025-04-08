@@ -1,4 +1,4 @@
-﻿using GuestFlow.Domain.Entities.Interfaces;
+using GuestFlow.Domain.Entities.Interfaces;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
 
@@ -38,7 +38,13 @@ namespace GuestFlow.Domain.Entities.Core
         public override void Configure(EntityTypeBuilder<TransferEntity> builder)
         {
             base.Configure(builder);
-           
+            builder.Property(t => t.PickupAddress).HasMaxLength(500);
+            builder.Property(t => t.DropoffAddress).HasMaxLength(500);
+            builder.Property(t => t.Note).HasMaxLength(1000);
+            builder.Property(t => t.Status).HasMaxLength(50);
+            builder.Property(t => t.Price).HasPrecision(18, 2);
+            builder.Property(t => t.DiscountPercentage).HasPrecision(5, 2);
+            builder.Property(t => t.FinalPrice).HasPrecision(18, 2);
         }
     }
 }
