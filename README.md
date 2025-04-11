@@ -211,5 +211,6 @@ This project is licensed under the **MIT License**.
 
 ## GuestFlow Db Diagram
 
-![resim](https://github.com/user-attachments/assets/3c534d60-cde1-43d0-81d0-b241034115a6)
+![Ekran görüntüsü 2025-03-17 134050](https://github.com/user-attachments/assets/0e27ab69-9d35-4cbf-9cfb-4fd29ac90a99)
+
 
