@@ -1,6 +1,6 @@
 # GuestFlow API
 
-![.NET](https://img.shields.io/badge/.NET-8.0-blueviolet) ![C#](https://img.shields.io/badge/C%23-11.0-brightgreen) ![License](https://img.shields.io/badge/license-Proprietary-red)
+![.NET](https://img.shields.io/badge/.NET-8.0-blueviolet) ![C#](https://img.shields.io/badge/C%23-11.0-brightgreen) ![C#](https://img.shields.io/badge/C%23-11.0-brightgreen) 
 
 **GuestFlow API** is a RESTful API designed to manage guest-related operations for a hospitality and tourism business. It provides functionalities for managing guests, airports, cities, transfers, city tours, yacht tours, daily revenues, invoices, and more.
 
