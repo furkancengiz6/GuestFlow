@@ -1,4 +1,4 @@
-﻿using GuestFlow.Api.Models.DailyNoteModels;
+using GuestFlow.Api.Models.DailyNoteModels;
 using GuestFlow.Application.Operations.DailyNote;
 using GuestFlow.Application.Operations.DailyNote.Dtos;
 using Microsoft.AspNetCore.Authorization;
@@ -6,7 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace GuestFlow.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     [ApiController]
     [Authorize(Roles = "Staff,Admin")] // Bu controller'a sadece Staff ve Admin rolleri erişebilir.
     public class DailyNotesController : ControllerBase
