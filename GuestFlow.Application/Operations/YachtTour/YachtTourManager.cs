@@ -361,19 +361,7 @@ namespace GuestFlow.Application.Operations.YachtTour
                 if (yachtTour == null)
                     throw new Exception("Yat turu bulunamadı.");
 
-                return new GetYachtTourDto
-                {
-                    Id = yachtTour.Id,
-                    TourDate = yachtTour.TourDate,
-                    NumberOfPeople = yachtTour.NumberOfPeople,
-                    Price = yachtTour.Price,
-                    SpecialRequest = yachtTour.SpecialRequest,
-                    YachtName = yachtTour.YachtName,
-                    OwnerGuestId = yachtTour.OwnerGuestId,
-                    PersonnelId = yachtTour.PersonnelId,
-                    CityId = yachtTour.CityId,
-                    CreatedDate = yachtTour.CreatedDate
-                };
+                return _mapper.Map<GetYachtTourDto>(yachtTour);
             }
             catch (Exception ex)
             {

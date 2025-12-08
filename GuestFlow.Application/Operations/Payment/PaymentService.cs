@@ -286,24 +286,7 @@ namespace GuestFlow.Application.Operations.Payment
                     .Take(pageSize)
                     .ToListAsync();
 
-                var dtos = payments.Select(p => new GetPaymentDto
-                {
-                    Id = p.Id,
-                    PaymentNumber = p.PaymentNumber,
-                    InvoiceId = p.InvoiceId,
-                    InvoiceNumber = p.Invoice?.InvoiceNumber ?? 0,
-                    GuestId = p.GuestId,
-                    GuestName = p.Guest?.FullName ?? string.Empty,
-                    Amount = p.Amount,
-                    Currency = p.Currency,
-                    PaymentMethod = PaymentMethodHelper.ToString(p.PaymentMethod),
-                    Status = PaymentStatusHelper.ToString(p.Status),
-                    PaymentDate = p.PaymentDate,
-                    TransactionId = p.TransactionId,
-                    RefundDate = p.RefundDate,
-                    RefundReason = p.RefundReason,
-                    CreatedDate = p.CreatedDate
-                }).ToList();
+                var dtos = _mapper.Map<List<GetPaymentDto>>(payments);
 
                 return new PagedResult<GetPaymentDto>
                 {
@@ -475,24 +458,7 @@ namespace GuestFlow.Application.Operations.Payment
                     .OrderByDescending(p => p.PaymentDate)
                     .ToListAsync();
 
-                return payments.Select(p => new GetPaymentDto
-                {
-                    Id = p.Id,
-                    PaymentNumber = p.PaymentNumber,
-                    InvoiceId = p.InvoiceId,
-                    InvoiceNumber = p.Invoice?.InvoiceNumber ?? 0,
-                    GuestId = p.GuestId,
-                    GuestName = p.Guest?.FullName ?? string.Empty,
-                    Amount = p.Amount,
-                    Currency = p.Currency,
-                    PaymentMethod = PaymentMethodHelper.ToString(p.PaymentMethod),
-                    Status = PaymentStatusHelper.ToString(p.Status),
-                    PaymentDate = p.PaymentDate,
-                    TransactionId = p.TransactionId,
-                    RefundDate = p.RefundDate,
-                    RefundReason = p.RefundReason,
-                    CreatedDate = p.CreatedDate
-                }).ToList();
+                return _mapper.Map<List<GetPaymentDto>>(payments);
             }
             catch (Exception ex)
             {
@@ -511,24 +477,7 @@ namespace GuestFlow.Application.Operations.Payment
                     .OrderByDescending(p => p.PaymentDate)
                     .ToListAsync();
 
-                return payments.Select(p => new GetPaymentDto
-                {
-                    Id = p.Id,
-                    PaymentNumber = p.PaymentNumber,
-                    InvoiceId = p.InvoiceId,
-                    InvoiceNumber = p.Invoice?.InvoiceNumber ?? 0,
-                    GuestId = p.GuestId,
-                    GuestName = p.Guest?.FullName ?? string.Empty,
-                    Amount = p.Amount,
-                    Currency = p.Currency,
-                    PaymentMethod = PaymentMethodHelper.ToString(p.PaymentMethod),
-                    Status = PaymentStatusHelper.ToString(p.Status),
-                    PaymentDate = p.PaymentDate,
-                    TransactionId = p.TransactionId,
-                    RefundDate = p.RefundDate,
-                    RefundReason = p.RefundReason,
-                    CreatedDate = p.CreatedDate
-                }).ToList();
+                return _mapper.Map<List<GetPaymentDto>>(payments);
             }
             catch (Exception ex)
             {
@@ -551,24 +500,7 @@ namespace GuestFlow.Application.Operations.Payment
                     .OrderByDescending(p => p.PaymentDate)
                     .ToListAsync();
 
-                return payments.Select(p => new GetPaymentDto
-                {
-                    Id = p.Id,
-                    PaymentNumber = p.PaymentNumber,
-                    InvoiceId = p.InvoiceId,
-                    InvoiceNumber = p.Invoice?.InvoiceNumber ?? 0,
-                    GuestId = p.GuestId,
-                    GuestName = p.Guest?.FullName ?? string.Empty,
-                    Amount = p.Amount,
-                    Currency = p.Currency,
-                    PaymentMethod = PaymentMethodHelper.ToString(p.PaymentMethod),
-                    Status = PaymentStatusHelper.ToString(p.Status),
-                    PaymentDate = p.PaymentDate,
-                    TransactionId = p.TransactionId,
-                    RefundDate = p.RefundDate,
-                    RefundReason = p.RefundReason,
-                    CreatedDate = p.CreatedDate
-                }).ToList();
+                return _mapper.Map<List<GetPaymentDto>>(payments);
             }
             catch (Exception ex)
             {

@@ -163,13 +163,7 @@ namespace GuestFlow.Application.Operations.DailyRevenue
                     throw new Exception("Günlük gelir bulunamadı.");
 
                 // Günlük geliri bir DTO nesnesine çevirip geri döndürüyorum.
-                return new GetDailyRevenueDto
-                {
-                    Id = dailyRevenue.Id,
-                    Date = dailyRevenue.Date,
-                    TotalRevenue = dailyRevenue.TotalRevenue,
-                    CreatedDate = dailyRevenue.CreatedDate
-                };
+                return _mapper.Map<GetDailyRevenueDto>(dailyRevenue);
             }
             catch (Exception ex)
             {
@@ -185,15 +179,8 @@ namespace GuestFlow.Application.Operations.DailyRevenue
             try
             {
                 // Veritabanından tüm günlük gelirleri çekiyorum ve her birini GetDailyRevenueDto'ya çeviriyorum.
-                return await _dailyRevenueRepository.GetAll()
-                    .Select(dr => new GetDailyRevenueDto
-                    {
-                        Id = dr.Id,
-                        Date = dr.Date,
-                        TotalRevenue = dr.TotalRevenue,
-                        CreatedDate = dr.CreatedDate
-                    })
-                    .ToListAsync();
+                var dailyRevenues = await _dailyRevenueRepository.GetAll().ToListAsync();
+                return _mapper.Map<List<GetDailyRevenueDto>>(dailyRevenues);
             }
             catch (Exception ex)
             {

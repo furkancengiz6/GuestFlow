@@ -404,18 +404,7 @@ namespace GuestFlow.Application.Operations.CityTour
                 if (cityTour == null)
                     throw new Exception("Şehir turu bulunamadı.");
 
-                return new GetCityTourDto
-                {
-                    Id = cityTour.Id,
-                    TourDate = cityTour.TourDate,
-                    Language = cityTour.Language,
-                    DurationHours = cityTour.DurationHours,
-                    Price = cityTour.Price,
-                    OwnerGuestId = cityTour.OwnerGuestId,
-                    PersonnelId = cityTour.PersonnelId,
-                    CityId = cityTour.CityId,
-                    CreatedDate = cityTour.CreatedDate
-                };
+                return _mapper.Map<GetCityTourDto>(cityTour);
             }
             catch (Exception ex)
             {

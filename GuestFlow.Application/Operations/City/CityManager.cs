@@ -161,13 +161,7 @@ namespace GuestFlow.Application.Operations.City
                 if (city == null)
                     throw new Exception("Şehir bulunamadı.");
 
-                return new GetCityDto
-                {
-                    Id = city.Id,
-                    CityName = city.CityName,
-                    Country = city.Country,
-                    CreatedDate = city.CreatedDate
-                };
+                return _mapper.Map<GetCityDto>(city);
             }
             catch (Exception ex)
             {

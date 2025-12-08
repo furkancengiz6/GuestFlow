@@ -80,22 +80,7 @@ namespace GuestFlow.Application.Operations.Invoice
 
                 // Fatura bulunduysa, onu bir DTO (Data Transfer Object) nesnesine çevirip geri döndürüyoruz.
                 // DTO, veriyi taşımak için kullandığımız bir yapı. Burada fatura bilgilerini GetInvoiceDto'ya aktarıyoruz.
-                return new GetInvoiceDto
-                {
-                    Id = invoice.Id,
-                    InvoiceNumber = invoice.InvoiceNumber,
-                    TotalAmount = invoice.TotalAmount,
-                    IssueDate = invoice.IssueDate,
-                    Currency = invoice.Currency,
-                    Notes = invoice.Notes,
-                    PdfUrl = invoice.PdfUrl,
-                    GuestId = invoice.GuestId,
-                    PersonnelId = invoice.PersonnelId,
-                    TransferId = invoice.TransferId,
-                    CityTourId = invoice.CityTourId,
-                    YachtTourId = invoice.YachtTourId,
-                    CreatedDate = invoice.CreatedDate
-                };
+                return _mapper.Map<GetInvoiceDto>(invoice);
             }
             catch (Exception ex)
             {
@@ -114,26 +99,10 @@ namespace GuestFlow.Application.Operations.Invoice
             try
             {
                 // Veritabanından tüm faturaları çekiyoruz.
-                // GetAll metodu tüm faturaları alır, Select ile her bir faturayı GetInvoiceDto'ya çeviriyoruz.
+                // GetAll metodu tüm faturaları alır, AutoMapper ile her bir faturayı GetInvoiceDto'ya çeviriyoruz.
                 // ToListAsync ile bu verileri bir liste haline getirip döndürüyoruz.
-                return await _invoiceRepository.GetAll()
-                    .Select(i => new GetInvoiceDto
-                    {
-                        Id = i.Id,
-                        InvoiceNumber = i.InvoiceNumber,
-                        TotalAmount = i.TotalAmount,
-                        IssueDate = i.IssueDate,
-                        Currency = i.Currency,
-                        Notes = i.Notes,
-                        PdfUrl = i.PdfUrl,
-                        GuestId = i.GuestId,
-                        PersonnelId = i.PersonnelId,
-                        TransferId = i.TransferId,
-                        CityTourId = i.CityTourId,
-                        YachtTourId = i.YachtTourId,
-                        CreatedDate = i.CreatedDate
-                    })
-                    .ToListAsync();
+                var invoices = await _invoiceRepository.GetAll().ToListAsync();
+                return _mapper.Map<List<GetInvoiceDto>>(invoices);
             }
             catch (Exception ex)
             {
@@ -152,26 +121,10 @@ namespace GuestFlow.Application.Operations.Invoice
             try
             {
                 // Veritabanından sadece belirli bir misafire (guestId) ait faturaları çekiyoruz.
-                // GetAll metodu ile filtreleme yapıyoruz (x => x.GuestId == guestId), sonra Select ile her bir faturayı GetInvoiceDto'ya çeviriyoruz.
+                // GetAll metodu ile filtreleme yapıyoruz (x => x.GuestId == guestId), sonra AutoMapper ile her bir faturayı GetInvoiceDto'ya çeviriyoruz.
                 // ToListAsync ile bu verileri bir liste haline getirip döndürüyoruz.
-                return await _invoiceRepository.GetAll(x => x.GuestId == guestId)
-                    .Select(i => new GetInvoiceDto
-                    {
-                        Id = i.Id,
-                        InvoiceNumber = i.InvoiceNumber,
-                        TotalAmount = i.TotalAmount,
-                        IssueDate = i.IssueDate,
-                        Currency = i.Currency,
-                        Notes = i.Notes,
-                        PdfUrl = i.PdfUrl,
-                        GuestId = i.GuestId,
-                        PersonnelId = i.PersonnelId,
-                        TransferId = i.TransferId,
-                        CityTourId = i.CityTourId,
-                        YachtTourId = i.YachtTourId,
-                        CreatedDate = i.CreatedDate
-                    })
-                    .ToListAsync();
+                var invoices = await _invoiceRepository.GetAll(x => x.GuestId == guestId).ToListAsync();
+                return _mapper.Map<List<GetInvoiceDto>>(invoices);
             }
             catch (Exception ex)
             {
@@ -352,25 +305,16 @@ namespace GuestFlow.Application.Operations.Invoice
                 var query = _invoiceRepository.GetAll()
                     .Include(i => i.Guest)
                     .ApplyInvoiceFilters(filters)
-                    .ApplyInvoiceSorting(sorting)
-                    .Select(i => new GetInvoiceDto
-                    {
-                        Id = i.Id,
-                        InvoiceNumber = i.InvoiceNumber,
-                        TotalAmount = i.TotalAmount,
-                        IssueDate = i.IssueDate,
-                        Currency = i.Currency,
-                        Notes = i.Notes,
-                        PdfUrl = i.PdfUrl ?? string.Empty,
-                        GuestId = i.GuestId,
-                        PersonnelId = i.PersonnelId,
-                        TransferId = i.TransferId,
-                        CityTourId = i.CityTourId,
-                        YachtTourId = i.YachtTourId,
-                        CreatedDate = i.CreatedDate
-                    });
+                    .ApplyInvoiceSorting(sorting);
 
-                return await query.ToPagedResultAsync(pageNumber, pageSize);
+                var totalCount = await query.CountAsync();
+                var invoices = await query
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                var dtos = _mapper.Map<List<GetInvoiceDto>>(invoices);
+                return new PagedResult<GetInvoiceDto>(dtos, totalCount, pageNumber, pageSize);
             }
             catch (Exception ex)
             {

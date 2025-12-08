@@ -240,17 +240,7 @@ namespace GuestFlow.Application.Operations.Guest
                     throw new Exception("Misafir bulunamadı.");
 
                 // Misafiri bir DTO nesnesine çevirip geri döndürdik
-                return new GetGuestDto
-                {
-                    Id = guest.Id,
-                    FullName = guest.FullName,
-                    Email = guest.Email,
-                    PhoneNumber = guest.PhoneNumber,
-                    Nationality = guest.Nationality,
-                    GuestCode = guest.GuestCode,
-                    IsSpecialGuest = guest.IsSpecialGuest,
-                    CreatedDate = guest.CreatedDate
-                };
+                return _mapper.Map<GetGuestDto>(guest);
             }
             catch (Exception ex)
             {
@@ -265,19 +255,8 @@ namespace GuestFlow.Application.Operations.Guest
             try
             {
                 // Veritabanından tüm misafirleri çekiyoruz ve her birini GetGuestDto ya çeviriyoruz.
-                return await _guestRepository.GetAll()
-                    .Select(g => new GetGuestDto
-                    {
-                        Id = g.Id,
-                        FullName = g.FullName,
-                        Email = g.Email,
-                        PhoneNumber = g.PhoneNumber,
-                        Nationality = g.Nationality,
-                        GuestCode = g.GuestCode,
-                        IsSpecialGuest = g.IsSpecialGuest,
-                        CreatedDate = g.CreatedDate
-                    })
-                    .ToListAsync();
+                var guests = await _guestRepository.GetAll().ToListAsync();
+                return _mapper.Map<List<GetGuestDto>>(guests);
             }
             catch (Exception ex)
             {
@@ -299,20 +278,16 @@ namespace GuestFlow.Application.Operations.Guest
             {
                 var query = _guestRepository.GetAll()
                     .ApplyGuestFilters(filters)
-                    .ApplyGuestSorting(sorting)
-                    .Select(g => new GetGuestDto
-                    {
-                        Id = g.Id,
-                        FullName = g.FullName,
-                        Email = g.Email,
-                        PhoneNumber = g.PhoneNumber,
-                        Nationality = g.Nationality,
-                        GuestCode = g.GuestCode,
-                        IsSpecialGuest = g.IsSpecialGuest,
-                        CreatedDate = g.CreatedDate
-                    });
+                    .ApplyGuestSorting(sorting);
 
-                return await query.ToPagedResultAsync(pageNumber, pageSize);
+                var totalCount = await query.CountAsync();
+                var guests = await query
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                var dtos = _mapper.Map<List<GetGuestDto>>(guests);
+                return new PagedResult<GetGuestDto>(dtos, totalCount, pageNumber, pageSize);
             }
             catch (Exception ex)
             {
