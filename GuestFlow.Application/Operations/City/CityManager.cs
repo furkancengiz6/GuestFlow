@@ -1,4 +1,8 @@
-﻿using GuestFlow.Application.Operations.City.Dtos;
+using AutoMapper;
+using GuestFlow.Application.Extensions;
+using GuestFlow.Application.Models;
+using GuestFlow.Application.Operations.City.Dtos;
+using GuestFlow.Application.Operations.Cache;
 using GuestFlow.Application.Types;
 using GuestFlow.Domain.Entities.Core;
 using GuestFlow.Domain.Entities.Repositories;
@@ -21,16 +25,22 @@ namespace GuestFlow.Application.Operations.City
         private readonly IUnitOfWork _unitOfWork;
         private readonly IRepository<CityEntity> _cityRepository;
         private readonly ILogger<CityManager> _logger;
+        private readonly IMapper _mapper;
+        private readonly ICacheService _cacheService;
 
         // Constructor: Bu sınıf oluşturulurken bağımlılıkları buradan alıyorum.
         public CityManager(
             IUnitOfWork unitOfWork,
             IRepository<CityEntity> cityRepository,
-            ILogger<CityManager> logger)
+            ILogger<CityManager> logger,
+            IMapper mapper,
+            ICacheService cacheService)
         {
             _unitOfWork = unitOfWork;
             _cityRepository = cityRepository;
             _logger = logger;
+            _mapper = mapper;
+            _cacheService = cacheService;
         }
 
         // Bu metodumla yeni bir şehir ekliyorum.
@@ -89,6 +99,9 @@ namespace GuestFlow.Application.Operations.City
 
                 await _cityRepository.UpdateAsync(existing);
                 await _unitOfWork.SaveChangesAsync();
+
+                // Cache'i temizle
+                _cacheService.RemoveByPattern("cities:*");
                 await _unitOfWork.CommitTransactionAsync();
 
                 _logger.LogInformation($"Şehir güncellendi: {city.Id}");
@@ -168,19 +181,38 @@ namespace GuestFlow.Application.Operations.City
         {
             try
             {
-                return await _cityRepository.GetAll()
-                    .Select(c => new GetCityDto
-                    {
-                        Id = c.Id,
-                        CityName = c.CityName,
-                        Country = c.Country,
-                        CreatedDate = c.CreatedDate
-                    })
-                    .ToListAsync();
+                var cities = await _cityRepository.GetAll().ToListAsync();
+                return _mapper.Map<List<GetCityDto>>(cities);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Şehirler listelenirken hata çıktı: {ex.Message}. InnerException: {ex.InnerException?.Message}");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Sayfalanmış şehirleri getirir
+        /// </summary>
+        public async Task<PagedResult<GetCityDto>> GetCitiesPaged(int pageNumber, int pageSize, SortingParameters? sorting = null)
+        {
+            try
+            {
+                var query = _cityRepository.GetAll()
+                    .ApplyCitySorting(sorting);
+
+                var totalCount = await query.CountAsync();
+                var cities = await query
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                var dtos = _mapper.Map<List<GetCityDto>>(cities);
+                return new PagedResult<GetCityDto>(dtos, totalCount, pageNumber, pageSize);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Sayfalanmış şehirler listelenirken hata: {ex.Message}. InnerException: {ex.InnerException?.Message}");
                 throw;
             }
         }

@@ -1,7 +1,12 @@
-﻿using System;
+using AutoMapper;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using GuestFlow.Application.Extensions;
+using GuestFlow.Application.Models;
 using GuestFlow.Application.Operations.Airport.Dtos;
+using GuestFlow.Application.Operations.Cache;
 using GuestFlow.Application.Types;
 using GuestFlow.Domain.Entities.Core;
 using GuestFlow.Domain.Entities.Repositories;
@@ -22,18 +27,24 @@ namespace GuestFlow.Application.Operations.Airport
         private readonly IRepository<AirportEntity> _airportRepository;
         private readonly IRepository<CityEntity> _cityRepository;
         private readonly ILogger<AirportManager> _logger;
+        private readonly IMapper _mapper;
+        private readonly ICacheService _cacheService;
 
         // Constructor: Bu sınıf oluşturulurken bağımlılıkları buradan alıyorum.
         public AirportManager(
             IUnitOfWork unitOfWork,
             IRepository<AirportEntity> airportRepository,
             IRepository<CityEntity> cityRepository,
-            ILogger<AirportManager> logger)
+            ILogger<AirportManager> logger,
+            IMapper mapper,
+            ICacheService cacheService)
         {
             _unitOfWork = unitOfWork;
             _airportRepository = airportRepository;
             _cityRepository = cityRepository;
             _logger = logger;
+            _mapper = mapper;
+            _cacheService = cacheService;
         }
 
         // Bu metodumla yeni bir havalimanı ekliyorum.
@@ -188,20 +199,43 @@ namespace GuestFlow.Application.Operations.Airport
         {
             try
             {
-                return await _airportRepository.GetAll()
-                    .Select(a => new GetAirportDto
-                    {
-                        Id = a.Id,
-                        Name = a.Name,
-                        Code = a.Code,
-                        CityId = a.CityId,
-                        CreatedDate = a.CreatedDate
-                    })
-                    .ToListAsync();
+                const string cacheKey = "airports:all";
+                
+                return await _cacheService.GetOrSetAsync(cacheKey, async () =>
+                {
+                    var airports = await _airportRepository.GetAll().ToListAsync();
+                    return _mapper.Map<List<GetAirportDto>>(airports);
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Havalimanları listelenirken hata çıktı: {ex.Message}. InnerException: {ex.InnerException?.Message}");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Sayfalanmış havalimanlarını getirir
+        /// </summary>
+        public async Task<PagedResult<GetAirportDto>> GetAirportsPaged(int pageNumber, int pageSize, SortingParameters? sorting = null)
+        {
+            try
+            {
+                var query = _airportRepository.GetAll()
+                    .ApplyAirportSorting(sorting);
+
+                var totalCount = await query.CountAsync();
+                var airports = await query
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                var dtos = _mapper.Map<List<GetAirportDto>>(airports);
+                return new PagedResult<GetAirportDto>(dtos, totalCount, pageNumber, pageSize);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Sayfalanmış havalimanları listelenirken hata: {ex.Message}. InnerException: {ex.InnerException?.Message}");
                 throw;
             }
         }

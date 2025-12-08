@@ -1,4 +1,4 @@
-﻿using GuestFlow.Domain.Entities.Core;
+using GuestFlow.Domain.Entities.Core;
 using GuestFlow.Domain.Entities.Operations;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,6 +24,13 @@ namespace GuestFlow.Persistence.Context
         public DbSet<GuestYachtTour> GuestYachtTours => Set<GuestYachtTour>();
         public DbSet<GuestCityTour> GuestCityTours => Set<GuestCityTour>();
         public DbSet<SettingEntity> Settings {  get; set; }
+        public DbSet<RefreshTokenEntity> RefreshTokens => Set<RefreshTokenEntity>();
+        public DbSet<EmailQueueEntity> EmailQueues => Set<EmailQueueEntity>();
+        public DbSet<EmailTemplateEntity> EmailTemplates => Set<EmailTemplateEntity>();
+        public DbSet<EmailHistoryEntity> EmailHistories => Set<EmailHistoryEntity>();
+        public DbSet<ReservationEntity> Reservations => Set<ReservationEntity>();
+        public DbSet<PaymentEntity> Payments => Set<PaymentEntity>();
+        public DbSet<SmsHistoryEntity> SmsHistories => Set<SmsHistoryEntity>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -43,6 +50,13 @@ namespace GuestFlow.Persistence.Context
             modelBuilder.ApplyConfiguration(new YachtTourConfiguration());
             modelBuilder.ApplyConfiguration(new GuestYachtTourConfiguration());
             modelBuilder.ApplyConfiguration(new GuestCityTourConfiguration());
+            modelBuilder.ApplyConfiguration(new RefreshTokenConfiguration());
+            modelBuilder.ApplyConfiguration(new EmailQueueConfiguration());
+            modelBuilder.ApplyConfiguration(new EmailTemplateConfiguration());
+            modelBuilder.ApplyConfiguration(new EmailHistoryConfiguration());
+            modelBuilder.ApplyConfiguration(new ReservationConfiguration());
+            modelBuilder.ApplyConfiguration(new PaymentConfiguration());
+            modelBuilder.ApplyConfiguration(new SmsHistoryConfiguration());
             modelBuilder.Entity<SettingEntity>().HasData(new SettingEntity
             {
                 Id = 1,

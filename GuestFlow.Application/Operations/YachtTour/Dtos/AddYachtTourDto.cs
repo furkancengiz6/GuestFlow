@@ -18,6 +18,7 @@ namespace GuestFlow.Application.Operations.YachtTour.Dtos
         public int CityId { get; set; }
         public bool CreateInvoice { get; set; } 
         public decimal? DiscountPercentage { get; set; } 
-        public string? InvoiceDescription { get; set; } 
+        public string? InvoiceDescription { get; set; }
+        public string? Currency { get; set; } // Para birimi (TRY, USD, EUR, vb.)
     }
 }

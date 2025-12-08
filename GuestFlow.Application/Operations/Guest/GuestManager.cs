@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using GuestFlow.Application.Extensions;
+using GuestFlow.Application.Models;
 using GuestFlow.Application.Operations.Guest.Dtos;
 using GuestFlow.Application.Types;
 using GuestFlow.Domain.Entities.Core;
@@ -19,16 +21,28 @@ namespace GuestFlow.Application.Operations.Guest
         // _logger: Hataları veya bilgileri loglamak kaydetmek için kullanıyoruz.
         private readonly IUnitOfWork _unitOfWork;
         private readonly IRepository<GuestEntity> _guestRepository;
+        private readonly IRepository<TransferEntity> _transferRepository;
+        private readonly IRepository<CityTourEntity> _cityTourRepository;
+        private readonly IRepository<YachtTourEntity> _yachtTourRepository;
+        private readonly IRepository<InvoicesEntity> _invoiceRepository;
         private readonly ILogger<GuestManager> _logger;
 
         // Constructor Bu sınıf oluşturulurken dependency buradan alıyoruz.
         public GuestManager(
             IUnitOfWork unitOfWork,
             IRepository<GuestEntity> guestRepository,
+            IRepository<TransferEntity> transferRepository,
+            IRepository<CityTourEntity> cityTourRepository,
+            IRepository<YachtTourEntity> yachtTourRepository,
+            IRepository<InvoicesEntity> invoiceRepository,
             ILogger<GuestManager> logger)
         {
             _unitOfWork = unitOfWork;
             _guestRepository = guestRepository;
+            _transferRepository = transferRepository;
+            _cityTourRepository = cityTourRepository;
+            _yachtTourRepository = yachtTourRepository;
+            _invoiceRepository = invoiceRepository;
             _logger = logger;
         }
 
@@ -272,6 +286,41 @@ namespace GuestFlow.Application.Operations.Guest
             }
         }
 
+        // Bu metod, sayfalanmış misafirleri getiriyor.
+        public async Task<PagedResult<GetGuestDto>> GetGuestsPaged(int pageNumber, int pageSize)
+        {
+            return await GetGuestsPaged(pageNumber, pageSize, null);
+        }
+
+        // Bu metod, filtreleme ve sıralama ile sayfalanmış misafirleri getiriyor.
+        public async Task<PagedResult<GetGuestDto>> GetGuestsPaged(int pageNumber, int pageSize, GuestFilterParameters? filters = null, SortingParameters? sorting = null)
+        {
+            try
+            {
+                var query = _guestRepository.GetAll()
+                    .ApplyGuestFilters(filters)
+                    .ApplyGuestSorting(sorting)
+                    .Select(g => new GetGuestDto
+                    {
+                        Id = g.Id,
+                        FullName = g.FullName,
+                        Email = g.Email,
+                        PhoneNumber = g.PhoneNumber,
+                        Nationality = g.Nationality,
+                        GuestCode = g.GuestCode,
+                        IsSpecialGuest = g.IsSpecialGuest,
+                        CreatedDate = g.CreatedDate
+                    });
+
+                return await query.ToPagedResultAsync(pageNumber, pageSize);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Sayfalanmış misafirler listelenirken hata: {ex.Message}. InnerException: {ex.InnerException?.Message}");
+                throw;
+            }
+        }
+
         // Bu metod, her misafir için benzersiz bir GuestCode oluşturuyor.
         private async Task<string> GenerateGuestCodeAsync()
         {
@@ -293,5 +342,335 @@ namespace GuestFlow.Application.Operations.Guest
 
             return $"{prefix}{(maxNumber + 1):D3}";
         }
+
+        public async Task<GuestDetailDto> GetGuestDetailAsync(int id)
+        {
+            try
+            {
+                var guest = await _guestRepository.GetAll()
+                    .Include(g => g.Transfers)
+                    .Include(g => g.CityTours)
+                        .ThenInclude(ct => ct.City)
+                    .Include(g => g.YachtTours)
+                        .ThenInclude(yt => yt.City)
+                    .Include(g => g.Invoices)
+                    .FirstOrDefaultAsync(g => g.Id == id && !g.IsDeleted);
+
+                if (guest == null)
+                    throw new Exception("Misafir bulunamadı.");
+
+                // İstatistikleri hesapla
+                var statistics = new GuestStatisticsDto
+                {
+                    TotalTransfers = guest.Transfers.Count,
+                    TotalCityTours = guest.CityTours.Count,
+                    TotalYachtTours = guest.YachtTours.Count,
+                    TotalBookings = guest.Transfers.Count + guest.CityTours.Count + guest.YachtTours.Count,
+                    TotalInvoices = guest.Invoices.Count,
+                    TotalSpent = guest.Transfers.Sum(t => (decimal?)t.FinalPrice) ?? 0 +
+                                 guest.CityTours.Sum(ct => (decimal?)ct.FinalPrice) ?? 0 +
+                                 guest.YachtTours.Sum(yt => (decimal?)yt.FinalPrice) ?? 0,
+                    FirstBookingDate = guest.Transfers.Select(t => t.TransferDate)
+                        .Concat(guest.CityTours.Select(ct => ct.TourDate))
+                        .Concat(guest.YachtTours.Select(yt => yt.TourDate))
+                        .DefaultIfEmpty(DateTime.MinValue)
+                        .Min(),
+                    LastBookingDate = guest.Transfers.Select(t => t.TransferDate)
+                        .Concat(guest.CityTours.Select(ct => ct.TourDate))
+                        .Concat(guest.YachtTours.Select(yt => yt.TourDate))
+                        .DefaultIfEmpty(DateTime.MinValue)
+                        .Max()
+                };
+
+                statistics.AverageBookingValue = statistics.TotalBookings > 0
+                    ? statistics.TotalSpent / statistics.TotalBookings
+                    : 0;
+
+                // Transferler
+                var transfers = guest.Transfers
+                    .OrderByDescending(t => t.TransferDate)
+                    .Select(t => new GuestTransferDto
+                    {
+                        Id = t.Id,
+                        TransferDate = t.TransferDate,
+                        PickupAddress = t.PickupAddress,
+                        DropoffAddress = t.DropoffAddress,
+                        Price = t.Price,
+                        FinalPrice = t.FinalPrice,
+                        Status = t.Status.ToString(),
+                        IsFromAirport = t.IsFromAirport,
+                        Note = t.Note,
+                        CreatedDate = t.CreatedDate
+                    })
+                    .ToList();
+
+                // Şehir Turları
+                var cityTours = guest.CityTours
+                    .OrderByDescending(ct => ct.TourDate)
+                    .Select(ct => new GuestCityTourDto
+                    {
+                        Id = ct.Id,
+                        TourDate = ct.TourDate,
+                        Language = ct.Language,
+                        DurationHours = ct.DurationHours,
+                        Price = ct.Price,
+                        FinalPrice = ct.FinalPrice,
+                        CityName = ct.City != null ? ct.City.CityName : null,
+                        CreatedDate = ct.CreatedDate
+                    })
+                    .ToList();
+
+                // Yat Turları
+                var yachtTours = guest.YachtTours
+                    .OrderByDescending(yt => yt.TourDate)
+                    .Select(yt => new GuestYachtTourDto
+                    {
+                        Id = yt.Id,
+                        TourDate = yt.TourDate,
+                        NumberOfPeople = yt.NumberOfPeople,
+                        Price = yt.Price,
+                        FinalPrice = yt.FinalPrice,
+                        YachtName = yt.YachtName,
+                        CityName = yt.City != null ? yt.City.CityName : null,
+                        SpecialRequest = yt.SpecialRequest,
+                        CreatedDate = yt.CreatedDate
+                    })
+                    .ToList();
+
+                // Faturalar
+                var invoices = guest.Invoices
+                    .OrderByDescending(i => i.IssueDate)
+                    .Select(i => new GuestInvoiceDto
+                    {
+                        Id = i.Id,
+                        InvoiceNumber = i.InvoiceNumber,
+                        IssueDate = i.IssueDate,
+                        TotalAmount = i.TotalAmount,
+                        Currency = i.Currency,
+                        Notes = i.Notes,
+                        PdfUrl = i.PdfUrl ?? string.Empty,
+                        CreatedDate = i.CreatedDate
+                    })
+                    .ToList();
+
+                // Zaman çizelgesi oluştur
+                var timeline = new List<GuestTimelineItemDto>();
+
+                // Transferler
+                foreach (var transfer in guest.Transfers)
+                {
+                    timeline.Add(new GuestTimelineItemDto
+                    {
+                        Id = transfer.Id,
+                        Type = "Transfer",
+                        Title = $"Transfer - {transfer.PickupAddress} → {transfer.DropoffAddress}",
+                        Description = transfer.Note ?? "Transfer rezervasyonu",
+                        Date = transfer.TransferDate,
+                        Amount = transfer.FinalPrice,
+                        Status = transfer.Status.ToString(),
+                        CreatedDate = transfer.CreatedDate
+                    });
+                }
+
+                // Şehir Turları
+                foreach (var cityTour in guest.CityTours)
+                {
+                    timeline.Add(new GuestTimelineItemDto
+                    {
+                        Id = cityTour.Id,
+                        Type = "CityTour",
+                        Title = $"Şehir Turu - {cityTour.City?.CityName ?? "Bilinmiyor"}",
+                        Description = $"{cityTour.DurationHours} saatlik tur - {cityTour.Language}",
+                        Date = cityTour.TourDate,
+                        Amount = cityTour.FinalPrice,
+                        Status = "Aktif",
+                        CreatedDate = cityTour.CreatedDate
+                    });
+                }
+
+                // Yat Turları
+                foreach (var yachtTour in guest.YachtTours)
+                {
+                    timeline.Add(new GuestTimelineItemDto
+                    {
+                        Id = yachtTour.Id,
+                        Type = "YachtTour",
+                        Title = $"Yat Turu - {yachtTour.YachtName}",
+                        Description = $"{yachtTour.NumberOfPeople} kişi - {yachtTour.City?.CityName ?? "Bilinmiyor"}",
+                        Date = yachtTour.TourDate,
+                        Amount = yachtTour.FinalPrice,
+                        Status = "Aktif",
+                        CreatedDate = yachtTour.CreatedDate
+                    });
+                }
+
+                // Faturalar
+                foreach (var invoice in guest.Invoices)
+                {
+                    timeline.Add(new GuestTimelineItemDto
+                    {
+                        Id = invoice.Id,
+                        Type = "Invoice",
+                        Title = $"Fatura #{invoice.InvoiceNumber}",
+                        Description = $"{invoice.TotalAmount} {invoice.Currency}",
+                        Date = invoice.IssueDate,
+                        Amount = invoice.TotalAmount,
+                        Status = invoice.PdfUrl != null ? "PDF Oluşturuldu" : "Bekliyor",
+                        CreatedDate = invoice.CreatedDate
+                    });
+                }
+
+                // Zaman çizelgesini tarihe göre sırala
+                timeline = timeline.OrderByDescending(t => t.Date).ToList();
+
+                return new GuestDetailDto
+                {
+                    Id = guest.Id,
+                    FullName = guest.FullName,
+                    Email = guest.Email,
+                    PhoneNumber = guest.PhoneNumber,
+                    Nationality = guest.Nationality,
+                    GuestCode = guest.GuestCode,
+                    IsSpecialGuest = guest.IsSpecialGuest,
+                    CreatedDate = guest.CreatedDate,
+                    Statistics = statistics,
+                    Transfers = transfers,
+                    CityTours = cityTours,
+                    YachtTours = yachtTours,
+                    Invoices = invoices,
+                    Timeline = timeline
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Misafir detayı getirilirken hata: {ex.Message}. Id: {id}. InnerException: {ex.InnerException?.Message}");
+                throw;
+            }
+        }
+
+        public async Task<List<GuestInvoiceDto>> GetGuestInvoicesAsync(int guestId)
+        {
+            try
+            {
+                var guest = await _guestRepository.GetByIdAsync(guestId);
+                if (guest == null || guest.IsDeleted)
+                    throw new Exception("Misafir bulunamadı.");
+
+                var invoices = await _invoiceRepository.GetAll()
+                    .Where(i => i.GuestId == guestId && !i.IsDeleted)
+                    .OrderByDescending(i => i.IssueDate)
+                    .Select(i => new GuestInvoiceDto
+                    {
+                        Id = i.Id,
+                        InvoiceNumber = i.InvoiceNumber,
+                        IssueDate = i.IssueDate,
+                        TotalAmount = i.TotalAmount,
+                        Currency = i.Currency,
+                        Notes = i.Notes,
+                        PdfUrl = i.PdfUrl ?? string.Empty,
+                        CreatedDate = i.CreatedDate
+                    })
+                    .ToListAsync();
+
+                return invoices;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Misafir faturaları getirilirken hata: {ex.Message}. GuestId: {guestId}. InnerException: {ex.InnerException?.Message}");
+                throw;
+            }
+        }
+
+        public async Task<List<GuestTimelineItemDto>> GetGuestTimelineAsync(int guestId)
+        {
+            try
+            {
+                var guest = await _guestRepository.GetAll()
+                    .Include(g => g.Transfers)
+                    .Include(g => g.CityTours)
+                        .ThenInclude(ct => ct.City)
+                    .Include(g => g.YachtTours)
+                        .ThenInclude(yt => yt.City)
+                    .Include(g => g.Invoices)
+                    .FirstOrDefaultAsync(g => g.Id == guestId && !g.IsDeleted);
+
+                if (guest == null)
+                    throw new Exception("Misafir bulunamadı.");
+
+                var timeline = new List<GuestTimelineItemDto>();
+
+                // Transferler
+                foreach (var transfer in guest.Transfers)
+                {
+                    timeline.Add(new GuestTimelineItemDto
+                    {
+                        Id = transfer.Id,
+                        Type = "Transfer",
+                        Title = $"Transfer - {transfer.PickupAddress} → {transfer.DropoffAddress}",
+                        Description = transfer.Note ?? "Transfer rezervasyonu",
+                        Date = transfer.TransferDate,
+                        Amount = transfer.FinalPrice,
+                        Status = transfer.Status.ToString(),
+                        CreatedDate = transfer.CreatedDate
+                    });
+                }
+
+                // Şehir Turları
+                foreach (var cityTour in guest.CityTours)
+                {
+                    timeline.Add(new GuestTimelineItemDto
+                    {
+                        Id = cityTour.Id,
+                        Type = "CityTour",
+                        Title = $"Şehir Turu - {cityTour.City?.CityName ?? "Bilinmiyor"}",
+                        Description = $"{cityTour.DurationHours} saatlik tur - {cityTour.Language}",
+                        Date = cityTour.TourDate,
+                        Amount = cityTour.FinalPrice,
+                        Status = "Aktif",
+                        CreatedDate = cityTour.CreatedDate
+                    });
+                }
+
+                // Yat Turları
+                foreach (var yachtTour in guest.YachtTours)
+                {
+                    timeline.Add(new GuestTimelineItemDto
+                    {
+                        Id = yachtTour.Id,
+                        Type = "YachtTour",
+                        Title = $"Yat Turu - {yachtTour.YachtName}",
+                        Description = $"{yachtTour.NumberOfPeople} kişi - {yachtTour.City?.CityName ?? "Bilinmiyor"}",
+                        Date = yachtTour.TourDate,
+                        Amount = yachtTour.FinalPrice,
+                        Status = "Aktif",
+                        CreatedDate = yachtTour.CreatedDate
+                    });
+                }
+
+                // Faturalar
+                foreach (var invoice in guest.Invoices)
+                {
+                    timeline.Add(new GuestTimelineItemDto
+                    {
+                        Id = invoice.Id,
+                        Type = "Invoice",
+                        Title = $"Fatura #{invoice.InvoiceNumber}",
+                        Description = $"{invoice.TotalAmount} {invoice.Currency}",
+                        Date = invoice.IssueDate,
+                        Amount = invoice.TotalAmount,
+                        Status = invoice.PdfUrl != null ? "PDF Oluşturuldu" : "Bekliyor",
+                        CreatedDate = invoice.CreatedDate
+                    });
+                }
+
+                // Zaman çizelgesini tarihe göre sırala
+                return timeline.OrderByDescending(t => t.Date).ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Misafir zaman çizelgesi getirilirken hata: {ex.Message}. GuestId: {guestId}. InnerException: {ex.InnerException?.Message}");
+                throw;
+            }
+        }
     }
-    }
+}

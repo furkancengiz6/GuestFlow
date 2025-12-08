@@ -23,7 +23,7 @@ namespace GuestFlow.Application.Operations.Transfer.Dtos
         public int DropoffCityId { get; set; }
         public bool CreateInvoice { get; set; }
         public decimal? DiscountPercentage { get; set; } 
-        public string? InvoiceDescription { get; set; } 
-
+        public string? InvoiceDescription { get; set; }
+        public string? Currency { get; set; } // Para birimi (TRY, USD, EUR, vb.)
     }
 }
