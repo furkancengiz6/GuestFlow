@@ -1,4 +1,5 @@
-﻿using GuestFlow.Application.Operations.Airport.Dtos;
+﻿using GuestFlow.Application.Models;
+using GuestFlow.Application.Operations.Airport.Dtos;
 using GuestFlow.Application.Types;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -12,5 +13,10 @@ namespace GuestFlow.Application.Operations.Airport
         Task<ServiceMessage> DeleteAirport(int id);
         Task<GetAirportDto> GetAirportById(int id);
         Task<List<GetAirportDto>> GetAirports();
+        
+        /// <summary>
+        /// Sayfalanmış havalimanlarını getirir
+        /// </summary>
+        Task<PagedResult<GetAirportDto>> GetAirportsPaged(int pageNumber, int pageSize, SortingParameters? sorting = null);
     }
 }

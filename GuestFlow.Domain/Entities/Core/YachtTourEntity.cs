@@ -17,6 +17,7 @@ namespace GuestFlow.Domain.Entities.Core
         public int CityId { get; set; }
         public decimal? DiscountPercentage { get; set; }
         public decimal FinalPrice { get; set; }
+        public string Currency { get; set; } = "TRY"; // Para birimi (TRY, USD, EUR, GBP, RUB)
 
 
 
@@ -38,6 +39,7 @@ namespace GuestFlow.Domain.Entities.Core
             builder.Property(yt => yt.Price).HasPrecision(18, 2);
             builder.Property(yt => yt.DiscountPercentage).HasPrecision(5, 2);
             builder.Property(yt => yt.FinalPrice).HasPrecision(18, 2);
+            builder.Property(yt => yt.Currency).HasMaxLength(3);
             builder.HasOne(yt => yt.OwnerGuest)
                .WithMany(g => g.YachtTours) 
                .HasForeignKey(yt => yt.OwnerGuestId)

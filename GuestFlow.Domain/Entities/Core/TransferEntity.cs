@@ -21,6 +21,7 @@ namespace GuestFlow.Domain.Entities.Core
         public int DropoffCityId { get; set; }
         public decimal? DiscountPercentage { get; set; }
         public decimal FinalPrice { get; set; }
+        public string Currency { get; set; } = "TRY"; // Para birimi (TRY, USD, EUR, GBP, RUB)
 
 
         // Relational Properties
@@ -45,6 +46,7 @@ namespace GuestFlow.Domain.Entities.Core
             builder.Property(t => t.Price).HasPrecision(18, 2);
             builder.Property(t => t.DiscountPercentage).HasPrecision(5, 2);
             builder.Property(t => t.FinalPrice).HasPrecision(18, 2);
+            builder.Property(t => t.Currency).HasMaxLength(3);
         }
     }
 }

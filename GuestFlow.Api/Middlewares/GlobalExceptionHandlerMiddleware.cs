@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using GuestFlow.Api.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Net;
@@ -63,15 +64,17 @@ namespace GuestFlow.Api.Middlewares
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = (int)statusCode;
 
-            // Hata mesajını JSON formatında istemciye gönderiyorum.
-            var errorResponse = new
-            {
-                StatusCode = context.Response.StatusCode,
-                Message = message,
-                Detailed = exception.Message // Geliştirme ortamında detaylı hata mesajı, üretimde gizlenebilir.
-            };
+            // Standart API yanıt formatını kullan
+            var errorResponse = ApiResponse<object>.ErrorResponse(
+                message: message,
+                statusCode: (int)statusCode,
+                errors: new { Detailed = exception.Message } // Geliştirme ortamında detaylı hata mesajı
+            );
 
-            var jsonResponse = JsonSerializer.Serialize(errorResponse);
+            var jsonResponse = JsonSerializer.Serialize(errorResponse, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            });
             await context.Response.WriteAsync(jsonResponse);
         }
     }

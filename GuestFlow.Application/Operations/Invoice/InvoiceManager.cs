@@ -194,6 +194,9 @@ namespace GuestFlow.Application.Operations.Invoice
                 var invoice = await _invoiceRepository.GetAll()
                     .Include(i => i.Guest)
                     .Include(i => i.Personnel)
+                    .Include(i => i.Transfer)
+                    .Include(i => i.CityTour)
+                    .Include(i => i.YachtTour)
                     .FirstOrDefaultAsync(i => i.Id == invoiceId);
 
                 if (invoice == null)
@@ -457,17 +460,19 @@ namespace GuestFlow.Application.Operations.Invoice
                 if (string.IsNullOrEmpty(pdfPath))
                     return new ServiceMessage { IsSuccess = false, Message = "PDF dosyası bulunamadı." };
 
-                // PDF dosyasının fiziksel yolunu al
-                var pdfPhysicalPath = Path.Combine(_configuration["PdfSettings:OutputPath"] ?? "wwwroot/pdfs", Path.GetFileName(pdfPath));
-                if (!System.IO.File.Exists(pdfPhysicalPath))
+                // PDF dosyasının fiziksel yolunu al (IPdfUrlService kullanarak)
+                var pdfPhysicalPath = _pdfUrlService.GetFullFilePathFromUrl(pdfPath);
+                if (string.IsNullOrEmpty(pdfPhysicalPath) || !System.IO.File.Exists(pdfPhysicalPath))
                 {
-                    // URL'den fiziksel yolu çıkar
-                    pdfPhysicalPath = pdfPath.Replace("/pdfs/", "").Replace("/", "\\");
-                    if (pdfPath.StartsWith("http"))
+                    // Fallback: Eski yöntem (geriye dönük uyumluluk için)
+                    var fileName = _pdfUrlService.GetFileNameFromUrl(pdfPath);
+                    if (string.IsNullOrEmpty(fileName))
                     {
-                        var fileName = Path.GetFileName(new Uri(pdfPath).LocalPath);
-                        pdfPhysicalPath = Path.Combine(_configuration["PdfSettings:OutputPath"] ?? "wwwroot/pdfs", fileName);
+                        fileName = Path.GetFileName(pdfPath);
                     }
+                    
+                    // OutputPath kullan (e-posta için farklı bir path olabilir)
+                    pdfPhysicalPath = Path.Combine(_configuration["PdfSettings:OutputPath"] ?? "wwwroot/pdfs", fileName);
                 }
 
                 // E-posta gönder

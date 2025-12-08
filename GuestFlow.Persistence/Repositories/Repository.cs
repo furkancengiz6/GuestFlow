@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
@@ -30,12 +31,12 @@ namespace GuestFlow.Persistence.Repositories
         {
             entity.IsDeleted = true;
             _dbSet.Update(entity);
-            await Task.CompletedTask; // EF Core'da Update senkron olduğu için
+            await Task.CompletedTask;
         }
 
         public async Task DeleteAsync(int id)
         {
-            var entity = await GetByIdAsync(id);
+            var entity = await GetByIdAsync(id, includeDeleted: true);
             if (entity != null)
             {
                 await DeleteAsync(entity);
@@ -45,22 +46,167 @@ namespace GuestFlow.Persistence.Repositories
         public async Task UpdateAsync(TEntity entity)
         {
             _dbSet.Update(entity);
-            await Task.CompletedTask; // EF Core'da Update senkron olduğu için
+            await Task.CompletedTask;
         }
 
-        public async Task<TEntity> GetByIdAsync(int id)
+        public async Task<TEntity> GetByIdAsync(int id, bool includeDeleted = false)
         {
-            return await _dbSet.FindAsync(id);
+            var query = _dbSet.AsQueryable();
+            
+            if (!includeDeleted)
+            {
+                query = query.Where(e => !e.IsDeleted);
+            }
+
+            return await query.FirstOrDefaultAsync(e => e.Id == id);
         }
 
-        public async Task<TEntity> GetAsync(Expression<Func<TEntity, bool>> predicate)
+        public async Task<TEntity> GetByIdAsync(int id, params Expression<Func<TEntity, object>>[] includes)
         {
-            return await _dbSet.FirstOrDefaultAsync(predicate);
+            var query = _dbSet.AsQueryable().Where(e => !e.IsDeleted && e.Id == id);
+
+            foreach (var include in includes)
+            {
+                query = query.Include(include);
+            }
+
+            return await query.FirstOrDefaultAsync();
         }
 
-        public IQueryable<TEntity> GetAll(Expression<Func<TEntity, bool>> predicate = null)
+        public async Task<TEntity> GetAsync(Expression<Func<TEntity, bool>> predicate, bool includeDeleted = false)
         {
-            return predicate == null ? _dbSet.AsQueryable() : _dbSet.Where(predicate);
+            var query = _dbSet.AsQueryable();
+
+            if (!includeDeleted)
+            {
+                query = query.Where(e => !e.IsDeleted);
+            }
+
+            return await query.FirstOrDefaultAsync(predicate);
+        }
+
+        public async Task<TEntity> GetAsync(Expression<Func<TEntity, bool>> predicate, params Expression<Func<TEntity, object>>[] includes)
+        {
+            var query = _dbSet.AsQueryable().Where(e => !e.IsDeleted).Where(predicate);
+
+            foreach (var include in includes)
+            {
+                query = query.Include(include);
+            }
+
+            return await query.FirstOrDefaultAsync();
+        }
+
+        public IQueryable<TEntity> GetAll(Expression<Func<TEntity, bool>> predicate = null, bool includeDeleted = false)
+        {
+            var query = _dbSet.AsQueryable();
+
+            if (!includeDeleted)
+            {
+                query = query.Where(e => !e.IsDeleted);
+            }
+
+            if (predicate != null)
+            {
+                query = query.Where(predicate);
+            }
+
+            return query;
+        }
+
+        public IQueryable<TEntity> GetAll(Expression<Func<TEntity, bool>> predicate, params Expression<Func<TEntity, object>>[] includes)
+        {
+            var query = _dbSet.AsQueryable().Where(e => !e.IsDeleted);
+
+            if (predicate != null)
+            {
+                query = query.Where(predicate);
+            }
+
+            foreach (var include in includes)
+            {
+                query = query.Include(include);
+            }
+
+            return query;
+        }
+
+        public async Task<TEntity> GetBySpecificationAsync(ISpecification<TEntity> specification)
+        {
+            var query = ApplySpecification(specification);
+            return await query.FirstOrDefaultAsync();
+        }
+
+        public async Task<List<TEntity>> GetAllBySpecificationAsync(ISpecification<TEntity> specification)
+        {
+            var query = ApplySpecification(specification);
+            return await query.ToListAsync();
+        }
+
+        public IQueryable<TEntity> GetQueryableBySpecification(ISpecification<TEntity> specification)
+        {
+            return ApplySpecification(specification);
+        }
+
+        public async Task<int> CountAsync(Expression<Func<TEntity, bool>> predicate = null, bool includeDeleted = false)
+        {
+            var query = GetAll(predicate, includeDeleted);
+            return await query.CountAsync();
+        }
+
+        public async Task<bool> AnyAsync(Expression<Func<TEntity, bool>> predicate = null, bool includeDeleted = false)
+        {
+            var query = GetAll(predicate, includeDeleted);
+            return await query.AnyAsync();
+        }
+
+        /// <summary>
+        /// Specification'ı query'ye uygular
+        /// </summary>
+        private IQueryable<TEntity> ApplySpecification(ISpecification<TEntity> specification)
+        {
+            var query = _dbSet.AsQueryable();
+
+            // Soft delete filtreleme
+            if (!specification.IncludeDeleted)
+            {
+                query = query.Where(e => !e.IsDeleted);
+            }
+
+            // Where koşulu
+            if (specification.Criteria != null)
+            {
+                query = query.Where(specification.Criteria);
+            }
+
+            // Include'lar
+            foreach (var include in specification.Includes)
+            {
+                query = query.Include(include);
+            }
+
+            // OrderBy
+            if (specification.OrderBy != null)
+            {
+                query = query.OrderBy(specification.OrderBy);
+            }
+            else if (specification.OrderByDescending != null)
+            {
+                query = query.OrderByDescending(specification.OrderByDescending);
+            }
+
+            // Sayfalama
+            if (specification.Skip.HasValue)
+            {
+                query = query.Skip(specification.Skip.Value);
+            }
+
+            if (specification.Take.HasValue)
+            {
+                query = query.Take(specification.Take.Value);
+            }
+
+            return query;
         }
     }
 }

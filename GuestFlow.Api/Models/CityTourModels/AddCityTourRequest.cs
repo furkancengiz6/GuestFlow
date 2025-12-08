@@ -30,5 +30,7 @@ namespace GuestFlow.Api.Models.CityToursModels
         public bool CreateInvoice { get; set; } // Fatura oluşturulacak mı?
         public decimal? DiscountPercentage { get; set; } //  İndirim yüzdesi
         public string? InvoiceDescription { get; set; }
+        [StringLength(3)]
+        public string? Currency { get; set; } // Para birimi (TRY, USD, EUR, GBP, RUB)
     }
 }

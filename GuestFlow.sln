@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GuestFlow.Domain", "GuestFl
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GuestFlow.Persistence", "GuestFlow.Persistence\GuestFlow.Persistence.csproj", "{FC8AFE25-D222-4192-A7B7-4ACC5C73F905}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GuestFlow.Application.Tests", "GuestFlow.Application.Tests\GuestFlow.Application.Tests.csproj", "{F05C4146-42C5-41E1-B448-DDFD2A585D4C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{FC8AFE25-D222-4192-A7B7-4ACC5C73F905}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FC8AFE25-D222-4192-A7B7-4ACC5C73F905}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FC8AFE25-D222-4192-A7B7-4ACC5C73F905}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F05C4146-42C5-41E1-B448-DDFD2A585D4C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F05C4146-42C5-41E1-B448-DDFD2A585D4C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F05C4146-42C5-41E1-B448-DDFD2A585D4C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F05C4146-42C5-41E1-B448-DDFD2A585D4C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

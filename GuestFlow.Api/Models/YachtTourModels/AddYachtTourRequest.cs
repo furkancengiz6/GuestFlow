@@ -32,5 +32,7 @@ namespace GuestFlow.Api.Models.YachtTourModels
         public bool CreateInvoice { get; set; } 
         public decimal? DiscountPercentage { get; set; } 
         public string? InvoiceDescription { get; set; }
+        [StringLength(3)]
+        public string? Currency { get; set; } // Para birimi (TRY, USD, EUR, GBP, RUB)
     }
 }
