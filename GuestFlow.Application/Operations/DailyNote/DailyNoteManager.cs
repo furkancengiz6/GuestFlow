@@ -168,15 +168,7 @@ namespace GuestFlow.Application.Operations.DailyNote
                 if (dailyNote == null)
                     throw new Exception("Günlük not bulunamadı.");
 
-                return new GetDailyNoteDto
-                {
-                    Id = dailyNote.Id,
-                    NoteDate = dailyNote.NoteDate,
-                    RoomNumber = dailyNote.RoomNumber,
-                    NoteText = dailyNote.NoteText,
-                    PersonnelId = dailyNote.PersonnelId,
-                    CreatedDate = dailyNote.CreatedDate
-                };
+                return _mapper.Map<GetDailyNoteDto>(dailyNote);
             }
             catch (Exception ex)
             {
@@ -190,17 +182,8 @@ namespace GuestFlow.Application.Operations.DailyNote
         {
             try
             {
-                return await _dailyNoteRepository.GetAll()
-                    .Select(dn => new GetDailyNoteDto
-                    {
-                        Id = dn.Id,
-                        NoteDate = dn.NoteDate,
-                        RoomNumber = dn.RoomNumber,
-                        NoteText = dn.NoteText,
-                        PersonnelId = dn.PersonnelId,
-                        CreatedDate = dn.CreatedDate
-                    })
-                    .ToListAsync();
+                var dailyNotes = await _dailyNoteRepository.GetAll().ToListAsync();
+                return _mapper.Map<List<GetDailyNoteDto>>(dailyNotes);
             }
             catch (Exception ex)
             {

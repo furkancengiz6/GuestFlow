@@ -154,15 +154,7 @@ namespace GuestFlow.Application.Operations.Vehicle
                 if (vehicle == null)
                     throw new Exception("Araç bulunamadı.");
 
-                return new GetVehicleDto
-                {
-                    Id = vehicle.Id,
-                    Type = vehicle.Type,
-                    PlateNumber = vehicle.PlateNumber,
-                    Capacity = vehicle.Capacity,
-                    DailyPrice = vehicle.DailyPrice,
-                    CreatedDate = vehicle.CreatedDate
-                };
+                return _mapper.Map<GetVehicleDto>(vehicle);
             }
             catch (Exception ex)
             {

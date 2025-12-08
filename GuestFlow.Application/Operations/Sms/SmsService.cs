@@ -467,27 +467,7 @@ namespace GuestFlow.Application.Operations.Sms
                     .Take(pageSize)
                     .ToListAsync();
 
-                var dtos = smsList.Select(s => new GetSmsHistoryDto
-                {
-                    Id = s.Id,
-                    PhoneNumber = s.PhoneNumber,
-                    Message = s.Message,
-                    Status = SmsStatusHelper.ToString(s.Status),
-                    SentDate = s.SentDate,
-                    DeliveredDate = s.DeliveredDate,
-                    ErrorMessage = s.ErrorMessage,
-                    Provider = s.Provider,
-                    MessageId = s.MessageId,
-                    TemplateName = s.TemplateName,
-                    RelatedEntityType = s.RelatedEntityType,
-                    RelatedEntityId = s.RelatedEntityId,
-                    GuestId = s.GuestId,
-                    GuestName = s.Guest?.FullName,
-                    PersonnelId = s.PersonnelId,
-                    PersonnelName = s.Personnel?.FullName,
-                    SmsType = s.SmsType,
-                    CreatedDate = s.CreatedDate
-                }).ToList();
+                var dtos = _mapper.Map<List<GetSmsHistoryDto>>(smsList);
 
                 return new PagedResult<GetSmsHistoryDto>
                 {
@@ -520,27 +500,7 @@ namespace GuestFlow.Application.Operations.Sms
                     .OrderByDescending(s => s.SentDate)
                     .ToListAsync();
 
-                return smsList.Select(s => new GetSmsHistoryDto
-                {
-                    Id = s.Id,
-                    PhoneNumber = s.PhoneNumber,
-                    Message = s.Message,
-                    Status = SmsStatusHelper.ToString(s.Status),
-                    SentDate = s.SentDate,
-                    DeliveredDate = s.DeliveredDate,
-                    ErrorMessage = s.ErrorMessage,
-                    Provider = s.Provider,
-                    MessageId = s.MessageId,
-                    TemplateName = s.TemplateName,
-                    RelatedEntityType = s.RelatedEntityType,
-                    RelatedEntityId = s.RelatedEntityId,
-                    GuestId = s.GuestId,
-                    GuestName = s.Guest?.FullName,
-                    PersonnelId = s.PersonnelId,
-                    PersonnelName = s.Personnel?.FullName,
-                    SmsType = s.SmsType,
-                    CreatedDate = s.CreatedDate
-                }).ToList();
+                return _mapper.Map<List<GetSmsHistoryDto>>(smsList);
             }
             catch (Exception ex)
             {
@@ -563,27 +523,7 @@ namespace GuestFlow.Application.Operations.Sms
                     .OrderByDescending(s => s.SentDate)
                     .ToListAsync();
 
-                return smsList.Select(s => new GetSmsHistoryDto
-                {
-                    Id = s.Id,
-                    PhoneNumber = s.PhoneNumber,
-                    Message = s.Message,
-                    Status = SmsStatusHelper.ToString(s.Status),
-                    SentDate = s.SentDate,
-                    DeliveredDate = s.DeliveredDate,
-                    ErrorMessage = s.ErrorMessage,
-                    Provider = s.Provider,
-                    MessageId = s.MessageId,
-                    TemplateName = s.TemplateName,
-                    RelatedEntityType = s.RelatedEntityType,
-                    RelatedEntityId = s.RelatedEntityId,
-                    GuestId = s.GuestId,
-                    GuestName = s.Guest?.FullName,
-                    PersonnelId = s.PersonnelId,
-                    PersonnelName = s.Personnel?.FullName,
-                    SmsType = s.SmsType,
-                    CreatedDate = s.CreatedDate
-                }).ToList();
+                return _mapper.Map<List<GetSmsHistoryDto>>(smsList);
             }
             catch (Exception ex)
             {

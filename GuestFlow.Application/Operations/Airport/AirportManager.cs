@@ -178,14 +178,7 @@ namespace GuestFlow.Application.Operations.Airport
                 if (airport == null)
                     throw new Exception("Havalimanı bulunamadı.");
 
-                return new GetAirportDto
-                {
-                    Id = airport.Id,
-                    Name = airport.Name,
-                    Code = airport.Code,
-                    CityId = airport.CityId,
-                    CreatedDate = airport.CreatedDate
-                };
+                return _mapper.Map<GetAirportDto>(airport);
             }
             catch (Exception ex)
             {
