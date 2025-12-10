@@ -1,4 +1,5 @@
-﻿using GuestFlow.Application.Extensions;
+using AutoMapper;
+using GuestFlow.Application.Extensions;
 using GuestFlow.Application.Models;
 using GuestFlow.Application.Operations.Email;
 using GuestFlow.Application.Operations.Invoice.Dtos;
@@ -37,6 +38,7 @@ namespace GuestFlow.Application.Operations.Invoice
         private readonly IConfiguration _configuration;
         private readonly ILogger<InvoiceManager> _logger;
         private readonly IPdfUrlService _pdfUrlService;
+        private readonly IMapper _mapper;
 
         // Constructor (yapıcı metod): Bu sınıf oluşturulurken bağımlılıkları (dependency) buradan alıyoruz.
         public InvoiceManager(
@@ -50,9 +52,11 @@ namespace GuestFlow.Application.Operations.Invoice
             IEmailService emailService,
             IConfiguration configuration,
             ILogger<InvoiceManager> logger,
-            IPdfUrlService pdfUrlService)
+            IPdfUrlService pdfUrlService,
+            IMapper mapper)
         {
             _invoiceRepository = invoiceRepository;
+            _mapper = mapper;
             _guestRepository = guestRepository;
             _personnelRepository = personnelRepository;
             _transferRepository = transferRepository;
@@ -220,11 +224,12 @@ namespace GuestFlow.Application.Operations.Invoice
                 if (invoice == null)
                     throw new Exception("Fatura bulunamadı.");
 
-                // Hizmet bilgisini belirle
-                InvoiceServiceDto? service = null;
+                var detail = _mapper.Map<InvoiceDetailDto>(invoice);
+
+                // Hizmet bilgisini belirle (Transfer/CityTour/YachtTour)
                 if (invoice.TransferId.HasValue && invoice.Transfer != null)
                 {
-                    service = new InvoiceServiceDto
+                    detail.Service = new InvoiceServiceDto
                     {
                         ServiceType = "Transfer",
                         ServiceId = invoice.Transfer.Id,
@@ -236,7 +241,7 @@ namespace GuestFlow.Application.Operations.Invoice
                 }
                 else if (invoice.CityTourId.HasValue && invoice.CityTour != null)
                 {
-                    service = new InvoiceServiceDto
+                    detail.Service = new InvoiceServiceDto
                     {
                         ServiceType = "CityTour",
                         ServiceId = invoice.CityTour.Id,
@@ -248,7 +253,7 @@ namespace GuestFlow.Application.Operations.Invoice
                 }
                 else if (invoice.YachtTourId.HasValue && invoice.YachtTour != null)
                 {
-                    service = new InvoiceServiceDto
+                    detail.Service = new InvoiceServiceDto
                     {
                         ServiceType = "YachtTour",
                         ServiceId = invoice.YachtTour.Id,
@@ -258,36 +263,6 @@ namespace GuestFlow.Application.Operations.Invoice
                         AdditionalInfo = $"{invoice.YachtTour.NumberOfPeople} kişi"
                     };
                 }
-
-                var detail = new InvoiceDetailDto
-                {
-                    Id = invoice.Id,
-                    InvoiceNumber = invoice.InvoiceNumber,
-                    IssueDate = invoice.IssueDate,
-                    TotalAmount = invoice.TotalAmount,
-                    Currency = invoice.Currency,
-                    Notes = invoice.Notes,
-                    PdfUrl = invoice.PdfUrl ?? string.Empty,
-                    CreatedDate = invoice.CreatedDate,
-                    Guest = invoice.Guest != null ? new InvoiceGuestDto
-                    {
-                        Id = invoice.Guest.Id,
-                        FullName = invoice.Guest.FullName,
-                        GuestCode = invoice.Guest.GuestCode,
-                        Email = invoice.Guest.Email,
-                        PhoneNumber = invoice.Guest.PhoneNumber,
-                        Nationality = invoice.Guest.Nationality,
-                        IsSpecialGuest = invoice.Guest.IsSpecialGuest
-                    } : null,
-                    Personnel = invoice.Personnel != null ? new InvoicePersonnelDto
-                    {
-                        Id = invoice.Personnel.Id,
-                        FullName = invoice.Personnel.FullName,
-                        Email = invoice.Personnel.Email,
-                        UserType = invoice.Personnel.UserType.ToString()
-                    } : null,
-                    Service = service
-                };
 
                 return detail;
             }

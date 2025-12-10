@@ -1,4 +1,5 @@
-﻿using GuestFlow.Application.Operations.DailyNote.Dtos;
+﻿using AutoMapper;
+using GuestFlow.Application.Operations.DailyNote.Dtos;
 using GuestFlow.Application.Types;
 using GuestFlow.Domain.Entities.Core;
 using GuestFlow.Domain.Entities.Repositories;
@@ -19,15 +20,18 @@ namespace GuestFlow.Application.Operations.DailyNote
         private readonly IRepository<DailyNoteEntity> _dailyNoteRepository;
         private readonly IRepository<PersonnelEntity> _personnelRepository;
         private readonly ILogger<DailyNoteManager> _logger;
+        private readonly IMapper _mapper;
 
      
         public DailyNoteManager(
             IUnitOfWork unitOfWork,
             IRepository<DailyNoteEntity> dailyNoteRepository,
             IRepository<PersonnelEntity> personnelRepository,
-            ILogger<DailyNoteManager> logger)
+            ILogger<DailyNoteManager> logger,
+            IMapper mapper)
         {
             _unitOfWork = unitOfWork;
+            _mapper = mapper;
             _dailyNoteRepository = dailyNoteRepository;
             _personnelRepository = personnelRepository;
             _logger = logger;

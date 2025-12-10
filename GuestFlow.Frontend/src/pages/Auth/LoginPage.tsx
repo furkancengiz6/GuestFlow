@@ -41,9 +41,8 @@ const LoginPage = () => {
         throw new Error('Token bilgileri alınamadı')
       }
 
-      // 2. Token'ları localStorage'a kaydet (interceptor için)
-      localStorage.setItem('accessToken', accessToken)
-      localStorage.setItem('refreshToken', refreshToken)
+      // 2. Token'ları önce authStore'a kaydet (interceptor için)
+      login(accessToken, refreshToken, null)
 
       // 3. User bilgisini almak için /auth/me endpoint'ini çağır
       try {
@@ -60,14 +59,15 @@ const LoginPage = () => {
           createdDate: userData.createdDate,
         }
 
-        // 4. Auth store'a kaydet
-        login(accessToken, refreshToken, user)
+        // 4. Auth store'a user bilgisini güncelle
+        const { login: updateLogin } = useAuthStore.getState()
+        updateLogin(accessToken, refreshToken, user)
         navigate('/dashboard')
       } catch (userError: any) {
         // User bilgisi alınamazsa bile login yap, user null olabilir
         // Dashboard'da tekrar deneyebiliriz
         console.warn('User bilgisi alınamadı:', userError)
-        login(accessToken, refreshToken, null)
+        // Token'lar zaten kaydedildi, sadece navigate et
         navigate('/dashboard')
       }
     } catch (err: any) {

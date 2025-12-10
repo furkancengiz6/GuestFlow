@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AutoMapper;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using GuestFlow.Application.Extensions;
@@ -26,6 +27,7 @@ namespace GuestFlow.Application.Operations.Guest
         private readonly IRepository<YachtTourEntity> _yachtTourRepository;
         private readonly IRepository<InvoicesEntity> _invoiceRepository;
         private readonly ILogger<GuestManager> _logger;
+        private readonly IMapper _mapper;
 
         // Constructor Bu sınıf oluşturulurken dependency buradan alıyoruz.
         public GuestManager(
@@ -35,9 +37,11 @@ namespace GuestFlow.Application.Operations.Guest
             IRepository<CityTourEntity> cityTourRepository,
             IRepository<YachtTourEntity> yachtTourRepository,
             IRepository<InvoicesEntity> invoiceRepository,
-            ILogger<GuestManager> logger)
+            ILogger<GuestManager> logger,
+            IMapper mapper)
         {
             _unitOfWork = unitOfWork;
+            _mapper = mapper;
             _guestRepository = guestRepository;
             _transferRepository = transferRepository;
             _cityTourRepository = cityTourRepository;

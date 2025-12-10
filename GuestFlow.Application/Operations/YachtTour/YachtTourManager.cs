@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -424,42 +424,7 @@ namespace GuestFlow.Application.Operations.YachtTour
                 if (yachtTour == null)
                     throw new Exception("Yat turu bulunamadı.");
 
-                var detail = new YachtTourDetailDto
-                {
-                    Id = yachtTour.Id,
-                    TourDate = yachtTour.TourDate,
-                    NumberOfPeople = yachtTour.NumberOfPeople,
-                    Price = yachtTour.Price,
-                    FinalPrice = yachtTour.FinalPrice,
-                    SpecialRequest = yachtTour.SpecialRequest,
-                    YachtName = yachtTour.YachtName,
-                    CreatedDate = yachtTour.CreatedDate,
-                    Guest = yachtTour.OwnerGuest != null ? new TourGuestDto
-                    {
-                        Id = yachtTour.OwnerGuest.Id,
-                        FullName = yachtTour.OwnerGuest.FullName,
-                        GuestCode = yachtTour.OwnerGuest.GuestCode,
-                        Email = yachtTour.OwnerGuest.Email,
-                        PhoneNumber = yachtTour.OwnerGuest.PhoneNumber,
-                        Nationality = yachtTour.OwnerGuest.Nationality,
-                        IsSpecialGuest = yachtTour.OwnerGuest.IsSpecialGuest
-                    } : null,
-                    Personnel = yachtTour.Personnel != null ? new TourPersonnelDto
-                    {
-                        Id = yachtTour.Personnel.Id,
-                        FullName = yachtTour.Personnel.FullName,
-                        Email = yachtTour.Personnel.Email,
-                        UserType = yachtTour.Personnel.UserType.ToString()
-                    } : null,
-                    City = yachtTour.City != null ? new TourCityDto
-                    {
-                        Id = yachtTour.City.Id,
-                        CityName = yachtTour.City.CityName,
-                        Country = yachtTour.City.Country
-                    } : null
-                };
-
-                return detail;
+                return _mapper.Map<YachtTourDetailDto>(yachtTour);
             }
             catch (Exception ex)
             {
