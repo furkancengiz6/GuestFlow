@@ -1,5 +1,12 @@
 # GuestFlow Çözümü - Geliştirme Yol Haritası
 
+## Güncel Durum Notları (2025-12-10)
+- ✅ Migration'lar uygulandı (`AddMissingTables` dahil); DB `GuestFlowDb` güncel.
+- ⚠️ QA: Build geçiyor; 62 adet nullability/interface warning var; API/Auth/Integration manuel test gerektiriyor.
+- ✅ AutoMapper temizlik: Payment, CityTour, YachtTour, Invoice detaylar AutoMapper’a alındı; kalan manager’larda manuel DTO kurulum bulunmadı. Guest detail’de istatistik/timeline hesaplaması manuel (bilinçli).
+- ⚠️ Frontend: Admin panel, Auth UI, Dashboard ve modül UI'ları yok; AppShell + auth/refresh iskeleti ve data-fetch katmanı öncelikli.
+- 🔍 Güvenlik/ops: Security headers, caching stratejisi, throttling, health checks, CI/CD, containerization henüz yok.
+
 ## 🔴 KRİTİK - Eksik veya Tamamlanmamış Özellikler
 
 ### 1. PDF Fatura Oluşturma ✅
@@ -479,7 +486,7 @@
 ## 🔵 REFAKTÖRİNG FIRSATLARI
 
 ### 15. AutoMapper Implementasyonu ✅
-- **Durum**: ✅ Tamamlandı
+- **Durum**: ✅ Tamamlandı ve İyileştirildi
 - **Yapılanlar**:
   - ✅ AutoMapper NuGet paketleri eklendi (AutoMapper 12.0.1, AutoMapper.Extensions.Microsoft.DependencyInjection 12.0.1)
   - ✅ MappingProfile oluşturuldu (`GuestFlow.Application/Mappings/MappingProfile.cs`)
@@ -493,28 +500,58 @@
     - ✅ Email History Mappings (EmailHistoryDto)
     - ✅ Notification Mappings (NotificationDto)
     - ✅ Personnel Mappings (PersonnelInfoDto)
+    - ✅ **Airport Mappings** (GetAirportDto, AddAirportDto, UpdateAirportDto) - ✅ Eklendi
+    - ✅ **City Mappings** (GetCityDto, AddCityDto, UpdateCityDto) - ✅ Eklendi
+    - ✅ **DailyRevenue Mappings** (GetDailyRevenueDto, AddDailyRevenueDto, UpdateDailyRevenueDto) - ✅ Eklendi
+    - ✅ **DailyNote Mappings** (GetDailyNoteDto, AddDailyNoteDto, UpdateDailyNoteDto) - ✅ Eklendi
+    - ✅ **Vehicle Mappings** (GetVehicleDto, AddVehicleDto, UpdateVehicleDto) - ✅ Eklendi
   - ✅ Program.cs'de AutoMapper kaydı yapıldı
   - ✅ Manuel mapping'ler AutoMapper ile değiştirildi:
     - ✅ EmailQueueService - MapToDto metodları kaldırıldı, AutoMapper kullanılıyor
     - ✅ EmailHistoryService - MapToDto metodları kaldırıldı, AutoMapper kullanılıyor
     - ✅ NotificationService - MapToDto metodları kaldırıldı, AutoMapper kullanılıyor
     - ✅ TransferManager - GetTransfer, GetTransfers, GetTransferDetailAsync metodlarında AutoMapper kullanılıyor
+    - ✅ **VehicleManager** - GetVehicleById ve GetVehicles metodlarında AutoMapper kullanılıyor - ✅ Düzeltildi
+    - ✅ **AirportManager** - Tüm Get metodlarında AutoMapper kullanılıyor - ✅ Düzeltildi
+    - ✅ **CityManager** - Tüm Get metodlarında AutoMapper kullanılıyor - ✅ Düzeltildi
+    - ✅ **CityTourManager** - Tüm Get metodlarında AutoMapper kullanılıyor - ✅ Düzeltildi
+    - ✅ **YachtTourManager** - Tüm Get metodlarında AutoMapper kullanılıyor - ✅ Düzeltildi
+    - ✅ **GuestManager** - Tüm Get metodlarında AutoMapper kullanılıyor - ✅ Düzeltildi
+    - ✅ **InvoiceManager** - Tüm Get metodlarında AutoMapper kullanılıyor - ✅ Düzeltildi
+    - ✅ **DailyRevenueManager** - Tüm Get metodlarında AutoMapper kullanılıyor - ✅ Düzeltildi
+    - ✅ **DailyNoteManager** - Tüm Get metodlarında AutoMapper kullanılıyor - ✅ Düzeltildi
+    - ✅ **PaymentService** - GetPaymentsPagedAsync metodunda AutoMapper kullanılıyor - ✅ Düzeltildi
+    - ✅ **SmsService** - GetSmsHistoryPagedAsync metodunda AutoMapper kullanılıyor - ✅ Düzeltildi
   - ✅ Complex mapping'ler için özel konfigürasyonlar:
     - ✅ TransferDetailDto - Nested object mapping (Guest, Personnel, Vehicle)
     - ✅ CityTourDetailDto - Nested object mapping (Guest, Personnel, City)
     - ✅ YachtTourDetailDto - Nested object mapping (Guest, Personnel, City)
     - ✅ InvoiceDetailDto - Nested object mapping (Guest, Personnel)
     - ✅ EmailQueueDto - JSON deserialization ve string split işlemleri
+    - ✅ **PaymentEntity → GetPaymentDto** - Navigation property mapping (InvoiceNumber, GuestName, PaymentMethod, Status) - ✅ Eklendi
+    - ✅ **SmsHistoryEntity → GetSmsHistoryDto** - Navigation property mapping (GuestName, PersonnelName) - ✅ Eklendi
   - ✅ Ignore konfigürasyonları:
     - ✅ Entity'den DTO'ya mapping'de Id, CreatedDate, IsDeleted gibi alanlar ignore edildi
     - ✅ Navigation property'ler ignore edildi (Guest, Personnel, City, vb.)
+  - ✅ **List mapping hataları düzeltildi** - Tüm Manager sınıflarında List<Entity> → List<Dto> mapping'leri çalışıyor
 - **Konum**: 
   - `GuestFlow.Application/Mappings/MappingProfile.cs`
   - `GuestFlow.Application/Operations/Email/EmailQueueService.cs`
   - `GuestFlow.Application/Operations/Email/EmailHistoryService.cs`
   - `GuestFlow.Application/Operations/Notification/NotificationService.cs`
   - `GuestFlow.Application/Operations/Transfer/TransferManager.cs`
-- **Not**: Bazı kompleks mapping'ler (TransferDetailDto, CityTourDetailDto, YachtTourDetailDto) için AutoMapper kullanılıyor ancak özel alanlar (Airport, PickupCity, DropoffCity) manuel olarak set ediliyor. Bu alanlar için de AutoMapper mapping'leri eklenebilir.
+  - `GuestFlow.Application/Operations/Vehicle/VehicleManager.cs`
+  - `GuestFlow.Application/Operations/Airport/AirportManager.cs`
+  - `GuestFlow.Application/Operations/City/CityManager.cs`
+  - `GuestFlow.Application/Operations/CityTour/CityTourManager.cs`
+  - `GuestFlow.Application/Operations/YachtTour/YachtTourManager.cs`
+  - `GuestFlow.Application/Operations/Guest/GuestManager.cs`
+  - `GuestFlow.Application/Operations/Invoice/InvoiceManager.cs`
+  - `GuestFlow.Application/Operations/DailyRevenue/DailyRevenueManager.cs`
+  - `GuestFlow.Application/Operations/DailyNote/DailyNoteManager.cs`
+  - `GuestFlow.Application/Operations/Payment/PaymentService.cs`
+  - `GuestFlow.Application/Operations/Sms/SmsService.cs`
+- **Not**: Tüm Manager sınıflarında tutarlı AutoMapper kullanımı sağlandı. Navigation property'ler için özel mapping konfigürasyonları eklendi.
 - **Öncelik**: ORTA
 
 ### 16. Hata Yanıt Formatını Standardize Et ✅
@@ -935,8 +972,8 @@
   - ✅ DashboardService'e yeni metodlar eklendi
 
 ### 30. Misafir Yönetimi Modülü ✅
-- **Durum**: ✅ Tamamlandı
-- **Yapılanlar**:
+- **Durum**: ✅ Backend Tamamlandı, ✅ Frontend Liste Sayfası Eklendi
+- **Backend Yapılanlar**:
   - ✅ Arama/filtre ile misafir listesi (`GET /api/guests` - sayfalama, filtreleme, sıralama ile)
   - ✅ Geçmiş ile misafir detay görünümü (`GET /api/guests/{id}/detail`)
   - ✅ Misafir oluştur/düzenle formu (`POST /api/guests`, `PUT /api/guests/{id}`)
@@ -944,10 +981,25 @@
   - ✅ Misafir transferler/turlar zaman çizelgesi (`GET /api/guests/{id}/timeline`)
   - ✅ GuestDetailDto oluşturuldu (istatistikler, transferler, turlar, faturalar, zaman çizelgesi ile)
   - ✅ GuestManager'a yeni metodlar eklendi (GetGuestDetailAsync, GetGuestInvoicesAsync, GetGuestTimelineAsync)
+- **Frontend Yapılanlar**:
+  - ✅ GuestsPage component'i oluşturuldu (`GuestFlow.Frontend/src/pages/Guests/GuestsPage.tsx`)
+  - ✅ Material-UI tablo ile misafir listesi gösterimi
+  - ✅ Sayfalama (pagination) desteği
+  - ✅ Loading ve error state'leri
+  - ✅ React Query ile veri çekme
+  - ✅ guestService.ts oluşturuldu (API çağrıları için)
+  - ✅ TypeScript type tanımları (`types/guest.ts`)
+  - ✅ Routing eklendi (`/guests` path'i)
+  - ✅ Sidebar menüye "Misafirler" eklendi
+- **Eksikler** (Sonraki Faz):
+  - ⚠️ Misafir ekleme/düzenleme formu
+  - ⚠️ Misafir detay sayfası
+  - ⚠️ Arama ve filtreleme UI
+  - ⚠️ Silme işlemi (onay dialogu ile)
 
 ### 31. Transfer Yönetimi Modülü ✅
-- **Durum**: ✅ Tamamlandı
-- **Yapılanlar**:
+- **Durum**: ✅ Backend Tamamlandı, ✅ Frontend Liste Sayfası Eklendi
+- **Backend Yapılanlar**:
   - ✅ Transfer takvim görünümü (`GET /api/transfers/calendar`)
   - ✅ Filtrelerle transfer listesi (`GET /api/transfers` - sayfalama, filtreleme, sıralama ile)
   - ✅ Transfer oluştur/düzenle formu (`POST /api/transfers`, `PUT /api/transfers/{id}`)
@@ -958,10 +1010,27 @@
   - ✅ TransferDetailDto oluşturuldu (Guest, Personnel, Vehicle, Airport, City bilgileri ile)
   - ✅ TransferCalendarDto ve TransferStatisticsDto oluşturuldu
   - ✅ TransferManager'a yeni metodlar eklendi
+- **Frontend Yapılanlar**:
+  - ✅ TransfersPage component'i oluşturuldu (`GuestFlow.Frontend/src/pages/Transfers/TransfersPage.tsx`)
+  - ✅ Material-UI tablo ile transfer listesi gösterimi
+  - ✅ Sayfalama (pagination) desteği
+  - ✅ Loading ve error state'leri
+  - ✅ React Query ile veri çekme
+  - ✅ transferService.ts oluşturuldu (API çağrıları için)
+  - ✅ TypeScript type tanımları (`types/transfer.ts`)
+  - ✅ Routing eklendi (`/transfers` path'i)
+  - ✅ Sidebar menüye "Transferler" eklendi
+- **Eksikler** (Sonraki Faz):
+  - ⚠️ Transfer oluşturma/düzenleme formu
+  - ⚠️ Transfer detay sayfası
+  - ⚠️ Arama ve filtreleme UI
+  - ⚠️ Araç atama UI
+  - ⚠️ Durum güncelleme UI
+  - ⚠️ Silme işlemi (onay dialogu ile)
 
 ### 32. Tur Yönetimi Modülü ✅
-- **Durum**: ✅ Tamamlandı
-- **Yapılanlar**:
+- **Durum**: ✅ Backend Tamamlandı, ✅ Frontend Liste Sayfası Eklendi
+- **Backend Yapılanlar**:
   - ✅ Şehir turları yönetimi (`GET /api/citytours`, `POST /api/citytours`, `PUT /api/citytours/{id}`, `DELETE /api/citytours/{id}`)
   - ✅ Yat turları yönetimi (`GET /api/yachttours`, `POST /api/yachttours`, `PUT /api/yachttours/{id}`, `DELETE /api/yachttours/{id}`)
   - ✅ Şehir turu detay endpoint'i (`GET /api/citytours/{id}/detail`) - ilgili veriler ile
@@ -976,10 +1045,26 @@
   - Tur takvim görünümü
   - Turlara misafir atama
   - Tur kapasite yönetimi
+- **Frontend Yapılanlar**:
+  - ✅ ToursPage component'i oluşturuldu (`GuestFlow.Frontend/src/pages/Tours/ToursPage.tsx`)
+  - ✅ Tab yapısı ile City Tours ve Yacht Tours ayrımı
+  - ✅ Material-UI tablo ile tur listesi gösterimi
+  - ✅ Sayfalama (pagination) desteği
+  - ✅ Loading ve error state'leri
+  - ✅ React Query ile veri çekme
+  - ✅ tourService.ts oluşturuldu (API çağrıları için)
+  - ✅ TypeScript type tanımları (`types/tour.ts`)
+  - ✅ Routing eklendi (`/tours` path'i)
+  - ✅ Sidebar menüye "Turlar" eklendi
+- **Eksikler** (Sonraki Faz):
+  - ⚠️ Tur oluşturma/düzenleme formu
+  - ⚠️ Tur detay sayfası
+  - ⚠️ Arama ve filtreleme UI
+  - ⚠️ Silme işlemi (onay dialogu ile)
 
 ### 33. Fatura Yönetimi Modülü ✅
-- **Durum**: ✅ Tamamlandı
-- **Yapılanlar**:
+- **Durum**: ✅ Backend Tamamlandı, ✅ Frontend Liste Sayfası Eklendi
+- **Backend Yapılanlar**:
   - ✅ Filtrelerle fatura listesi (`GET /api/invoices` - sayfalama, filtreleme, sıralama ile)
   - ✅ Fatura detay görünümü (`GET /api/invoices/{id}/detail`) - ilgili veriler ile
   - ✅ PDF oluşturma (`POST /api/invoices/{id}/generate-pdf`)
@@ -991,6 +1076,21 @@
   - ✅ InvoiceFilterParameters ve InvoiceStatisticsDto oluşturuldu
   - ✅ ApplyInvoiceFilters ve ApplyInvoiceSorting extension metodları eklendi
   - ✅ InvoiceManager'a SendInvoiceByEmailAsync metodu eklendi
+- **Frontend Yapılanlar**:
+  - ✅ InvoicesPage component'i oluşturuldu (`GuestFlow.Frontend/src/pages/Invoices/InvoicesPage.tsx`)
+  - ✅ Material-UI tablo ile fatura listesi gösterimi
+  - ✅ Sayfalama (pagination) desteği
+  - ✅ Loading ve error state'leri
+  - ✅ React Query ile veri çekme
+  - ✅ invoiceService.ts oluşturuldu (API çağrıları için)
+  - ✅ TypeScript type tanımları (`types/invoice.ts`)
+  - ✅ Routing eklendi (`/invoices` path'i)
+  - ✅ Sidebar menüye "Faturalar" eklendi
+- **Eksikler** (Sonraki Faz):
+  - ⚠️ Fatura detay sayfası
+  - ⚠️ PDF görüntüleme/indirme
+  - ⚠️ E-posta gönderme UI
+  - ⚠️ Arama ve filtreleme UI
 
 ### 34. Raporlar & Analitik Modülü ✅
 - **Durum**: ✅ Tamamlandı
@@ -1505,6 +1605,66 @@
   - Test helper sınıfları oluştur
 - **Öncelik**: ORTA
 
+### 48.1. Demo Data (Test Verileri) ✅
+- **Durum**: ✅ Tamamlandı
+- **Yapılanlar**:
+  - ✅ DatabaseSeeder sınıfı oluşturuldu (`GuestFlow.Persistence/Data/DatabaseSeeder.cs`)
+  - ✅ Gerçekçi demo verileri eklendi:
+    - ✅ Şehirler (Antalya, İstanbul, Muğla, İzmir, vb.)
+    - ✅ Havaalanları (Antalya Havalimanı, İstanbul Havalimanı, vb.)
+    - ✅ Araçlar (VAN, SEDAN, SUV, MINIBUS tiplerinde)
+    - ✅ Personel (Admin ve Staff kullanıcıları)
+    - ✅ Misafirler (gerçekçi isimler, telefon, email)
+    - ✅ Transferler (çeşitli tarihler, durumlar, fiyatlar)
+    - ✅ Şehir Turları (Antalya, İstanbul, Muğla turları)
+    - ✅ Yat Turları (Bodrum, Marmaris, Fethiye yat turları)
+  - ✅ IDataProtection kullanılarak şifreler güvenli şekilde şifrelendi
+  - ✅ Mevcut veri kontrolü - sadece eksik veriler ekleniyor (idempotent seeding)
+  - ✅ Development ortamında otomatik seed (`Program.cs` - Development check)
+  - ✅ ApplicationBuilderExtensions'a SeedDatabaseAsync metodu eklendi
+  - ✅ Detaylı logging eklendi (hangi verilerin eklendiği loglanıyor)
+  - ✅ Foreign key kontrolleri (şehir, havaalanı, misafir, personel kontrolü)
+- **Özellikler**:
+  - ✅ Gerçekçi Türkçe isimler ve veriler
+  - ✅ Çeşitli tarih aralıkları (geçmiş, bugün, gelecek)
+  - ✅ Farklı durumlar (Pending, InProgress, Completed)
+  - ✅ Farklı para birimleri (TRY, USD, EUR)
+  - ✅ İlişkili veriler (misafir-transfer, misafir-tur ilişkileri)
+- **Kullanım**:
+  - Development ortamında uygulama başlatıldığında otomatik olarak seed edilir
+  - Production ortamında seed edilmez (güvenlik için)
+  - Manuel seed için: `DatabaseSeeder.SeedAsync()` çağrılabilir
+- **Konum**: 
+  - `GuestFlow.Persistence/Data/DatabaseSeeder.cs`
+  - `GuestFlow.Api/Extensions/ApplicationBuilderExtensions.cs`
+  - `GuestFlow.Api/Program.cs`
+- **Öncelik**: YÜKSEK
+
+### 48.2. Circular Dependency Çözümü ✅
+- **Durum**: ✅ Tamamlandı
+- **Sorun**: 
+  - `GuestFlow.Persistence` projesi `GuestFlow.Application`'a referans veriyordu
+  - `GuestFlow.Application` içindeki `IDataProtection` interface'i `GuestFlow.Persistence` tarafından kullanılıyordu
+  - Bu durum circular dependency (döngüsel bağımlılık) hatasına neden oluyordu
+- **Çözüm**:
+  - ✅ `IDataProtection` interface'i `GuestFlow.Application/DataProtection/` klasöründen `GuestFlow.Domain/DataProtection/` klasörüne taşındı
+  - ✅ `GuestFlow.Persistence.csproj` dosyasından `GuestFlow.Application` referansı kaldırıldı
+  - ✅ `GuestFlow.Persistence.csproj` dosyasına `GuestFlow.Domain` referansı eklendi
+  - ✅ Tüm `using` direktifleri güncellendi:
+    - ✅ `GuestFlow.Application/DataProtection/DataProtection.cs` - namespace güncellendi
+    - ✅ `GuestFlow.Application/Operations/Personnel/PersonnelManager.cs` - using güncellendi
+    - ✅ `GuestFlow.Api/Program.cs` - using güncellendi
+  - ✅ `GuestFlow.Application` projesi `GuestFlow.Domain`'e zaten referans veriyordu (sorun yok)
+- **Sonuç**:
+  - ✅ Circular dependency hatası çözüldü
+  - ✅ Proje yapısı daha temiz hale geldi (Domain layer'da interface, Application layer'da implementation)
+  - ✅ Dependency akışı: `Persistence → Domain ← Application` (doğru yapı)
+- **Konum**: 
+  - `GuestFlow.Domain/DataProtection/IDataProtection.cs` (yeni konum)
+  - `GuestFlow.Application/DataProtection/DataProtection.cs` (implementation)
+  - `GuestFlow.Persistence/GuestFlow.Persistence.csproj` (referanslar güncellendi)
+- **Öncelik**: YÜKSEK
+
 ### 49. Test Coverage Raporlama
 - **Durum**: Henüz implemente edilmedi
 - **Yapılacaklar**:
@@ -1929,37 +2089,36 @@
 ## 🎨 FRONTEND GELİŞTİRME
 
 ### 78. Frontend Teknoloji Stack Seçimi
-- **Durum**: Henüz implemente edilmedi
-- **Yapılacaklar**:
-  - React, Vue.js veya Angular seçimi
-  - TypeScript kullanımı
-  - State management (Redux, Zustand, Pinia)
-  - UI framework seçimi (Material-UI, Ant Design, Tailwind CSS)
-  - Routing kütüphanesi (React Router, Vue Router)
-  - HTTP client (Axios, Fetch API wrapper)
+- **Durum**: Karar verildi (planlandı)
+- **Kararlar**:
+  - Framework: React + Next.js (App Router) — SSR/SSG, güçlü ekosistem
+  - Dil: TypeScript — tür güvenliği ve maintainability
+  - Stil/UX: Tailwind CSS + Headless UI/Radix — hızlı prototipleme, erişilebilirlik
+  - State: React Query (server state); küçük global UI için Zustand/Context, büyük ihtiyaçlar için RTK
+  - Form/validasyon: React Hook Form + Zod — şema paylaşımı, tip güvenliği
+  - Test: Testing Library + Playwright; Next built-in build
 - **Öncelik**: YÜKSEK
 
 ### 79. Admin Panel Ana Yapısı
-- **Durum**: Henüz implemente edilmedi
-- **Yapılacaklar**:
-  - Layout component (Sidebar, Header, Footer)
-  - Navigation menü sistemi
-  - Responsive design (mobile, tablet, desktop)
-  - Theme yönetimi (dark/light mode)
-  - Breadcrumb navigasyonu
-  - Loading states ve skeleton screens
+- **Durum**: Planlandı (Next.js App Router)
+- **Kararlar**:
+  - Layout: Kalıcı sidebar + üst header; slot/tabanlı layout component (AppShell)
+  - Navigasyon: JSON/TS config üzerinden rol-bazlı menü üretimi, active/permissions aware
+  - Tema: Theme provider + Tailwind; system/dark/light toggle, persist edilen tercih
+  - Responsive: Mobile-first; sidebar çökme/drawer modu, grid breakpoints
+  - Breadcrumb: Route segmentlerinden otomatik breadcrumb + manuel override
+  - Yükleme: Skeleton + shimmer; route-level loading/suspense + boş durumlar
 - **Öncelik**: YÜKSEK
 
 ### 80. Authentication & Authorization UI
-- **Durum**: Henüz implemente edilmedi
-- **Yapılacaklar**:
-  - Login sayfası
-  - JWT token yönetimi (localStorage/sessionStorage)
-  - Token refresh mekanizması
-  - Protected route'lar
-  - Role-based UI rendering (Admin/Staff)
-  - Logout fonksiyonelliği
-  - "Beni Hatırla" özelliği
+- **Durum**: Planlandı (Next.js App Router)
+- **Kararlar**:
+  - Login/Logout: Form + React Hook Form/Zod; remember-me opsiyonuyla refresh token rotası
+  - Token: HTTP-only cookie (tercih) + access token memory cache; SSR uyumlu getServerSession helper
+  - Session yenileme: Silent refresh; 401 interceptor → refresh → retry; expiry clock skew handling
+  - Koruma: Route segment middleware + client guard; role/permission aware nav ve bileşen görünürlüğü
+  - UI: Hata/empty/loader durumları; lockout/ratelimit mesajları; “beni hatırla” ile uzun ömürlü refresh
+  - Güvenlik: CSRF için same-site/secure cookie; logout’ta server-side revoke
 - **Öncelik**: YÜKSEK
 
 ### 81. Dashboard Sayfası
@@ -2249,12 +2408,22 @@
 ## 📊 ÖNCELİK ÖZETİ
 
 **YÜKSEK Öncelik (Önce Bunları Yap):**
-- Backend: Madde 1-6, 7, 21
+- Backend: Madde 1-6, 7, 21, **48.1 (Demo Data)**, **48.2 (Circular Dependency Çözümü)**
 - Frontend: Madde 78-85, 91-92
+- **✅ Tamamlananlar**: 
+  - ✅ Madde 15 (AutoMapper - eksik mapping'ler düzeltildi)
+  - ✅ Madde 30-33 (Frontend liste sayfaları - Guests, Transfers, Tours, Invoices)
+  - ✅ Madde 48.1 (Demo Data)
+  - ✅ Madde 48.2 (Circular Dependency Çözümü)
 
 **ORTA Öncelik (Sonraki Faz):**
 - Backend: Madde 8-9, 10, 12-13, 15-17, 20, 22, 24, 26-27, 39, 43, 47-48, 50-51 (Swagger File Upload dahil), 53, 55-57, 59-62, 65, 67-69, 71-72
 - Frontend: Madde 86-90, 93-94, 96-100, 102-103
+- **Frontend Eksikler (Sonraki Faz)**:
+  - ⚠️ CRUD formları (Create/Update) - Madde 30-33 için
+  - ⚠️ Detay sayfaları - Madde 30-33 için
+  - ⚠️ Arama ve filtreleme UI - Madde 30-33 için
+  - ⚠️ Silme işlemleri (onay dialogu ile)
 
 **DÜŞÜK Öncelik (Gelecek İyileştirmeler):**
 - Backend: Madde 11, 14, 18-19, 23, 25, 28, 40-42, 44-46, 49, 52, 54, 58, 63-64, 66, 70, 73-77

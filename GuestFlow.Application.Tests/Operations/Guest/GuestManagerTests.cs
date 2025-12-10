@@ -35,6 +35,7 @@ public class GuestManagerTests : TestBase
         _invoiceRepositoryMock = CreateMock<IRepository<InvoicesEntity>>();
         _loggerMock = CreateMock<ILogger<GuestManager>>();
 
+        var mapperMock = CreateMock<AutoMapper.IMapper>();
         _guestManager = new GuestManager(
             _unitOfWorkMock.Object,
             _guestRepositoryMock.Object,
@@ -42,7 +43,8 @@ public class GuestManagerTests : TestBase
             _cityTourRepositoryMock.Object,
             _yachtTourRepositoryMock.Object,
             _invoiceRepositoryMock.Object,
-            _loggerMock.Object
+            _loggerMock.Object,
+            mapperMock.Object
         );
     }
 

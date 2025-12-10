@@ -13,5 +13,20 @@ export default defineConfig({
       },
     },
   },
+  optimizeDeps: {
+    exclude: [],
+    include: [
+      '@mui/material',
+      '@mui/icons-material',
+      '@mui/x-date-pickers',
+      '@tanstack/react-query',
+      'react',
+      'react-dom',
+      'react-router-dom',
+      'axios',
+      'zustand',
+      'date-fns',
+    ],
+  },
 })
 

@@ -275,6 +275,12 @@ namespace GuestFlow.Application.Mappings
                 .ForMember(dest => dest.Guest, opt => opt.Ignore());
 
             CreateMap<PaymentEntity, PaymentDetailDto>()
+                .ForMember(dest => dest.InvoiceNumber, opt => opt.MapFrom(src => src.Invoice != null ? src.Invoice.InvoiceNumber : 0))
+                .ForMember(dest => dest.InvoiceAmount, opt => opt.MapFrom(src => src.Invoice != null ? src.Invoice.TotalAmount : 0))
+                .ForMember(dest => dest.InvoiceCurrency, opt => opt.MapFrom(src => src.Invoice != null ? src.Invoice.Currency : string.Empty))
+                .ForMember(dest => dest.GuestName, opt => opt.MapFrom(src => src.Guest != null ? src.Guest.FullName : string.Empty))
+                .ForMember(dest => dest.GuestEmail, opt => opt.MapFrom(src => src.Guest != null ? src.Guest.Email : string.Empty))
+                .ForMember(dest => dest.GuestPhoneNumber, opt => opt.MapFrom(src => src.Guest != null ? src.Guest.PhoneNumber : string.Empty))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => PaymentStatusHelper.ToString(src.Status)))
                 .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => PaymentMethodHelper.ToString(src.PaymentMethod)));
 

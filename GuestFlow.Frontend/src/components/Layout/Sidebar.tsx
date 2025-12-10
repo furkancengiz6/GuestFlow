@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   Drawer,
@@ -19,23 +18,40 @@ import {
   Tour as TourIcon,
   Settings as SettingsIcon,
   Assessment as ReportsIcon,
+  Badge as PersonnelIcon,
 } from '@mui/icons-material'
+import { useAuthStore } from '../../stores/authStore'
 
 const drawerWidth = 240
 
-const menuItems = [
+type MenuItem = {
+  text: string
+  icon: React.ReactNode
+  path: string
+  roles?: string[] // izin verilen roller
+}
+
+const menuItems: MenuItem[] = [
   { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
   { text: 'Misafirler', icon: <PeopleIcon />, path: '/guests' },
   { text: 'Transferler', icon: <TransferIcon />, path: '/transfers' },
   { text: 'Turlar', icon: <TourIcon />, path: '/tours' },
   { text: 'Faturalar', icon: <InvoiceIcon />, path: '/invoices' },
-  { text: 'Raporlar', icon: <ReportsIcon />, path: '/reports' },
-  { text: 'Ayarlar', icon: <SettingsIcon />, path: '/settings' },
+  { text: 'Personel', icon: <PersonnelIcon />, path: '/personnel', roles: ['Admin'] },
+  { text: 'Raporlar', icon: <ReportsIcon />, path: '/reports', roles: ['Admin'] },
+  { text: 'Ayarlar', icon: <SettingsIcon />, path: '/settings', roles: ['Admin'] },
 ]
 
 const Sidebar = () => {
   const navigate = useNavigate()
   const location = useLocation()
+  const { user } = useAuthStore()
+
+  const userRole = user?.role || user?.userType
+  const visibleMenus = menuItems.filter((item) => {
+    if (!item.roles || item.roles.length === 0) return true
+    return !!userRole && item.roles.includes(userRole)
+  })
 
   return (
     <Drawer
@@ -55,7 +71,7 @@ const Sidebar = () => {
         </Typography>
       </Toolbar>
       <List>
-        {menuItems.map((item) => (
+        {visibleMenus.map((item) => (
           <ListItem key={item.text} disablePadding>
             <ListItemButton
               selected={location.pathname === item.path}

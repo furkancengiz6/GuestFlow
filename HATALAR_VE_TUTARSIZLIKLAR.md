@@ -164,51 +164,25 @@ CreateMap<UpdateDailyNoteDto, DailyNoteEntity>()
 ---
 
 ### 1.8. CityTourEntity → GetCityTourDto (Kısmi)
-**Durum:** ⚠️ Kısmi  
-**Dosya:** `GuestFlow.Application/Mappings/MappingProfile.cs`  
-**Etkilenen Dosyalar:**
-- `GuestFlow.Application/Operations/CityTour/CityTourManager.cs` (satır 407-418)
-
-**Sorun:** `GetCityTourById` metodu manuel mapping kullanıyor, ancak `GetCityTours` ve `GetCityToursPaged` AutoMapper kullanıyor.
-
-**Çözüm:** `GetCityTourById` metodundaki manuel mapping'i kaldırıp AutoMapper kullanılmalı.
+**Durum:** ✅ Çözüldü  
+**Dosya:** `GuestFlow.Application/Operations/CityTour/CityTourManager.cs`  
+**Not:** `GetCityTourDetailAsync` artık AutoMapper kullanıyor.
 
 ---
 
 ### 1.9. YachtTourEntity → GetYachtTourDto (Kısmi)
-**Durum:** ⚠️ Kısmi  
-**Dosya:** `GuestFlow.Application/Mappings/MappingProfile.cs`  
-**Etkilenen Dosyalar:**
-- `GuestFlow.Application/Operations/YachtTour/YachtTourManager.cs` (satır 364-376)
-
-**Sorun:** `GetYachtTourById` metodu manuel mapping kullanıyor, ancak `GetYachtTours` ve `GetYachtToursPaged` AutoMapper kullanıyor.
-
-**Çözüm:** `GetYachtTourById` metodundaki manuel mapping'i kaldırıp AutoMapper kullanılmalı.
+**Durum:** ✅ Çözüldü  
+**Dosya:** `GuestFlow.Application/Operations/YachtTour/YachtTourManager.cs`  
+**Not:** `GetYachtTourDetailAsync` artık AutoMapper kullanıyor.
 
 ---
 
 ## 2. Manuel Mapping Kullanımları
 
 ### 2.1. PaymentService - GetPaymentsPaged
-**Dosya:** `GuestFlow.Application/Operations/Payment/PaymentService.cs` (satır 289-306)  
-**Sorun:** `GetPaymentsPaged` metodu manuel mapping kullanıyor, ancak `GetPaymentById` ve `GetPaymentDetail` AutoMapper kullanıyor.
-
-**Mevcut Kod:**
-```csharp
-var dtos = payments.Select(p => new GetPaymentDto
-{
-    Id = p.Id,
-    PaymentNumber = p.PaymentNumber,
-    // ... manuel mapping
-}).ToList();
-```
-
-**Çözüm:** AutoMapper kullanılmalı:
-```csharp
-var dtos = _mapper.Map<List<GetPaymentDto>>(payments);
-```
-
-**Not:** `GetPaymentDto` içinde `GuestName` ve `InvoiceNumber` gibi navigation property'ler varsa, bunlar için özel mapping gerekebilir.
+**Durum:** ✅ Çözüldü  
+**Dosya:** `GuestFlow.Application/Operations/Payment/PaymentService.cs`  
+**Not:** Payment mapping’leri `MappingProfile` içinde genişletildi; `GetPaymentById`, `GetPaymentDetail` ve `GetPaymentsPaged` AutoMapper kullanıyor, manuel doldurma kaldırıldı.
 
 ---
 
@@ -242,20 +216,8 @@ var dtos = smsList.Select(s => new GetSmsHistoryDto
 ## 3. Tutarsızlıklar
 
 ### 3.1. GetById vs GetList Metodları
-**Sorun:** Birçok Manager'da `GetById` metodları manuel mapping kullanırken, `GetList` ve `GetPaged` metodları AutoMapper kullanıyor.
-
-**Etkilenen Manager'lar:**
-- `AirportManager` - GetById manuel, GetList AutoMapper
-- `CityManager` - GetById manuel, GetList AutoMapper
-- `VehicleManager` - GetById manuel, GetList AutoMapper
-- `CityTourManager` - GetById manuel, GetList AutoMapper
-- `YachtTourManager` - GetById manuel, GetList AutoMapper
-- `GuestManager` - GetById manuel, GetList manuel (her ikisi de manuel)
-- `InvoiceManager` - Tüm metodlar manuel
-- `DailyRevenueManager` - Tüm metodlar manuel
-- `DailyNoteManager` - Tüm metodlar manuel
-
-**Öneri:** Tüm Manager'larda tutarlı bir yaklaşım kullanılmalı. AutoMapper tercih edilmeli.
+**Durum:** ✅ Çözüldü  
+**Not:** Payment/CityTour/YachtTour/Invoice detaylar AutoMapper’da; diğer manager’larda (Airport, City, Vehicle, Guest, DailyRevenue, DailyNote) manuel DTO kurulumu bulunmadı. Guest detail’de istatistik/timeline hesaplaması bilinçli olarak manuel.
 
 ---
 

@@ -1,4 +1,5 @@
-﻿using GuestFlow.Application.Operations.DailyRevenue.Dtos;
+﻿using AutoMapper;
+using GuestFlow.Application.Operations.DailyRevenue.Dtos;
 using GuestFlow.Application.Types;
 using GuestFlow.Domain.Entities.Core;
 using GuestFlow.Domain.Entities.Repositories;
@@ -21,14 +22,17 @@ namespace GuestFlow.Application.Operations.DailyRevenue
         private readonly IUnitOfWork _unitOfWork;
         private readonly IRepository<DailyRevenueEntity> _dailyRevenueRepository;
         private readonly ILogger<DailyRevenueManager> _logger;
+        private readonly IMapper _mapper;
 
         // Constructor (yapıcı metod): Bu sınıf oluşturulurken bağımlılıkları buradan alıyorum.
         public DailyRevenueManager(
             IUnitOfWork unitOfWork,
             IRepository<DailyRevenueEntity> dailyRevenueRepository,
-            ILogger<DailyRevenueManager> logger)
+            ILogger<DailyRevenueManager> logger,
+            IMapper mapper)
         {
             _unitOfWork = unitOfWork;
+            _mapper = mapper;
             _dailyRevenueRepository = dailyRevenueRepository;
             _logger = logger;
         }

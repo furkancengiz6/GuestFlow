@@ -30,6 +30,19 @@ npm run build
 npm run preview
 ```
 
+## E2E Test (Playwright)
+
+```bash
+# Ortam değişkenleri (gerekirse)
+# set E2E_BASE_URL=http://localhost:5173
+# set E2E_USER_EMAIL=admin@example.com
+# set E2E_USER_PASSWORD=Admin123!
+
+npm install
+npx playwright install --with-deps
+npm run test:e2e
+```
+
 ## Proje Yapısı
 
 ```

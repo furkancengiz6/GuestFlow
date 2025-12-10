@@ -7,16 +7,19 @@ import {
   Menu,
   MenuItem,
   Avatar,
+  FormControlLabel,
+  Switch,
 } from '@mui/material'
-import { AccountCircle, Logout } from '@mui/icons-material'
+import { AccountCircle, Logout, DarkMode, LightMode } from '@mui/icons-material'
 import { useState } from 'react'
 import { useAuthStore } from '../../stores/authStore'
-import { useNavigate } from 'react-router-dom'
+import { authService } from '../../services/authService'
+import { useTheme } from '../../theme/useTheme'
 
 const Header = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const { user, logout } = useAuthStore()
-  const navigate = useNavigate()
+  const { mode, toggleMode } = useTheme()
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget)
@@ -26,9 +29,8 @@ const Header = () => {
     setAnchorEl(null)
   }
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
+  const handleLogout = async () => {
+    await authService.logout()
     handleClose()
   }
 
@@ -40,6 +42,18 @@ const Header = () => {
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Typography variant="body2">{user?.fullName}</Typography>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={mode === 'dark'}
+                onChange={toggleMode}
+                color="default"
+                inputProps={{ 'aria-label': 'theme toggle' }}
+              />
+            }
+            label={mode === 'dark' ? <DarkMode fontSize="small" /> : <LightMode fontSize="small" />}
+            sx={{ color: 'inherit', ml: 1 }}
+          />
           <IconButton
             size="large"
             edge="end"

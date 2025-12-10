@@ -2,6 +2,7 @@ import { ReactNode } from 'react'
 import { Box, Container } from '@mui/material'
 import Sidebar from './Sidebar'
 import Header from './Header'
+import BreadcrumbsBar from '../Common/BreadcrumbsBar'
 
 interface LayoutProps {
   children: ReactNode
@@ -21,7 +22,10 @@ const Layout = ({ children }: LayoutProps) => {
             backgroundColor: 'background.default',
           }}
         >
-          <Container maxWidth="xl">{children}</Container>
+          <Container maxWidth="xl">
+            <BreadcrumbsBar />
+            {children}
+          </Container>
         </Box>
       </Box>
     </Box>

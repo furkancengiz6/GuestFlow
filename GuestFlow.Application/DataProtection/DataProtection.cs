@@ -1,9 +1,5 @@
-﻿using Microsoft.AspNetCore.DataProtection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using GuestFlow.Domain.DataProtection;
+using Microsoft.AspNetCore.DataProtection;
 
 namespace GuestFlow.Application.DataProtection
 {
