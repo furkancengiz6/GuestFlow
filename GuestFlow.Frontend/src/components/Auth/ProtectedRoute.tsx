@@ -12,7 +12,7 @@ type Props = {
 
 const ProtectedRoute = ({ children, roles, fallbackPath = '/forbidden' }: Props) => {
   const location = useLocation()
-  const { isAuthenticated, setAuthenticated, updateUser, logout, user } = useAuthStore()
+  const { isAuthenticated, setAuthenticated, logout, user } = useAuthStore()
   const [checking, setChecking] = useState(true)
 
   useEffect(() => {
@@ -31,7 +31,6 @@ const ProtectedRoute = ({ children, roles, fallbackPath = '/forbidden' }: Props)
           createdDate: data.createdDate,
         }
         if (!cancelled) {
-          updateUser(usr)
           setAuthenticated(usr)
         }
       } catch (err) {
@@ -46,7 +45,7 @@ const ProtectedRoute = ({ children, roles, fallbackPath = '/forbidden' }: Props)
     return () => {
       cancelled = true
     }
-  }, [isAuthenticated, logout, setAuthenticated, updateUser])
+  }, [isAuthenticated, logout, setAuthenticated])
 
   if (checking) {
     return (

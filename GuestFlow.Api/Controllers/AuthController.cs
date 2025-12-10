@@ -367,15 +367,21 @@ namespace GuestFlow.Api.Controllers
 
                 if (result.IsSuccess)
                 {
-                    if (!string.IsNullOrWhiteSpace(result.RefreshToken))
+                    // Validate that both tokens are present when IsSuccess is true
+                    if (string.IsNullOrWhiteSpace(result.AccessToken) || string.IsNullOrWhiteSpace(result.RefreshToken))
                     {
-                        SetRefreshCookie(result.RefreshToken);
+                        _logger.LogError("RefreshTokenAsync returned IsSuccess=true but tokens are null/empty");
+                        return StatusCode(500, new { message = "Token yenilenirken bir hata oluştu." });
                     }
+
+                    // Set refresh token cookie
+                    SetRefreshCookie(result.RefreshToken);
+
                     return Ok(new RefreshTokenResponse
                     {
                         Message = result.Message,
-                        AccessToken = result.AccessToken!,
-                        RefreshToken = result.RefreshToken!
+                        AccessToken = result.AccessToken,
+                        RefreshToken = result.RefreshToken
                     });
                 }
                 else
