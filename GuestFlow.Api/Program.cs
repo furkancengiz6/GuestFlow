@@ -1,6 +1,7 @@
 using GuestFlow.Api.Middlewares;
 using GuestFlow.Api.Filters;
-using GuestFlow.Application.DataProtection;
+using GuestFlow.Api.Extensions;
+using GuestFlow.Domain.DataProtection;
 using Microsoft.AspNetCore.Http;
 using GuestFlow.Application.Operations.Airport;
 using GuestFlow.Application.Operations.City;
@@ -58,6 +59,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using GuestFlow.Api.Configuration;
 using Microsoft.AspNetCore.Mvc.Versioning;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -89,11 +92,16 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:5173",
-                "http://localhost:5174",
-                "http://localhost:3000"
-              )
+        var allowedOrigins = new[]
+        {
+            "http://localhost:5173",
+            "http://localhost:5174",
+            "http://localhost:5175",
+            "http://localhost:3000",
+            "https://app.guestflow.com" // prod origin
+        };
+
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials()
@@ -187,7 +195,7 @@ builder.Services.AddSwaggerGen(options =>
 // Swagger'ı versiyonlama ile entegre et
 builder.Services.ConfigureOptions<ConfigureSwaggerOptions>();
 
-builder.Services.AddScoped<IDataProtection, DataProtection>();
+builder.Services.AddScoped<GuestFlow.Domain.DataProtection.IDataProtection, GuestFlow.Application.DataProtection.DataProtection>();
 
 // Configuration bindings (Options Pattern)
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
@@ -332,6 +340,17 @@ app.UseMiddleware<RateLimitMiddleware>();
 app.UseMantenanceMode();
 app.UseHttpsRedirection();
 
+// Security headers (basic hardening)
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["X-Frame-Options"] = "DENY";
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    context.Response.Headers["X-Permitted-Cross-Domain-Policies"] = "none";
+    context.Response.Headers["X-XSS-Protection"] = "0";
+    await next();
+});
+
 // Static dosyalar için (PDF'ler için)
 app.UseStaticFiles();
 
@@ -340,5 +359,18 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+// Development ortamında demo veri oluştur
+if (app.Environment.IsDevelopment())
+{
+    try
+    {
+        await app.SeedDatabaseAsync();
+    }
+    catch (Exception ex)
+    {
+        var logger = app.Services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Demo veri oluşturulurken hata oluştu!");
+    }
+}
 
 app.Run();

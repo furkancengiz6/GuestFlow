@@ -218,11 +218,7 @@ namespace GuestFlow.Application.Operations.Payment
                 if (payment == null)
                     return null;
 
-                var dto = _mapper.Map<GetPaymentDto>(payment);
-                dto.InvoiceNumber = payment.Invoice?.InvoiceNumber ?? 0;
-                dto.GuestName = payment.Guest?.FullName ?? string.Empty;
-
-                return dto;
+                return _mapper.Map<GetPaymentDto>(payment);
             }
             catch (Exception ex)
             {
@@ -243,17 +239,7 @@ namespace GuestFlow.Application.Operations.Payment
                 if (payment == null)
                     return null;
 
-                var dto = _mapper.Map<PaymentDetailDto>(payment);
-                dto.InvoiceNumber = payment.Invoice?.InvoiceNumber ?? 0;
-                dto.InvoiceAmount = payment.Invoice?.TotalAmount ?? 0;
-                dto.InvoiceCurrency = payment.Invoice?.Currency ?? string.Empty;
-                dto.GuestName = payment.Guest?.FullName ?? string.Empty;
-                dto.GuestEmail = payment.Guest?.Email ?? string.Empty;
-                dto.GuestPhoneNumber = payment.Guest?.PhoneNumber ?? string.Empty;
-                dto.Status = PaymentStatusHelper.ToString(payment.Status);
-                dto.PaymentMethod = PaymentMethodHelper.ToString(payment.PaymentMethod);
-
-                return dto;
+                return _mapper.Map<PaymentDetailDto>(payment);
             }
             catch (Exception ex)
             {

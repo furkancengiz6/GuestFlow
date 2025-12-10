@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using System;
 using System.IO;
 using System.Linq;
@@ -468,41 +468,7 @@ namespace GuestFlow.Application.Operations.CityTour
                 if (cityTour == null)
                     throw new Exception("Şehir turu bulunamadı.");
 
-                var detail = new CityTourDetailDto
-                {
-                    Id = cityTour.Id,
-                    TourDate = cityTour.TourDate,
-                    Language = cityTour.Language,
-                    DurationHours = cityTour.DurationHours,
-                    Price = cityTour.Price,
-                    FinalPrice = cityTour.FinalPrice,
-                    CreatedDate = cityTour.CreatedDate,
-                    Guest = cityTour.OwnerGuest != null ? new TourGuestDto
-                    {
-                        Id = cityTour.OwnerGuest.Id,
-                        FullName = cityTour.OwnerGuest.FullName,
-                        GuestCode = cityTour.OwnerGuest.GuestCode,
-                        Email = cityTour.OwnerGuest.Email,
-                        PhoneNumber = cityTour.OwnerGuest.PhoneNumber,
-                        Nationality = cityTour.OwnerGuest.Nationality,
-                        IsSpecialGuest = cityTour.OwnerGuest.IsSpecialGuest
-                    } : null,
-                    Personnel = cityTour.Personnel != null ? new TourPersonnelDto
-                    {
-                        Id = cityTour.Personnel.Id,
-                        FullName = cityTour.Personnel.FullName,
-                        Email = cityTour.Personnel.Email,
-                        UserType = cityTour.Personnel.UserType.ToString()
-                    } : null,
-                    City = cityTour.City != null ? new TourCityDto
-                    {
-                        Id = cityTour.City.Id,
-                        CityName = cityTour.City.CityName,
-                        Country = cityTour.City.Country
-                    } : null
-                };
-
-                return detail;
+                return _mapper.Map<CityTourDetailDto>(cityTour);
             }
             catch (Exception ex)
             {

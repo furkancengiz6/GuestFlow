@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   Box,
   Typography,
@@ -14,16 +15,27 @@ import {
   TableRow,
   Chip,
   Skeleton,
+  ToggleButton,
+  ToggleButtonGroup,
+  Button,
 } from '@mui/material'
 import {
   People as PeopleIcon,
   DirectionsCar as TransferIcon,
   Receipt as InvoiceIcon,
   AttachMoney as MoneyIcon,
+  Tour as TourIcon,
+  TrendingUp as TrendingUpIcon,
+  CalendarMonth as CalendarMonthIcon,
 } from '@mui/icons-material'
 import {
   LineChart,
   Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -38,8 +50,12 @@ import {
   useUpcomingBookings,
 } from '../../hooks/useDashboard'
 import { formatCurrency, formatDate } from '../../utils/formatters'
+import ContentState from '../../components/Feedback/ContentState'
 
 const DashboardPage = () => {
+  const [revenuePeriod, setRevenuePeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily')
+  const [revenueDays, setRevenueDays] = useState<number>(30)
+
   const {
     data: quickStats,
     isLoading: isLoadingStats,
@@ -48,17 +64,19 @@ const DashboardPage = () => {
   const { data: recentActivities, isLoading: isLoadingActivities } =
     useRecentActivities(5)
   const { data: revenueChart, isLoading: isLoadingChart } =
-    useRevenueChartData('daily', 30)
+    useRevenueChartData(revenuePeriod, revenueDays)
   const { data: upcomingBookings, isLoading: isLoadingBookings } =
     useUpcomingBookings()
 
   if (statsError) {
     return (
-      <Box>
-        <Alert severity="error">
-          Dashboard verileri yüklenirken bir hata oluştu.
-        </Alert>
-      </Box>
+      <ContentState
+        state="error"
+        title="Dashboard verileri yüklenemedi"
+        description="Lütfen daha sonra tekrar deneyin veya sayfayı yenileyin."
+        actionLabel="Tekrar dene"
+        onAction={() => window.location.reload()}
+      />
     )
   }
 
@@ -174,13 +192,28 @@ const DashboardPage = () => {
         <Grid item xs={12} md={8}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Gelir Trendi (Son 30 Gün)
-              </Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6">
+                  Gelir Trendi
+                </Typography>
+                <ToggleButtonGroup
+                  value={revenuePeriod}
+                  exclusive
+                  onChange={(_, newPeriod) => {
+                    if (newPeriod) {
+                      setRevenuePeriod(newPeriod)
+                      setRevenueDays(newPeriod === 'daily' ? 30 : newPeriod === 'weekly' ? 12 : 12)
+                    }
+                  }}
+                  size="small"
+                >
+                  <ToggleButton value="daily">Günlük</ToggleButton>
+                  <ToggleButton value="weekly">Haftalık</ToggleButton>
+                  <ToggleButton value="monthly">Aylık</ToggleButton>
+                </ToggleButtonGroup>
+              </Box>
               {isLoadingChart ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                  <CircularProgress />
-                </Box>
+                <ContentState state="loading" skeletonLines={4} />
               ) : revenueChart?.data && revenueChart.data.length > 0 ? (
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={revenueChart.data}>
@@ -198,14 +231,21 @@ const DashboardPage = () => {
                       strokeWidth={2}
                       name="Gelir"
                     />
+                    <Line
+                      type="monotone"
+                      dataKey="bookingCount"
+                      stroke="#ed6c02"
+                      strokeWidth={2}
+                      name="Rezervasyon Sayısı"
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
-                <Box sx={{ p: 3, textAlign: 'center' }}>
-                  <Typography color="text.secondary">
-                    Grafik verisi bulunamadı
-                  </Typography>
-                </Box>
+                <ContentState
+                  state="empty"
+                  title="Gösterilecek veri yok"
+                  description="Bu grafik için henüz veri bulunmuyor."
+                />
               )}
             </CardContent>
           </Card>
@@ -219,9 +259,7 @@ const DashboardPage = () => {
                 Son Aktiviteler
               </Typography>
               {isLoadingActivities ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                  <CircularProgress />
-                </Box>
+                <ContentState state="loading" skeletonLines={3} />
               ) : recentActivities?.recentBookings &&
                 recentActivities.recentBookings.length > 0 ? (
                 <Box>
@@ -243,9 +281,101 @@ const DashboardPage = () => {
                   ))}
                 </Box>
               ) : (
-                <Typography color="text.secondary">
-                  Aktivite bulunamadı
-                </Typography>
+                <ContentState
+                  state="empty"
+                  title="Henüz aktivite yok"
+                  description="Yeni aktiviteler oluştuğunda burada görünecek."
+                />
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* Ek İstatistikler ve Grafikler */}
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        {/* Hizmet Dağılımı (Pie Chart) */}
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Hizmet Dağılımı
+              </Typography>
+              {isLoadingStats ? (
+                <ContentState state="loading" skeletonLines={4} />
+              ) : quickStats ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Transfer', value: quickStats.totalTransfers || 0 },
+                        { name: 'Şehir Turu', value: quickStats.totalCityTours || 0 },
+                        { name: 'Yat Turu', value: quickStats.totalYachtTours || 0 },
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {[
+                        { name: 'Transfer', value: quickStats.totalTransfers || 0 },
+                        { name: 'Şehir Turu', value: quickStats.totalCityTours || 0 },
+                        { name: 'Yat Turu', value: quickStats.totalYachtTours || 0 },
+                      ].map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={index === 0 ? '#1976d2' : index === 1 ? '#ed6c02' : '#2e7d32'} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <ContentState
+                  state="empty"
+                  title="Veri yok"
+                  description="Hizmet dağılımı için veri bulunmuyor."
+                />
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Hizmet Karşılaştırması (Bar Chart) */}
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Hizmet Karşılaştırması
+              </Typography>
+              {isLoadingStats ? (
+                <ContentState state="loading" skeletonLines={4} />
+              ) : quickStats ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart
+                    data={[
+                      { name: 'Transfer', value: quickStats.totalTransfers || 0 },
+                      { name: 'Şehir Turu', value: quickStats.totalCityTours || 0 },
+                      { name: 'Yat Turu', value: quickStats.totalYachtTours || 0 },
+                      { name: 'Fatura', value: quickStats.totalInvoices || 0 },
+                    ]}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="value" fill="#1976d2" name="Toplam" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <ContentState
+                  state="empty"
+                  title="Veri yok"
+                  description="Hizmet karşılaştırması için veri bulunmuyor."
+                />
               )}
             </CardContent>
           </Card>
@@ -261,9 +391,7 @@ const DashboardPage = () => {
                 Yaklaşan Rezervasyonlar
               </Typography>
               {isLoadingBookings ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                  <CircularProgress />
-                </Box>
+                <ContentState state="loading" skeletonLines={3} />
               ) : upcomingBookings &&
                 (upcomingBookings.today.length > 0 ||
                   upcomingBookings.thisWeek.length > 0) ? (
@@ -315,9 +443,11 @@ const DashboardPage = () => {
                   </Table>
                 </TableContainer>
               ) : (
-                <Typography color="text.secondary">
-                  Yaklaşan rezervasyon bulunamadı
-                </Typography>
+                <ContentState
+                  state="empty"
+                  title="Yaklaşan rezervasyon yok"
+                  description="Planlanmış rezervasyonlar burada listelenecek."
+                />
               )}
             </CardContent>
           </Card>

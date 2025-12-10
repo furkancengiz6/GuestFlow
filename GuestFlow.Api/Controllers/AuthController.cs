@@ -33,18 +33,21 @@ namespace GuestFlow.Api.Controllers
         private readonly IRefreshTokenService _refreshTokenService;
         private readonly IPasswordService _passwordService;
         private readonly ILogger<AuthController> _logger;
+        private readonly IConfiguration _configuration;
 
         // Constructor: Bu sınıf oluşturulurken bağımlılıkları buradan alıyorum.
         public AuthController(
             IPersonnelService personnelService,
             IRefreshTokenService refreshTokenService,
             IPasswordService passwordService,
-            ILogger<AuthController> logger)
+            ILogger<AuthController> logger,
+            IConfiguration configuration)
         {
             _personnelService = personnelService;
             _refreshTokenService = refreshTokenService;
             _passwordService = passwordService;
             _logger = logger;
+            _configuration = configuration;
         }
 
         /// <summary>
@@ -159,22 +162,23 @@ namespace GuestFlow.Api.Controllers
                 _logger.LogInformation($"Kullanıcı bilgileri alındı: Email: {user.Email}, UserType: {user.UserType}");
 
                 // JWT access token oluşturmak için yapılandırma ayarlarını alıyorum.
-                var configuration = HttpContext.RequestServices.GetRequiredService<IConfiguration>();
                 var accessToken = JwtHelper.GenerateJwtToken(new JwtDto
                 {
                     Id = user.Id,
                     Email = user.Email,
                     FullName = user.FullName,
                     UserType = user.UserType,
-                    SecretKey = configuration["Jwt:SecretKey"]!,
-                    Issuer = configuration["Jwt:Issuer"]!,
-                    Audience = configuration["Jwt:Audience"]!,
-                    ExpireMinutes = int.Parse(configuration["Jwt:ExpireMinutes"]!)
+                    SecretKey = _configuration["Jwt:SecretKey"]!,
+                    Issuer = _configuration["Jwt:Issuer"]!,
+                    Audience = _configuration["Jwt:Audience"]!,
+                    ExpireMinutes = int.Parse(_configuration["Jwt:ExpireMinutes"]!)
                 });
 
                 // Refresh token oluştur
                 var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
                 var refreshToken = await _refreshTokenService.GenerateRefreshTokenAsync(user.Id, ipAddress);
+
+                SetRefreshCookie(refreshToken);
 
                 // Token'ların oluşturulduğunu logluyorum.
                 _logger.LogInformation($"Token'lar oluşturuldu: Email: {user.Email}, Role: {user.UserType}");
@@ -351,16 +355,22 @@ namespace GuestFlow.Api.Controllers
         {
             try
             {
-                if (!ModelState.IsValid || string.IsNullOrEmpty(request.RefreshToken))
-                {
+                var incomingRefresh = !string.IsNullOrWhiteSpace(request?.RefreshToken)
+                    ? request.RefreshToken
+                    : Request.Cookies["refreshToken"];
+
+                if (string.IsNullOrWhiteSpace(incomingRefresh))
                     return BadRequest(new { message = "Refresh token gereklidir." });
-                }
 
                 var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                var result = await _refreshTokenService.RefreshTokenAsync(request.RefreshToken, ipAddress);
+                var result = await _refreshTokenService.RefreshTokenAsync(incomingRefresh, ipAddress);
 
                 if (result.IsSuccess)
                 {
+                    if (!string.IsNullOrWhiteSpace(result.RefreshToken))
+                    {
+                        SetRefreshCookie(result.RefreshToken);
+                    }
                     return Ok(new RefreshTokenResponse
                     {
                         Message = result.Message,
@@ -399,16 +409,25 @@ namespace GuestFlow.Api.Controllers
         {
             try
             {
-                if (string.IsNullOrEmpty(request.RefreshToken))
-                {
+                var incomingRefresh = !string.IsNullOrWhiteSpace(request?.RefreshToken)
+                    ? request.RefreshToken
+                    : Request.Cookies["refreshToken"];
+
+                if (string.IsNullOrWhiteSpace(incomingRefresh))
                     return BadRequest(new { message = "Refresh token gereklidir." });
-                }
 
                 var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-                var result = await _refreshTokenService.RevokeTokenAsync(request.RefreshToken, ipAddress);
+                var result = await _refreshTokenService.RevokeTokenAsync(incomingRefresh, ipAddress);
 
                 if (result)
                 {
+                    Response.Cookies.Delete("refreshToken", new CookieOptions
+                    {
+                        Path = "/",
+                        Secure = true,
+                        HttpOnly = true,
+                        SameSite = SameSiteMode.None
+                    });
                     return Ok(new { message = "Token başarıyla iptal edildi." });
                 }
                 else
@@ -526,6 +545,23 @@ namespace GuestFlow.Api.Controllers
                 _logger.LogError(ex, $"Şifre doğrulanırken hata: {ex.Message}");
                 return StatusCode(500, new { message = "Şifre doğrulanırken bir hata oluştu." });
             }
+        }
+
+        private void SetRefreshCookie(string refreshToken)
+        {
+            if (string.IsNullOrWhiteSpace(refreshToken))
+                return;
+
+            var expireDays = int.TryParse(_configuration["Jwt:RefreshTokenExpireDays"], out var days) ? days : 30;
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTime.UtcNow.AddDays(expireDays),
+                Path = "/"
+            };
+            Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
         }
     }
 }
