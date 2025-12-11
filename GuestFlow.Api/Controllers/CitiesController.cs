@@ -124,7 +124,7 @@ namespace GuestFlow.Api.Controllers
                 var result = await _cityService.GetCityById(id);
                 return Success(result, "Şehir başarıyla getirildi.");
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return NotFound("Şehir bulunamadı.");
             }

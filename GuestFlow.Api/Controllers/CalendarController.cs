@@ -114,8 +114,10 @@ namespace GuestFlow.Api.Controllers
         {
             try
             {
+                var transferIds = request.TransferIds ?? new List<int>();
+
                 var result = await _calendarService.GenerateBulkTransferCalendarAsync(
-                    request.TransferIds,
+                    transferIds,
                     request.StartDate,
                     request.EndDate);
 
@@ -139,9 +141,12 @@ namespace GuestFlow.Api.Controllers
         {
             try
             {
+                var cityTourIds = request.CityTourIds ?? new List<int>();
+                var yachtTourIds = request.YachtTourIds ?? new List<int>();
+
                 var result = await _calendarService.GenerateBulkTourCalendarAsync(
-                    request.CityTourIds,
-                    request.YachtTourIds,
+                    cityTourIds,
+                    yachtTourIds,
                     request.StartDate,
                     request.EndDate);
 

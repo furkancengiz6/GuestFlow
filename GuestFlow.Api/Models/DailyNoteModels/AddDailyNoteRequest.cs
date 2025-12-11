@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace GuestFlow.Api.Models.DailyNoteModels
 {
@@ -13,7 +13,7 @@ namespace GuestFlow.Api.Models.DailyNoteModels
 
         [Required]
         [StringLength(500)]
-        public string NoteText { get; set; }
+        public string NoteText { get; set; } = string.Empty;
 
         public int? PersonnelId { get; set; }
     }

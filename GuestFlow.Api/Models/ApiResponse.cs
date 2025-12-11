@@ -108,7 +108,7 @@ namespace GuestFlow.Api.Models
         /// <summary>
         /// Başarılı yanıt oluşturur
         /// </summary>
-        public static new ApiResponse SuccessResponse(string message = "İşlem başarılı.")
+        public static ApiResponse SuccessResponse(string message = "İşlem başarılı.")
         {
             return new ApiResponse
             {

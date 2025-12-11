@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace GuestFlow.Api.Models.GuestModels
 {
@@ -6,7 +6,7 @@ namespace GuestFlow.Api.Models.GuestModels
     {
         [Required]
         [StringLength(100)]
-        public string FullName { get; set; }
+        public string FullName { get; set; } = string.Empty;
 
         [EmailAddress]
         [StringLength(100)]
@@ -18,7 +18,7 @@ namespace GuestFlow.Api.Models.GuestModels
 
         [Required]
         [StringLength(100)]
-        public string Nationality { get; set; }
+        public string Nationality { get; set; } = string.Empty;
 
         [Required]
         public bool IsSpecialGuest { get; set; }

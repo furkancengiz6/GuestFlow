@@ -8,7 +8,7 @@ namespace GuestFlow.Domain.Entities.Core
     public class CityTourEntity : BaseEntity, ICityTour
     {
         public DateTime TourDate { get; set; }
-        public string Language { get; set; }
+        public string Language { get; set; } = string.Empty;
         public int DurationHours { get; set; }
         public decimal Price { get; set; }
         public int OwnerGuestId { get; set; }
@@ -20,12 +20,12 @@ namespace GuestFlow.Domain.Entities.Core
 
 
         // Relational Properties
-        public virtual GuestEntity OwnerGuest { get; set; } 
-        public virtual PersonnelEntity Personnel { get; set; }
+        public virtual GuestEntity OwnerGuest { get; set; } = null!; 
+        public virtual PersonnelEntity Personnel { get; set; } = null!;
         public virtual ICollection<GuestCityTour> GuestCityTours { get; set; } = new List<GuestCityTour>();
         public virtual ICollection<InvoicesEntity> Invoices { get; set; } = new List<InvoicesEntity>();
 
-        public virtual CityEntity City { get; set; }
+        public virtual CityEntity City { get; set; } = null!;
     }
 
     public class CityTourConfiguration : BaseConfiguration<CityTourEntity>

@@ -320,7 +320,7 @@ namespace GuestFlow.Api.Controllers
     /// </summary>
     public class UpdateSmsStatusRequest
     {
-        public string Status { get; set; }
+        public string Status { get; set; } = string.Empty;
         public string? MessageId { get; set; }
         public string? GatewayResponse { get; set; }
     }

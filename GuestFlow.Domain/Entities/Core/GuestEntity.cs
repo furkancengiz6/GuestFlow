@@ -7,11 +7,12 @@ namespace GuestFlow.Domain.Entities.Core
 {
     public class GuestEntity : BaseEntity, IGuest
     {
-        public string FullName { get; set; }
-        public string? Email { get; set; }
-        public string? PhoneNumber { get; set; }
-        public string Nationality { get; set; }
-        public string GuestCode { get; set; } // Benzersiz misafir kodu
+        
+        public string FullName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string PhoneNumber { get; set; } = string.Empty;
+        public string Nationality { get; set; } = string.Empty;
+        public string GuestCode { get; set; } = string.Empty; // Benzersiz misafir kodu
         public bool IsSpecialGuest { get; set; } // Özel misafir mi?
 
         // Relational Properties

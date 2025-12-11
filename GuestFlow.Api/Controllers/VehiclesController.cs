@@ -109,7 +109,7 @@ namespace GuestFlow.Api.Controllers
                 var result = await _vehicleService.GetVehicleById(id);
                 return Success(result, "Araç başarıyla getirildi.");
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return NotFound("Araç bulunamadı.");
             }

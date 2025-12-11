@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace GuestFlow.Api.Models.VehicleModels
 {
@@ -6,11 +6,11 @@ namespace GuestFlow.Api.Models.VehicleModels
     {
         [Required]
         [StringLength(50)]
-        public string Type { get; set; }
+        public string Type { get; set; } = string.Empty;
 
         [Required]
         [StringLength(20)]
-        public string PlateNumber { get; set; }
+        public string PlateNumber { get; set; } = string.Empty;
 
         [Required]
         [Range(1, int.MaxValue)]

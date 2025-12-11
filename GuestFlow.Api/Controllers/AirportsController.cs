@@ -103,7 +103,7 @@ namespace GuestFlow.Api.Controllers
                 var result = await _airportService.GetAirportById(id);
                 return Success(result, "Havalimanı başarıyla getirildi.");
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return NotFound("Havalimanı bulunamadı.");
             }

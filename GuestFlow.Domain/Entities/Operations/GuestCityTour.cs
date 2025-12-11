@@ -9,8 +9,8 @@ namespace GuestFlow.Domain.Entities.Operations
         public int GuestId { get; set; }
         public int CityTourId { get; set; }
 
-        public virtual GuestEntity Guest { get; set; }
-        public virtual CityTourEntity CityTour { get; set; }
+        public virtual GuestEntity Guest { get; set; } = null!;
+        public virtual CityTourEntity CityTour { get; set; } = null!;
     }
 
     public class GuestCityTourConfiguration : BaseConfiguration<GuestCityTour>

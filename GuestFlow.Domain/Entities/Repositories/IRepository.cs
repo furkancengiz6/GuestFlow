@@ -1,4 +1,4 @@
-﻿using GuestFlow.Domain.Entities.Core;
+using GuestFlow.Domain.Entities.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,8 +21,8 @@ namespace GuestFlow.Domain.Entities.Repositories
         Task<TEntity> GetAsync(Expression<Func<TEntity, bool>> predicate, params Expression<Func<TEntity, object>>[] includes);
         
         // GetAll metodları
-        IQueryable<TEntity> GetAll(Expression<Func<TEntity, bool>> predicate = null, bool includeDeleted = false);
-        IQueryable<TEntity> GetAll(Expression<Func<TEntity, bool>> predicate, params Expression<Func<TEntity, object>>[] includes);
+        IQueryable<TEntity> GetAll(Expression<Func<TEntity, bool>>? predicate = null, bool includeDeleted = false);
+        IQueryable<TEntity> GetAll(Expression<Func<TEntity, bool>>? predicate, params Expression<Func<TEntity, object>>[] includes);
         
         // Specification pattern desteği
         Task<TEntity> GetBySpecificationAsync(ISpecification<TEntity> specification);
@@ -30,7 +30,7 @@ namespace GuestFlow.Domain.Entities.Repositories
         IQueryable<TEntity> GetQueryableBySpecification(ISpecification<TEntity> specification);
         
         // Count ve Any metodları
-        Task<int> CountAsync(Expression<Func<TEntity, bool>> predicate = null, bool includeDeleted = false);
-        Task<bool> AnyAsync(Expression<Func<TEntity, bool>> predicate = null, bool includeDeleted = false);
+        Task<int> CountAsync(Expression<Func<TEntity, bool>>? predicate = null, bool includeDeleted = false);
+        Task<bool> AnyAsync(Expression<Func<TEntity, bool>>? predicate = null, bool includeDeleted = false);
     }
 }

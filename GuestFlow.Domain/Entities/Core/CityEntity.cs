@@ -7,8 +7,8 @@ namespace GuestFlow.Domain.Entities.Core
 {
     public class CityEntity : BaseEntity, ICity
     {
-        public string CityName { get; set; }
-        public string Country { get; set; }
+        public string CityName { get; set; } = string.Empty;
+        public string Country { get; set; } = string.Empty;
 
         public virtual ICollection<AirportEntity> Airports { get; set; } = new List<AirportEntity>();
         public virtual ICollection<CityTourEntity> CityTours { get; set; } = new List<CityTourEntity>();

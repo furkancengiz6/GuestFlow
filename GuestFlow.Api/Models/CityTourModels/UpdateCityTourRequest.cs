@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace GuestFlow.Api.Models.CityToursModels
 {
@@ -9,7 +9,7 @@ namespace GuestFlow.Api.Models.CityToursModels
 
         [Required]
         [StringLength(50)]
-        public string Language { get; set; }
+        public string Language { get; set; } = string.Empty;
 
         [Required]
         [Range(1, 24)]

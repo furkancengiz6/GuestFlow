@@ -159,6 +159,11 @@ namespace GuestFlow.Api.Controllers
 
                 // Giriş başarılıysa, kullanıcı bilgilerini alıyorum.
                 var user = result.Data;
+                if (user is null)
+                {
+                    _logger.LogError("Giriş başarılı görünüyor ancak kullanıcı bilgisi null döndü.");
+                    return StatusCode(500, new { message = "Giriş sırasında bir hata oluştu." });
+                }
                 _logger.LogInformation($"Kullanıcı bilgileri alındı: Email: {user.Email}, UserType: {user.UserType}");
 
                 // JWT access token oluşturmak için yapılandırma ayarlarını alıyorum.
@@ -232,6 +237,10 @@ namespace GuestFlow.Api.Controllers
                 }
 
                 var user = result.Data;
+                if (user is null)
+                {
+                    return StatusCode(500, new { message = "Kullanıcı bilgisi bulunamadı." });
+                }
 
                 // Token'dan ek bilgileri al (varsa) - token'daki bilgiler daha güncel olabilir
                 var emailClaim = User.Claims.FirstOrDefault(c => c.Type == "Email")?.Value ?? user.Email;

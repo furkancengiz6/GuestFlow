@@ -22,7 +22,7 @@ namespace GuestFlow.Api.Models.PaymentModels
         public string Currency { get; set; } = "TRY";
 
         [Required(ErrorMessage = "Ödeme yöntemi gereklidir.")]
-        public string PaymentMethod { get; set; }
+        public string PaymentMethod { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Ödeme tarihi gereklidir.")]
         public DateTime PaymentDate { get; set; }
