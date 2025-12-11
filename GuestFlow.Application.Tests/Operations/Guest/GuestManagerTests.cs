@@ -23,6 +23,7 @@ public class GuestManagerTests : TestBase
     private readonly Mock<IRepository<YachtTourEntity>> _yachtTourRepositoryMock;
     private readonly Mock<IRepository<InvoicesEntity>> _invoiceRepositoryMock;
     private readonly Mock<ILogger<GuestManager>> _loggerMock;
+    private readonly Mock<AutoMapper.IMapper> _mapperMock;
     private readonly GuestManager _guestManager;
 
     public GuestManagerTests()
@@ -34,8 +35,7 @@ public class GuestManagerTests : TestBase
         _yachtTourRepositoryMock = CreateMock<IRepository<YachtTourEntity>>();
         _invoiceRepositoryMock = CreateMock<IRepository<InvoicesEntity>>();
         _loggerMock = CreateMock<ILogger<GuestManager>>();
-
-        var mapperMock = CreateMock<AutoMapper.IMapper>();
+        _mapperMock = CreateMock<AutoMapper.IMapper>();
         _guestManager = new GuestManager(
             _unitOfWorkMock.Object,
             _guestRepositoryMock.Object,
@@ -44,7 +44,7 @@ public class GuestManagerTests : TestBase
             _yachtTourRepositoryMock.Object,
             _invoiceRepositoryMock.Object,
             _loggerMock.Object,
-            mapperMock.Object
+            _mapperMock.Object
         );
     }
 
@@ -54,10 +54,24 @@ public class GuestManagerTests : TestBase
         // Arrange
         var guestId = 1;
         var expectedGuest = TestDataBuilder.CreateGuest(id: guestId);
+        var expectedDto = new GetGuestDto
+        {
+            Id = expectedGuest.Id,
+            FullName = expectedGuest.FullName,
+            Email = expectedGuest.Email,
+            PhoneNumber = expectedGuest.PhoneNumber,
+            Nationality = expectedGuest.Nationality,
+            GuestCode = expectedGuest.GuestCode,
+            IsSpecialGuest = expectedGuest.IsSpecialGuest
+        };
 
         _guestRepositoryMock
             .Setup(x => x.GetByIdAsync(guestId, false))
             .ReturnsAsync(expectedGuest);
+
+        _mapperMock
+            .Setup(m => m.Map<GetGuestDto>(expectedGuest))
+            .Returns(expectedDto);
 
         // Act
         var result = await _guestManager.GetGuestById(guestId);
