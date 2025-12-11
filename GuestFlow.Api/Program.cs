@@ -92,14 +92,15 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        var allowedOrigins = new[]
-        {
-            "http://localhost:5173",
-            "http://localhost:5174",
-            "http://localhost:5175",
-            "http://localhost:3000",
-            "https://app.guestflow.com" // prod origin
-        };
+        var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ??
+                             new[]
+                             {
+                                 "http://localhost:5173",
+                                 "http://localhost:5174",
+                                 "http://localhost:5175",
+                                 "http://localhost:3000",
+                                 "https://app.guestflow.com" // prod origin
+                             };
 
         policy.WithOrigins(allowedOrigins)
               .AllowAnyMethod()

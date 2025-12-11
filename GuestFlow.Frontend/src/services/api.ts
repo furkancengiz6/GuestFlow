@@ -21,14 +21,9 @@ const getAccessToken = () => {
   return state.accessToken
 }
 
-const getRefreshToken = () => {
-  const state = useAuthStore.getState()
-  return state.refreshToken
-}
-
-const setTokens = (accessToken: string, refreshToken?: string) => {
+const setTokens = (accessToken: string) => {
   const { login, user } = useAuthStore.getState()
-  login(accessToken, refreshToken ?? getRefreshToken() ?? '', user)
+  login(accessToken, user)
 }
 
 const clearTokensAndRedirect = () => {
@@ -40,22 +35,12 @@ const clearTokensAndRedirect = () => {
 const refreshTokenOnce = async (): Promise<string | null> => {
   if (refreshPromise) return refreshPromise
 
-  const token = getRefreshToken()
-  if (!token) {
-    clearTokensAndRedirect()
-    return null
-  }
-
   refreshPromise = axios
-    .post(
-      `${API_BASE_URL}/auth/refresh-token`,
-      { refreshToken: token },
-      { withCredentials: true }
-    )
+    .post(`${API_BASE_URL}/auth/refresh-token`, {}, { withCredentials: true })
     .then((res) => {
-      const { accessToken, refreshToken: newRefresh } = res.data.data || res.data
+      const { accessToken } = res.data.data || res.data
       if (!accessToken) throw new Error('refresh_failed')
-      setTokens(accessToken, newRefresh)
+      setTokens(accessToken)
       return accessToken
     })
     .catch((err) => {

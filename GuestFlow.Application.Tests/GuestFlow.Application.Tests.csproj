@@ -28,6 +28,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\GuestFlow.Application\GuestFlow.Application.csproj" />
+    <ProjectReference Include="..\GuestFlow.Api\GuestFlow.Api.csproj" />
   </ItemGroup>
 
 </Project>
