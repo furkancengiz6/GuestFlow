@@ -6,12 +6,12 @@ namespace GuestFlow.Domain.Entities.Core
 {
     public class TransferEntity : BaseEntity, ITransfer
     {
-        public string PickupAddress { get; set; } 
-        public string DropoffAddress { get; set; } 
+        public string PickupAddress { get; set; } = string.Empty; 
+        public string DropoffAddress { get; set; } = string.Empty; 
         public DateTime TransferDate { get; set; }
         public decimal Price { get; set; }
-        public string? Note { get; set; }
-        public string Status { get; set; }
+        public string Note { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
         public bool IsFromAirport { get; set; }
         public int GuestId { get; set; }
         public int PersonnelId { get; set; }
@@ -25,13 +25,13 @@ namespace GuestFlow.Domain.Entities.Core
 
 
         // Relational Properties
-        public virtual GuestEntity Guest { get; set; }
-        public virtual PersonnelEntity Personnel { get; set; }
-        public virtual AirportEntity Airport { get; set; }
-        public virtual VehicleEntity Vehicle { get; set; }
+        public virtual GuestEntity Guest { get; set; } = null!;
+        public virtual PersonnelEntity Personnel { get; set; } = null!;
+        public virtual AirportEntity Airport { get; set; } = null!;
+        public virtual VehicleEntity Vehicle { get; set; } = null!;
         public virtual ICollection<InvoicesEntity> Invoices { get; set; } = new List<InvoicesEntity>();
-        public virtual CityEntity PickupCity { get; set; }
-        public virtual CityEntity DropoffCity { get; set; }
+        public virtual CityEntity PickupCity { get; set; } = null!;
+        public virtual CityEntity DropoffCity { get; set; } = null!;
     }
 
     public class TransferConfiguration : BaseConfiguration<TransferEntity>

@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace GuestFlow.Api.Models.CityModels
 {
@@ -6,10 +6,10 @@ namespace GuestFlow.Api.Models.CityModels
     {
         [Required]
         [StringLength(100)]
-        public string CityName { get; set; }
+        public string CityName { get; set; } = string.Empty;
 
         [Required]
         [StringLength(100)]
-        public string Country { get; set; }
+        public string Country { get; set; } = string.Empty;
     }
 }

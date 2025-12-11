@@ -11,7 +11,7 @@ namespace GuestFlow.Domain.Entities.Core
         public DateTime IssueDate { get; set; }
         public decimal TotalAmount { get; set; }
         public string Currency { get; set; }
-        public string? Notes { get; set; }
+        public string Notes { get; set; } = string.Empty;
         public string PdfUrl { get; set; }
         public int GuestId { get; set; }
         public int? PersonnelId { get; set; }

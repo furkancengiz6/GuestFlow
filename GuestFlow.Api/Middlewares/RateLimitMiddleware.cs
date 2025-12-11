@@ -137,9 +137,9 @@ namespace GuestFlow.Api.Middlewares
             };
 
             // Retry-After header ekle
-            context.Response.Headers.Add("Retry-After", period == "minute" ? "60" : "3600");
-            context.Response.Headers.Add("X-RateLimit-Limit", limit.ToString());
-            context.Response.Headers.Add("X-RateLimit-Period", period);
+            context.Response.Headers["Retry-After"] = period == "minute" ? "60" : "3600";
+            context.Response.Headers["X-RateLimit-Limit"] = limit.ToString();
+            context.Response.Headers["X-RateLimit-Period"] = period;
 
             var json = JsonSerializer.Serialize(response);
             await context.Response.WriteAsync(json);

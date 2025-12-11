@@ -8,7 +8,7 @@ namespace GuestFlow.Api.Models.PaymentModels
     public class CompletePaymentRequest
     {
         [Required(ErrorMessage = "Transaction ID gereklidir.")]
-        public string TransactionId { get; set; }
+        public string TransactionId { get; set; } = string.Empty;
 
         public string? GatewayResponse { get; set; }
     }

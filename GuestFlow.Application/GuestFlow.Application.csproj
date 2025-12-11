@@ -22,7 +22,7 @@
     <PackageReference Include="Azure.Storage.Blobs" Version="12.19.1" />
     <PackageReference Include="MailKit" Version="4.8.0" />
     <PackageReference Include="QuestPDF" Version="2024.3.10" />
-    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.5" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.7" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 

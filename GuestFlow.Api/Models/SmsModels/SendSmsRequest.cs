@@ -9,11 +9,11 @@ namespace GuestFlow.Api.Models.SmsModels
     {
         [Required(ErrorMessage = "Telefon numarası gereklidir.")]
         [RegularExpression(@"^(\+90|0)?[5][0-9]{9}$", ErrorMessage = "Geçersiz telefon numarası formatı.")]
-        public string PhoneNumber { get; set; }
+            public string PhoneNumber { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "SMS mesajı gereklidir.")]
         [StringLength(1000, MinimumLength = 1, ErrorMessage = "SMS mesajı 1-1000 karakter arasında olmalıdır.")]
-        public string Message { get; set; }
+            public string Message { get; set; } = string.Empty;
 
         public int? GuestId { get; set; }
 

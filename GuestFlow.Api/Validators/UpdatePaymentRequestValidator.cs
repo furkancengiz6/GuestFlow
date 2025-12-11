@@ -19,12 +19,12 @@ namespace GuestFlow.Api.Validators
                 .When(x => !string.IsNullOrEmpty(x.Currency));
 
             RuleFor(x => x.PaymentMethod)
-                .Must(m => PaymentMethodHelper.IsValidMethod(m))
+                .Must(m => !string.IsNullOrWhiteSpace(m) && PaymentMethodHelper.IsValidMethod(m))
                 .WithMessage("Geçersiz ödeme yöntemi. Desteklenen yöntemler: CreditCard, BankTransfer, Cash, Other")
                 .When(x => !string.IsNullOrEmpty(x.PaymentMethod));
 
             RuleFor(x => x.Status)
-                .Must(s => PaymentStatusHelper.IsValidStatus(s))
+                .Must(s => !string.IsNullOrWhiteSpace(s) && PaymentStatusHelper.IsValidStatus(s))
                 .WithMessage("Geçersiz ödeme durumu. Desteklenen durumlar: Pending, Completed, Failed, Refunded, Cancelled")
                 .When(x => !string.IsNullOrEmpty(x.Status));
 

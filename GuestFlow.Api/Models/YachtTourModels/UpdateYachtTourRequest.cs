@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace GuestFlow.Api.Models.YachtTourModels
 {
@@ -15,11 +15,11 @@ namespace GuestFlow.Api.Models.YachtTourModels
         [Range(0.01, double.MaxValue)]
         public decimal Price { get; set; }
 
-        public string SpecialRequest { get; set; }
+        public string SpecialRequest { get; set; } = string.Empty;
 
         [Required]
         [StringLength(100)]
-        public string YachtName { get; set; }
+        public string YachtName { get; set; } = string.Empty;
 
         [Required]
         public int OwnerGuestId { get; set; }

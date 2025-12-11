@@ -16,7 +16,7 @@ namespace GuestFlow.Api.Models.ReservationModels
 
         [Required(ErrorMessage = "Servis tipi gereklidir.")]
         [RegularExpression("^(Transfer|CityTour|YachtTour)$", ErrorMessage = "Servis tipi Transfer, CityTour veya YachtTour olmalıdır.")]
-        public string ServiceType { get; set; }
+        public string ServiceType { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Servis ID gereklidir.")]
         public int ServiceId { get; set; }

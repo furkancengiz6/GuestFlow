@@ -79,7 +79,7 @@ namespace GuestFlow.Api.Controllers
                 PersonnelId = request.PersonnelId,
                 AirportId = request.AirportId,
                 VehicleId = request.VehicleId,
-                Note = request.Note,
+                Note = request.Note ?? string.Empty,
                 Status = request.Status,
                 IsFromAirport = request.IsFromAirport,
                 PickupCityId = request.PickupCityId,

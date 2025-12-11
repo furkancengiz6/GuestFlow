@@ -10,7 +10,7 @@ namespace GuestFlow.Domain.Entities.Core
         public DateTime TourDate { get; set; }
         public int NumberOfPeople { get; set; }
         public decimal Price { get; set; }
-        public string? SpecialRequest { get; set; }
+        public string SpecialRequest { get; set; } = string.Empty;
         public string YachtName { get; set; } 
         public int OwnerGuestId { get; set; }
         public int PersonnelId { get; set; }
@@ -22,11 +22,11 @@ namespace GuestFlow.Domain.Entities.Core
 
 
         // Relational Properties
-        public virtual GuestEntity OwnerGuest { get; set; } // Guest yerine OwnerGuest
-        public virtual PersonnelEntity Personnel { get; set; }
+        public virtual GuestEntity OwnerGuest { get; set; } = null!; // Guest yerine OwnerGuest
+        public virtual PersonnelEntity Personnel { get; set; } = null!;
         public virtual ICollection<GuestYachtTour> GuestYachtTours { get; set; } = new List<GuestYachtTour>();
         public virtual ICollection<InvoicesEntity> Invoices { get; set; } = new List<InvoicesEntity>();
-        public virtual CityEntity City { get; set; }
+        public virtual CityEntity City { get; set; } = null!;
     }
 
     public class YachtTourConfiguration : BaseConfiguration<YachtTourEntity>

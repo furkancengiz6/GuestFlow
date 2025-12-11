@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace GuestFlow.Api.Models.TransferModel
 {
@@ -9,11 +9,11 @@ namespace GuestFlow.Api.Models.TransferModel
 
         [Required]
         [StringLength(100)]
-        public string PickupAddress { get; set; }
+        public string PickupAddress { get; set; } = string.Empty;
 
         [Required]
         [StringLength(100)]
-        public string DropoffAddress { get; set; }
+        public string DropoffAddress { get; set; } = string.Empty;
 
         [Required]
         [Range(0.01, double.MaxValue)]
@@ -31,10 +31,10 @@ namespace GuestFlow.Api.Models.TransferModel
         [Required]
         public int VehicleId { get; set; }
 
-        public string Note { get; set; }
+        public string Note { get; set; } = string.Empty;
 
         [Required]
-        public string Status { get; set; }
+        public string Status { get; set; } = string.Empty;
 
         public bool IsFromAirport { get; set; }
 
