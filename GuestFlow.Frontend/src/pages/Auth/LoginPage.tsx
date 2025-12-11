@@ -35,20 +35,20 @@ const LoginPage = () => {
       // 1. Login isteği - Backend direkt LoginResponse döndürüyor (data wrapper yok)
       const response = await apiClient.post('/auth/login', data)
       const loginResponse = response.data
-      const { accessToken, refreshToken } = loginResponse
+      const { accessToken } = loginResponse
 
-      if (!accessToken || !refreshToken) {
-        throw new Error('Token bilgileri alınamadı')
+      if (!accessToken) {
+        throw new Error('Access token alınamadı')
       }
 
-      // 2. Token'ları önce authStore'a kaydet (interceptor için)
-      login(accessToken, refreshToken, null)
+      // 2. Token'ı authStore'a kaydet (refresh token HttpOnly cookie'de)
+      login(accessToken, null)
 
       // 3. User bilgisini almak için /auth/me endpoint'ini çağır
       try {
         const userResponse = await apiClient.get('/auth/me')
         const userData = userResponse.data.data || userResponse.data
-        
+
         // Backend UserInfoResponse döndürüyor, userType'ı role olarak map et
         const user = {
           id: userData.id,
@@ -61,7 +61,7 @@ const LoginPage = () => {
 
         // 4. Auth store'a user bilgisini güncelle
         const { login: updateLogin } = useAuthStore.getState()
-        updateLogin(accessToken, refreshToken, user)
+        updateLogin(accessToken, user)
         navigate('/dashboard')
       } catch (userError: any) {
         // User bilgisi alınamazsa bile login yap, user null olabilir

@@ -178,6 +178,7 @@ namespace GuestFlow.Api.Controllers
                 var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
                 var refreshToken = await _refreshTokenService.GenerateRefreshTokenAsync(user.Id, ipAddress);
 
+                // Refresh token'ı yalnızca HttpOnly cookie'de sakla
                 SetRefreshCookie(refreshToken);
 
                 // Token'ların oluşturulduğunu logluyorum.
@@ -186,8 +187,7 @@ namespace GuestFlow.Api.Controllers
                 return Ok(new LoginResponse
                 {
                     Message = "Giriş başarıyla tamamlandı",
-                    AccessToken = accessToken,
-                    RefreshToken = refreshToken
+                    AccessToken = accessToken
                 });
             }
             catch (Exception ex)
@@ -380,8 +380,7 @@ namespace GuestFlow.Api.Controllers
                     return Ok(new RefreshTokenResponse
                     {
                         Message = result.Message,
-                        AccessToken = result.AccessToken,
-                        RefreshToken = result.RefreshToken
+                        AccessToken = result.AccessToken
                     });
                 }
                 else
