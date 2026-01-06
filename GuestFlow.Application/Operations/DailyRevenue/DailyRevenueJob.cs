@@ -1,161 +1,286 @@
 ﻿using GuestFlow.Domain.Entities.Core;
+using GuestFlow.Domain.Entities.Enum;
 using GuestFlow.Domain.Entities.Repositories;
 using GuestFlow.Domain.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace GuestFlow.Application.Operations.DailyRevenue
 {
+    /// <summary>
+    /// Günlük gelir hesaplama servisi - PaymentEntity'den tahsilat bazlı hesaplama
+    /// Gelir = Tamamlanmış ödemeler (PaymentStatus.Completed)
+    /// </summary>
     public class DailyRevenueJob
     {
-        // Burada kullanacağım değişkenleri tanımlıyorum.
-        // _unitOfWork: Veritabanı işlemlerini yönetmek için kullanıyorum (örneğin, transaction başlatmak, kaydetmek).
-        // _cityTourRepository: Şehir turlarıyla ilgili veritabanı işlemlerini yapmak için kullanıyorum.
-        // _transferRepository: Transferlerle ilgili veritabanı işlemlerini yapmak için kullanıyorum.
-        // _yachtTourRepository: Yat turlarıyla ilgili veritabanı işlemlerini yapmak için kullanıyorum.
-        // _dailyRevenueRepository: Günlük gelirlerle ilgili veritabanı işlemlerini yapmak için kullanıyorum.
-        // _logger: Hataları veya bilgileri loglamak (kaydetmek) için kullanıyorum.
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IRepository<CityTourEntity> _cityTourRepository;
-        private readonly IRepository<TransferEntity> _transferRepository;
-        private readonly IRepository<YachtTourEntity> _yachtTourRepository;
+        private readonly IRepository<PaymentEntity> _paymentRepository;
         private readonly IRepository<DailyRevenueEntity> _dailyRevenueRepository;
         private readonly ILogger<DailyRevenueJob> _logger;
 
-        // Constructor (yapıcı metod): Bu sınıf oluşturulurken bağımlılıkları buradan alıyorum.
         public DailyRevenueJob(
             IUnitOfWork unitOfWork,
-            IRepository<CityTourEntity> cityTourRepository,
-            IRepository<TransferEntity> transferRepository,
-            IRepository<YachtTourEntity> yachtTourRepository,
+            IRepository<PaymentEntity> paymentRepository,
             IRepository<DailyRevenueEntity> dailyRevenueRepository,
             ILogger<DailyRevenueJob> logger)
         {
             _unitOfWork = unitOfWork;
-            _cityTourRepository = cityTourRepository;
-            _transferRepository = transferRepository;
-            _yachtTourRepository = yachtTourRepository;
+            _paymentRepository = paymentRepository;
             _dailyRevenueRepository = dailyRevenueRepository;
             _logger = logger;
         }
 
-        // Bu metodumla belirli bir gün için toplam geliri hesaplıyorum.
+        /// <summary>
+        /// Belirli bir gün için tahsilat bazlı geliri hesaplar (currency bazlı)
+        /// Kaynak: PaymentEntity (Status = Completed, PaymentDate = date)
+        /// </summary>
         public async Task CalculateDailyRevenue(DateTime date)
         {
             try
             {
-                // Önce veritabanında bir işlem (transaction) başlatıyorum. Eğer bir hata çıkarsa, yaptığım değişiklikleri geri alacağım.
-                
+                _logger.LogInformation($"Günlük gelir hesaplaması başlıyor ({date:yyyy-MM-dd})...");
 
-                // İlk olarak, o gün için şehir turlarından gelen geliri hesaplıyorum.
-                // Veritabanından şehir turlarını çekiyorum, ama sadece o güne ait olanları (TourDate) ve FinalPrice'ı null olmayanları alıyorum.
-                // SumAsync ile tüm FinalPrice'ları topluyorum.
-                var cityTourRevenue = await _cityTourRepository.GetAll()
-                    .Where(ct => ct.TourDate.Date == date.Date && ct.FinalPrice != null)
-                    .SumAsync(ct => ct.FinalPrice);
+                // O gün için tamamlanmış ödemeleri çek
+                var completedPayments = await _paymentRepository.GetAll()
+                    .Where(p => p.PaymentDate.Date == date.Date && 
+                               p.Status == PaymentStatus.Completed && 
+                               !p.IsDeleted)
+                    .ToListAsync();
 
-                // Şehir turları gelirini logluyorum ki sonradan bakarsam ne kadar kazandığımı görebileyim.
-                _logger.LogInformation($"Şehir turları geliri ({date:yyyy-MM-dd}): {cityTourRevenue}");
+                // O gün için iade edilen ödemeleri çek
+                var refundedPayments = await _paymentRepository.GetAll()
+                    .Where(p => p.RefundDate.HasValue && 
+                               p.RefundDate.Value.Date == date.Date && 
+                               p.Status == PaymentStatus.Refunded && 
+                               !p.IsDeleted)
+                    .ToListAsync();
 
-                // Şimdi o gün için transferlerden gelen geliri hesaplıyorum.
-                // Yine aynı şekilde, o güne ait transferleri ve FinalPrice'ı null olmayanları alıyorum.
-                var transferRevenue = await _transferRepository.GetAll()
-                    .Where(t => t.TransferDate.Date == date.Date && t.FinalPrice != null)
-                    .SumAsync(t => t.FinalPrice);
+                // Currency bazlı grupla
+                var currencies = completedPayments.Select(p => p.Currency)
+                    .Union(refundedPayments.Select(p => p.Currency))
+                    .Distinct()
+                    .ToList();
 
-                // Transfer gelirini logluyorum.
-                _logger.LogInformation($"Transfer geliri ({date:yyyy-MM-dd}): {transferRevenue}");
-
-                // Şimdi de o gün için yat turlarından gelen geliri hesaplıyorum.
-                // Aynı mantıkla, o güne ait yat turlarını ve FinalPrice'ı null olmayanları alıyorum.
-                var yachtTourRevenue = await _yachtTourRepository.GetAll()
-                    .Where(yt => yt.TourDate.Date == date.Date && yt.FinalPrice != null)
-                    .SumAsync(yt => yt.FinalPrice);
-
-                // Yat turları gelirini logluyorum.
-                _logger.LogInformation($"Yat turları geliri ({date:yyyy-MM-dd}): {yachtTourRevenue}");
-
-                // Tüm gelirleri toplayarak o günün toplam gelirini buluyorum.
-                var totalRevenue = cityTourRevenue + transferRevenue + yachtTourRevenue;
-
-                // Toplam geliri logluyorum ki ne kadar kazandığımı bileyim.
-                _logger.LogInformation($"Toplam gelir ({date:yyyy-MM-dd}): {totalRevenue}");
-
-                // Şimdi, bu tarih için daha önce bir günlük gelir kaydı var mı diye kontrol ediyorum.
-                var existingRevenue = await _dailyRevenueRepository.GetAsync(dr => dr.Date.Date == date.Date);
-                if (existingRevenue != null)
+                // Her currency için ayrı kayıt oluştur
+                foreach (var currency in currencies)
                 {
-                    // Eğer bir kayıt varsa, sadece toplam geliri güncelliyorum.
-                    existingRevenue.TotalRevenue = totalRevenue;
-                    await _dailyRevenueRepository.UpdateAsync(existingRevenue);
-                    _logger.LogInformation($"Mevcut günlük gelir güncellendi ({date:yyyy-MM-dd}): {totalRevenue}");
-                }
-                else
-                {
-                    // Eğer kayıt yoksa, yeni bir günlük gelir kaydı oluşturuyorum.
-                    var dailyRevenue = new DailyRevenueEntity
+                    var currencyPayments = completedPayments.Where(p => p.Currency == currency).ToList();
+                    var currencyRefunds = refundedPayments.Where(p => p.Currency == currency).ToList();
+
+                    // Servis bazlı gelir hesapla
+                    var transferRevenue = currencyPayments
+                        .Where(p => p.TransferId.HasValue)
+                        .Sum(p => p.Amount);
+
+                    var cityTourRevenue = currencyPayments
+                        .Where(p => p.CityTourId.HasValue)
+                        .Sum(p => p.Amount);
+
+                    var yachtTourRevenue = currencyPayments
+                        .Where(p => p.YachtTourId.HasValue)
+                        .Sum(p => p.Amount);
+
+                    var generalRevenue = currencyPayments
+                        .Where(p => !p.TransferId.HasValue && !p.CityTourId.HasValue && !p.YachtTourId.HasValue)
+                        .Sum(p => p.Amount);
+
+                    var totalRevenue = transferRevenue + cityTourRevenue + yachtTourRevenue + generalRevenue;
+                    var refundedAmount = currencyRefunds.Sum(p => p.Amount);
+                    var netRevenue = totalRevenue - refundedAmount;
+                    var paymentCount = currencyPayments.Count;
+
+                    _logger.LogInformation($"[{currency}] Transfer: {transferRevenue}, CityTour: {cityTourRevenue}, YachtTour: {yachtTourRevenue}, General: {generalRevenue}, Refund: {refundedAmount}, Net: {netRevenue}");
+
+                    // Bu tarih + currency için mevcut kayıt var mı?
+                    var existingRevenue = await _dailyRevenueRepository.GetAsync(
+                        dr => dr.Date.Date == date.Date && dr.Currency == currency);
+
+                    if (existingRevenue != null)
                     {
-                        Date = date.Date,
-                        TotalRevenue = totalRevenue,
-                        CreatedDate = DateTime.UtcNow, // Şu anki tarihi ekliyorum.
-                        IsDeleted = false // Silinmedi olarak işaretliyorum.
-                    };
-                    await _dailyRevenueRepository.AddAsync(dailyRevenue);
-                    _logger.LogInformation($"Yeni günlük gelir eklendi ({date:yyyy-MM-dd}): {totalRevenue}");
+                        // Güncelle
+                        existingRevenue.TransferRevenue = transferRevenue;
+                        existingRevenue.CityTourRevenue = cityTourRevenue;
+                        existingRevenue.YachtTourRevenue = yachtTourRevenue;
+                        existingRevenue.GeneralRevenue = generalRevenue;
+                        existingRevenue.TotalRevenue = totalRevenue;
+                        existingRevenue.RefundedAmount = refundedAmount;
+                        existingRevenue.NetRevenue = netRevenue;
+                        existingRevenue.PaymentCount = paymentCount;
+
+                        await _dailyRevenueRepository.UpdateAsync(existingRevenue);
+                        _logger.LogInformation($"Mevcut günlük gelir güncellendi ({date:yyyy-MM-dd} - {currency}): Net {netRevenue}");
+                    }
+                    else
+                    {
+                        // Yeni kayıt oluştur
+                        var dailyRevenue = new DailyRevenueEntity
+                        {
+                            Date = date.Date,
+                            Currency = currency,
+                            TransferRevenue = transferRevenue,
+                            CityTourRevenue = cityTourRevenue,
+                            YachtTourRevenue = yachtTourRevenue,
+                            GeneralRevenue = generalRevenue,
+                            TotalRevenue = totalRevenue,
+                            RefundedAmount = refundedAmount,
+                            NetRevenue = netRevenue,
+                            PaymentCount = paymentCount,
+                            CreatedDate = DateTime.UtcNow,
+                            IsDeleted = false
+                        };
+
+                        await _dailyRevenueRepository.AddAsync(dailyRevenue);
+                        _logger.LogInformation($"Yeni günlük gelir eklendi ({date:yyyy-MM-dd} - {currency}): Net {netRevenue}");
+                    }
                 }
 
-                // Değişiklikleri veritabanına kaydediyorum.
                 await _unitOfWork.SaveChangesAsync();
-                // İşlem başarılıysa transaction'ı tamamlıyorum (commit ediyorum).
-                await _unitOfWork.CommitTransactionAsync();
-
-                // Her şeyin yolunda gittiğini logluyorum.
-                _logger.LogInformation($"Günlük gelir hesaplandı ({date:yyyy-MM-dd}): {totalRevenue}");
+                _logger.LogInformation($"Günlük gelir hesaplandı ({date:yyyy-MM-dd}): {currencies.Count} para birimi");
             }
             catch (Exception ex)
             {
-                // Eğer bir hata çıkarsa, transaction'ı geri alıyorum (rollback yapıyorum).
-                
-                // Hatayı logluyorum. İç hata (InnerException) varsa onu da ekliyorum ki daha fazla bilgi alayım.
-                _logger.LogError(ex, $"Günlük gelir hesaplanırken hata çıktı ({date:yyyy-MM-dd}): {ex.Message}. InnerException: {ex.InnerException?.Message}");
-                // Hata olduğu için bu hatayı yukarıya fırlatıyorum (throw).
+                _logger.LogError(ex, $"Günlük gelir hesaplanırken hata çıktı ({date:yyyy-MM-dd}): {ex.Message}");
                 throw;
             }
         }
-        public async Task UpdateDailyRevenue(DateTime date, decimal amount)
+
+        /// <summary>
+        /// Belirli bir tarih aralığı için günlük gelirleri hesaplar
+        /// </summary>
+        public async Task CalculateDailyRevenueForRange(DateTime startDate, DateTime endDate)
+        {
+            var currentDate = startDate.Date;
+            while (currentDate <= endDate.Date)
+            {
+                await CalculateDailyRevenue(currentDate);
+                currentDate = currentDate.AddDays(1);
+            }
+        }
+
+        /// <summary>
+        /// Yeni bir ödeme eklendiğinde günlük geliri günceller (gerçek zamanlı)
+        /// </summary>
+        public async Task UpdateDailyRevenueOnPayment(DateTime paymentDate, string currency, decimal amount, string? serviceType)
         {
             try
             {
-                
-                var dailyRevenue = await _dailyRevenueRepository.GetAsync(x => x.Date.Date == date.Date);
-                if (dailyRevenue == null)
+                var existingRevenue = await _dailyRevenueRepository.GetAsync(
+                    dr => dr.Date.Date == paymentDate.Date && dr.Currency == currency);
+
+                if (existingRevenue == null)
                 {
-                    dailyRevenue = new DailyRevenueEntity
+                    existingRevenue = new DailyRevenueEntity
                     {
-                        Date = date.Date,
-                        TotalRevenue = amount,
+                        Date = paymentDate.Date,
+                        Currency = currency,
+                        TransferRevenue = 0,
+                        CityTourRevenue = 0,
+                        YachtTourRevenue = 0,
+                        GeneralRevenue = 0,
+                        TotalRevenue = 0,
+                        RefundedAmount = 0,
+                        NetRevenue = 0,
+                        PaymentCount = 0,
                         CreatedDate = DateTime.UtcNow,
                         IsDeleted = false
                     };
-                    await _dailyRevenueRepository.AddAsync(dailyRevenue);
-                    _logger.LogInformation($"Yeni günlük gelir eklendi ({date:yyyy-MM-dd}): {amount}");
-                }
-                else
-                {
-                    dailyRevenue.TotalRevenue += amount;
-                    await _dailyRevenueRepository.UpdateAsync(dailyRevenue);
-                    _logger.LogInformation($"Günlük gelir güncellendi ({date:yyyy-MM-dd}): {dailyRevenue.TotalRevenue}");
+                    await _dailyRevenueRepository.AddAsync(existingRevenue);
                 }
 
-                await _unitOfWork.SaveChangesAsync(); // Mevcut transaction içinde çalışacak
+                // Servis tipine göre ilgili alanı güncelle
+                switch (serviceType?.ToLower())
+                {
+                    case "transfer":
+                        existingRevenue.TransferRevenue += amount;
+                        break;
+                    case "citytour":
+                        existingRevenue.CityTourRevenue += amount;
+                        break;
+                    case "yachttour":
+                        existingRevenue.YachtTourRevenue += amount;
+                        break;
+                    default:
+                        existingRevenue.GeneralRevenue += amount;
+                        break;
+                }
+
+                existingRevenue.TotalRevenue += amount;
+                existingRevenue.NetRevenue = existingRevenue.TotalRevenue - existingRevenue.RefundedAmount;
+                existingRevenue.PaymentCount += 1;
+
+                await _dailyRevenueRepository.UpdateAsync(existingRevenue);
+                await _unitOfWork.SaveChangesAsync();
+
+                _logger.LogInformation($"Günlük gelir güncellendi ({paymentDate:yyyy-MM-dd} - {currency}): +{amount} ({serviceType ?? "General"})");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Günlük gelir güncellenirken hata çıktı ({date:yyyy-MM-dd}): {ex.Message}. InnerException: {ex.InnerException?.Message}");
+                _logger.LogError(ex, $"Günlük gelir güncellenirken hata: {ex.Message}");
                 throw;
             }
+        }
+
+        /// <summary>
+        /// İade işleminde günlük geliri günceller
+        /// </summary>
+        public async Task UpdateDailyRevenueOnRefund(DateTime refundDate, string currency, decimal amount)
+        {
+            try
+            {
+                var existingRevenue = await _dailyRevenueRepository.GetAsync(
+                    dr => dr.Date.Date == refundDate.Date && dr.Currency == currency);
+
+                if (existingRevenue == null)
+                {
+                    existingRevenue = new DailyRevenueEntity
+                    {
+                        Date = refundDate.Date,
+                        Currency = currency,
+                        CreatedDate = DateTime.UtcNow,
+                        IsDeleted = false
+                    };
+                    await _dailyRevenueRepository.AddAsync(existingRevenue);
+                }
+
+                existingRevenue.RefundedAmount += amount;
+                existingRevenue.NetRevenue = existingRevenue.TotalRevenue - existingRevenue.RefundedAmount;
+
+                await _dailyRevenueRepository.UpdateAsync(existingRevenue);
+                await _unitOfWork.SaveChangesAsync();
+
+                _logger.LogInformation($"İade kaydedildi ({refundDate:yyyy-MM-dd} - {currency}): -{amount}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"İade kaydedilirken hata: {ex.Message}");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Belirli bir tarih aralığı için toplam geliri döndürür (currency bazlı)
+        /// </summary>
+        public async Task<Dictionary<string, decimal>> GetTotalRevenueForRange(DateTime startDate, DateTime endDate)
+        {
+            var revenues = await _dailyRevenueRepository.GetAll()
+                .Where(dr => dr.Date.Date >= startDate.Date && dr.Date.Date <= endDate.Date && !dr.IsDeleted)
+                .GroupBy(dr => dr.Currency)
+                .Select(g => new { Currency = g.Key, Total = g.Sum(dr => dr.NetRevenue) })
+                .ToListAsync();
+
+            return revenues.ToDictionary(r => r.Currency, r => r.Total);
+        }
+
+        /// <summary>
+        /// Belirli bir gün için geliri döndürür (currency bazlı)
+        /// </summary>
+        public async Task<Dictionary<string, decimal>> GetDailyRevenue(DateTime date)
+        {
+            return await GetTotalRevenueForRange(date, date);
         }
     }
 }

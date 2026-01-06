@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 namespace GuestFlow.Domain.Entities.Core
 {
     /// <summary>
-    /// Ödeme entity'si
+    /// Ödeme entity'si - Tek kaynak (Single Source of Truth) olarak tahsilat takibi
     /// </summary>
     public class PaymentEntity : BaseEntity
     {
@@ -15,14 +15,34 @@ namespace GuestFlow.Domain.Entities.Core
         public string PaymentNumber { get; set; }
 
         /// <summary>
-        /// Fatura ID (ödemesi yapılan fatura)
+        /// Fatura ID (opsiyonel - ödeme fatura olmadan da kaydedilebilir)
         /// </summary>
-        public int InvoiceId { get; set; }
+        public int? InvoiceId { get; set; }
 
         /// <summary>
         /// Misafir ID
         /// </summary>
         public int GuestId { get; set; }
+
+        /// <summary>
+        /// Ödemeyi tahsil eden personel ID
+        /// </summary>
+        public int CollectedByPersonnelId { get; set; }
+
+        /// <summary>
+        /// Transfer ID (opsiyonel - doğrudan servise bağlı ödeme için)
+        /// </summary>
+        public int? TransferId { get; set; }
+
+        /// <summary>
+        /// Şehir Turu ID (opsiyonel - doğrudan servise bağlı ödeme için)
+        /// </summary>
+        public int? CityTourId { get; set; }
+
+        /// <summary>
+        /// Yat Turu ID (opsiyonel - doğrudan servise bağlı ödeme için)
+        /// </summary>
+        public int? YachtTourId { get; set; }
 
         /// <summary>
         /// Ödeme tutarı
@@ -45,7 +65,7 @@ namespace GuestFlow.Domain.Entities.Core
         public PaymentStatus Status { get; set; } = PaymentStatus.Pending;
 
         /// <summary>
-        /// Ödeme tarihi
+        /// Ödeme tarihi (tahsilat anı)
         /// </summary>
         public DateTime PaymentDate { get; set; }
 
@@ -80,8 +100,12 @@ namespace GuestFlow.Domain.Entities.Core
         public string? Notes { get; set; }
 
         // Relational Properties
-        public virtual InvoicesEntity Invoice { get; set; }
+        public virtual InvoicesEntity? Invoice { get; set; }
         public virtual GuestEntity Guest { get; set; }
+        public virtual PersonnelEntity CollectedByPersonnel { get; set; }
+        public virtual TransferEntity? Transfer { get; set; }
+        public virtual CityTourEntity? CityTour { get; set; }
+        public virtual YachtTourEntity? YachtTour { get; set; }
     }
 
     /// <summary>
@@ -138,15 +162,52 @@ namespace GuestFlow.Domain.Entities.Core
                 .HasMaxLength(1000);
 
             // Foreign Key Relationships
+            
+            // Invoice - opsiyonel (ödeme fatura olmadan kaydedilebilir)
             builder.HasOne(p => p.Invoice)
                 .WithMany()
                 .HasForeignKey(p => p.InvoiceId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.SetNull)
+                .IsRequired(false);
 
+            // Guest - zorunlu
             builder.HasOne(p => p.Guest)
                 .WithMany()
                 .HasForeignKey(p => p.GuestId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // CollectedByPersonnel - zorunlu (kim tahsil etti)
+            builder.HasOne(p => p.CollectedByPersonnel)
+                .WithMany()
+                .HasForeignKey(p => p.CollectedByPersonnelId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Transfer - opsiyonel (doğrudan servise bağlı ödeme)
+            builder.HasOne(p => p.Transfer)
+                .WithMany()
+                .HasForeignKey(p => p.TransferId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .IsRequired(false);
+
+            // CityTour - opsiyonel
+            builder.HasOne(p => p.CityTour)
+                .WithMany()
+                .HasForeignKey(p => p.CityTourId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .IsRequired(false);
+
+            // YachtTour - opsiyonel
+            builder.HasOne(p => p.YachtTour)
+                .WithMany()
+                .HasForeignKey(p => p.YachtTourId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .IsRequired(false);
+
+            // Index'ler - sık kullanılan sorgular için
+            builder.HasIndex(p => p.PaymentDate);
+            builder.HasIndex(p => p.Status);
+            builder.HasIndex(p => p.Currency);
+            builder.HasIndex(p => p.CollectedByPersonnelId);
         }
     }
 }

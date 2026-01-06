@@ -9,7 +9,7 @@ namespace GuestFlow.Application.Operations.CityTour
 {
     public interface ICityTourService
     {
-        Task<ServiceMessage> AddCityTour(AddCityTourDto cityTour);
+        Task<ServiceMessage<AddCityTourResponseDto>> AddCityTour(AddCityTourDto cityTour);
         Task<ServiceMessage> UpdateCityTour(UpdateCityTourDto cityTour);
         Task<ServiceMessage> DeleteCityTour(int id);
         Task<GetCityTourDto> GetCityTourById(int id);
@@ -24,5 +24,20 @@ namespace GuestFlow.Application.Operations.CityTour
         /// Sayfalanmış şehir turlarını getirir
         /// </summary>
         Task<PagedResult<GetCityTourDto>> GetCityToursPaged(int pageNumber, int pageSize, CityTourFilterParameters? filters = null, SortingParameters? sorting = null);
+
+        /// <summary>
+        /// Şehir turu için fatura oluşturur
+        /// </summary>
+        Task<ServiceMessage> CreateCityTourInvoiceAsync(int id);
+
+        /// <summary>
+        /// Şehir turu onay maili gönderir
+        /// </summary>
+        Task<ServiceMessage> SendCityTourConfirmationAsync(int id);
+
+        /// <summary>
+        /// Şehir turu durumunu günceller (tamamlandı/iptal edildi)
+        /// </summary>
+        Task<ServiceMessage> UpdateCityTourStatusAsync(int id, string status);
     }
 }

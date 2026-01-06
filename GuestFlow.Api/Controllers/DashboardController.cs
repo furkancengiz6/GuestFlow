@@ -177,6 +177,36 @@ namespace GuestFlow.Api.Controllers
                 return Error("Misafir istatistikleri getirilirken bir hata oluştu.", 500, new { Error = ex.Message });
             }
         }
+
+        /// <summary>
+        /// Ödemesi alınmamış hizmetler (transfer, şehir turu, yat turu)
+        /// </summary>
+        [HttpGet("unpaid-services")]
+        public async Task<IActionResult> GetUnpaidServices([FromQuery] DateTime? startDate = null, [FromQuery] DateTime? endDate = null)
+        {
+            var result = await _dashboardService.GetUnpaidServicesAsync(startDate, endDate);
+            return Success(result, "Ödemesi alınmamış hizmetler başarıyla getirildi.");
+        }
+
+        /// <summary>
+        /// Yaklaşan hizmetler (transfer, şehir turu, yat turu)
+        /// </summary>
+        [HttpGet("upcoming-services")]
+        public async Task<IActionResult> GetUpcomingServices([FromQuery] DateTime? startDate = null, [FromQuery] DateTime? endDate = null)
+        {
+            var result = await _dashboardService.GetUpcomingServicesAsync(startDate, endDate);
+            return Success(result, "Yaklaşan hizmetler başarıyla getirildi.");
+        }
+
+        /// <summary>
+        /// Bugünkü kritik olaylar (acil müdahale gerekenler)
+        /// </summary>
+        [HttpGet("critical-events")]
+        public async Task<IActionResult> GetCriticalEvents()
+        {
+            var result = await _dashboardService.GetCriticalEventsAsync();
+            return Success(result, "Bugünkü kritik olaylar başarıyla getirildi.");
+        }
     }
 }
 

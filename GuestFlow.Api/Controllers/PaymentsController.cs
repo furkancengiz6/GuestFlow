@@ -22,10 +22,12 @@ namespace GuestFlow.Api.Controllers
     public class PaymentsController : BaseController
     {
         private readonly IPaymentService _paymentService;
+        private readonly IPaymentStatusService _paymentStatusService;
 
-        public PaymentsController(IPaymentService paymentService)
+        public PaymentsController(IPaymentService paymentService, IPaymentStatusService paymentStatusService)
         {
             _paymentService = paymentService;
+            _paymentStatusService = paymentStatusService;
         }
 
         /// <summary>
@@ -46,6 +48,10 @@ namespace GuestFlow.Api.Controllers
             {
                 InvoiceId = request.InvoiceId,
                 GuestId = request.GuestId,
+                CollectedByPersonnelId = request.CollectedByPersonnelId,
+                TransferId = request.TransferId,
+                CityTourId = request.CityTourId,
+                YachtTourId = request.YachtTourId,
                 Amount = request.Amount,
                 Currency = request.Currency,
                 PaymentMethod = request.PaymentMethod,
@@ -77,6 +83,10 @@ namespace GuestFlow.Api.Controllers
             var dto = new UpdatePaymentDto
             {
                 Id = id,
+                InvoiceId = request.InvoiceId,
+                TransferId = request.TransferId,
+                CityTourId = request.CityTourId,
+                YachtTourId = request.YachtTourId,
                 Amount = request.Amount,
                 Currency = request.Currency,
                 PaymentMethod = request.PaymentMethod,
@@ -343,6 +353,66 @@ namespace GuestFlow.Api.Controllers
         }
 
         /// <summary>
+        /// Misafire ait ödeme özetini getirir
+        /// </summary>
+        /// <param name="guestId">Misafir ID'si</param>
+        /// <returns>Misafir ödeme özeti</returns>
+        /// <response code="200">Misafir ödeme özeti başarıyla getirildi</response>
+        /// <response code="404">Misafir bulunamadı</response>
+        /// <response code="500">Sunucu hatası</response>
+        /// <response code="401">Yetkisiz erişim</response>
+        [HttpGet("by-guest/{guestId}/summary")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetPaymentSummaryByGuestId(int guestId)
+        {
+            try
+            {
+                var payments = await _paymentService.GetPaymentsByGuestIdAsync(guestId);
+                if (payments == null || payments.Count == 0)
+                {
+                    return Success(new
+                    {
+                        totalPaid = 0.0m,
+                        currency = "TRY",
+                        paymentMethodBreakdown = new Dictionary<string, int>(),
+                        recentPayments = new List<GetPaymentDto>()
+                    }, "Misafir için ödeme bulunamadı.");
+                }
+
+                var totalPaid = payments.Sum(p => p.Amount);
+                var currency = payments.First().Currency ?? "TRY";
+
+                // Group by payment method and count
+                var paymentMethodBreakdown = payments
+                    .GroupBy(p => p.PaymentMethod)
+                    .ToDictionary(g => g.Key, g => g.Count());
+
+                // Get recent 5 payments ordered by date desc
+                var recentPayments = payments
+                    .OrderByDescending(p => p.PaymentDate)
+                    .Take(5)
+                    .ToList();
+
+                var summary = new
+                {
+                    totalPaid = totalPaid,
+                    currency = currency,
+                    paymentMethodBreakdown = paymentMethodBreakdown,
+                    recentPayments = recentPayments
+                };
+
+                return Success(summary, "Misafir ödeme özeti başarıyla getirildi.");
+            }
+            catch (Exception ex)
+            {
+                return Error("Misafir ödeme özeti getirilirken bir hata oluştu.", 500, new { Error = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Faturaya ait ödemeleri getirir
         /// </summary>
         /// <param name="invoiceId">Fatura ID'si</param>
@@ -383,6 +453,66 @@ namespace GuestFlow.Api.Controllers
             catch (Exception ex)
             {
                 return Error("Duruma göre ödemeler getirilirken bir hata oluştu.", 500, new { Error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Servisin ödeme durumunu getirir (canonical calculation)
+        /// </summary>
+        /// <param name="serviceId">Servis ID'si</param>
+        /// <param name="serviceType">Servis tipi (Transfer/CityTour/YachtTour)</param>
+        /// <returns>Servis ödeme durumu</returns>
+        /// <response code="200">Servis ödeme durumu başarıyla getirildi</response>
+        /// <response code="400">Geçersiz servis tipi</response>
+        /// <response code="404">Servis bulunamadı</response>
+        /// <response code="401">Yetkisiz erişim</response>
+        [HttpGet("service/{serviceId}/status")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetServicePaymentStatus(int serviceId, [FromQuery] string serviceType)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(serviceType))
+                    return BadRequest(new ApiResponse<object> { Success = false, Message = "Servis tipi gereklidir." });
+
+                var validTypes = new[] { "transfer", "citytour", "yachttour" };
+                if (!validTypes.Contains(serviceType.ToLower()))
+                    return BadRequest(new ApiResponse<object> { Success = false, Message = $"Geçersiz servis tipi. Geçerli tipler: {string.Join(", ", validTypes)}" });
+
+                var result = await _paymentStatusService.GetServicePaymentStatusAsync(serviceId, serviceType);
+                return Success(result, "Servis ödeme durumu başarıyla getirildi.");
+            }
+            catch (Exception ex)
+            {
+                return Error("Servis ödeme durumu getirilirken bir hata oluştu.", 500, new { Error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Faturanın ödeme durumunu getirir (canonical calculation)
+        /// </summary>
+        /// <param name="invoiceId">Fatura ID'si</param>
+        /// <returns>Fatura ödeme durumu</returns>
+        /// <response code="200">Fatura ödeme durumu başarıyla getirildi</response>
+        /// <response code="404">Fatura bulunamadı</response>
+        /// <response code="401">Yetkisiz erişim</response>
+        [HttpGet("invoice/{invoiceId}/status")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetInvoicePaymentStatus(int invoiceId)
+        {
+            try
+            {
+                var result = await _paymentStatusService.GetInvoicePaymentStatusAsync(invoiceId);
+                return Success(result, "Fatura ödeme durumu başarıyla getirildi.");
+            }
+            catch (Exception ex)
+            {
+                return Error("Fatura ödeme durumu getirilirken bir hata oluştu.", 500, new { Error = ex.Message });
             }
         }
     }

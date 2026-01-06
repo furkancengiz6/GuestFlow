@@ -1,0 +1,383 @@
+name: Secure CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run security scans daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  NODE_VERSION: '20.x'
+  SONAR_PROJECT_KEY: 'guestflow'
+  SONAR_ORGANIZATION: 'guestflow-org'
+
+jobs:
+  # Backend Tests & Build
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          MSSQL_PID: Express
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P '${{ secrets.DB_PASSWORD }}' -Q 'SELECT 1'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --tmpfs /tmp
+          --read-only
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Restore dependencies
+      run: dotnet restore GuestFlow.sln
+
+    - name: Build backend
+      run: dotnet build GuestFlow.sln --configuration Release --no-restore
+
+    - name: Run backend tests
+      run: dotnet test GuestFlow.Application.Tests --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: backend-test-results
+        path: |
+          **/*.trx
+          **/TestResults/**
+
+    - name: Generate test coverage
+      run: dotnet test GuestFlow.Application.Tests /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:CoverletOutput=./coverage/backend-coverage.xml
+
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      if: success()
+      with:
+        file: ./coverage/backend-coverage.xml
+        flags: backend
+        name: Backend Coverage
+
+    - name: Publish backend
+      run: dotnet publish GuestFlow.Api --configuration Release --output ./publish/backend --no-build
+
+    - name: Upload backend artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: backend-artifact
+        path: ./publish/backend/
+
+  # Frontend Tests & Build
+  frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: GuestFlow.Frontend/package-lock.json
+
+    - name: Install frontend dependencies
+      run: |
+        cd GuestFlow.Frontend
+        npm ci
+
+    - name: Lint frontend
+      run: |
+        cd GuestFlow.Frontend
+        npm run lint
+
+    - name: Run frontend tests
+      run: |
+        cd GuestFlow.Frontend
+        npm run test:coverage
+
+    - name: Upload frontend coverage
+      uses: codecov/codecov-action@v3
+      if: success()
+      with:
+        file: GuestFlow.Frontend/coverage/lcov.info
+        flags: frontend
+        name: Frontend Coverage
+
+    - name: Build frontend
+      run: |
+        cd GuestFlow.Frontend
+        npm run build
+
+    - name: Upload frontend artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: frontend-artifact
+        path: GuestFlow.Frontend/dist/
+
+  # Security Scanning & Quality Assurance
+  security:
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    # Static Application Security Testing (SAST)
+    - name: Run SonarQube analysis
+      uses: SonarSource/sonarqube-scan-action@v2
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+    # CodeQL Advanced Security
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v2
+      with:
+        languages: csharp, javascript, typescript
+        queries: +security-and-quality
+
+    - name: Autobuild
+      uses: github/codeql-action/autobuild@v2
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+
+    # Dependency Vulnerability Scanning
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        severity: 'HIGH,CRITICAL'
+
+    - name: Run OWASP Dependency Check
+      uses: dependency-check/Dependency-Check_Action@main
+      with:
+        project: 'GuestFlow'
+        path: '.'
+        format: 'SARIF'
+        output: 'dependency-check-report.sarif'
+
+    # Container Security Scanning
+    - name: Download backend artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: backend-artifact
+        path: ./artifacts/backend/
+
+    - name: Build Docker image for scanning
+      run: |
+        docker build -f GuestFlow.Api/Dockerfile -t guestflow-api:test ./artifacts/backend
+
+    - name: Scan Docker image
+      uses: anchore/scan-action@v3
+      with:
+        image: "guestflow-api:test"
+        fail-build: false
+        output-format: sarif
+        output-file: ./container-scan.sarif
+
+    # Secrets Detection
+    - name: Run TruffleHog OSS
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: main
+        head: HEAD
+        extra_args: --debug --only-verified
+
+    # Upload all security scan results
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+    - name: Upload Dependency Check results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'dependency-check-report.sarif'
+
+    - name: Upload Container scan results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: './container-scan.sarif'
+
+    # Quality Gates
+    - name: Quality Gate Check
+      run: |
+        # Check if critical vulnerabilities found
+        if [ -f "trivy-results.sarif" ]; then
+          CRITICAL_VULNS=$(jq '.runs[0].results[] | select(.level == "error") | .message.text' trivy-results.sarif 2>/dev/null | wc -l)
+          if [ "$CRITICAL_VULNS" -gt 0 ]; then
+            echo "❌ Critical vulnerabilities found: $CRITICAL_VULNS"
+            echo "Please fix critical security issues before merging"
+            exit 1
+          fi
+        fi
+
+        # Check test coverage
+        if [ -f "./coverage/backend-coverage.xml" ]; then
+          COVERAGE=$(grep -oP '(?<=line-rate=")[^"]*' ./coverage/backend-coverage.xml | head -1)
+          COVERAGE_PERCENT=$(echo "scale=2; $COVERAGE * 100" | bc)
+          if (( $(echo "$COVERAGE_PERCENT < 80" | bc -l) )); then
+            echo "❌ Code coverage too low: ${COVERAGE_PERCENT}% (required: 80%)"
+            exit 1
+          fi
+          echo "✅ Code coverage: ${COVERAGE_PERCENT}%"
+        fi
+
+  # Docker Build & Push
+  docker:
+    runs-on: ubuntu-latest
+    needs: [backend, frontend, security]
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download backend artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: backend-artifact
+        path: ./artifacts/backend/
+
+    - name: Download frontend artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: frontend-artifact
+        path: ./artifacts/frontend/
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Build and push backend Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./GuestFlow.Api/Dockerfile
+        push: true
+        tags: |
+          ${{ secrets.DOCKER_USERNAME }}/guestflow-api:latest
+          ${{ secrets.DOCKER_USERNAME }}/guestflow-api:${{ github.sha }}
+        labels: |
+          org.opencontainers.image.title=GuestFlow API
+          org.opencontainers.image.description=Hotel Concierge Management System API
+          org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          org.opencontainers.image.version=${{ github.sha }}
+          org.opencontainers.image.created=${{ steps.meta.outputs.created }}
+          org.opencontainers.image.revision=${{ github.sha }}
+
+    - name: Build and push frontend Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./GuestFlow.Frontend
+        file: ./GuestFlow.Frontend/Dockerfile
+        push: true
+        tags: |
+          ${{ secrets.DOCKER_USERNAME }}/guestflow-frontend:latest
+          ${{ secrets.DOCKER_USERNAME }}/guestflow-frontend:${{ github.sha }}
+        labels: |
+          org.opencontainers.image.title=GuestFlow Frontend
+          org.opencontainers.image.description=Hotel Concierge Management System Frontend
+          org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          org.opencontainers.image.version=${{ github.sha }}
+          org.opencontainers.image.created=${{ steps.meta.outputs.created }}
+          org.opencontainers.image.revision=${{ github.sha }}
+
+  # Deploy to Staging
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: [docker]
+    if: github.ref == 'refs/heads/develop'
+    environment: staging
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy to staging
+      run: |
+        echo "Deploying to staging environment..."
+        # Add your staging deployment commands here
+        # Example: kubectl apply -f k8s/staging/
+
+  # Deploy to Production
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: [docker]
+    if: github.ref == 'refs/heads/main'
+    environment: production
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy to production
+      run: |
+        echo "Deploying to production environment..."
+        # Add your production deployment commands here
+        # Example: kubectl apply -f k8s/production/
+
+  # Performance Testing
+  performance:
+    runs-on: ubuntu-latest
+    needs: [deploy-staging]
+    if: github.ref == 'refs/heads/develop'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run k6 load testing
+      uses: grafana/k6-action@v0.1.0
+      with:
+        filename: tests/performance/load-test.js
+        flags: --out json=test-results.json
+
+    - name: Upload performance results
+      uses: actions/upload-artifact@v3
+      with:
+        name: performance-results
+        path: test-results.json

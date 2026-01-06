@@ -1,6 +1,7 @@
 using GuestFlow.Api.Models;
 using GuestFlow.Api.Models.TransferModel;
 using System;
+using System.Linq;
 using GuestFlow.Application.Operations.Transfer.Dtos;
 using GuestFlow.Application.Operations.Transfer;
 using Microsoft.AspNetCore.Http;
@@ -15,7 +16,7 @@ namespace GuestFlow.Api.Controllers
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Staff,Admin")] // Bu controller'a sadece Staff ve Admin rolleri erişebilir.
+    [Authorize(Roles = "Reception,Concierge,Manager,Admin,Owner")] // Transfer işlemleri için gerekli roller
     [Tags("Transferler")]
     public class TransfersController : BaseController
     {
@@ -59,7 +60,7 @@ namespace GuestFlow.Api.Controllers
         /// </code>
         /// </example>
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<AddTransferResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Add(AddTransferRequest request)
@@ -67,6 +68,14 @@ namespace GuestFlow.Api.Controllers
             // Gelen isteğin doğruluğunu kontrol ediyorum. Eğer model geçersizse, hata döndürüyorum.
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
+
+            // Giriş yapmış kullanıcının ID'sini al (otomatik personel atama için)
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "id");
+            int? currentPersonnelId = null;
+            if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int personnelId))
+            {
+                currentPersonnelId = personnelId;
+            }
 
             // Gelen isteği bir DTO'ya çeviriyorum ki serviste kullanabileyim.
             var dto = new AddTransferDto
@@ -76,19 +85,27 @@ namespace GuestFlow.Api.Controllers
                 DropoffAddress = request.DropoffAddress,
                 Price = request.Price,
                 GuestId = request.GuestId,
-                PersonnelId = request.PersonnelId,
+                PersonnelId = request.PersonnelId ?? currentPersonnelId, // Otomatik doldurulacak
                 AirportId = request.AirportId,
                 VehicleId = request.VehicleId,
-                Note = request.Note ?? string.Empty,
+                Note = request.Note,
                 Status = request.Status,
-                IsFromAirport = request.IsFromAirport,
+                TransferType = request.TransferType,
                 PickupCityId = request.PickupCityId,
                 DropoffCityId = request.DropoffCityId,
-                    CreateInvoice = request.CreateInvoice,
-                    DiscountPercentage = request.DiscountPercentage,
-                    InvoiceDescription = request.InvoiceDescription,
-                    Currency = request.Currency
-                };
+                CreateInvoice = request.CreateInvoice,
+                DiscountPercentage = request.DiscountPercentage,
+                InvoiceDescription = request.InvoiceDescription,
+                Currency = request.Currency,
+                DriverName = request.DriverName,
+                ExternalVehiclePlate = request.ExternalVehiclePlate,
+                ExternalDriverName = request.ExternalDriverName,
+                ExternalDriverPhone = request.ExternalDriverPhone,
+                SupplierName = request.SupplierName,
+                SupplierCost = request.SupplierCost,
+                SupplierCurrency = request.SupplierCurrency,
+                SupplierInvoiceNumber = request.SupplierInvoiceNumber
+            };
 
             // Transferi eklemek için servisi çağırıyorum.
             var result = await _transferService.AddTransfer(dto);
@@ -199,6 +216,14 @@ namespace GuestFlow.Api.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            // Giriş yapmış kullanıcının ID'sini al (otomatik personel atama için)
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "id");
+            int? currentPersonnelId = null;
+            if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int personnelId))
+            {
+                currentPersonnelId = personnelId;
+            }
+
             // Gelen isteği bir DTO'ya çeviriyorum.
             var updateTransferDto = new UpdateTransferDto
             {
@@ -208,14 +233,24 @@ namespace GuestFlow.Api.Controllers
                 DropoffAddress = request.DropoffAddress,
                 Price = request.Price,
                 GuestId = request.GuestId,
-                PersonnelId = request.PersonnelId,
+                PersonnelId = request.PersonnelId ?? currentPersonnelId, // Otomatik doldurulacak
                 AirportId = request.AirportId,
                 VehicleId = request.VehicleId,
                 Note = request.Note,
                 Status = request.Status,
-                IsFromAirport = request.IsFromAirport,
+                TransferType = request.TransferType,
                 PickupCityId = request.PickupCityId,
-                DropoffCityId = request.DropoffCityId
+                DropoffCityId = request.DropoffCityId,
+                DiscountPercentage = request.DiscountPercentage,
+                Currency = request.Currency,
+                DriverName = request.DriverName,
+                ExternalVehiclePlate = request.ExternalVehiclePlate,
+                ExternalDriverName = request.ExternalDriverName,
+                ExternalDriverPhone = request.ExternalDriverPhone,
+                SupplierName = request.SupplierName,
+                SupplierCost = request.SupplierCost,
+                SupplierCurrency = request.SupplierCurrency,
+                SupplierInvoiceNumber = request.SupplierInvoiceNumber
             };
 
             // Transferi güncellemek için servisi çağırıyorum.
@@ -232,6 +267,7 @@ namespace GuestFlow.Api.Controllers
         /// <response code="404">Transfer bulunamadı</response>
         /// <response code="401">Yetkisiz erişim</response>
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Manager,Admin,Owner")] // Sadece yönetim rolleri silebilir
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -337,6 +373,7 @@ namespace GuestFlow.Api.Controllers
         /// <response code="500">Sunucu hatası</response>
         /// <response code="401">Yetkisiz erişim</response>
         [HttpPatch("{id}/status")]
+        [Authorize(Roles = "Concierge,Manager,Admin,Owner")] // Sadece operasyonel roller durum değiştirebilir
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -382,6 +419,93 @@ namespace GuestFlow.Api.Controllers
             catch (Exception ex)
             {
                 return Error("Araç atanırken bir hata oluştu.", 500, new { Error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Transfer için fatura oluşturur
+        /// </summary>
+        /// <param name="id">Transfer ID'si</param>
+        /// <returns>Fatura oluşturma sonucu</returns>
+        /// <response code="200">Fatura başarıyla oluşturuldu</response>
+        /// <response code="400">Fatura oluşturulamadı</response>
+        /// <response code="404">Transfer bulunamadı</response>
+        /// <response code="500">Sunucu hatası</response>
+        /// <response code="401">Yetkisiz erişim</response>
+        [HttpPost("{id}/invoice")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> CreateTransferInvoice(int id)
+        {
+            try
+            {
+                var result = await _transferService.CreateTransferInvoiceAsync(id);
+                return FromServiceMessage(result);
+            }
+            catch (Exception ex)
+            {
+                return Error("Fatura oluşturulurken bir hata oluştu.", 500, new { Error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Transfer onay maili gönderir
+        /// </summary>
+        /// <param name="id">Transfer ID'si</param>
+        /// <returns>Onay maili gönderme sonucu</returns>
+        /// <response code="200">Onay maili başarıyla gönderildi</response>
+        /// <response code="400">Mail gönderilemedi</response>
+        /// <response code="404">Transfer bulunamadı</response>
+        /// <response code="500">Sunucu hatası</response>
+        /// <response code="401">Yetkisiz erişim</response>
+        [HttpPost("{id}/send-confirmation")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> SendTransferConfirmation(int id)
+        {
+            try
+            {
+                var result = await _transferService.SendTransferConfirmationAsync(id);
+                return FromServiceMessage(result);
+            }
+            catch (Exception ex)
+            {
+                return Error("Onay maili gönderilirken bir hata oluştu.", 500, new { Error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Transfer için gidiş-dönüş transferi oluşturur
+        /// </summary>
+        /// <param name="id">Transfer ID'si</param>
+        /// <returns>Gidiş-dönüş transfer oluşturma sonucu</returns>
+        /// <response code="200">Gidiş-dönüş transfer başarıyla oluşturuldu</response>
+        /// <response code="400">Gidiş-dönüş transfer oluşturulamadı</response>
+        /// <response code="404">Transfer bulunamadı</response>
+        /// <response code="500">Sunucu hatası</response>
+        /// <response code="401">Yetkisiz erişim</response>
+        [HttpPost("{id}/round-trip")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> CreateRoundTrip(int id)
+        {
+            try
+            {
+                var result = await _transferService.CreateRoundTripTransferAsync(id);
+                return FromServiceMessage(result);
+            }
+            catch (Exception ex)
+            {
+                return Error("Gidiş-dönüş transfer oluşturulurken bir hata oluştu.", 500, new { Error = ex.Message });
             }
         }
     }

@@ -13,11 +13,14 @@ namespace GuestFlow.Persistence.Context
         public DbSet<AirportEntity> Airports => Set<AirportEntity>();
         public DbSet<PersonnelEntity> Personnels => Set<PersonnelEntity>();
         public DbSet<CityEntity> Cities => Set<CityEntity>();
+        public DbSet<TourEntity> Tours => Set<TourEntity>();
         public DbSet<CityTourEntity> CityTours => Set<CityTourEntity>();
         public DbSet<DailyNoteEntity> DailyNotes => Set<DailyNoteEntity>();
         public DbSet<DailyRevenueEntity> DailyRevenues => Set<DailyRevenueEntity>();
         public DbSet<GuestEntity> Guests => Set<GuestEntity>();
+        public DbSet<RoomAssignmentEntity> RoomAssignments => Set<RoomAssignmentEntity>();
         public DbSet<InvoicesEntity> Invoices => Set<InvoicesEntity>();
+        public DbSet<InvoiceItemEntity> InvoiceItems => Set<InvoiceItemEntity>();
         public DbSet<TransferEntity> Transfers => Set<TransferEntity>();
         public DbSet<VehicleEntity> Vehicles => Set<VehicleEntity>();
         public DbSet<YachtTourEntity> YachtTours => Set<YachtTourEntity>();
@@ -31,6 +34,16 @@ namespace GuestFlow.Persistence.Context
         public DbSet<ReservationEntity> Reservations => Set<ReservationEntity>();
         public DbSet<PaymentEntity> Payments => Set<PaymentEntity>();
         public DbSet<SmsHistoryEntity> SmsHistories => Set<SmsHistoryEntity>();
+        public DbSet<HotelEntity> Hotels => Set<HotelEntity>();
+        public DbSet<RestaurantEntity> Restaurants => Set<RestaurantEntity>();
+        public DbSet<ItineraryEntity> Itineraries => Set<ItineraryEntity>();
+        public DbSet<ItineraryItemEntity> ItineraryItems => Set<ItineraryItemEntity>();
+        public DbSet<RestaurantReservationEntity> RestaurantReservations => Set<RestaurantReservationEntity>();
+        public DbSet<ServicePackageEntity> ServicePackages => Set<ServicePackageEntity>();
+        public DbSet<PackageTransferEntity> PackageTransfers => Set<PackageTransferEntity>();
+        public DbSet<PackageCityTourEntity> PackageCityTours => Set<PackageCityTourEntity>();
+        public DbSet<PackageYachtTourEntity> PackageYachtTours => Set<PackageYachtTourEntity>();
+        public DbSet<PackageRestaurantReservationEntity> PackageRestaurantReservations => Set<PackageRestaurantReservationEntity>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -39,6 +52,7 @@ namespace GuestFlow.Persistence.Context
             // Fluent API ile yapılandırmaları uyguluyoruz
             modelBuilder.ApplyConfiguration(new AirportConfiguration());
             modelBuilder.ApplyConfiguration(new CityConfiguration());
+            modelBuilder.ApplyConfiguration(new TourConfiguration());
             modelBuilder.ApplyConfiguration(new CityTourConfiguration());
             modelBuilder.ApplyConfiguration(new DailyNoteConfiguration());
             modelBuilder.ApplyConfiguration(new DailyRevenueConfiguration());
@@ -57,6 +71,16 @@ namespace GuestFlow.Persistence.Context
             modelBuilder.ApplyConfiguration(new ReservationConfiguration());
             modelBuilder.ApplyConfiguration(new PaymentConfiguration());
             modelBuilder.ApplyConfiguration(new SmsHistoryConfiguration());
+            modelBuilder.ApplyConfiguration(new HotelConfiguration());
+            modelBuilder.ApplyConfiguration(new RestaurantConfiguration());
+            modelBuilder.ApplyConfiguration(new ItineraryConfiguration());
+            modelBuilder.ApplyConfiguration(new ItineraryItemConfiguration());
+            modelBuilder.ApplyConfiguration(new RestaurantReservationConfiguration());
+            modelBuilder.ApplyConfiguration(new ServicePackageConfiguration());
+            modelBuilder.ApplyConfiguration(new PackageTransferConfiguration());
+            modelBuilder.ApplyConfiguration(new PackageCityTourConfiguration());
+            modelBuilder.ApplyConfiguration(new PackageYachtTourConfiguration());
+            modelBuilder.ApplyConfiguration(new PackageRestaurantReservationConfiguration());
             modelBuilder.Entity<SettingEntity>().HasData(new SettingEntity
             {
                 Id = 1,

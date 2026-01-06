@@ -18,6 +18,11 @@ namespace GuestFlow.Application.Operations.Tour
         /// Tur istatistiklerini getirir (CityTour ve YachtTour birleşik)
         /// </summary>
         Task<TourStatisticsDto> GetTourStatisticsAsync(DateTime? startDate = null, DateTime? endDate = null);
+
+        /// <summary>
+        /// Tur tanımlarını döner (şehir ve aktiflik filtresiyle)
+        /// </summary>
+        Task<IList<TourLookupDto>> GetToursAsync(int? cityId = null, bool? isActive = true);
     }
 }
 

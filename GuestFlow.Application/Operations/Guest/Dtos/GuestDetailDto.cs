@@ -16,6 +16,12 @@ namespace GuestFlow.Application.Operations.Guest.Dtos
         public string Nationality { get; set; } = string.Empty;
         public string GuestCode { get; set; } = string.Empty;
         public bool IsSpecialGuest { get; set; }
+
+        // Emergency contact information
+        public string? EmergencyContactName { get; set; }
+        public string? EmergencyContactPhone { get; set; }
+        public string? EmergencyContactRelation { get; set; }
+
         public DateTime CreatedDate { get; set; }
 
         // İstatistikler

@@ -9,7 +9,7 @@ namespace GuestFlow.Application.Operations.Transfer
 {
     public interface ITransferService
     {
-        Task<ServiceMessage> AddTransfer(AddTransferDto transfer);
+        Task<ServiceMessage<AddTransferResponseDto>> AddTransfer(AddTransferDto transfer);
         Task<ServiceMessage> UpdateTransfer(UpdateTransferDto transfer);
         Task<ServiceMessage> DeleteTransfer(int id);
         Task<GetTransferDto> GetTransferById(int id);
@@ -40,5 +40,20 @@ namespace GuestFlow.Application.Operations.Transfer
         /// Transfer'e araç atar
         /// </summary>
         Task<ServiceMessage> AssignVehicleAsync(int id, int vehicleId);
+
+        /// <summary>
+        /// Transfer için fatura oluşturur
+        /// </summary>
+        Task<ServiceMessage> CreateTransferInvoiceAsync(int id);
+
+        /// <summary>
+        /// Transfer onay maili gönderir
+        /// </summary>
+        Task<ServiceMessage> SendTransferConfirmationAsync(int id);
+
+        /// <summary>
+        /// Transfer için gidiş-dönüş transferi oluşturur
+        /// </summary>
+        Task<ServiceMessage> CreateRoundTripTransferAsync(int id);
     }
 }

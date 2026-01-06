@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useLiveUpdates } from '../../hooks/useLiveUpdates'
 import {
   Box,
   Paper,
@@ -14,6 +15,7 @@ import {
   Tabs,
   Tab,
   Button,
+  Chip,
   IconButton,
   Tooltip,
   Dialog,
@@ -56,6 +58,10 @@ import { CityTour, YachtTour } from '../../types/tour'
 
 const ToursPage = () => {
   const navigate = useNavigate()
+
+  // Enable real-time updates for tour changes
+  useLiveUpdates(['citytour', 'yachttour'])
+
   const [tabValue, setTabValue] = useState(0)
   const [cityTourPage, setCityTourPage] = useState(0)
   const [yachtTourPage, setYachtTourPage] = useState(0)
@@ -143,10 +149,20 @@ const ToursPage = () => {
 
   const createCityTourMutation = useMutation({
     mutationFn: (data: CreateCityTourRequest) => tourService.createCityTour(data),
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['cityTours'] })
       setCityTourFormOpen(false)
       notification.showSuccess('Şehir turu başarıyla eklendi.')
+      
+      // Otomatik fatura indirme
+      if (response.invoicePdfUrl) {
+        try {
+          window.open(response.invoicePdfUrl, '_blank')
+          notification.showSuccess('Fatura PDF\'i indiriliyor...')
+        } catch (error) {
+          console.error('Fatura indirme hatası:', error)
+        }
+      }
     },
     onError: (error: any) => {
       notification.showError(error?.response?.data?.message || 'Şehir turu eklenirken bir hata oluştu.')
@@ -182,10 +198,20 @@ const ToursPage = () => {
 
   const createYachtTourMutation = useMutation({
     mutationFn: (data: CreateYachtTourRequest) => tourService.createYachtTour(data),
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['yachtTours'] })
       setYachtTourFormOpen(false)
       notification.showSuccess('Yat turu başarıyla eklendi.')
+      
+      // Otomatik fatura indirme
+      if (response.invoicePdfUrl) {
+        try {
+          window.open(response.invoicePdfUrl, '_blank')
+          notification.showSuccess('Fatura PDF\'i indiriliyor...')
+        } catch (error) {
+          console.error('Fatura indirme hatası:', error)
+        }
+      }
     },
     onError: (error: any) => {
       notification.showError(error?.response?.data?.message || 'Yat turu eklenirken bir hata oluştu.')
@@ -322,6 +348,27 @@ const ToursPage = () => {
 
   const hasActiveCityTourFilters = cityTourSearchTerm || cityTourStartDate || cityTourEndDate || cityTourCityId || cityTourGuestId || cityTourPersonnelId || cityTourSortBy
   const hasActiveYachtTourFilters = yachtTourSearchTerm || yachtTourStartDate || yachtTourEndDate || yachtTourCityId || yachtTourGuestId || yachtTourPersonnelId || yachtTourSortBy
+
+  const isLoading = cityToursLoading || yachtToursLoading
+
+  if (isLoading) {
+    return <ContentState state="loading" skeletonLines={6} />
+  }
+
+  if (cityToursError || yachtToursError) {
+    return (
+      <ContentState
+        state="error"
+        title="Turlar yüklenemedi"
+        description={cityToursError?.message || yachtToursError?.message || "Lütfen daha sonra tekrar deneyin."}
+        actionLabel="Tekrar dene"
+        onAction={() => {
+          queryClient.refetchQueries({ queryKey: ['cityTours'] })
+          queryClient.refetchQueries({ queryKey: ['yachtTours'] })
+        }}
+      />
+    )
+  }
 
   return (
     <Box p={3}>
@@ -549,13 +596,16 @@ const ToursPage = () => {
               title="Şehir turları yüklenemedi"
               description="Lütfen daha sonra tekrar deneyin."
               actionLabel="Tekrar dene"
-              onAction={() => window.location.reload()}
+              onAction={() => {
+          queryClient.refetchQueries({ queryKey: ['cityTours'] })
+          queryClient.refetchQueries({ queryKey: ['yachtTours'] })
+        }}
             />
           ) : !cityTours?.data || cityTours.data.length === 0 ? (
             <ContentState
               state="empty"
               title="Şehir turu bulunamadı"
-              description="Kayıtlı şehir turu olmadığında burada listelenecek."
+              description="Henüz kayıtlı şehir turu bulunmamaktadır."
             />
           ) : (
             <TableContainer component={Paper}>
@@ -563,9 +613,12 @@ const ToursPage = () => {
                 <TableHead>
                   <TableRow>
                     <TableCell><strong>Tarih</strong></TableCell>
-                    <TableCell><strong>Dil</strong></TableCell>
-                    <TableCell><strong>Süre (Saat)</strong></TableCell>
-                    <TableCell><strong>Fiyat</strong></TableCell>
+                    <TableCell><strong>Misafir/Grup</strong></TableCell>
+                    <TableCell><strong>Kapasite</strong></TableCell>
+                    <TableCell><strong>Hava</strong></TableCell>
+                    <TableCell><strong>Rehber</strong></TableCell>
+                    <TableCell><strong>Araç</strong></TableCell>
+                    <TableCell><strong>Onay</strong></TableCell>
                     <TableCell><strong>İşlemler</strong></TableCell>
                   </TableRow>
                 </TableHead>
@@ -581,9 +634,52 @@ const ToursPage = () => {
                           {formatDate(tour.tourDate)}
                         </Button>
                       </TableCell>
-                      <TableCell>{tour.language}</TableCell>
-                      <TableCell>{tour.durationHours}</TableCell>
-                      <TableCell>{formatCurrency(tour.price, 'TRY')}</TableCell>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight="medium">
+                          {tour.ownerGuest?.fullName || 'Misafir'}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {((tour as any).adultCount || 0) + ((tour as any).childCount || 0) + ((tour as any).infantCount || 0)} kişi toplam
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography variant="body2">
+                            {((tour as any).adultCount || 0) + ((tour as any).childCount || 0)}/
+                            {(tour as any).maximumParticipantCount || 20}
+                          </Typography>
+                          {((tour as any).adultCount || 0) + ((tour as any).childCount || 0) > (tour as any).maximumParticipantCount && (
+                            <Chip label="DOLU" color="error" size="small" />
+                          )}
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={(tour as any).weatherDependent ? 'Bağımlı' : 'Normal'}
+                          color={(tour as any).weatherDependent ? 'warning' : 'success'}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {(tour as any).guideName || 'Atanmamış'}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {(tour as any).guideLanguages || '-'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {tour.vehicleId ? `Araç #${tour.vehicleId}` : 'Atanmamış'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        {(tour as any).tourConfirmationTime ? (
+                          <Chip label="Onaylandı" color="success" size="small" />
+                        ) : (
+                          <Chip label="Bekliyor" color="warning" size="small" />
+                        )}
+                      </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', gap: 1 }}>
                           <Button
@@ -827,13 +923,16 @@ const ToursPage = () => {
               title="Yat turları yüklenemedi"
               description="Lütfen daha sonra tekrar deneyin."
               actionLabel="Tekrar dene"
-              onAction={() => window.location.reload()}
+              onAction={() => {
+          queryClient.refetchQueries({ queryKey: ['cityTours'] })
+          queryClient.refetchQueries({ queryKey: ['yachtTours'] })
+        }}
             />
           ) : !yachtTours?.data || yachtTours.data.length === 0 ? (
             <ContentState
               state="empty"
               title="Yat turu bulunamadı"
-              description="Kayıtlı yat turu olmadığında burada listelenecek."
+              description="Henüz kayıtlı yat turu bulunmamaktadır."
             />
           ) : (
             <TableContainer component={Paper}>
@@ -841,10 +940,11 @@ const ToursPage = () => {
                 <TableHead>
                   <TableRow>
                     <TableCell><strong>Tarih</strong></TableCell>
-                    <TableCell><strong>Yat Adı</strong></TableCell>
-                    <TableCell><strong>Kişi Sayısı</strong></TableCell>
-                    <TableCell><strong>Fiyat</strong></TableCell>
-                    <TableCell><strong>Özel İstek</strong></TableCell>
+                    <TableCell><strong>Misafir</strong></TableCell>
+                    <TableCell><strong>Yat/Kaptan</strong></TableCell>
+                    <TableCell><strong>Güvenlik</strong></TableCell>
+                    <TableCell><strong>Hava</strong></TableCell>
+                    <TableCell><strong>Yakıt</strong></TableCell>
                     <TableCell><strong>İşlemler</strong></TableCell>
                   </TableRow>
                 </TableHead>
@@ -860,10 +960,50 @@ const ToursPage = () => {
                           {formatDate(tour.tourDate)}
                         </Button>
                       </TableCell>
-                      <TableCell>{tour.yachtName}</TableCell>
-                      <TableCell>{tour.numberOfPeople}</TableCell>
-                      <TableCell>{formatCurrency(tour.price, 'TRY')}</TableCell>
-                      <TableCell>{tour.specialRequest || '-'}</TableCell>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight="medium">
+                          {tour.ownerGuest?.fullName || 'Misafir'}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {tour.numberOfPeople} kişi
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {tour.yachtName || 'Atanmamış'}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Kaptan: {(tour as any).captainId ? `ID ${(tour as any).captainId}` : 'Atanmamış'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                          <Chip
+                            label={(tour as any).lifeJacketsProvided ? 'C.Yelek ✓' : 'C.Yelek ✗'}
+                            color={(tour as any).lifeJacketsProvided ? 'success' : 'error'}
+                            size="small"
+                            sx={{ fontSize: '0.7rem', height: 20 }}
+                          />
+                          <Chip
+                            label={(tour as any).safetyEquipmentCheck ? 'Ekipman ✓' : 'Ekipman ✗'}
+                            color={(tour as any).safetyEquipmentCheck ? 'success' : 'error'}
+                            size="small"
+                            sx={{ fontSize: '0.7rem', height: 20 }}
+                          />
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={(tour as any).weatherCheckTime ? 'Kontrol ✓' : 'Bekliyor'}
+                          color={(tour as any).weatherCheckTime ? 'success' : 'warning'}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {(tour as any).fuelLevelCheck || 'Kontrol Yok'}
+                        </Typography>
+                      </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', gap: 1 }}>
                           <Button

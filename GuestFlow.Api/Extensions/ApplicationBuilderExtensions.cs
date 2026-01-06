@@ -2,6 +2,7 @@ using GuestFlow.Domain.DataProtection;
 using GuestFlow.Persistence.Context;
 using GuestFlow.Persistence.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -17,13 +18,14 @@ namespace GuestFlow.Api.Extensions
                 var logger = services.GetRequiredService<ILogger<DatabaseSeeder>>();
                 var context = services.GetRequiredService<GuestFlowDbContext>();
                 var dataProtection = services.GetRequiredService<IDataProtection>();
+                var configuration = services.GetRequiredService<IConfiguration>();
 
                 try
                 {
                     // Veritabanının oluşturulduğundan emin ol
                     await context.Database.MigrateAsync();
 
-                    var seeder = new DatabaseSeeder(context, logger, dataProtection);
+                    var seeder = new DatabaseSeeder(context, logger, dataProtection, configuration);
                     await seeder.SeedAsync();
                 }
                 catch (Exception ex)

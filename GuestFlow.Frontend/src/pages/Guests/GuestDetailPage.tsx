@@ -7,20 +7,14 @@ import {
   Card,
   CardContent,
   Chip,
+  Button,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Button,
   Divider,
-  Timeline,
-  TimelineItem,
-  TimelineSeparator,
-  TimelineConnector,
-  TimelineContent,
-  TimelineDot,
   IconButton,
   Tooltip,
 } from '@mui/material'
@@ -35,6 +29,8 @@ import {
   Tour as TourIcon,
   AttachMoney as AttachMoneyIcon,
   PictureAsPdf as PictureAsPdfIcon,
+  Edit as EditIcon,
+  Add as AddIcon,
 } from '@mui/icons-material'
 import { useQuery } from '@tanstack/react-query'
 import { guestService } from '../../services/guestService'
@@ -106,6 +102,34 @@ const GuestDetailPage = () => {
         <Typography variant="h4" sx={{ fontWeight: 600 }}>
           Misafir Detayı
         </Typography>
+      </Box>
+
+      {/* ACTION BUTTONS */}
+      <Box sx={{ mb: 3, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<EditIcon />}
+          onClick={() => navigate(`/guests/${guestId}/edit`)}
+        >
+          Düzenle
+        </Button>
+        <Button
+          variant="outlined"
+          color="secondary"
+          startIcon={<AddIcon />}
+          onClick={() => navigate('/transfers', { state: { preselectedGuestId: guestId } })}
+        >
+          Transfer Oluştur
+        </Button>
+        <Button
+          variant="outlined"
+          color="info"
+          startIcon={<TourIcon />}
+          onClick={() => navigate('/tours', { state: { preselectedGuestId: guestId } })}
+        >
+          Tur Oluştur
+        </Button>
       </Box>
 
       {/* Misafir Bilgileri */}

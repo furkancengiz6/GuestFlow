@@ -19,6 +19,13 @@ namespace GuestFlow.Application.Operations.Invoice.Dtos
         public bool HasPdf => !string.IsNullOrEmpty(PdfUrl);
         public DateTime CreatedDate { get; set; }
 
+        // Payment status (calculated from PaymentEntity)
+        public string? PaymentStatus { get; set; } // Unpaid, PartiallyPaid, Paid
+        public decimal? PaidAmount { get; set; }
+        public decimal? RemainingAmount { get; set; }
+        public Dictionary<string, decimal>? PaidAmountByCurrency { get; set; }
+        public Dictionary<string, decimal>? RemainingAmountByCurrency { get; set; }
+
         // İlişkili Veriler
         public InvoiceGuestDto? Guest { get; set; }
         public InvoicePersonnelDto? Personnel { get; set; }

@@ -1,4 +1,5 @@
 using GuestFlow.Application.Operations.Tour;
+using GuestFlow.Application.Operations.Tour;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -17,6 +18,16 @@ namespace GuestFlow.Api.Controllers
         public ToursController(ITourService tourService)
         {
             _tourService = tourService;
+        }
+
+        /// <summary>
+        /// Tur tanımlarını döner (şehir ve aktiflik filtresi)
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetTours([FromQuery] int? cityId = null, [FromQuery] bool? isActive = true)
+        {
+            var result = await _tourService.GetToursAsync(cityId, isActive);
+            return Success(result, "Turlar başarıyla getirildi.");
         }
 
         /// <summary>

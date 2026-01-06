@@ -1,0 +1,250 @@
+# Azure DevOps CI/CD Pipeline for GuestFlow
+# https://aka.ms/yaml
+
+trigger:
+  branches:
+    include:
+    - main
+    - develop
+  paths:
+    exclude:
+    - README.md
+    - docs/*
+
+pr:
+  branches:
+    include:
+    - main
+    - develop
+
+variables:
+  - name: dotnetSdkVersion
+    value: '8.0.x'
+  - name: nodeVersion
+    value: '20.x'
+  - name: buildConfiguration
+    value: 'Release'
+  - name: testResultsDirectory
+    value: '$(Agent.TempDirectory)/TestResults'
+
+stages:
+- stage: Build
+  displayName: 'Build & Test'
+  jobs:
+  - job: Backend
+    displayName: 'Backend Build & Test'
+    pool:
+      vmImage: 'ubuntu-latest'
+
+    services:
+      sqlserver: mssql
+
+    steps:
+    - task: UseDotNet@2
+      displayName: 'Install .NET SDK'
+      inputs:
+        packageType: 'sdk'
+        version: '$(dotnetSdkVersion)'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Restore NuGet packages'
+      inputs:
+        command: 'restore'
+        projects: '**/*.sln'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Build solution'
+      inputs:
+        command: 'build'
+        projects: '**/*.sln'
+        arguments: '--configuration $(buildConfiguration) --no-restore'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Run backend tests'
+      inputs:
+        command: 'test'
+        projects: '**/GuestFlow.Application.Tests/GuestFlow.Application.Tests.csproj'
+        arguments: '--configuration $(buildConfiguration) --no-build --verbosity normal --logger trx --results-directory $(testResultsDirectory)'
+
+    - task: PublishTestResults@2
+      displayName: 'Publish test results'
+      inputs:
+        testResultsFormat: 'VSTest'
+        testResultsFiles: '**/*.trx'
+        searchFolder: '$(testResultsDirectory)'
+        mergeTestResults: true
+        failTaskOnFailedTests: true
+        testRunTitle: 'Backend Tests'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Generate code coverage'
+      inputs:
+        command: 'test'
+        projects: '**/GuestFlow.Application.Tests/GuestFlow.Application.Tests.csproj'
+        arguments: '/p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=$(Build.SourcesDirectory)/coverage/backend-coverage.xml'
+
+    - task: PublishCodeCoverageResults@1
+      displayName: 'Publish code coverage'
+      inputs:
+        codeCoverageTool: 'Cobertura'
+        summaryFileLocation: '$(Build.SourcesDirectory)/coverage/backend-coverage.xml'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Publish backend'
+      inputs:
+        command: 'publish'
+        projects: '**/GuestFlow.Api/GuestFlow.Api.csproj'
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/backend --no-build'
+        zipAfterPublish: true
+
+    - publish: $(Build.ArtifactStagingDirectory)/backend
+      artifact: Backend
+
+  - job: Frontend
+    displayName: 'Frontend Build & Test'
+    pool:
+      vmImage: 'ubuntu-latest'
+
+    steps:
+    - task: NodeTool@0
+      displayName: 'Install Node.js'
+      inputs:
+        versionSpec: '$(nodeVersion)'
+
+    - task: Cache@2
+      displayName: 'Cache node modules'
+      inputs:
+        key: 'npm | "$(Agent.OS)" | package-lock.json'
+        restoreKeys: |
+          npm | "$(Agent.OS)"
+        path: $(npm_config_cache)
+
+    - script: |
+        cd GuestFlow.Frontend
+        npm ci
+      displayName: 'Install dependencies'
+
+    - script: |
+        cd GuestFlow.Frontend
+        npm run lint
+      displayName: 'Run linter'
+
+    - script: |
+        cd GuestFlow.Frontend
+        npm run test:coverage
+      displayName: 'Run frontend tests'
+
+    - task: PublishTestResults@2
+      displayName: 'Publish frontend test results'
+      inputs:
+        testResultsFormat: 'JUnit'
+        testResultsFiles: '**/junit.xml'
+        searchFolder: 'GuestFlow.Frontend'
+        mergeTestResults: true
+        testRunTitle: 'Frontend Tests'
+
+    - task: PublishCodeCoverageResults@1
+      displayName: 'Publish frontend coverage'
+      inputs:
+        codeCoverageTool: 'Cobertura'
+        summaryFileLocation: 'GuestFlow.Frontend/coverage/cobertura-coverage.xml'
+
+    - script: |
+        cd GuestFlow.Frontend
+        npm run build
+      displayName: 'Build frontend'
+
+    - publish: GuestFlow.Frontend/dist
+      artifact: Frontend
+
+- stage: Security
+  displayName: 'Security & Quality'
+  dependsOn: Build
+  jobs:
+  - job: SecurityScan
+    displayName: 'Security Scanning'
+    pool:
+      vmImage: 'ubuntu-latest'
+
+    steps:
+    - task: CredScan@2
+      displayName: 'Run CredScan'
+      inputs:
+        toolMajorVersion: 'V2'
+
+    - task: securedevelopmentteam.vss-secure-development-tools.build-task-eslint-security.Sdl/eslint-security-check@1
+      displayName: 'Run ESLint Security'
+      inputs:
+        Path: 'GuestFlow.Frontend/src'
+
+    - task: securedevelopmentteam.vss-secure-development-tools.build-task-security-analysis.Sdl/security-analysis@1
+      displayName: 'Run Security Analysis'
+
+- stage: Deploy
+  displayName: 'Deploy to Environments'
+  dependsOn: Security
+  condition: succeeded()
+  jobs:
+  - deployment: DeployStaging
+    displayName: 'Deploy to Staging'
+    pool:
+      vmImage: 'ubuntu-latest'
+    environment: 'staging'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: Backend
+
+          - download: current
+            artifact: Frontend
+
+          - task: AzureWebApp@1
+            displayName: 'Deploy Backend to Staging'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              appType: webApp
+              appName: $(stagingBackendAppName)
+              package: $(Pipeline.Workspace)/Backend/**/*.zip
+
+          - task: AzureRmWebAppDeployment@4
+            displayName: 'Deploy Frontend to Staging'
+            inputs:
+              ConnectionType: 'AzureRM'
+              azureSubscription: $(azureSubscription)
+              appType: webApp
+              WebAppName: $(stagingFrontendAppName)
+              packageForLinux: $(Pipeline.Workspace)/Frontend
+
+  - deployment: DeployProduction
+    displayName: 'Deploy to Production'
+    pool:
+      vmImage: 'ubuntu-latest'
+    environment: 'production'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: Backend
+
+          - download: current
+            artifact: Frontend
+
+          - task: AzureWebApp@1
+            displayName: 'Deploy Backend to Production'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              appType: webApp
+              appName: $(productionBackendAppName)
+              package: $(Pipeline.Workspace)/Backend/**/*.zip
+
+          - task: AzureRmWebAppDeployment@4
+            displayName: 'Deploy Frontend to Production'
+            inputs:
+              ConnectionType: 'AzureRM'
+              azureSubscription: $(azureSubscription)
+              appType: webApp
+              WebAppName: $(productionFrontendAppName)
+              packageForLinux: $(Pipeline.Workspace)/Frontend

@@ -19,7 +19,7 @@ namespace GuestFlow.Api.Controllers
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Admin")] // Sadece Admin personel yönetimi yapabilir
+    [Authorize(Roles = "Admin,Owner")] // Sadece Owner ve Admin personel yönetimi yapabilir
     [Tags("Personeller")]
     public class PersonnelController : BaseController
     {

@@ -2,6 +2,7 @@ using AutoMapper;
 using GuestFlow.Application.Extensions;
 using GuestFlow.Application.Models;
 using GuestFlow.Application.Operations.Currency;
+using GuestFlow.Application.Operations.Notification;
 using GuestFlow.Application.Operations.Payment.Dtos;
 using GuestFlow.Application.Operations.Validation;
 using GuestFlow.Application.Types;
@@ -24,6 +25,7 @@ namespace GuestFlow.Application.Operations.Payment
         private readonly ICurrencyService _currencyService;
         private readonly IMapper _mapper;
         private readonly ILogger<PaymentService> _logger;
+        private readonly INotificationHubService _hubService;
 
         public PaymentService(
             IUnitOfWork unitOfWork,
@@ -33,7 +35,8 @@ namespace GuestFlow.Application.Operations.Payment
             IForeignKeyValidationService foreignKeyValidationService,
             ICurrencyService currencyService,
             IMapper mapper,
-            ILogger<PaymentService> logger)
+            ILogger<PaymentService> logger,
+            INotificationHubService? hubService = null)
         {
             _unitOfWork = unitOfWork;
             _paymentRepository = paymentRepository;
@@ -43,6 +46,7 @@ namespace GuestFlow.Application.Operations.Payment
             _currencyService = currencyService;
             _mapper = mapper;
             _logger = logger;
+            _hubService = hubService;
         }
 
         public async Task<ServiceMessage<GetPaymentDto>> AddPaymentAsync(AddPaymentDto paymentDto)
@@ -51,10 +55,11 @@ namespace GuestFlow.Application.Operations.Payment
             {
                 await _unitOfWork.BeginTransactionAsync();
 
-                // Foreign key validasyonları
+                // Foreign key validasyonları - Guest ve Personnel zorunlu
                 var fkValidation = await _foreignKeyValidationService.ValidateMultipleAsync(new ForeignKeyValidationRequest
                 {
-                    GuestId = paymentDto.GuestId
+                    GuestId = paymentDto.GuestId,
+                    PersonnelId = paymentDto.CollectedByPersonnelId
                 });
 
                 if (!fkValidation.IsValid)
@@ -62,12 +67,24 @@ namespace GuestFlow.Application.Operations.Payment
                     return new ServiceMessage<GetPaymentDto> { IsSuccess = false, Message = fkValidation.ErrorMessage };
                 }
 
-                // Fatura kontrolü
-                var invoice = await _invoiceRepository.GetAsync(x => x.Id == paymentDto.InvoiceId && !x.IsDeleted);
-                if (invoice == null)
+                // Personel kontrolü - zorunlu (kim tahsil etti?)
+                if (paymentDto.CollectedByPersonnelId <= 0)
                 {
-                    return new ServiceMessage<GetPaymentDto> { IsSuccess = false, Message = "Fatura bulunamadı." };
+                    return new ServiceMessage<GetPaymentDto> { IsSuccess = false, Message = "Ödemeyi tahsil eden personel belirtilmelidir." };
                 }
+
+                // Fatura kontrolü - opsiyonel
+                if (paymentDto.InvoiceId.HasValue && paymentDto.InvoiceId.Value > 0)
+                {
+                    var invoice = await _invoiceRepository.GetAsync(x => x.Id == paymentDto.InvoiceId && !x.IsDeleted);
+                    if (invoice == null)
+                    {
+                        return new ServiceMessage<GetPaymentDto> { IsSuccess = false, Message = "Belirtilen fatura bulunamadı." };
+                    }
+                }
+
+                // Servis bağlantısı kontrolü - en az biri olmalı veya genel ödeme olarak kaydedilmeli
+                // Not: Hiçbiri belirtilmezse genel ödeme olarak kabul edilir (misafir kredisi gibi)
 
                 // Para birimi validasyonu
                 if (!_currencyService.IsValidCurrency(paymentDto.Currency))
@@ -81,27 +98,53 @@ namespace GuestFlow.Application.Operations.Payment
                     return new ServiceMessage<GetPaymentDto> { IsSuccess = false, Message = "Geçersiz ödeme yöntemi." };
                 }
 
+                // Tutar validasyonu
+                if (paymentDto.Amount <= 0)
+                {
+                    return new ServiceMessage<GetPaymentDto> { IsSuccess = false, Message = "Ödeme tutarı sıfırdan büyük olmalıdır." };
+                }
+
                 // Ödeme numarası oluştur
                 var paymentNumber = await GeneratePaymentNumberAsync();
 
                 // Ödeme entity oluştur
-                var paymentEntity = _mapper.Map<PaymentEntity>(paymentDto);
-                paymentEntity.PaymentNumber = paymentNumber;
-                paymentEntity.PaymentMethod = PaymentMethodHelper.FromString(paymentDto.PaymentMethod);
-                paymentEntity.Status = PaymentStatus.Pending;
+                var paymentEntity = new PaymentEntity
+                {
+                    PaymentNumber = paymentNumber,
+                    InvoiceId = paymentDto.InvoiceId,
+                    GuestId = paymentDto.GuestId,
+                    CollectedByPersonnelId = paymentDto.CollectedByPersonnelId,
+                    TransferId = paymentDto.TransferId,
+                    CityTourId = paymentDto.CityTourId,
+                    YachtTourId = paymentDto.YachtTourId,
+                    Amount = paymentDto.Amount,
+                    Currency = paymentDto.Currency,
+                    PaymentMethod = PaymentMethodHelper.FromString(paymentDto.PaymentMethod),
+                    Status = PaymentStatus.Completed, // Tahsilat kaydı = tamamlanmış ödeme
+                    PaymentDate = paymentDto.PaymentDate,
+                    Notes = paymentDto.Notes
+                };
 
                 await _paymentRepository.AddAsync(paymentEntity);
                 await _unitOfWork.SaveChangesAsync();
                 await _unitOfWork.CommitTransactionAsync();
 
-                _logger.LogInformation($"Ödeme oluşturuldu: {paymentNumber}");
+                _logger.LogInformation($"Ödeme/tahsilat kaydedildi: {paymentNumber}, Tutar: {paymentDto.Amount} {paymentDto.Currency}, Tahsil eden: {paymentDto.CollectedByPersonnelId}");
 
                 // DTO'ya çevir ve döndür
                 var paymentDtoResult = await GetPaymentByIdAsync(paymentEntity.Id);
+
+                // Send live update for real-time UI updates
+                if (_hubService != null)
+                {
+                    await _hubService.SendLiveUpdateAsync("Payment", paymentEntity.Id, "created");
+                    await _hubService.SendDashboardUpdateAsync(new { });
+                }
+
                 return new ServiceMessage<GetPaymentDto>
                 {
                     IsSuccess = true,
-                    Message = "Ödeme başarıyla oluşturuldu.",
+                    Message = "Ödeme başarıyla kaydedildi.",
                     Data = paymentDtoResult
                 };
             }
@@ -161,11 +204,31 @@ namespace GuestFlow.Application.Operations.Payment
                 if (paymentDto.Notes != null)
                     existing.Notes = paymentDto.Notes;
 
+                // Servis bağlantılarını güncelle (sonradan bağlama için)
+                if (paymentDto.InvoiceId.HasValue)
+                    existing.InvoiceId = paymentDto.InvoiceId;
+                
+                if (paymentDto.TransferId.HasValue)
+                    existing.TransferId = paymentDto.TransferId;
+                
+                if (paymentDto.CityTourId.HasValue)
+                    existing.CityTourId = paymentDto.CityTourId;
+                
+                if (paymentDto.YachtTourId.HasValue)
+                    existing.YachtTourId = paymentDto.YachtTourId;
+
                 await _paymentRepository.UpdateAsync(existing);
                 await _unitOfWork.SaveChangesAsync();
                 await _unitOfWork.CommitTransactionAsync();
 
                 _logger.LogInformation($"Ödeme güncellendi: {existing.PaymentNumber}");
+
+                // Send live update for real-time UI updates
+                if (_hubService != null)
+                {
+                    await _hubService.SendLiveUpdateAsync("Payment", existing.Id, "updated");
+                }
+
                 return new ServiceMessage { IsSuccess = true, Message = "Ödeme başarıyla güncellendi." };
             }
             catch (Exception ex)
@@ -196,6 +259,14 @@ namespace GuestFlow.Application.Operations.Payment
                 await _unitOfWork.CommitTransactionAsync();
 
                 _logger.LogInformation($"Ödeme silindi: {payment.PaymentNumber}");
+
+                // Send live update for real-time UI updates
+                if (_hubService != null)
+                {
+                    await _hubService.SendLiveUpdateAsync("Payment", payment.Id, "deleted");
+                    await _hubService.SendDashboardUpdateAsync(new { });
+                }
+
                 return new ServiceMessage { IsSuccess = true, Message = "Ödeme başarıyla silindi." };
             }
             catch (Exception ex)
@@ -213,12 +284,16 @@ namespace GuestFlow.Application.Operations.Payment
                 var payment = await _paymentRepository.GetAll()
                     .Include(p => p.Invoice)
                     .Include(p => p.Guest)
+                    .Include(p => p.CollectedByPersonnel)
+                    .Include(p => p.Transfer)
+                    .Include(p => p.CityTour)
+                    .Include(p => p.YachtTour)
                     .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
                 if (payment == null)
                     return null;
 
-                return _mapper.Map<GetPaymentDto>(payment);
+                return MapToGetPaymentDto(payment);
             }
             catch (Exception ex)
             {
@@ -234,12 +309,16 @@ namespace GuestFlow.Application.Operations.Payment
                 var payment = await _paymentRepository.GetAll()
                     .Include(p => p.Invoice)
                     .Include(p => p.Guest)
+                    .Include(p => p.CollectedByPersonnel)
+                    .Include(p => p.Transfer)
+                    .Include(p => p.CityTour)
+                    .Include(p => p.YachtTour)
                     .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
                 if (payment == null)
                     return null;
 
-                return _mapper.Map<PaymentDetailDto>(payment);
+                return MapToPaymentDetailDto(payment);
             }
             catch (Exception ex)
             {
@@ -255,6 +334,10 @@ namespace GuestFlow.Application.Operations.Payment
                 var query = _paymentRepository.GetAll(x => !x.IsDeleted)
                     .Include(p => p.Invoice)
                     .Include(p => p.Guest)
+                    .Include(p => p.CollectedByPersonnel)
+                    .Include(p => p.Transfer)
+                    .Include(p => p.CityTour)
+                    .Include(p => p.YachtTour)
                     .AsQueryable();
 
                 // Filtreleme
@@ -272,7 +355,7 @@ namespace GuestFlow.Application.Operations.Payment
                     .Take(pageSize)
                     .ToListAsync();
 
-                var dtos = _mapper.Map<List<GetPaymentDto>>(payments);
+                var dtos = payments.Select(MapToGetPaymentDto).ToList();
 
                 return new PagedResult<GetPaymentDto>
                 {
@@ -293,6 +376,92 @@ namespace GuestFlow.Application.Operations.Payment
                     PageSize = pageSize
                 };
             }
+        }
+
+        /// <summary>
+        /// PaymentEntity'yi GetPaymentDto'ya dönüştürür
+        /// </summary>
+        private GetPaymentDto MapToGetPaymentDto(PaymentEntity payment)
+        {
+            string? serviceType = null;
+            if (payment.TransferId.HasValue) serviceType = "Transfer";
+            else if (payment.CityTourId.HasValue) serviceType = "CityTour";
+            else if (payment.YachtTourId.HasValue) serviceType = "YachtTour";
+            else serviceType = "General";
+
+            return new GetPaymentDto
+            {
+                Id = payment.Id,
+                PaymentNumber = payment.PaymentNumber,
+                InvoiceId = payment.InvoiceId,
+                InvoiceNumber = payment.Invoice?.InvoiceNumber.ToString(),
+                GuestId = payment.GuestId,
+                GuestName = payment.Guest?.FullName ?? "Bilinmiyor",
+                CollectedByPersonnelId = payment.CollectedByPersonnelId,
+                CollectedByPersonnelName = payment.CollectedByPersonnel?.FullName ?? "Bilinmiyor",
+                TransferId = payment.TransferId,
+                CityTourId = payment.CityTourId,
+                YachtTourId = payment.YachtTourId,
+                ServiceType = serviceType,
+                Amount = payment.Amount,
+                Currency = payment.Currency,
+                PaymentMethod = PaymentMethodHelper.ToString(payment.PaymentMethod),
+                Status = PaymentStatusHelper.ToString(payment.Status),
+                PaymentDate = payment.PaymentDate,
+                TransactionId = payment.TransactionId,
+                RefundDate = payment.RefundDate,
+                RefundReason = payment.RefundReason,
+                Notes = payment.Notes,
+                CreatedDate = payment.CreatedDate
+            };
+        }
+
+        /// <summary>
+        /// PaymentEntity'yi PaymentDetailDto'ya dönüştürür
+        /// </summary>
+        private PaymentDetailDto MapToPaymentDetailDto(PaymentEntity payment)
+        {
+            string? serviceType = null;
+            if (payment.TransferId.HasValue) serviceType = "Transfer";
+            else if (payment.CityTourId.HasValue) serviceType = "CityTour";
+            else if (payment.YachtTourId.HasValue) serviceType = "YachtTour";
+            else serviceType = "General";
+
+            return new PaymentDetailDto
+            {
+                Id = payment.Id,
+                PaymentNumber = payment.PaymentNumber,
+                InvoiceId = payment.InvoiceId,
+                InvoiceNumber = payment.Invoice?.InvoiceNumber.ToString(),
+                InvoiceAmount = payment.Invoice?.TotalAmount,
+                InvoiceCurrency = payment.Invoice?.Currency,
+                GuestId = payment.GuestId,
+                GuestName = payment.Guest?.FullName ?? "Bilinmiyor",
+                GuestEmail = payment.Guest?.Email,
+                GuestPhoneNumber = payment.Guest?.PhoneNumber,
+                CollectedByPersonnelId = payment.CollectedByPersonnelId,
+                CollectedByPersonnelName = payment.CollectedByPersonnel?.FullName ?? "Bilinmiyor",
+                TransferId = payment.TransferId,
+                TransferDescription = payment.Transfer != null ? $"{payment.Transfer.PickupAddress} → {payment.Transfer.DropoffAddress}" : null,
+                CityTourId = payment.CityTourId,
+                CityTourDescription = payment.CityTour != null ? $"Şehir Turu - {payment.CityTour.DurationHours} saat" : null,
+                YachtTourId = payment.YachtTourId,
+                YachtTourDescription = payment.YachtTour != null ? $"Yat Turu - {payment.YachtTour.YachtName}" : null,
+                ServiceType = serviceType,
+                Amount = payment.Amount,
+                Currency = payment.Currency,
+                PaymentMethod = PaymentMethodHelper.ToString(payment.PaymentMethod),
+                Status = PaymentStatusHelper.ToString(payment.Status),
+                PaymentDate = payment.PaymentDate,
+                TransactionId = payment.TransactionId,
+                GatewayResponse = payment.GatewayResponse,
+                RefundDate = payment.RefundDate,
+                RefundReason = payment.RefundReason,
+                CancellationReason = payment.CancellationReason,
+                Notes = payment.Notes,
+                CreatedDate = payment.CreatedDate,
+                UpdatedDate = null // BaseEntity'de UpdatedDate yok, gelecekte eklenebilir
+            };
         }
 
         public async Task<ServiceMessage> CompletePaymentAsync(int paymentId, string transactionId, string? gatewayResponse = null)
@@ -320,6 +489,14 @@ namespace GuestFlow.Application.Operations.Payment
                 await _unitOfWork.CommitTransactionAsync();
 
                 _logger.LogInformation($"Ödeme tamamlandı: {payment.PaymentNumber}");
+
+                // Send live update for real-time UI updates
+                if (_hubService != null)
+                {
+                    await _hubService.SendLiveUpdateAsync("Payment", payment.Id, "updated");
+                    await _hubService.SendDashboardUpdateAsync(new { });
+                }
+
                 return new ServiceMessage { IsSuccess = true, Message = "Ödeme başarıyla tamamlandı." };
             }
             catch (Exception ex)
@@ -352,6 +529,13 @@ namespace GuestFlow.Application.Operations.Payment
                 await _unitOfWork.CommitTransactionAsync();
 
                 _logger.LogInformation($"Ödeme başarısız olarak işaretlendi: {payment.PaymentNumber}");
+
+                // Send live update for real-time UI updates
+                if (_hubService != null)
+                {
+                    await _hubService.SendLiveUpdateAsync("Payment", payment.Id, "updated");
+                }
+
                 return new ServiceMessage { IsSuccess = true, Message = "Ödeme başarısız olarak işaretlendi." };
             }
             catch (Exception ex)
@@ -387,6 +571,14 @@ namespace GuestFlow.Application.Operations.Payment
                 await _unitOfWork.CommitTransactionAsync();
 
                 _logger.LogInformation($"Ödeme iade edildi: {payment.PaymentNumber}");
+
+                // Send live update for real-time UI updates
+                if (_hubService != null)
+                {
+                    await _hubService.SendLiveUpdateAsync("Payment", payment.Id, "updated");
+                    await _hubService.SendDashboardUpdateAsync(new { });
+                }
+
                 return new ServiceMessage { IsSuccess = true, Message = "Ödeme başarıyla iade edildi." };
             }
             catch (Exception ex)
@@ -424,6 +616,14 @@ namespace GuestFlow.Application.Operations.Payment
                 await _unitOfWork.CommitTransactionAsync();
 
                 _logger.LogInformation($"Ödeme iptal edildi: {payment.PaymentNumber}");
+
+                // Send live update for real-time UI updates
+                if (_hubService != null)
+                {
+                    await _hubService.SendLiveUpdateAsync("Payment", payment.Id, "updated");
+                    await _hubService.SendDashboardUpdateAsync(new { });
+                }
+
                 return new ServiceMessage { IsSuccess = true, Message = "Ödeme başarıyla iptal edildi." };
             }
             catch (Exception ex)
@@ -441,10 +641,14 @@ namespace GuestFlow.Application.Operations.Payment
                 var payments = await _paymentRepository.GetAll(x => x.GuestId == guestId && !x.IsDeleted)
                     .Include(p => p.Invoice)
                     .Include(p => p.Guest)
+                    .Include(p => p.CollectedByPersonnel)
+                    .Include(p => p.Transfer)
+                    .Include(p => p.CityTour)
+                    .Include(p => p.YachtTour)
                     .OrderByDescending(p => p.PaymentDate)
                     .ToListAsync();
 
-                return _mapper.Map<List<GetPaymentDto>>(payments);
+                return payments.Select(MapToGetPaymentDto).ToList();
             }
             catch (Exception ex)
             {
@@ -460,10 +664,14 @@ namespace GuestFlow.Application.Operations.Payment
                 var payments = await _paymentRepository.GetAll(x => x.InvoiceId == invoiceId && !x.IsDeleted)
                     .Include(p => p.Invoice)
                     .Include(p => p.Guest)
+                    .Include(p => p.CollectedByPersonnel)
+                    .Include(p => p.Transfer)
+                    .Include(p => p.CityTour)
+                    .Include(p => p.YachtTour)
                     .OrderByDescending(p => p.PaymentDate)
                     .ToListAsync();
 
-                return _mapper.Map<List<GetPaymentDto>>(payments);
+                return payments.Select(MapToGetPaymentDto).ToList();
             }
             catch (Exception ex)
             {
@@ -483,16 +691,72 @@ namespace GuestFlow.Application.Operations.Payment
                 var payments = await _paymentRepository.GetAll(x => x.Status == paymentStatus && !x.IsDeleted)
                     .Include(p => p.Invoice)
                     .Include(p => p.Guest)
+                    .Include(p => p.CollectedByPersonnel)
+                    .Include(p => p.Transfer)
+                    .Include(p => p.CityTour)
+                    .Include(p => p.YachtTour)
                     .OrderByDescending(p => p.PaymentDate)
                     .ToListAsync();
 
-                return _mapper.Map<List<GetPaymentDto>>(payments);
+                return payments.Select(MapToGetPaymentDto).ToList();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Durum bazlı ödemeler getirilirken hata: {ex.Message}");
                 return new List<GetPaymentDto>();
             }
+        }
+
+        /// <summary>
+        /// Belirli bir servis için toplam ödeme tutarını hesaplar
+        /// </summary>
+        public async Task<decimal> GetTotalPaidForTransferAsync(int transferId)
+        {
+            return await _paymentRepository.GetAll(x => x.TransferId == transferId && x.Status == PaymentStatus.Completed && !x.IsDeleted)
+                .SumAsync(p => p.Amount);
+        }
+
+        /// <summary>
+        /// Belirli bir şehir turu için toplam ödeme tutarını hesaplar
+        /// </summary>
+        public async Task<decimal> GetTotalPaidForCityTourAsync(int cityTourId)
+        {
+            return await _paymentRepository.GetAll(x => x.CityTourId == cityTourId && x.Status == PaymentStatus.Completed && !x.IsDeleted)
+                .SumAsync(p => p.Amount);
+        }
+
+        /// <summary>
+        /// Belirli bir yat turu için toplam ödeme tutarını hesaplar
+        /// </summary>
+        public async Task<decimal> GetTotalPaidForYachtTourAsync(int yachtTourId)
+        {
+            return await _paymentRepository.GetAll(x => x.YachtTourId == yachtTourId && x.Status == PaymentStatus.Completed && !x.IsDeleted)
+                .SumAsync(p => p.Amount);
+        }
+
+        /// <summary>
+        /// Belirli bir tarih aralığında toplanan gelirleri currency bazlı hesaplar
+        /// </summary>
+        public async Task<Dictionary<string, decimal>> GetRevenueByDateRangeAsync(DateTime startDate, DateTime endDate)
+        {
+            var payments = await _paymentRepository.GetAll(
+                x => x.PaymentDate.Date >= startDate.Date && 
+                     x.PaymentDate.Date <= endDate.Date && 
+                     x.Status == PaymentStatus.Completed && 
+                     !x.IsDeleted)
+                .GroupBy(p => p.Currency)
+                .Select(g => new { Currency = g.Key, Total = g.Sum(p => p.Amount) })
+                .ToListAsync();
+
+            return payments.ToDictionary(x => x.Currency, x => x.Total);
+        }
+
+        /// <summary>
+        /// Belirli bir gün için toplanan gelirleri currency bazlı hesaplar
+        /// </summary>
+        public async Task<Dictionary<string, decimal>> GetDailyRevenueAsync(DateTime date)
+        {
+            return await GetRevenueByDateRangeAsync(date, date);
         }
 
         public async Task<string> GeneratePaymentNumberAsync()

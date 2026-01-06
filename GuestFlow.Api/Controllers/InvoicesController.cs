@@ -1,12 +1,15 @@
 using GuestFlow.Api.Filters;
 using GuestFlow.Api.Models;
+using GuestFlow.Api.Models.InvoiceModels;
 using GuestFlow.Application.Models;
 using GuestFlow.Application.Operations.Invoice;
 using GuestFlow.Application.Operations.Invoice.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace GuestFlow.Api.Controllers
@@ -25,11 +28,26 @@ namespace GuestFlow.Api.Controllers
         // Burada kullanacağım değişkeni tanımlıyorum.
         // _invoiceService: Faturalarla ilgili işlemleri yapmak için kullanıyorum.
         private readonly IInvoiceService _invoiceService;
+        private readonly ILogger<InvoicesController> _logger;
 
         // Constructor: Bu sınıf oluşturulurken bağımlılıkları buradan alıyorum.
-        public InvoicesController(IInvoiceService invoiceService)
+        public InvoicesController(IInvoiceService invoiceService, ILogger<InvoicesController> logger)
         {
             _invoiceService = invoiceService;
+            _logger = logger;
+        }
+
+        /// <summary>
+        /// Gets the current personnel ID from the authenticated user's claims
+        /// </summary>
+        private int? GetCurrentPersonnelId()
+        {
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "id");
+            if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int personnelId))
+            {
+                return personnelId;
+            }
+            return null;
         }
 
         /// <summary>
@@ -47,7 +65,7 @@ namespace GuestFlow.Api.Controllers
         public async Task<IActionResult> GetById(int id)
         {
             // Servisten faturayı ID'sine göre alıyorum.
-            var result = await _invoiceService.GetInvoiceById(id);
+            var result = await _invoiceService.GetInvoiceDtoById(id);
             // Eğer fatura bulunamazsa, 404 Not Found ile hata mesajı döndürüyorum; bulunursa sonucu JSON formatında döndürüyorum.
             return result == null ? NotFound("Fatura bulunamadı.") : Success(result);
         }
@@ -266,6 +284,127 @@ namespace GuestFlow.Api.Controllers
                 return Error("Fatura e-postası gönderilirken bir hata oluştu.", 500, new { Error = ex.Message });
             }
         }
+
+        /// <summary>
+        /// Get services eligible for invoice creation for a guest
+        /// </summary>
+        /// <param name="request">Eligible services request parameters</param>
+        /// <returns>List of eligible services</returns>
+        [HttpPost("eligible-services")]
+        public async Task<IActionResult> GetEligibleServices([FromBody] GetEligibleServicesRequest request)
+        {
+            try
+            {
+                var result = await _invoiceService.GetEligibleServicesForInvoiceAsync(
+                    request.GuestId,
+                    request.StartDate,
+                    request.EndDate);
+
+                return Success(result, "Uygun hizmetler başarıyla getirildi.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Uygun hizmetler getirilirken hata: {ex.Message}");
+                return Error("Uygun hizmetler getirilirken hata oluştu.", 500);
+            }
+        }
+
+        /// <summary>
+        /// Create invoice manually with selected services
+        /// </summary>
+        /// <param name="request">Invoice creation request</param>
+        /// <returns>Created invoice details</returns>
+        [HttpPost]
+        public async Task<IActionResult> CreateInvoice([FromBody] CreateInvoiceRequest request)
+        {
+            try
+            {
+                var currentPersonnelId = GetCurrentPersonnelId();
+
+                var createDto = new CreateInvoiceDto
+                {
+                    GuestId = request.GuestId,
+                    Currency = request.Currency,
+                    Notes = request.Notes,
+                    StartDate = request.StartDate,
+                    EndDate = request.EndDate,
+                    SelectedServiceIds = request.SelectedServiceIds,
+                    CreatedByPersonnelId = currentPersonnelId
+                };
+
+                var result = await _invoiceService.CreateInvoiceAsync(createDto);
+                return FromServiceMessage(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Fatura oluşturulurken hata: {ex.Message}");
+                return Error("Fatura oluşturulurken hata oluştu.", 500);
+            }
+        }
+
+        /// <summary>
+        /// Faturayı günceller (sadece Draft durumundaki faturalar için)
+        /// INVOICE IMMUTABILITY: PDF oluşturulmuş faturalar değiştirilemez
+        /// </summary>
+        /// <param name="id">Fatura ID'si</param>
+        /// <param name="request">Güncelleme bilgileri</param>
+        /// <returns>Güncellenmiş fatura</returns>
+        /// <response code="200">Fatura başarıyla güncellendi</response>
+        /// <response code="400">Fatura değiştirilemez (PDF oluşturulmuş veya durum uygun değil)</response>
+        /// <response code="404">Fatura bulunamadı</response>
+        /// <response code="401">Yetkisiz erişim</response>
+        [HttpPut("{id}")]
+        [ProducesResponseType(typeof(ApiResponse<GetInvoiceDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> UpdateInvoice(int id, [FromBody] UpdateInvoiceRequest request)
+        {
+            try
+            {
+                var updateDto = new UpdateInvoiceDto
+                {
+                    Notes = request.Notes
+                };
+
+                var result = await _invoiceService.UpdateInvoiceAsync(id, updateDto);
+                return FromServiceMessage(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Fatura güncellenirken hata: {ex.Message}");
+                return Error("Fatura güncellenirken hata oluştu.", 500);
+            }
+        }
+
+        /// <summary>
+        /// Faturayı iptal eder (sadece Draft durumundaki faturalar için)
+        /// INVOICE IMMUTABILITY: PDF oluşturulmuş faturalar iptal edilemez
+        /// </summary>
+        /// <param name="id">Fatura ID'si</param>
+        /// <returns>İptal işlemi sonucu</returns>
+        /// <response code="200">Fatura başarıyla iptal edildi</response>
+        /// <response code="400">Fatura iptal edilemez (PDF oluşturulmuş veya durum uygun değil)</response>
+        /// <response code="404">Fatura bulunamadı</response>
+        /// <response code="401">Yetkisiz erişim</response>
+        [HttpPost("{id}/cancel")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> CancelInvoice(int id)
+        {
+            try
+            {
+                var result = await _invoiceService.CancelInvoiceAsync(id);
+                return FromServiceMessage(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Fatura iptal edilirken hata: {ex.Message}");
+                return Error("Fatura iptal edilirken hata oluştu.", 500);
+            }
+        }
     }
 
     /// <summary>
@@ -274,5 +413,27 @@ namespace GuestFlow.Api.Controllers
     public class SendInvoiceEmailRequest
     {
         public string? RecipientEmail { get; set; }
+    }
+
+    /// <summary>
+    /// Eligible services request
+    /// </summary>
+    public class GetEligibleServicesRequest
+    {
+        public int GuestId { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+    }
+
+    /// <summary>
+    /// Update invoice request
+    /// INVOICE IMMUTABILITY: Only Notes can be updated on Draft invoices
+    /// </summary>
+    public class UpdateInvoiceRequest
+    {
+        /// <summary>
+        /// Invoice notes (only updatable field for Draft invoices)
+        /// </summary>
+        public string? Notes { get; set; }
     }
 }

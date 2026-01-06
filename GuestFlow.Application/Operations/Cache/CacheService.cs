@@ -82,6 +82,17 @@ namespace GuestFlow.Application.Operations.Cache
             }
         }
 
+        public Task<T?> GetAsync<T>(string key) where T : class
+        {
+            return Task.FromResult(Get<T>(key));
+        }
+
+        public Task SetAsync<T>(string key, T value, TimeSpan? expiration = null) where T : class
+        {
+            Set(key, value, expiration);
+            return Task.CompletedTask;
+        }
+
         public async Task<T> GetOrSetAsync<T>(string key, Func<Task<T>> factory, TimeSpan? expiration = null) where T : class
         {
             if (!_settings.Enabled)
@@ -113,6 +124,12 @@ namespace GuestFlow.Application.Operations.Cache
             {
                 _logger.LogError(ex, $"Cache'den değer kaldırılırken hata: {key}");
             }
+        }
+
+        public Task RemoveAsync(string key)
+        {
+            Remove(key);
+            return Task.CompletedTask;
         }
 
         public void RemoveByPattern(string pattern)

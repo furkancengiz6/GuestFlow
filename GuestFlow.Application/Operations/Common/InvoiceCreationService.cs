@@ -92,7 +92,7 @@ namespace GuestFlow.Application.Operations.Common
                     PdfUrl = string.Empty,
                     GuestId = transfer.GuestId,
                     PersonnelId = transfer.PersonnelId > 0 ? transfer.PersonnelId : null,
-                    TransferId = transfer.Id,
+                    // TransferId removed - invoices are now multi-service
                     CreatedDate = DateTime.UtcNow,
                     IsDeleted = false
                 };
@@ -132,7 +132,7 @@ namespace GuestFlow.Application.Operations.Common
                     PdfUrl = string.Empty,
                     GuestId = cityTour.OwnerGuestId,
                     PersonnelId = cityTour.PersonnelId > 0 ? cityTour.PersonnelId : null,
-                    CityTourId = cityTour.Id,
+                    // CityTourId removed - invoices are now multi-service
                     CreatedDate = DateTime.UtcNow,
                     IsDeleted = false
                 };
@@ -172,7 +172,7 @@ namespace GuestFlow.Application.Operations.Common
                     PdfUrl = string.Empty,
                     GuestId = yachtTour.OwnerGuestId,
                     PersonnelId = yachtTour.PersonnelId > 0 ? yachtTour.PersonnelId : null,
-                    YachtTourId = yachtTour.Id,
+                    // YachtTourId removed - invoices are now multi-service
                     CreatedDate = DateTime.UtcNow,
                     IsDeleted = false
                 };

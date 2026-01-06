@@ -21,9 +21,14 @@ namespace GuestFlow.Domain.Entities.Enum
         Cash = 3,
 
         /// <summary>
+        /// Odaya Charge
+        /// </summary>
+        RoomCharge = 4,
+
+        /// <summary>
         /// Diğer
         /// </summary>
-        Other = 4
+        Other = 5
     }
 
     /// <summary>
@@ -41,6 +46,7 @@ namespace GuestFlow.Domain.Entities.Enum
                 PaymentMethod.CreditCard => "CreditCard",
                 PaymentMethod.BankTransfer => "BankTransfer",
                 PaymentMethod.Cash => "Cash",
+                PaymentMethod.RoomCharge => "RoomCharge",
                 PaymentMethod.Other => "Other",
                 _ => "Other"
             };
@@ -59,6 +65,7 @@ namespace GuestFlow.Domain.Entities.Enum
                 "creditcard" or "credit_card" or "credit" => PaymentMethod.CreditCard,
                 "banktransfer" or "bank_transfer" or "transfer" or "eft" or "havale" => PaymentMethod.BankTransfer,
                 "cash" or "nakit" => PaymentMethod.Cash,
+                "roomcharge" or "room_charge" or "odaya charge" or "odaya" => PaymentMethod.RoomCharge,
                 "other" or "diğer" => PaymentMethod.Other,
                 _ => PaymentMethod.Other
             };
@@ -74,6 +81,7 @@ namespace GuestFlow.Domain.Entities.Enum
                 PaymentMethod.CreditCard => "Kredi Kartı",
                 PaymentMethod.BankTransfer => "Banka Havalesi",
                 PaymentMethod.Cash => "Nakit",
+                PaymentMethod.RoomCharge => "Odaya Charge",
                 PaymentMethod.Other => "Diğer",
                 _ => "Diğer"
             };
@@ -87,7 +95,7 @@ namespace GuestFlow.Domain.Entities.Enum
             if (string.IsNullOrWhiteSpace(method))
                 return false;
 
-            var validMethods = new[] { "creditcard", "credit_card", "credit", "banktransfer", "bank_transfer", "transfer", "eft", "havale", "cash", "nakit", "other", "diğer" };
+            var validMethods = new[] { "creditcard", "credit_card", "credit", "banktransfer", "bank_transfer", "transfer", "eft", "havale", "cash", "nakit", "roomcharge", "room_charge", "odaya charge", "odaya", "other", "diğer" };
             return validMethods.Contains(method.ToLower());
         }
 
@@ -96,7 +104,7 @@ namespace GuestFlow.Domain.Entities.Enum
         /// </summary>
         public static List<string> GetAllMethods()
         {
-            return new List<string> { "CreditCard", "BankTransfer", "Cash", "Other" };
+            return new List<string> { "CreditCard", "BankTransfer", "Cash", "RoomCharge", "Other" };
         }
     }
 }

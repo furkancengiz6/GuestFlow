@@ -1,0 +1,43 @@
+# Room Assignment Endpoints Test
+# Run these requests to verify the endpoints work correctly
+
+### 1. Create Room Assignment (POST /api/v1.0/Guests/{guestId}/room-assignments)
+POST {{baseUrl}}/api/v1.0/Guests/1/room-assignments
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "guestId": 1,
+  "hotelId": 1,
+  "roomNumber": "101",
+  "startDate": "2024-01-15T14:00:00Z",
+  "endDate": "2024-01-20T11:00:00Z",
+  "notes": "Test room assignment"
+}
+
+### 2. Get Guest Room Assignments (GET /api/v1.0/Guests/{guestId}/room-assignments)
+GET {{baseUrl}}/api/v1.0/Guests/1/room-assignments
+Authorization: Bearer {{token}}
+
+### 3. Get Current Room Assignment (GET /api/v1.0/Guests/{guestId}/current-room)
+GET {{baseUrl}}/api/v1.0/Guests/1/current-room
+Authorization: Bearer {{token}}
+
+### Manual Test Instructions:
+1. First login to get a JWT token:
+POST {{baseUrl}}/api/v1.0/auth/login
+Content-Type: application/json
+
+{
+  "email": "ahmet@guestflow.com",
+  "password": "Admin123!"
+}
+
+2. Copy the accessToken from the response and set it as {{token}}
+
+3. Run the requests above in order
+
+4. Expected responses:
+- POST should return 201 Created with room assignment data
+- GET room-assignments should return 200 OK with array of assignments
+- GET current-room should return 200 OK with current assignment or 404 if none

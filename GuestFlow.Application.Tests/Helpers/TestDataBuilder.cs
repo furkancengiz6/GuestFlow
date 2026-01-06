@@ -1,4 +1,6 @@
+using GuestFlow.Application.Operations.Transfer.Dtos;
 using GuestFlow.Domain.Entities.Core;
+using GuestFlow.Domain.Entities.Enum;
 using System;
 
 namespace GuestFlow.Application.Tests.Helpers;
@@ -111,6 +113,105 @@ public static class TestDataBuilder
             CityId = cityId ?? 1,
             CreatedDate = DateTime.UtcNow,
             IsDeleted = false
+        };
+    }
+
+    /// <summary>
+    /// Creates a TransferEntity with default test values
+    /// </summary>
+    public static TransferEntity CreateTransferEntity(
+        int? id = null,
+        int? guestId = null,
+        DateTime? transferDate = null,
+        string? status = null,
+        decimal? price = null,
+        int? driverId = null,
+        int? vehicleId = null,
+        TransferPriority? priority = null,
+        bool? isVip = null,
+        int? groupSize = null)
+    {
+        return new TransferEntity
+        {
+            Id = id ?? 1,
+            GuestId = guestId ?? 1,
+            TransferDate = transferDate ?? DateTime.UtcNow.AddDays(1),
+            PickupAddress = "Test Pickup Address",
+            DropoffAddress = "Test Dropoff Address",
+            Status = status ?? "Pending",
+            Price = price ?? 100.00m,
+            FinalPrice = price ?? 100.00m,
+            Currency = "TRY",
+            DriverId = driverId,
+            VehicleId = vehicleId,
+            Priority = priority ?? TransferPriority.Normal,
+            IsVip = isVip ?? false,
+            GroupSize = groupSize ?? 2,
+            CreatedDate = DateTime.UtcNow,
+            IsDeleted = false
+        };
+    }
+
+    /// <summary>
+    /// Creates an AddTransferDto with default test values
+    /// </summary>
+    public static AddTransferDto CreateAddTransferDto(
+        int? guestId = null,
+        DateTime? transferDate = null,
+        string? pickupAddress = null,
+        string? dropoffAddress = null,
+        decimal? price = null,
+        int? driverId = null,
+        int? vehicleId = null,
+        TransferPriority? priority = null,
+        bool? isVip = null,
+        int? groupSize = null,
+        string? specialHandlingNotes = null)
+    {
+        return new AddTransferDto
+        {
+            GuestId = guestId ?? 1,
+            TransferDate = transferDate ?? DateTime.UtcNow.AddDays(1),
+            PickupAddress = pickupAddress ?? "Test Pickup Address",
+            DropoffAddress = dropoffAddress ?? "Test Dropoff Address",
+            Price = price ?? 100.00m,
+            Currency = "TRY",
+            DriverId = driverId,
+            VehicleId = vehicleId,
+            Priority = priority ?? TransferPriority.Normal,
+            IsVip = isVip ?? false,
+            GroupSize = groupSize ?? 2,
+            SpecialHandlingNotes = specialHandlingNotes,
+            CreateInvoice = false
+        };
+    }
+
+    /// <summary>
+    /// Creates an UpdateTransferDto with default test values
+    /// </summary>
+    public static UpdateTransferDto CreateUpdateTransferDto(
+        DateTime? transferDate = null,
+        string? pickupAddress = null,
+        string? dropoffAddress = null,
+        decimal? price = null,
+        int? driverId = null,
+        int? vehicleId = null,
+        TransferPriority? priority = null,
+        bool? isVip = null,
+        int? groupSize = null)
+    {
+        return new UpdateTransferDto
+        {
+            TransferDate = transferDate ?? DateTime.UtcNow.AddDays(1),
+            PickupAddress = pickupAddress ?? "Updated Pickup Address",
+            DropoffAddress = dropoffAddress ?? "Updated Dropoff Address",
+            Price = price ?? 150.00m,
+            Currency = "TRY",
+            DriverId = driverId,
+            VehicleId = vehicleId,
+            Priority = priority ?? TransferPriority.Normal,
+            IsVip = isVip ?? false,
+            GroupSize = groupSize ?? 2
         };
     }
 }

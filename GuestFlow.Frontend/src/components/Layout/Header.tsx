@@ -9,17 +9,43 @@ import {
   Avatar,
   FormControlLabel,
   Switch,
+  Tooltip,
 } from '@mui/material'
-import { AccountCircle, Logout, DarkMode, LightMode } from '@mui/icons-material'
+import { AccountCircle, Logout, DarkMode, LightMode, Search, Keyboard } from '@mui/icons-material'
 import { useState } from 'react'
 import { useAuthStore } from '../../stores/authStore'
 import { authService } from '../../services/authService'
 import { useTheme } from '../../theme/useTheme'
+import NotificationCenter from '../Notifications/NotificationCenter'
+import LanguageSwitcher from '../Language/LanguageSwitcher'
+import GlobalSearch from '../Common/GlobalSearch'
+import KeyboardShortcutsDialog from '../Common/KeyboardShortcutsDialog'
+import { useGlobalSearch } from '../../hooks/useGlobalSearch'
+import { useKeyboardShortcuts, commonShortcuts } from '../../hooks/useKeyboardShortcuts'
 
 const Header = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const { user, logout } = useAuthStore()
   const { mode, toggleMode } = useTheme()
+  const { open, openSearch, closeSearch } = useGlobalSearch()
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts([
+    ...commonShortcuts,
+    {
+      key: 'k',
+      ctrl: true,
+      action: openSearch,
+      description: 'Global search',
+    },
+    {
+      key: '?',
+      shift: true,
+      action: () => setShortcutsOpen(true),
+      description: 'Show keyboard shortcuts',
+    },
+  ])
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget)
@@ -41,6 +67,18 @@ const Header = () => {
           Misafir Yönetim Sistemi
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Tooltip title="Ara (Ctrl+K)">
+            <IconButton color="inherit" onClick={openSearch} size="small">
+              <Search />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Klavye Kısayolları (Shift+?)">
+            <IconButton color="inherit" onClick={() => setShortcutsOpen(true)} size="small">
+              <Keyboard />
+            </IconButton>
+          </Tooltip>
+          <LanguageSwitcher />
+          <NotificationCenter />
           <Typography variant="body2">{user?.fullName}</Typography>
           <FormControlLabel
             control={
@@ -93,6 +131,8 @@ const Header = () => {
           </Menu>
         </Box>
       </Toolbar>
+      <GlobalSearch open={open} onClose={closeSearch} />
+      <KeyboardShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
     </AppBar>
   )
 }

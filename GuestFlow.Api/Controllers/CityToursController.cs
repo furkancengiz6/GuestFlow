@@ -1,11 +1,12 @@
 using GuestFlow.Api.Models;
-using GuestFlow.Api.Models.CityToursModels;
+using GuestFlow.Api.Models.CityTourModels;
 using GuestFlow.Application.Operations.CityTour;
 using GuestFlow.Application.Operations.CityTour.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Linq;
 
 namespace GuestFlow.Api.Controllers
 {
@@ -15,7 +16,7 @@ namespace GuestFlow.Api.Controllers
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Staff,Admin")] // Bu controller'a sadece Staff ve Admin rolleri erişebilir.
+    [Authorize(Roles = "Reception,Concierge,Manager,Admin,Owner")] // Şehir turu işlemleri için gerekli roller
     [Tags("Şehir Turları")]
     public class CityToursController : BaseController
     {
@@ -38,11 +39,19 @@ namespace GuestFlow.Api.Controllers
         /// <response code="400">Geçersiz istek verisi</response>
         /// <response code="401">Yetkisiz erişim</response>
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<GetCityTourDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<AddCityTourResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> AddCityTour(AddCityTourRequest request)
         {
+            // Giriş yapmış kullanıcının ID'sini al (otomatik personel atama için)
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "id");
+            int? currentPersonnelId = null;
+            if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int personnelId))
+            {
+                currentPersonnelId = personnelId;
+            }
+
             // Gelen isteği bir DTO'ya çeviriyorum ki serviste kullanabileyim.
             var dto = new AddCityTourDto
             {
@@ -51,12 +60,26 @@ namespace GuestFlow.Api.Controllers
                 DurationHours = request.DurationHours,
                 Price = request.Price,
                 OwnerGuestId = request.OwnerGuestId,
-                PersonnelId = request.PersonnelId,
+                PersonnelId = request.PersonnelId ?? currentPersonnelId, // Otomatik doldurulacak
                 CityId = request.CityId,
+                TourId = request.TourId,
                 CreateInvoice = request.CreateInvoice,
                 DiscountPercentage = request.DiscountPercentage,
                 InvoiceDescription = request.InvoiceDescription,
-                Currency = request.Currency
+                Currency = request.Currency,
+                StartTime = request.StartTime,
+                EndTime = request.EndTime,
+                VehicleId = request.VehicleId,
+                DriverName = request.DriverName,
+                GuideName = request.GuideName,
+                GuidePhone = request.GuidePhone,
+                ExternalVehiclePlate = request.ExternalVehiclePlate,
+                ExternalDriverName = request.ExternalDriverName,
+                ExternalDriverPhone = request.ExternalDriverPhone,
+                SupplierName = request.SupplierName,
+                SupplierCost = request.SupplierCost,
+                SupplierCurrency = request.SupplierCurrency,
+                SupplierInvoiceNumber = request.SupplierInvoiceNumber
             };
 
             // Şehir turunu eklemek için servisi çağırıyorum.
@@ -167,7 +190,19 @@ namespace GuestFlow.Api.Controllers
                 Price = request.Price,
                 OwnerGuestId = request.OwnerGuestId,
                 PersonnelId = request.PersonnelId,
-                CityId = request.CityId
+                CityId = request.CityId,
+                TourId = request.TourId ?? 0,
+                DiscountPercentage = request.DiscountPercentage,
+                Currency = request.Currency,
+                StartTime = request.StartTime,
+                EndTime = request.EndTime,
+                VehicleId = request.VehicleId,
+                DriverName = request.DriverName,
+                GuideName = request.GuideName,
+                GuidePhone = request.GuidePhone,
+                ExternalVehiclePlate = request.ExternalVehiclePlate,
+                ExternalDriverName = request.ExternalDriverName,
+                ExternalDriverPhone = request.ExternalDriverPhone
             };
 
             // Şehir turunu güncellemek için servisi çağırıyorum.
@@ -184,6 +219,7 @@ namespace GuestFlow.Api.Controllers
         /// <response code="404">Şehir turu bulunamadı</response>
         /// <response code="401">Yetkisiz erişim</response>
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Manager,Admin,Owner")] // Sadece yönetim rolleri silebilir
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -218,6 +254,93 @@ namespace GuestFlow.Api.Controllers
             catch (Exception ex)
             {
                 return Error("Şehir turu detayı getirilirken bir hata oluştu.", 500, new { Error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Şehir turu için fatura oluşturur
+        /// </summary>
+        /// <param name="id">Şehir turu ID'si</param>
+        /// <returns>Fatura oluşturma sonucu</returns>
+        /// <response code="200">Fatura başarıyla oluşturuldu</response>
+        /// <response code="400">Fatura oluşturulamadı</response>
+        /// <response code="404">Şehir turu bulunamadı</response>
+        /// <response code="500">Sunucu hatası</response>
+        /// <response code="401">Yetkisiz erişim</response>
+        [HttpPost("{id}/invoice")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> CreateCityTourInvoice(int id)
+        {
+            try
+            {
+                var result = await _cityTourService.CreateCityTourInvoiceAsync(id);
+                return FromServiceMessage(result);
+            }
+            catch (Exception ex)
+            {
+                return Error("Fatura oluşturulurken bir hata oluştu.", 500, new { Error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Şehir turu onay maili gönderir
+        /// </summary>
+        /// <param name="id">Şehir turu ID'si</param>
+        /// <returns>Onay maili gönderme sonucu</returns>
+        /// <response code="200">Onay maili başarıyla gönderildi</response>
+        /// <response code="400">Mail gönderilemedi</response>
+        /// <response code="404">Şehir turu bulunamadı</response>
+        /// <response code="500">Sunucu hatası</response>
+        /// <response code="401">Yetkisiz erişim</response>
+        [HttpPost("{id}/send-confirmation")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> SendCityTourConfirmation(int id)
+        {
+            try
+            {
+                var result = await _cityTourService.SendCityTourConfirmationAsync(id);
+                return FromServiceMessage(result);
+            }
+            catch (Exception ex)
+            {
+                return Error("Onay maili gönderilirken bir hata oluştu.", 500, new { Error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Update city tour status (mark completed/cancelled)
+        /// </summary>
+        /// <param name="id">City tour ID</param>
+        /// <param name="request">Status update request</param>
+        /// <returns>Operation result</returns>
+        /// <response code="200">Status updated successfully</response>
+        /// <response code="400">Invalid request</response>
+        /// <response code="401">Unauthorized</response>
+        /// <response code="403">Forbidden</response>
+        [HttpPatch("{id}/status")]
+        [Authorize(Roles = "Concierge,Manager,Admin,Owner")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> UpdateCityTourStatus(int id, [FromBody] UpdateCityTourStatusRequest request)
+        {
+            try
+            {
+                var result = await _cityTourService.UpdateCityTourStatusAsync(id, request.Status);
+                return FromServiceMessage(result);
+            }
+            catch (Exception ex)
+            {
+                return Error("Şehir turu durumu güncellenirken bir hata oluştu.", 500, new { Error = ex.Message });
             }
         }
     }

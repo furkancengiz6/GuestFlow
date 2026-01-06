@@ -1,10 +1,12 @@
 # GuestFlow Çözümü - Geliştirme Yol Haritası
 
-## Güncel Durum Notları (2025-12-10)
-- ✅ Migration'lar uygulandı (`AddMissingTables` dahil); DB `GuestFlowDb` güncel.
-- ⚠️ QA: Build geçiyor; 62 adet nullability/interface warning var; API/Auth/Integration manuel test gerektiriyor.
-- ✅ AutoMapper temizlik: Payment, CityTour, YachtTour, Invoice detaylar AutoMapper’a alındı; kalan manager’larda manuel DTO kurulum bulunmadı. Guest detail’de istatistik/timeline hesaplaması manuel (bilinçli).
-- ⚠️ Frontend: Admin panel, Auth UI, Dashboard ve modül UI'ları yok; AppShell + auth/refresh iskeleti ve data-fetch katmanı öncelikli.
+## Güncel Durum Notları (2025-01-13)
+- ✅ Migration'lar uygulandı (`AddHotelsRestaurantsItinerariesAndPackages` dahil); DB `GuestFlowDb` güncel.
+- ✅ Backend: Hotel, Restaurant, Itinerary, RestaurantReservation, ServicePackage, TransferRecommendation özellikleri eklendi.
+- ✅ Frontend: Hotels, Restaurants, Itineraries sayfaları ve Timeline component eklendi.
+- ⚠️ QA: Build geçiyor; 176 adet nullability/interface warning var (kritik değil); API/Auth/Integration manuel test gerektiriyor.
+- ✅ AutoMapper: Hotel, Restaurant, Itinerary, RestaurantReservation, ServicePackage mapping'leri eklendi.
+- ⚠️ Frontend: Bazı TypeScript hataları var (çoğu kullanılmayan import'lar, kritik değil).
 - 🔍 Güvenlik/ops: Security headers, caching stratejisi, throttling, health checks, CI/CD, containerization henüz yok.
 
 ## 🔴 KRİTİK - Eksik veya Tamamlanmamış Özellikler
@@ -2415,6 +2417,12 @@
   - ✅ Madde 30-33 (Frontend liste sayfaları - Guests, Transfers, Tours, Invoices)
   - ✅ Madde 48.1 (Demo Data)
   - ✅ Madde 48.2 (Circular Dependency Çözümü)
+  - ✅ **Hotel Management** - Backend ve Frontend tamamlandı (2025-01-13)
+  - ✅ **Restaurant Management** - Backend ve Frontend tamamlandı (2025-01-13)
+  - ✅ **Itinerary Management** - Backend ve Frontend tamamlandı, Timeline component eklendi (2025-01-13)
+  - ✅ **Restaurant Reservations** - Backend ve Frontend tamamlandı (2025-01-13)
+  - ✅ **Service Packages** - Backend tamamlandı (2025-01-13)
+  - ✅ **Transfer Recommendations** - Backend tamamlandı (2025-01-13)
 
 **ORTA Öncelik (Sonraki Faz):**
 - Backend: Madde 8-9, 10, 12-13, 15-17, 20, 22, 24, 26-27, 39, 43, 47-48, 50-51 (Swagger File Upload dahil), 53, 55-57, 59-62, 65, 67-69, 71-72

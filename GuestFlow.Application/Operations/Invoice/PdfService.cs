@@ -48,45 +48,8 @@ namespace GuestFlow.Application.Operations.Invoice
                 var fileName = _pdfUrlService.GenerateFileName(invoice.InvoiceNumber);
                 var filePath = Path.Combine(_pdfStoragePath, fileName);
 
-                // Invoice tipini ve detaylarını belirle
+                // Invoice type - generic for multi-service
                 string invoiceType = "Fatura";
-                string serviceDescription = invoice.Notes ?? "Hizmet";
-                string? serviceDetails = null;
-                DateTime? serviceDate = null;
-                decimal? discountPercentage = null;
-                decimal? originalPrice = null;
-
-                if (invoice.TransferId.HasValue && invoice.Transfer != null)
-                {
-                    invoiceType = "Transfer Faturası";
-                    serviceDescription = "Transfer Hizmeti";
-                    serviceDate = invoice.Transfer.TransferDate;
-                    serviceDetails = $"Alış: {invoice.Transfer.PickupAddress}\nBırakış: {invoice.Transfer.DropoffAddress}";
-                    if (!string.IsNullOrEmpty(invoice.Transfer.Note))
-                        serviceDetails += $"\nNot: {invoice.Transfer.Note}";
-                    discountPercentage = invoice.Transfer.DiscountPercentage;
-                    originalPrice = invoice.Transfer.Price;
-                }
-                else if (invoice.CityTourId.HasValue && invoice.CityTour != null)
-                {
-                    invoiceType = "Şehir Turu Faturası";
-                    serviceDescription = "Şehir Turu Hizmeti";
-                    serviceDate = invoice.CityTour.TourDate;
-                    serviceDetails = $"Dil: {invoice.CityTour.Language}\nSüre: {invoice.CityTour.DurationHours} saat";
-                    discountPercentage = invoice.CityTour.DiscountPercentage;
-                    originalPrice = invoice.CityTour.Price;
-                }
-                else if (invoice.YachtTourId.HasValue && invoice.YachtTour != null)
-                {
-                    invoiceType = "Yat Turu Faturası";
-                    serviceDescription = "Yat Turu Hizmeti";
-                    serviceDate = invoice.YachtTour.TourDate;
-                    serviceDetails = $"Yat Adı: {invoice.YachtTour.YachtName}\nKişi Sayısı: {invoice.YachtTour.NumberOfPeople}";
-                    if (!string.IsNullOrEmpty(invoice.YachtTour.SpecialRequest))
-                        serviceDetails += $"\nÖzel İstek: {invoice.YachtTour.SpecialRequest}";
-                    discountPercentage = invoice.YachtTour.DiscountPercentage;
-                    originalPrice = invoice.YachtTour.Price;
-                }
 
                 var document = Document.Create(container =>
                 {
@@ -98,25 +61,13 @@ namespace GuestFlow.Application.Operations.Invoice
                         page.DefaultTextStyle(x => x.FontSize(10));
 
                         page.Header()
-                            .Row(row =>
-                            {
-                                row.ConstantItem(100).Text("GuestFlow")
-                                    .FontSize(20)
-                                    .FontFamily(Fonts.Calibri)
-                                    .Bold()
-                                    .FontColor(Colors.Blue.Darken2);
-
-                                row.RelativeItem().AlignRight().Text(invoiceType)
-                                    .FontSize(16)
-                                    .Bold();
-                            });
+                            .PaddingBottom(1, Unit.Centimetre)
+                            .Text(invoiceType)
+                            .SemiBold().FontSize(16).AlignCenter();
 
                         page.Content()
-                            .PaddingVertical(1, Unit.Centimetre)
                             .Column(column =>
                             {
-                                column.Spacing(20);
-
                                 // Fatura Bilgileri
                                 column.Item().Row(row =>
                                 {
@@ -126,6 +77,11 @@ namespace GuestFlow.Application.Operations.Invoice
                                         col.Item().Text($"Fatura No: {invoice.InvoiceNumber}");
                                         col.Item().Text($"Tarih: {invoice.IssueDate:dd.MM.yyyy}");
                                         col.Item().Text($"Para Birimi: {invoice.Currency}");
+                                        col.Item().Text($"Durum: {invoice.Status.ToString()}");
+                                        if (invoice.IsPdfGenerated)
+                                        {
+                                            col.Item().Text($"PDF Oluşturulma: {invoice.PdfGeneratedDate:dd.MM.yyyy HH:mm}");
+                                        }
                                     });
 
                                     row.RelativeItem().Column(col =>
@@ -141,14 +97,16 @@ namespace GuestFlow.Application.Operations.Invoice
                                     });
                                 });
 
-                                // Hizmet Detayları
-                                if (!string.IsNullOrEmpty(serviceDetails))
+                                // Hizmet Detayları - List all invoice items
+                                column.Item().PaddingTop(15).Text("HİZMET DETAYLARI").FontSize(12).Bold();
+
+                                if (invoice.InvoiceItems != null && invoice.InvoiceItems.Any())
                                 {
-                                    column.Item().PaddingTop(10).Text("HİZMET DETAYLARI").FontSize(11).Bold();
-                                    column.Item().Text(serviceDetails).FontSize(10);
-                                    if (serviceDate.HasValue)
+                                    foreach (var item in invoice.InvoiceItems)
                                     {
-                                        column.Item().PaddingTop(5).Text($"Tarih: {serviceDate.Value:dd.MM.yyyy HH:mm}").FontSize(10);
+                                        column.Item().PaddingTop(5).Text($"{item.ServiceType}: {item.Notes ?? "Hizmet"}").FontSize(10).Bold();
+                                        column.Item().Text($"Tarih: {item.CreatedDate:dd.MM.yyyy}").FontSize(9);
+                                        column.Item().Text($"Tutar: {item.Amount:N2} {item.Currency}").FontSize(9);
                                     }
                                 }
 
@@ -157,56 +115,55 @@ namespace GuestFlow.Application.Operations.Invoice
                                 {
                                     table.ColumnsDefinition(columns =>
                                     {
-                                        columns.RelativeColumn(3);
+                                        columns.RelativeColumn(4);
                                         columns.RelativeColumn(2);
                                         columns.RelativeColumn(2);
                                     });
 
                                     table.Header(header =>
                                     {
-                                        header.Cell().Element(CellStyle).Text("Açıklama").Bold();
+                                        header.Cell().Element(CellStyle).Text("Hizmet Açıklaması").Bold();
                                         header.Cell().Element(CellStyle).AlignRight().Text("Miktar").Bold();
                                         header.Cell().Element(CellStyle).AlignRight().Text("Tutar").Bold();
                                     });
 
-                                    // Orijinal fiyat göster (indirim varsa)
-                                    if (originalPrice.HasValue && discountPercentage.HasValue && discountPercentage.Value > 0)
+                                    // List each invoice item
+                                    if (invoice.InvoiceItems != null)
                                     {
-                                        table.Cell().Element(CellStyle).Text($"{serviceDescription} (İndirim Öncesi)");
-                                        table.Cell().Element(CellStyle).AlignRight().Text("1");
-                                        table.Cell().Element(CellStyle).AlignRight().Text($"{originalPrice.Value:N2} {invoice.Currency}");
-                                        
-                                        table.Cell().Element(CellStyle).Text($"İndirim (%{discountPercentage.Value:N2})");
-                                        table.Cell().Element(CellStyle).AlignRight().Text("-");
-                                        var discountAmount = originalPrice.Value - invoice.TotalAmount;
-                                        table.Cell().Element(CellStyle).AlignRight().Text($"-{discountAmount:N2} {invoice.Currency}").FontColor(Colors.Red.Medium);
+                                        foreach (var item in invoice.InvoiceItems)
+                                        {
+                                            table.Cell().Element(CellStyle).Text($"{item.ServiceType}: {item.Notes ?? "Hizmet"}");
+                                            table.Cell().Element(CellStyle).AlignRight().Text("1");
+                                            table.Cell().Element(CellStyle).AlignRight().Text($"{item.Amount:N2} {item.Currency}");
+                                        }
                                     }
-                                    else
-                                    {
-                                        table.Cell().Element(CellStyle).Text(serviceDescription);
-                                        table.Cell().Element(CellStyle).AlignRight().Text("1");
-                                        table.Cell().Element(CellStyle).AlignRight().Text($"{invoice.TotalAmount:N2} {invoice.Currency}");
-                                    }
-                                });
 
-                                // Toplam
-                                column.Item().PaddingTop(10).AlignRight().Row(row =>
-                                {
-                                    row.ConstantItem(120).Text("TOPLAM:").FontSize(12).Bold();
-                                    row.ConstantItem(120).AlignRight().Text($"{invoice.TotalAmount:N2} {invoice.Currency}").FontSize(12).Bold().FontColor(Colors.Blue.Darken2);
+                                    // Toplam
+                                    table.Cell().Element(CellStyle).Text("TOPLAM").Bold().FontSize(11);
+                                    table.Cell().Element(CellStyle).AlignRight().Text("");
+                                    table.Cell().Element(CellStyle).AlignRight().Text($"{invoice.TotalAmount:N2} {invoice.Currency}").Bold().FontSize(11);
                                 });
 
                                 // Notlar
                                 if (!string.IsNullOrEmpty(invoice.Notes))
                                 {
-                                    column.Item().PaddingTop(10).Text("Notlar:").FontSize(10).Bold();
+                                    column.Item().PaddingTop(20).Text("FATURA NOTLARI").FontSize(11).Bold();
                                     column.Item().Text(invoice.Notes).FontSize(10);
                                 }
 
-                                // Personel Bilgisi
+                                // Personel bilgisi (varsa)
                                 if (personnel != null)
                                 {
-                                    column.Item().PaddingTop(20).Text($"Hazırlayan: {personnel.FullName}").FontSize(9).Italic();
+                                    column.Item().PaddingTop(20).Text("PERSONEL BİLGİLERİ").FontSize(11).Bold();
+                                    column.Item().Text($"Ad Soyad: {personnel.FullName}");
+                                    if (!string.IsNullOrEmpty(personnel.Email))
+                                        column.Item().Text($"E-posta: {personnel.Email}");
+                                }
+
+                                // Immutability notice
+                                if (invoice.IsPdfGenerated)
+                                {
+                                    column.Item().PaddingTop(20).Text("BU FATURA PDF OLARAK OLUŞTURULDUĞU İÇİN DEĞIŞTİRİLEMEZ").FontSize(8).Bold().AlignCenter();
                                 }
                             });
 
@@ -214,9 +171,10 @@ namespace GuestFlow.Application.Operations.Invoice
                             .AlignCenter()
                             .Text(x =>
                             {
-                                x.Span("GuestFlow - Misafir Yönetim Sistemi")
-                                    .FontSize(8)
-                                    .FontColor(Colors.Grey.Medium);
+                                x.Span("Sayfa ").FontSize(8);
+                                x.CurrentPageNumber().FontSize(8);
+                                x.Span(" / ").FontSize(8);
+                                x.TotalPages().FontSize(8);
                             });
                     });
                 });

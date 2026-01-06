@@ -10,9 +10,11 @@ using GuestFlow.Application.Operations.DailyRevenue;
 using GuestFlow.Application.Operations.Email;
 using GuestFlow.Application.Operations.Invoice;
 using GuestFlow.Application.Operations.Invoice.Dtos;
+using GuestFlow.Application.Operations.Payment;
 using GuestFlow.Application.Operations.Validation;
 using GuestFlow.Application.Operations.Currency;
 using GuestFlow.Application.Operations.Common;
+using GuestFlow.Application.Operations.Notification;
 using GuestFlow.Application.Types;
 using GuestFlow.Domain.Entities.Core;
 using GuestFlow.Domain.Entities.Repositories;
@@ -40,6 +42,7 @@ namespace GuestFlow.Application.Operations.CityTour
         private readonly IRepository<CityEntity> _cityRepository;
         private readonly IRepository<PersonnelEntity> _personnelRepository;
         private readonly IRepository<InvoicesEntity> _invoiceRepository;
+        private readonly IRepository<InvoiceItemEntity> _invoiceItemRepository;
         private readonly DailyRevenueJob _dailyRevenueJob;
         private readonly IPdfService _pdfService;
         private readonly IEmailService _emailService;
@@ -52,6 +55,8 @@ namespace GuestFlow.Application.Operations.CityTour
         private readonly IPriceCalculationService _priceCalculationService;
         private readonly IDateValidationService _dateValidationService;
         private readonly IInvoiceCreationService _invoiceCreationService;
+        private readonly IPaymentStatusService _paymentStatusService;
+        private readonly INotificationHubService _hubService;
 
         // Constructor: Bu sınıf oluşturulurken bağımlılıkları buradan alıyorum.
         public CityTourManager(
@@ -61,6 +66,7 @@ namespace GuestFlow.Application.Operations.CityTour
             IRepository<CityEntity> cityRepository,
             IRepository<PersonnelEntity> personnelRepository,
             IRepository<InvoicesEntity> invoiceRepository,
+            IRepository<InvoiceItemEntity> invoiceItemRepository,
             DailyRevenueJob dailyRevenueJob,
             IPdfService pdfService,
             IEmailService emailService,
@@ -72,7 +78,9 @@ namespace GuestFlow.Application.Operations.CityTour
             IMapper mapper,
             IPriceCalculationService priceCalculationService,
             IDateValidationService dateValidationService,
-            IInvoiceCreationService invoiceCreationService)
+            IInvoiceCreationService invoiceCreationService,
+            IPaymentStatusService paymentStatusService,
+            INotificationHubService? hubService = null)
         {
             _unitOfWork = unitOfWork;
             _cityTourRepository = cityTourRepository;
@@ -80,6 +88,7 @@ namespace GuestFlow.Application.Operations.CityTour
             _cityRepository = cityRepository;
             _personnelRepository = personnelRepository;
             _invoiceRepository = invoiceRepository;
+            _invoiceItemRepository = invoiceItemRepository;
             _dailyRevenueJob = dailyRevenueJob;
             _pdfService = pdfService;
             _emailService = emailService;
@@ -92,10 +101,12 @@ namespace GuestFlow.Application.Operations.CityTour
             _priceCalculationService = priceCalculationService;
             _dateValidationService = dateValidationService;
             _invoiceCreationService = invoiceCreationService;
+            _paymentStatusService = paymentStatusService;
+            _hubService = hubService;
         }
 
         // Bu metodumla yeni bir şehir turu ekliyorum.
-        public async Task<ServiceMessage> AddCityTour(AddCityTourDto cityTour)
+        public async Task<ServiceMessage<AddCityTourResponseDto>> AddCityTour(AddCityTourDto cityTour)
         {
             try
             {
@@ -107,25 +118,24 @@ namespace GuestFlow.Application.Operations.CityTour
                 {
                     GuestId = cityTour.OwnerGuestId,
                     PersonnelId = cityTour.PersonnelId,
-                    CityId = cityTour.CityId
+                    CityId = cityTour.CityId,
+                    VehicleId = cityTour.VehicleId,
+                    TourId = cityTour.TourId
                 });
 
                 if (!fkValidation.IsValid)
                 {
-                    return new ServiceMessage { IsSuccess = false, Message = fkValidation.ErrorMessage };
+                    return new ServiceMessage<AddCityTourResponseDto> { IsSuccess = false, Message = fkValidation.ErrorMessage };
                 }
 
-                // İş Kuralı Validasyonları
-                // 1. Tur tarihi geçmişte olamaz
-                if (cityTour.TourDate.Date < DateTime.UtcNow.Date)
-                {
-                    return new ServiceMessage { IsSuccess = false, Message = "Tur tarihi bugünden önceki bir tarih olamaz." };
-                }
+                // DATE REALITY: Past-dated entries ARE allowed
+                // Service date represents when the operation actually occurred, not when entered
+                // Tur tarihi validasyonu kaldırıldı - geçmiş tarihli girişler operasyonel olarak normaldir
 
-                // 2. Süre kontrolü (1-24 saat arası)
+                // Süre kontrolü (1-24 saat arası)
                 if (cityTour.DurationHours < 1 || cityTour.DurationHours > 24)
                 {
-                    return new ServiceMessage { IsSuccess = false, Message = "Tur süresi 1 ile 24 saat arasında olmalıdır." };
+                    return new ServiceMessage<AddCityTourResponseDto> { IsSuccess = false, Message = "Tur süresi 1 ile 24 saat arasında olmalıdır." };
                 }
 
                 // Fiyat hesaplama
@@ -144,9 +154,46 @@ namespace GuestFlow.Application.Operations.CityTour
                     OwnerGuestId = cityTour.OwnerGuestId,
                     PersonnelId = cityTour.PersonnelId,
                     CityId = cityTour.CityId,
+                    TourId = cityTour.TourId,
                     DiscountPercentage = cityTour.DiscountPercentage,
                     FinalPrice = finalPrice,
-                    Currency = currency
+                    Currency = currency,
+                    StartTime = cityTour.StartTime,
+                    EndTime = cityTour.EndTime,
+                    PickupTime = cityTour.PickupTime,
+                    TourConfirmationTime = cityTour.TourConfirmationTime,
+                    VehicleId = cityTour.VehicleId,
+                    TourGuideId = cityTour.TourGuideId,
+                    AssistantGuideId = cityTour.AssistantGuideId,
+                    DriverName = cityTour.DriverName,
+                    GuideName = cityTour.GuideName,
+                    GuidePhone = cityTour.GuidePhone,
+                    GuideLanguages = cityTour.GuideLanguages,
+                    BackupGuideName = cityTour.BackupGuideName,
+                    BackupGuidePhone = cityTour.BackupGuidePhone,
+                    ExternalVehiclePlate = cityTour.ExternalVehiclePlate,
+                    ExternalDriverName = cityTour.ExternalDriverName,
+                    ExternalDriverPhone = cityTour.ExternalDriverPhone,
+                    GroupLeaderName = cityTour.GroupLeaderName,
+                    GroupLeaderPhone = cityTour.GroupLeaderPhone,
+                    EmergencyContactName = cityTour.EmergencyContactName,
+                    EmergencyContactPhone = cityTour.EmergencyContactPhone,
+                    EmergencyContactRelation = cityTour.EmergencyContactRelation,
+                    MeetingPersonName = cityTour.MeetingPersonName,
+                    MeetingPointDetails = cityTour.MeetingPointDetails,
+                    TourDifficultyLevel = cityTour.TourDifficultyLevel,
+                    WeatherDependent = cityTour.WeatherDependent,
+                    MinimumParticipantCount = cityTour.MinimumParticipantCount,
+                    MaximumParticipantCount = cityTour.MaximumParticipantCount,
+                    DietaryRequirements = cityTour.DietaryRequirements,
+                    AccessibilityNeeds = cityTour.AccessibilityNeeds,
+                    PhotographyAllowed = cityTour.PhotographyAllowed,
+                    SpecialEquipment = cityTour.SpecialEquipment,
+                    SupplierName = cityTour.SupplierName,
+                    SupplierCost = cityTour.SupplierCost,
+                    SupplierCurrency = cityTour.SupplierCurrency,
+                    SupplierInvoiceNumber = cityTour.SupplierInvoiceNumber,
+                    ConciergeInternalNotes = cityTour.ConciergeInternalNotes
                 };
 
                 // Yeni şehir turunu veritabanına ekliyorum.
@@ -158,20 +205,23 @@ namespace GuestFlow.Application.Operations.CityTour
                 if (guest == null)
                     throw new Exception("Misafir bulunamadı.");
 
+                InvoicesEntity? invoice = null;
+                string? pdfUrl = null;
+
                 // Eğer fatura oluşturulması isteniyorsa, bir fatura oluşturuyorum.
                 if (cityTour.CreateInvoice)
                 {
 
                     PersonnelEntity? personnel = null;
-                    if (cityTour.PersonnelId > 0)
+                    if (cityTour.PersonnelId.HasValue && cityTour.PersonnelId.Value > 0)
                     {
-                        personnel = await _personnelRepository.GetByIdAsync(cityTour.PersonnelId);
+                        personnel = await _personnelRepository.GetByIdAsync(cityTour.PersonnelId.Value);
                     }
 
                     // Para birimi cityTourEntity'den alınır (zaten set edilmiş)
                     var invoiceCurrency = cityTourEntity.Currency;
 
-                    var invoice = new InvoicesEntity
+                    invoice = new InvoicesEntity
                     {
                         InvoiceNumber = await GenerateInvoiceNumber(),
                         IssueDate = DateTime.UtcNow,
@@ -180,8 +230,8 @@ namespace GuestFlow.Application.Operations.CityTour
                         Notes = cityTour.InvoiceDescription ?? "Şehir turu faturası",
                         PdfUrl = string.Empty, // PDF oluşturulduktan sonra güncellenecek
                         GuestId = cityTour.OwnerGuestId,
-                        PersonnelId = cityTour.PersonnelId > 0 ? cityTour.PersonnelId : null,
-                        CityTourId = cityTourEntity.Id,
+                        PersonnelId = cityTour.PersonnelId,
+                        // CityTourId removed - invoices are now multi-service
                         CreatedDate = DateTime.UtcNow,
                         IsDeleted = false
                     };
@@ -192,7 +242,7 @@ namespace GuestFlow.Application.Operations.CityTour
                     // PDF oluştur ve URL'i güncelle
                     try
                     {
-                        var pdfUrl = await _pdfService.GenerateInvoicePdfAsync(invoice, guest, personnel);
+                        pdfUrl = await _pdfService.GenerateInvoicePdfAsync(invoice, guest, personnel);
                         invoice.PdfUrl = pdfUrl;
                         await _invoiceRepository.UpdateAsync(invoice);
                         await _unitOfWork.SaveChangesAsync();
@@ -257,7 +307,17 @@ namespace GuestFlow.Application.Operations.CityTour
                 await _unitOfWork.CommitTransactionAsync();
 
                 _logger.LogInformation($"Şehir turu eklendi: {cityTourEntity.Id}");
-                return new ServiceMessage { IsSuccess = true, Message = "Şehir turu başarıyla eklendi." };
+                return new ServiceMessage<AddCityTourResponseDto>
+                {
+                    IsSuccess = true,
+                    Message = "Şehir turu başarıyla eklendi.",
+                    Data = new AddCityTourResponseDto
+                    {
+                        CityTourId = cityTourEntity.Id,
+                        InvoiceId = invoice?.Id,
+                        InvoicePdfUrl = pdfUrl
+                    }
+                };
             }
             catch (Exception ex)
             {
@@ -268,7 +328,7 @@ namespace GuestFlow.Application.Operations.CityTour
                 if (ex.InnerException != null)
                     errorMessage += $" InnerException: {ex.InnerException.Message}";
 
-                return new ServiceMessage { IsSuccess = false, Message = errorMessage };
+                return new ServiceMessage<AddCityTourResponseDto> { IsSuccess = false, Message = errorMessage };
             }
         }
 
@@ -327,13 +387,10 @@ namespace GuestFlow.Application.Operations.CityTour
                 }
 
                 // İş Kuralı Validasyonları
-                // 1. Tur tarihi geçmişte olamaz
-                if (cityTour.TourDate.Date < DateTime.UtcNow.Date)
-                {
-                    return new ServiceMessage { IsSuccess = false, Message = "Tur tarihi bugünden önceki bir tarih olamaz." };
-                }
+                // DATE REALITY: Past-dated entries ARE allowed
+                // Service date represents when the operation actually occurred, not when entered
 
-                // 2. Süre kontrolü (1-24 saat arası)
+                // Süre kontrolü (1-24 saat arası)
                 if (cityTour.DurationHours < 1 || cityTour.DurationHours > 24)
                 {
                     return new ServiceMessage { IsSuccess = false, Message = "Tur süresi 1 ile 24 saat arasında olmalıdır." };
@@ -347,6 +404,48 @@ namespace GuestFlow.Application.Operations.CityTour
                 existing.OwnerGuestId = cityTour.OwnerGuestId;
                 existing.PersonnelId = cityTour.PersonnelId;
                 existing.CityId = cityTour.CityId;
+                existing.TourId = cityTour.TourId == 0 ? existing.TourId : cityTour.TourId;
+                existing.DiscountPercentage = cityTour.DiscountPercentage;
+                existing.Currency = cityTour.Currency ?? existing.Currency;
+                existing.StartTime = cityTour.StartTime;
+                existing.EndTime = cityTour.EndTime;
+                existing.PickupTime = cityTour.PickupTime;
+                existing.TourConfirmationTime = cityTour.TourConfirmationTime;
+                existing.VehicleId = cityTour.VehicleId;
+                existing.TourGuideId = cityTour.TourGuideId;
+                existing.AssistantGuideId = cityTour.AssistantGuideId;
+                existing.DriverName = cityTour.DriverName;
+                existing.GuideName = cityTour.GuideName;
+                existing.GuidePhone = cityTour.GuidePhone;
+                existing.GuideLanguages = cityTour.GuideLanguages;
+                existing.BackupGuideName = cityTour.BackupGuideName;
+                existing.BackupGuidePhone = cityTour.BackupGuidePhone;
+                existing.ExternalVehiclePlate = cityTour.ExternalVehiclePlate;
+                existing.ExternalDriverName = cityTour.ExternalDriverName;
+                existing.ExternalDriverPhone = cityTour.ExternalDriverPhone;
+                existing.GroupLeaderName = cityTour.GroupLeaderName;
+                existing.GroupLeaderPhone = cityTour.GroupLeaderPhone;
+                existing.EmergencyContactName = cityTour.EmergencyContactName;
+                existing.EmergencyContactPhone = cityTour.EmergencyContactPhone;
+                existing.EmergencyContactRelation = cityTour.EmergencyContactRelation;
+                existing.MeetingPersonName = cityTour.MeetingPersonName;
+                existing.MeetingPointDetails = cityTour.MeetingPointDetails;
+                existing.TourDifficultyLevel = cityTour.TourDifficultyLevel;
+                existing.WeatherDependent = cityTour.WeatherDependent;
+                existing.MinimumParticipantCount = cityTour.MinimumParticipantCount;
+                existing.MaximumParticipantCount = cityTour.MaximumParticipantCount;
+                existing.DietaryRequirements = cityTour.DietaryRequirements;
+                existing.AccessibilityNeeds = cityTour.AccessibilityNeeds;
+                existing.PhotographyAllowed = cityTour.PhotographyAllowed;
+                existing.SpecialEquipment = cityTour.SpecialEquipment;
+                existing.SupplierName = cityTour.SupplierName;
+                existing.SupplierCost = cityTour.SupplierCost;
+                existing.SupplierCurrency = cityTour.SupplierCurrency;
+                existing.SupplierInvoiceNumber = cityTour.SupplierInvoiceNumber;
+                existing.ConciergeInternalNotes = cityTour.ConciergeInternalNotes;
+
+                // AUDIT TRACEABILITY: Mark as updated with personnel trace
+                existing.MarkAsUpdated(cityTour.PersonnelId);
 
                 await _cityTourRepository.UpdateAsync(existing);
                 await _unitOfWork.SaveChangesAsync();
@@ -404,7 +503,20 @@ namespace GuestFlow.Application.Operations.CityTour
                 if (cityTour == null)
                     throw new Exception("Şehir turu bulunamadı.");
 
-                return _mapper.Map<GetCityTourDto>(cityTour);
+                var cityTourDto = _mapper.Map<GetCityTourDto>(cityTour);
+
+                // Calculate payment status using PaymentStatusService
+                var paymentStatus = await _paymentStatusService.GetServicePaymentStatusAsync(id, "CityTour");
+                if (paymentStatus != null)
+                {
+                    cityTourDto.PaymentStatus = paymentStatus.PaymentStatus;
+                    cityTourDto.PaidAmount = paymentStatus.PaidAmount;
+                    cityTourDto.RemainingAmount = paymentStatus.RemainingAmount;
+                    cityTourDto.PaidAmountByCurrency = paymentStatus.PaidAmountByCurrency;
+                    cityTourDto.RemainingAmountByCurrency = paymentStatus.RemainingAmountByCurrency;
+                }
+
+                return cityTourDto;
             }
             catch (Exception ex)
             {
@@ -475,6 +587,172 @@ namespace GuestFlow.Application.Operations.CityTour
                 _logger.LogError(ex, $"Şehir turu detayı getirilirken hata: {ex.Message}. Id: {id}");
                 throw;
             }
+        }
+
+        public async Task<ServiceMessage> CreateCityTourInvoiceAsync(int id)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                var cityTour = await _cityTourRepository.GetByIdAsync(id);
+                if (cityTour == null || cityTour.IsDeleted)
+                    return new ServiceMessage { IsSuccess = false, Message = "Şehir turu bulunamadı." };
+
+                // Check if invoice already exists for this city tour
+                var existingInvoice = await _invoiceRepository.GetAll()
+                    .FirstOrDefaultAsync(i => i.InvoiceItems.Any(item => item.ServiceType == "CityTour" && item.ServiceId == id) && !i.IsDeleted);
+                if (existingInvoice != null)
+                    return new ServiceMessage { IsSuccess = false, Message = "Bu şehir turu için zaten fatura oluşturulmuş." };
+
+                // Create invoice
+                var invoice = new InvoicesEntity
+                {
+                    InvoiceNumber = await GenerateInvoiceNumber(),
+                    IssueDate = DateTime.Now,
+                    TotalAmount = cityTour.FinalPrice,
+                    Currency = cityTour.Currency ?? "TRY",
+                    Notes = $"Şehir Turu #{id} - {cityTour.Tour?.Name ?? "Tur"}",
+                    GuestId = cityTour.OwnerGuestId,
+                    PersonnelId = cityTour.CreatedByPersonnelId,
+                    Status = InvoiceStatus.Draft,
+                    IsPdfGenerated = false
+                };
+
+                await _invoiceRepository.AddAsync(invoice);
+                await _unitOfWork.SaveChangesAsync(); // Save to get invoice.Id
+
+                // Add invoice item for this city tour
+                var invoiceItem = new InvoiceItemEntity
+                {
+                    InvoiceId = invoice.Id,
+                    ServiceType = "CityTour",
+                    ServiceId = id,
+                    Amount = cityTour.FinalPrice,
+                    Currency = cityTour.Currency ?? "TRY",
+                    Notes = $"Şehir Turu: {cityTour.Tour?.Name ?? "Tur"}"
+                };
+
+                await _invoiceItemRepository.AddAsync(invoiceItem);
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                _logger.LogInformation($"Şehir turu faturası oluşturuldu: {id} -> Invoice #{invoice.Id}");
+                return new ServiceMessage { IsSuccess = true, Message = $"Fatura başarıyla oluşturuldu. Fatura No: {invoice.InvoiceNumber}" };
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                _logger.LogError(ex, $"Fatura oluşturulurken hata: {ex.Message}. CityTourId: {id}");
+                return new ServiceMessage { IsSuccess = false, Message = $"Fatura oluşturulurken hata: {ex.Message}" };
+            }
+        }
+
+        public async Task<ServiceMessage> SendCityTourConfirmationAsync(int id)
+        {
+            try
+            {
+                var cityTour = await _cityTourRepository.GetByIdAsync(id);
+                if (cityTour == null || cityTour.IsDeleted)
+                    return new ServiceMessage { IsSuccess = false, Message = "Şehir turu bulunamadı." };
+
+                var guest = await _guestRepository.GetByIdAsync(cityTour.OwnerGuestId);
+                if (guest == null)
+                    return new ServiceMessage { IsSuccess = false, Message = "Misafir bilgileri bulunamadı." };
+
+                // Send confirmation email
+                var subject = $"Şehir Turu Onayı - #{id}";
+                var body = $@"
+Merhaba {guest.FullName},
+
+Şehir turunuz onaylanmıştır.
+
+Tur Detayları:
+- Tarih: {cityTour.TourDate:dd.MM.yyyy HH:mm}
+- Tur: {cityTour.Tour?.Name ?? "Şehir Turu"}
+- Fiyat: {cityTour.FinalPrice} {cityTour.Currency ?? "TRY"}
+
+Saygılarımla,
+Hotel Concierge Team
+";
+
+                await _emailService.SendEmailAsync(guest.Email, subject, body);
+
+                _logger.LogInformation($"Şehir turu onay maili gönderildi: {id} -> {guest.Email}");
+                return new ServiceMessage { IsSuccess = true, Message = "Onay maili başarıyla gönderildi." };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Onay maili gönderilirken hata: {ex.Message}. CityTourId: {id}");
+                return new ServiceMessage { IsSuccess = false, Message = $"Onay maili gönderilirken hata: {ex.Message}" };
+            }
+        }
+
+        /// <summary>
+        /// Update city tour status (mark completed/cancelled)
+        /// </summary>
+        public async Task<ServiceMessage> UpdateCityTourStatusAsync(int id, string status)
+        {
+            try
+            {
+                var cityTour = await _cityTourRepository.GetByIdAsync(id);
+                if (cityTour == null || cityTour.IsDeleted)
+                {
+                    return new ServiceMessage { IsSuccess = false, Message = "Şehir turu bulunamadı." };
+                }
+
+                // Validate status transitions
+                if (!IsValidStatusTransition(cityTour.Status, status))
+                {
+                    return new ServiceMessage { IsSuccess = false, Message = $"Geçersiz durum geçişi: {cityTour.Status} -> {status}" };
+                }
+
+                cityTour.Status = status;
+                cityTour.UpdatedDate = DateTime.UtcNow;
+
+                await _unitOfWork.SaveChangesAsync();
+
+                // Send live update
+                if (_hubService != null)
+                {
+                    await _hubService.SendLiveUpdateAsync("CityTour", id, "status_updated");
+                    await _hubService.SendDashboardUpdateAsync(new { });
+                }
+
+                _logger.LogInformation($"Şehir turu durumu güncellendi: {id} -> {status}");
+                return new ServiceMessage { IsSuccess = true, Message = "Şehir turu durumu başarıyla güncellendi." };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Şehir turu durumu güncellenirken hata: {ex.Message}. CityTourId: {id}");
+                return new ServiceMessage { IsSuccess = false, Message = $"Şehir turu durumu güncellenirken hata: {ex.Message}" };
+            }
+        }
+
+        /// <summary>
+        /// Validate status transitions for city tours
+        /// </summary>
+        private bool IsValidStatusTransition(string currentStatus, string newStatus)
+        {
+            // Allow transitions from any status to Completed or Cancelled
+            if (newStatus == "Completed" || newStatus == "Cancelled")
+            {
+                return true;
+            }
+
+            // Allow transition from Pending to Confirmed
+            if (currentStatus == "Pending" && newStatus == "Confirmed")
+            {
+                return true;
+            }
+
+            // Allow transition from Confirmed to InProgress
+            if (currentStatus == "Confirmed" && newStatus == "InProgress")
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 }

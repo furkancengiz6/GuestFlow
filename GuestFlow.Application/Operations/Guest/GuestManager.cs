@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using GuestFlow.Application.Extensions;
 using GuestFlow.Application.Models;
 using GuestFlow.Application.Operations.Guest.Dtos;
+using GuestFlow.Application.Operations.Notification;
 using GuestFlow.Application.Types;
 using GuestFlow.Domain.Entities.Core;
 using GuestFlow.Domain.Entities.Repositories;
@@ -28,6 +29,8 @@ namespace GuestFlow.Application.Operations.Guest
         private readonly IRepository<InvoicesEntity> _invoiceRepository;
         private readonly ILogger<GuestManager> _logger;
         private readonly IMapper _mapper;
+        private readonly IRepository<RoomAssignmentEntity> _roomAssignmentRepository;
+        private readonly INotificationHubService _hubService;
 
         // Constructor Bu sınıf oluşturulurken dependency buradan alıyoruz.
         public GuestManager(
@@ -37,8 +40,10 @@ namespace GuestFlow.Application.Operations.Guest
             IRepository<CityTourEntity> cityTourRepository,
             IRepository<YachtTourEntity> yachtTourRepository,
             IRepository<InvoicesEntity> invoiceRepository,
+            IRepository<RoomAssignmentEntity> roomAssignmentRepository,
             ILogger<GuestManager> logger,
-            IMapper mapper)
+            IMapper mapper,
+            INotificationHubService? hubService = null)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
@@ -47,7 +52,9 @@ namespace GuestFlow.Application.Operations.Guest
             _cityTourRepository = cityTourRepository;
             _yachtTourRepository = yachtTourRepository;
             _invoiceRepository = invoiceRepository;
+            _roomAssignmentRepository = roomAssignmentRepository;
             _logger = logger;
+            _hubService = hubService;
         }
 
         // Bu metod, yeni bir misafir ekliyor.
@@ -93,13 +100,70 @@ namespace GuestFlow.Application.Operations.Guest
                     guest.PhoneNumber ??= "+9000000000"; // Telefon numarası boşsa, bu varsayılan değeri atıyoruz.
                 }
 
+                // ÖNCE: Silinmiş bir misafir var mı kontrol et (aynı email veya telefon ile)
+                // Özel misafirler için varsayılan email/telefon kullanılmamalı, sadece gerçek değerlerle kontrol et
+                GuestEntity? deletedGuest = null;
+                // Email veya telefon gerçek değerler içeriyorsa (varsayılan değilse) kontrol yap
+                bool hasRealEmail = !string.IsNullOrWhiteSpace(guest.Email) && guest.Email != "special@guestflow.com";
+                bool hasRealPhone = !string.IsNullOrWhiteSpace(guest.PhoneNumber) && guest.PhoneNumber != "+9000000000";
+                
+                if (hasRealEmail || hasRealPhone)
+                {
+                    deletedGuest = await _guestRepository.GetAll(g => g.IsDeleted, includeDeleted: true)
+                        .FirstOrDefaultAsync(g => 
+                            (hasRealEmail && !string.IsNullOrWhiteSpace(g.Email) && g.Email == guest.Email) ||
+                            (hasRealPhone && !string.IsNullOrWhiteSpace(g.PhoneNumber) && g.PhoneNumber == guest.PhoneNumber));
+                }
+
+                if (deletedGuest != null)
+                {
+                    // Silinmiş misafiri geri getir (restore) ve bilgilerini güncelle
+                    deletedGuest.IsDeleted = false;
+                    deletedGuest.FullName = guest.FullName;
+                    deletedGuest.Email = guest.Email ?? deletedGuest.Email;
+                    deletedGuest.PhoneNumber = guest.PhoneNumber ?? deletedGuest.PhoneNumber;
+                    deletedGuest.Nationality = guest.Nationality;
+                    deletedGuest.IsSpecialGuest = guest.IsSpecialGuest;
+
+                    await _guestRepository.UpdateAsync(deletedGuest);
+                    await _unitOfWork.SaveChangesAsync();
+                    await _unitOfWork.CommitTransactionAsync();
+
+                    _logger.LogInformation($"Silinmiş misafir geri getirildi: {deletedGuest.GuestCode} - {deletedGuest.FullName}");
+                    return new ServiceMessage { IsSuccess = true, Message = "Misafir başarıyla geri getirildi ve güncellendi." };
+                }
+
+                // Aktif misafir kontrolü (duplicate önleme)
+                // Özel misafirler için varsayılan email/telefon kullanılmamalı
+                bool hasRealEmailForDuplicate = !string.IsNullOrWhiteSpace(guest.Email) && guest.Email != "special@guestflow.com";
+                bool hasRealPhoneForDuplicate = !string.IsNullOrWhiteSpace(guest.PhoneNumber) && guest.PhoneNumber != "+9000000000";
+                
+                if (hasRealEmailForDuplicate || hasRealPhoneForDuplicate)
+                {
+                    var activeGuest = await _guestRepository.GetAll(g => !g.IsDeleted)
+                        .FirstOrDefaultAsync(g => 
+                            (hasRealEmailForDuplicate && !string.IsNullOrWhiteSpace(g.Email) && g.Email == guest.Email) ||
+                            (hasRealPhoneForDuplicate && !string.IsNullOrWhiteSpace(g.PhoneNumber) && g.PhoneNumber == guest.PhoneNumber));
+
+                    if (activeGuest != null)
+                    {
+                        await _unitOfWork.RollbackTransactionAsync();
+                        return new ServiceMessage 
+                        { 
+                            IsSuccess = false, 
+                            Message = "Bu email veya telefon numarası ile zaten aktif bir misafir mevcut." 
+                        };
+                    }
+                }
+
                 // Misafire özel bir kod (GuestCode) oluşturuyoruz. Bu kod, her misafir için benzersiz olmalı.
                 string guestCode = await GenerateGuestCodeAsync();
 
-                // Bu GuestCode ile başka bir misafir var mı diye kontrol ediyoruz.IsDeleted = false ,Sadece aktif misafirleri kontrol ett.
-                var hasGuest = await _guestRepository.GetAll(x => x.GuestCode == guestCode && !x.IsDeleted).AnyAsync();
+                // Ek güvenlik kontrolü: Bu GuestCode ile başka bir misafir var mı diye kontrol ediyoruz.
+                // Tüm kayıtları kontrol ediyoruz (silinmiş olanlar dahil) çünkü unique index tüm kayıtlar için geçerli.
+                var hasGuest = await _guestRepository.GetAll(x => x.GuestCode == guestCode, includeDeleted: true).AnyAsync();
                 if (hasGuest)
-                return new ServiceMessage { IsSuccess = false, Message = "Bu GuestCode ile bir misafir zaten mevcut." };
+                    return new ServiceMessage { IsSuccess = false, Message = "Bu GuestCode ile bir misafir zaten mevcut." };
 
                 // Yeni bir misafir nesnesi oluşturuyoruz ve DTO'dan gelen bilgileri buraya aktarıyoruz.
                 var newGuest = new GuestEntity
@@ -121,6 +185,14 @@ namespace GuestFlow.Application.Operations.Guest
 
                 // Başarılı bir şekilde misafir eklendiğini logluyoru
                 _logger.LogInformation($"Misafir eklendi: {guest.FullName}");
+
+                // Send live update for real-time UI updates
+                if (_hubService != null)
+                {
+                    await _hubService.SendLiveUpdateAsync("Guest", newGuest.Id, "created");
+                    await _hubService.SendDashboardUpdateAsync(new { });
+                }
+
                 // Başarı mesajı döndürüyoruz.
                 return new ServiceMessage { IsSuccess = true, Message = "Misafir başarıyla eklendi." };
             }
@@ -190,6 +262,13 @@ namespace GuestFlow.Application.Operations.Guest
 
                 // Başarılı bir şekilde güncellendiğini logluyoruz.
                 _logger.LogInformation($"Misafir güncellendi: {guest.Id}");
+
+                // Send live update for real-time UI updates
+                if (_hubService != null)
+                {
+                    await _hubService.SendLiveUpdateAsync("Guest", existing.Id, "updated");
+                }
+
                 return new ServiceMessage { IsSuccess = true, Message = "Misafir başarıyla güncellendi." };
             }
             catch (Exception ex)
@@ -218,6 +297,14 @@ namespace GuestFlow.Application.Operations.Guest
                 await _unitOfWork.CommitTransactionAsync();
 
                 _logger.LogInformation($"Misafir silindi: {id}");
+
+                // Send live update for real-time UI updates
+                if (_hubService != null)
+                {
+                    await _hubService.SendLiveUpdateAsync("Guest", id, "deleted");
+                    await _hubService.SendDashboardUpdateAsync(new { });
+                }
+
                 return new ServiceMessage { IsSuccess = true, Message = "Misafir başarıyla silindi." };
             }
             catch (Exception ex)
@@ -305,21 +392,59 @@ namespace GuestFlow.Application.Operations.Guest
         {
             const string prefix = "GUEST-";
             int maxNumber = 0;
-            // Veritabanındaki tüm GuestCode'ları al ve en büyük sayıyı bul
-            // Sadece aktif kayıtları IsDeleted = false kontrolü
-            var existingCodes = await _guestRepository.GetAll(g => !g.IsDeleted)
-            .Select(g => g.GuestCode)
-            .Where(code => code.StartsWith(prefix))
-            .ToListAsync();
+            
+            // TÜM GuestCode'ları kontrol et (silinmiş olanlar dahil)
+            // Çünkü unique index tüm kayıtlar için geçerli
+            var existingCodes = await _guestRepository.GetAll(null, includeDeleted: true) // Silinmiş kayıtlar dahil
+                .Select(g => g.GuestCode)
+                .Where(code => code != null && code.StartsWith(prefix))
+                .ToListAsync();
 
             if (existingCodes.Any())
-            {// GuestCode'lardan sayısal kısmı çıkar ve en büyüğünü bul
-                maxNumber = existingCodes
-                    .Select(code => int.Parse(code.Replace(prefix, "")))
-                    .Max();
+            {
+                // GuestCode'lardan sayısal kısmı çıkar ve en büyüğünü bul
+                var numbers = existingCodes
+                    .Select(code => 
+                    {
+                        var numberPart = code.Replace(prefix, "");
+                        if (int.TryParse(numberPart, out int num))
+                            return num;
+                        return 0;
+                    })
+                    .Where(num => num > 0)
+                    .ToList();
+                    
+                if (numbers.Any())
+                {
+                    maxNumber = numbers.Max();
+                }
             }
 
-            return $"{prefix}{(maxNumber + 1):D3}";
+            // Benzersiz bir kod bulana kadar dene (max 100 deneme)
+            string newCode;
+            int attempts = 0;
+            do
+            {
+                maxNumber++;
+                newCode = $"{prefix}{maxNumber:D3}";
+                
+                // Bu kodun veritabanında olup olmadığını kontrol et (tüm kayıtlar dahil)
+                var exists = await _guestRepository.GetAll(null, includeDeleted: true)
+                    .AnyAsync(g => g.GuestCode == newCode);
+                    
+                if (!exists)
+                    break;
+                    
+                attempts++;
+            } while (attempts < 100);
+
+            if (attempts >= 100)
+            {
+                // Fallback: timestamp kullan
+                newCode = $"{prefix}{DateTime.UtcNow:yyyyMMddHHmmss}";
+            }
+
+            return newCode;
         }
 
         public async Task<GuestDetailDto> GetGuestDetailAsync(int id)

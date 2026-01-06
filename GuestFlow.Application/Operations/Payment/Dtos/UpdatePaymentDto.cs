@@ -11,6 +11,26 @@ namespace GuestFlow.Application.Operations.Payment.Dtos
         public int Id { get; set; }
 
         /// <summary>
+        /// Fatura ID (opsiyonel - sonradan bağlanabilir)
+        /// </summary>
+        public int? InvoiceId { get; set; }
+
+        /// <summary>
+        /// Transfer ID (opsiyonel - sonradan bağlanabilir)
+        /// </summary>
+        public int? TransferId { get; set; }
+
+        /// <summary>
+        /// Şehir Turu ID (opsiyonel - sonradan bağlanabilir)
+        /// </summary>
+        public int? CityTourId { get; set; }
+
+        /// <summary>
+        /// Yat Turu ID (opsiyonel - sonradan bağlanabilir)
+        /// </summary>
+        public int? YachtTourId { get; set; }
+
+        /// <summary>
         /// Ödeme tutarı
         /// </summary>
         public decimal? Amount { get; set; }

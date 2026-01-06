@@ -3,9 +3,11 @@ using GuestFlow.Application.Extensions;
 using GuestFlow.Application.Models;
 using GuestFlow.Application.Operations.Email;
 using GuestFlow.Application.Operations.Invoice.Dtos;
+using GuestFlow.Application.Operations.Payment;
 using GuestFlow.Application.Types;
 using GuestFlow.Domain.Entities.Core;
 using GuestFlow.Domain.Entities.Repositories;
+using GuestFlow.Domain.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -28,63 +30,80 @@ namespace GuestFlow.Application.Operations.Invoice
         // _configuration: Konfigürasyon ayarlarına erişmek için kullanıyoruz.
         // _logger: Hataları veya bilgileri loglamak (kaydetmek) için kullanıyoruz.
         private readonly IRepository<InvoicesEntity> _invoiceRepository;
+        private readonly IRepository<InvoiceItemEntity> _invoiceItemRepository;
         private readonly IRepository<GuestEntity> _guestRepository;
         private readonly IRepository<PersonnelEntity> _personnelRepository;
         private readonly IRepository<TransferEntity> _transferRepository;
         private readonly IRepository<CityTourEntity> _cityTourRepository;
         private readonly IRepository<YachtTourEntity> _yachtTourRepository;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IPdfService _pdfService;
         private readonly IEmailService _emailService;
         private readonly IConfiguration _configuration;
         private readonly ILogger<InvoiceManager> _logger;
         private readonly IPdfUrlService _pdfUrlService;
         private readonly IMapper _mapper;
+        private readonly IPaymentStatusService _paymentStatusService;
 
         // Constructor (yapıcı metod): Bu sınıf oluşturulurken bağımlılıkları (dependency) buradan alıyoruz.
         public InvoiceManager(
             IRepository<InvoicesEntity> invoiceRepository,
+            IRepository<InvoiceItemEntity> invoiceItemRepository,
             IRepository<GuestEntity> guestRepository,
             IRepository<PersonnelEntity> personnelRepository,
             IRepository<TransferEntity> transferRepository,
             IRepository<CityTourEntity> cityTourRepository,
             IRepository<YachtTourEntity> yachtTourRepository,
+            IUnitOfWork unitOfWork,
             IPdfService pdfService,
             IEmailService emailService,
             IConfiguration configuration,
             ILogger<InvoiceManager> logger,
             IPdfUrlService pdfUrlService,
-            IMapper mapper)
+            IMapper mapper,
+            IPaymentStatusService paymentStatusService)
         {
             _invoiceRepository = invoiceRepository;
-            _mapper = mapper;
+            _invoiceItemRepository = invoiceItemRepository;
             _guestRepository = guestRepository;
             _personnelRepository = personnelRepository;
             _transferRepository = transferRepository;
             _cityTourRepository = cityTourRepository;
             _yachtTourRepository = yachtTourRepository;
+            _unitOfWork = unitOfWork;
             _pdfService = pdfService;
             _emailService = emailService;
             _configuration = configuration;
             _logger = logger;
             _pdfUrlService = pdfUrlService;
+            _mapper = mapper;
+            _paymentStatusService = paymentStatusService;
         }
 
         // Bu metod, belirli bir faturayı ID'sine göre getiriyor.
-        public async Task<GetInvoiceDto> GetInvoiceById(int id)
+        public async Task<GetInvoiceDto> GetInvoiceDtoById(int id)
         {
             try
             {
-                // Veritabanından faturayı ID'sine göre çekiyoruz.
-                // GetByIdAsync metodu, verilen ID ile eşleşen faturayı bulur.
-                var invoice = await _invoiceRepository.GetByIdAsync(id);
+                // Veritabanından faturayı ID'sine göre çekiyoruz ve InvoiceItems'ı da yüklüyoruz.
+                var invoice = await _invoiceRepository.GetAll()
+                    .Include(i => i.InvoiceItems)
+                    .FirstOrDefaultAsync(i => i.Id == id && !i.IsDeleted);
 
                 // Eğer fatura bulunamazsa, bir hata fırlatıyoruz (exception throw ediyoruz).
                 if (invoice == null)
                     throw new Exception("Fatura bulunamadı.");
 
                 // Fatura bulunduysa, onu bir DTO (Data Transfer Object) nesnesine çevirip geri döndürüyoruz.
-                // DTO, veriyi taşımak için kullandığımız bir yapı. Burada fatura bilgilerini GetInvoiceDto'ya aktarıyoruz.
-                return _mapper.Map<GetInvoiceDto>(invoice);
+                var dto = _mapper.Map<GetInvoiceDto>(invoice);
+
+                // InvoiceItems'ı da map edelim
+                if (invoice.InvoiceItems != null)
+                {
+                    dto.InvoiceItems = _mapper.Map<List<InvoiceItemDto>>(invoice.InvoiceItems);
+                }
+
+                return dto;
             }
             catch (Exception ex)
             {
@@ -144,6 +163,38 @@ namespace GuestFlow.Application.Operations.Invoice
         /// <summary>
         /// Fatura için PDF oluşturur ve PdfUrl'i günceller
         /// </summary>
+        /// <summary>
+        /// Validates that an invoice can be modified (only Draft invoices, not PDF generated)
+        /// INVOICE REALITY: Once PDF is generated, invoice becomes IMMUTABLE
+        /// </summary>
+        /// <summary>
+        /// Get current personnel ID from async context (if available)
+        /// This is a placeholder - in a real implementation, this would come from
+        /// the current user's context (HttpContext, ClaimsPrincipal, etc.)
+        /// </summary>
+        private int? GetCurrentPersonnelId()
+        {
+            // TODO: Implement proper personnel context retrieval
+            // For now, return null - the invoice will still be locked
+            return null;
+        }
+
+        /// <summary>
+        /// Validates that an invoice can be modified (only Draft invoices, not PDF generated)
+        /// INVOICE REALITY: Once PDF is generated, invoice becomes IMMUTABLE
+        /// </summary>
+        private void ValidateInvoiceCanBeModified(InvoicesEntity invoice)
+        {
+            if (!invoice.CanBeModified)
+            {
+                var reason = invoice.IsPdfGenerated
+                    ? "PDF oluşturulmuş faturalar değiştirilemez."
+                    : $"Durumu '{invoice.Status}' olan faturalar değiştirilemez. Sadece 'Draft' durumundaki faturalar değiştirilebilir.";
+
+                throw new InvalidOperationException($"Fatura değiştirilemez: {reason} Fatura ID: {invoice.Id}, Durum: {invoice.Status}, PDF Oluşturulmuş: {invoice.IsPdfGenerated}");
+            }
+        }
+
         public async Task<string> GeneratePdfForInvoiceAsync(int invoiceId)
         {
             try
@@ -151,13 +202,17 @@ namespace GuestFlow.Application.Operations.Invoice
                 var invoice = await _invoiceRepository.GetAll()
                     .Include(i => i.Guest)
                     .Include(i => i.Personnel)
-                    .Include(i => i.Transfer)
-                    .Include(i => i.CityTour)
-                    .Include(i => i.YachtTour)
+                    .Include(i => i.InvoiceItems)
                     .FirstOrDefaultAsync(i => i.Id == invoiceId);
 
                 if (invoice == null)
                     throw new Exception("Fatura bulunamadı.");
+
+                // INVOICE IMMUTABILITY: Prevent PDF generation on already generated invoices
+                if (invoice.IsPdfGenerated)
+                {
+                    throw new InvalidOperationException($"Fatura için PDF zaten oluşturulmuş. Fatura ID: {invoiceId}");
+                }
 
                 var guest = invoice.Guest ?? await _guestRepository.GetByIdAsync(invoice.GuestId);
                 if (guest == null)
@@ -171,8 +226,10 @@ namespace GuestFlow.Application.Operations.Invoice
 
                 var pdfUrl = await _pdfService.GenerateInvoicePdfAsync(invoice, guest, personnel);
 
-                // PdfUrl'i güncelle
-                invoice.PdfUrl = pdfUrl;
+                // INVOICE IMMUTABILITY: Lock the invoice after PDF generation (makes it IMMUTABLE)
+                // This sets IsPdfGenerated=true, Status=Generated, PdfGeneratedDate, and LockedByPersonnelId
+                var currentPersonnelId = GetCurrentPersonnelId(); // Get from context if available
+                invoice.LockAfterPdfGeneration(pdfUrl, currentPersonnelId);
                 await _invoiceRepository.UpdateAsync(invoice);
 
                 _logger.LogInformation($"Fatura PDF'i oluşturuldu ve güncellendi. InvoiceId: {invoiceId}, PdfUrl: {pdfUrl}");
@@ -216,9 +273,7 @@ namespace GuestFlow.Application.Operations.Invoice
                 var invoice = await _invoiceRepository.GetAll()
                     .Include(i => i.Guest)
                     .Include(i => i.Personnel)
-                    .Include(i => i.Transfer)
-                    .Include(i => i.CityTour)
-                    .Include(i => i.YachtTour)
+                    .Include(i => i.InvoiceItems)
                     .FirstOrDefaultAsync(i => i.Id == id && !i.IsDeleted);
 
                 if (invoice == null)
@@ -226,41 +281,34 @@ namespace GuestFlow.Application.Operations.Invoice
 
                 var detail = _mapper.Map<InvoiceDetailDto>(invoice);
 
-                // Hizmet bilgisini belirle (Transfer/CityTour/YachtTour)
-                if (invoice.TransferId.HasValue && invoice.Transfer != null)
+                // Calculate payment status using PaymentStatusService
+                var paymentStatus = await _paymentStatusService.GetInvoicePaymentStatusAsync(id);
+                if (paymentStatus != null)
                 {
-                    detail.Service = new InvoiceServiceDto
-                    {
-                        ServiceType = "Transfer",
-                        ServiceId = invoice.Transfer.Id,
-                        ServiceName = $"{invoice.Transfer.PickupAddress} → {invoice.Transfer.DropoffAddress}",
-                        ServiceDate = invoice.Transfer.TransferDate,
-                        ServiceAmount = invoice.Transfer.FinalPrice,
-                        AdditionalInfo = invoice.Transfer.Note
-                    };
+                    detail.PaymentStatus = paymentStatus.PaymentStatus;
+                    detail.PaidAmount = paymentStatus.PaidAmount;
+                    detail.RemainingAmount = paymentStatus.RemainingAmount;
+                    detail.PaidAmountByCurrency = paymentStatus.PaidAmountByCurrency;
+                    detail.RemainingAmountByCurrency = paymentStatus.RemainingAmountByCurrency;
                 }
-                else if (invoice.CityTourId.HasValue && invoice.CityTour != null)
+
+                // For multi-service invoices, create a summary service info
+                if (invoice.InvoiceItems != null && invoice.InvoiceItems.Any())
                 {
+                    var itemCount = invoice.InvoiceItems.Count;
+                    var serviceTypes = string.Join(", ", invoice.InvoiceItems.Select(i => i.ServiceType).Distinct());
+                    var dateRange = invoice.InvoiceItems.Any() ?
+                        $"{invoice.InvoiceItems.Min(i => i.CreatedDate):dd.MM.yyyy} - {invoice.InvoiceItems.Max(i => i.CreatedDate):dd.MM.yyyy}" :
+                        "N/A";
+
                     detail.Service = new InvoiceServiceDto
                     {
-                        ServiceType = "CityTour",
-                        ServiceId = invoice.CityTour.Id,
-                        ServiceName = $"Şehir Turu - {invoice.CityTour.Language}",
-                        ServiceDate = invoice.CityTour.TourDate,
-                        ServiceAmount = invoice.CityTour.FinalPrice,
-                        AdditionalInfo = $"{invoice.CityTour.DurationHours} saat"
-                    };
-                }
-                else if (invoice.YachtTourId.HasValue && invoice.YachtTour != null)
-                {
-                    detail.Service = new InvoiceServiceDto
-                    {
-                        ServiceType = "YachtTour",
-                        ServiceId = invoice.YachtTour.Id,
-                        ServiceName = $"Yat Turu - {invoice.YachtTour.YachtName}",
-                        ServiceDate = invoice.YachtTour.TourDate,
-                        ServiceAmount = invoice.YachtTour.FinalPrice,
-                        AdditionalInfo = $"{invoice.YachtTour.NumberOfPeople} kişi"
+                        ServiceType = "Multi-Service",
+                        ServiceId = 0, // Not applicable for multi-service
+                        ServiceName = $"{itemCount} hizmet ({serviceTypes})",
+                        ServiceDate = invoice.InvoiceItems.First().CreatedDate,
+                        ServiceAmount = invoice.TotalAmount,
+                        AdditionalInfo = $"Tarih aralığı: {dateRange}"
                     };
                 }
 
@@ -446,6 +494,310 @@ GuestFlow Ekibi";
             {
                 _logger.LogError(ex, $"Fatura e-postası gönderilirken hata: {ex.Message}. InvoiceId: {invoiceId}");
                 return new ServiceMessage { IsSuccess = false, Message = $"E-posta gönderilemedi: {ex.Message}" };
+            }
+        }
+
+        /// <summary>
+        /// Get services eligible for invoice creation for a guest
+        /// </summary>
+        public async Task<List<EligibleServiceDto>> GetEligibleServicesForInvoiceAsync(int guestId, DateTime? startDate = null, DateTime? endDate = null)
+        {
+            try
+            {
+                var start = startDate ?? DateTime.UtcNow.AddDays(-7);
+                var end = endDate ?? DateTime.UtcNow;
+
+                var result = new List<EligibleServiceDto>();
+
+                // Get transfers not already invoiced
+                var transferIds = await _invoiceItemRepository.GetAll()
+                    .Where(ii => ii.ServiceType == "Transfer")
+                    .Select(ii => ii.ServiceId)
+                    .Distinct()
+                    .ToListAsync();
+
+                var transfers = await _transferRepository.GetAll()
+                    .Where(t => t.GuestId == guestId && t.TransferDate.Date >= start.Date && t.TransferDate.Date <= end.Date)
+                    .Where(t => !transferIds.Contains(t.Id)) // Not already in any invoice
+                    .Select(t => new EligibleServiceDto
+                    {
+                        ServiceType = "Transfer",
+                        ServiceId = t.Id,
+                        ServiceDescription = $"{t.PickupAddress} → {t.DropoffAddress}",
+                        ServiceDate = t.TransferDate,
+                        Amount = t.FinalPrice,
+                        Currency = t.Currency ?? "TRY",
+                        IsAlreadyInvoiced = false,
+                        GuestName = t.Guest.FullName
+                    })
+                    .ToListAsync();
+
+                result.AddRange(transfers);
+
+                // Get city tours not already invoiced
+                var cityTourIds = await _invoiceItemRepository.GetAll()
+                    .Where(ii => ii.ServiceType == "CityTour")
+                    .Select(ii => ii.ServiceId)
+                    .Distinct()
+                    .ToListAsync();
+
+                var cityTours = await _cityTourRepository.GetAll()
+                    .Where(ct => ct.OwnerGuestId == guestId && ct.TourDate.Date >= start.Date && ct.TourDate.Date <= end.Date)
+                    .Where(ct => !cityTourIds.Contains(ct.Id)) // Not already in any invoice
+                    .Select(ct => new EligibleServiceDto
+                    {
+                        ServiceType = "CityTour",
+                        ServiceId = ct.Id,
+                        ServiceDescription = $"City Tour - {ct.DurationHours} hours",
+                        ServiceDate = ct.TourDate,
+                        Amount = ct.FinalPrice,
+                        Currency = ct.Currency ?? "TRY",
+                        IsAlreadyInvoiced = false,
+                        GuestName = ct.OwnerGuest.FullName
+                    })
+                    .ToListAsync();
+
+                result.AddRange(cityTours);
+
+                // Get yacht tours not already invoiced
+                var yachtTourIds = await _invoiceItemRepository.GetAll()
+                    .Where(ii => ii.ServiceType == "YachtTour")
+                    .Select(ii => ii.ServiceId)
+                    .Distinct()
+                    .ToListAsync();
+
+                var yachtTours = await _yachtTourRepository.GetAll()
+                    .Where(yt => yt.OwnerGuestId == guestId && yt.TourDate.Date >= start.Date && yt.TourDate.Date <= end.Date)
+                    .Where(yt => !yachtTourIds.Contains(yt.Id)) // Not already in any invoice
+                    .Select(yt => new EligibleServiceDto
+                    {
+                        ServiceType = "YachtTour",
+                        ServiceId = yt.Id,
+                        ServiceDescription = $"Yacht Tour - {yt.YachtName ?? "Unknown"}",
+                        ServiceDate = yt.TourDate,
+                        Amount = yt.FinalPrice,
+                        Currency = yt.Currency ?? "TRY",
+                        IsAlreadyInvoiced = false,
+                        GuestName = yt.OwnerGuest.FullName
+                    })
+                    .ToListAsync();
+
+                result.AddRange(yachtTours);
+
+                return result.OrderByDescending(s => s.ServiceDate).ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Eligible services for invoice error: {ex.Message}");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Create invoice manually with selected services
+        /// </summary>
+        public async Task<ServiceMessage<GetInvoiceDto>> CreateInvoiceAsync(CreateInvoiceDto createDto)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                // Validate guest exists
+                var guest = await _guestRepository.GetByIdAsync(createDto.GuestId);
+                if (guest == null)
+                {
+                    return new ServiceMessage<GetInvoiceDto> { IsSuccess = false, Message = "Misafir bulunamadı." };
+                }
+
+                // Get eligible services
+                var eligibleServices = await GetEligibleServicesForInvoiceAsync(
+                    createDto.GuestId,
+                    createDto.StartDate,
+                    createDto.EndDate);
+
+                // If specific service IDs provided, filter to those
+                if (createDto.SelectedServiceIds != null && createDto.SelectedServiceIds.Any())
+                {
+                    eligibleServices = eligibleServices
+                        .Where(s => createDto.SelectedServiceIds.Contains(s.ServiceId))
+                        .ToList();
+                }
+
+                if (!eligibleServices.Any())
+                {
+                    return new ServiceMessage<GetInvoiceDto> { IsSuccess = false, Message = "Fatura oluşturulacak uygun hizmet bulunamadı." };
+                }
+
+                // Create invoice
+                var invoice = new InvoicesEntity
+                {
+                    InvoiceNumber = await GenerateInvoiceNumber(),
+                    IssueDate = DateTime.UtcNow,
+                    TotalAmount = eligibleServices.Sum(s => s.Amount),
+                    Currency = createDto.Currency,
+                    Notes = createDto.Notes,
+                    GuestId = createDto.GuestId,
+                    PersonnelId = createDto.CreatedByPersonnelId,
+                    CreatedDate = DateTime.UtcNow,
+                    Status = InvoiceStatus.Draft
+                };
+
+                await _invoiceRepository.AddAsync(invoice);
+                await _unitOfWork.SaveChangesAsync();
+
+                // Create invoice items
+                foreach (var service in eligibleServices)
+                {
+                    var invoiceItem = new InvoiceItemEntity
+                    {
+                        InvoiceId = invoice.Id,
+                        ServiceType = service.ServiceType,
+                        ServiceId = service.ServiceId,
+                        Amount = service.Amount,
+                        Currency = service.Currency,
+                        Notes = $"Service: {service.ServiceDescription}",
+                        CreatedDate = DateTime.UtcNow
+                    };
+
+                    await _invoiceItemRepository.AddAsync(invoiceItem);
+                }
+
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                // Get the created invoice with items
+                var result = await GetInvoiceDtoById(invoice.Id);
+
+                _logger.LogInformation($"Fatura manuel olarak oluşturuldu: {invoice.InvoiceNumber}");
+                return new ServiceMessage<GetInvoiceDto>
+                {
+                    IsSuccess = true,
+                    Message = "Fatura başarıyla oluşturuldu.",
+                    Data = result
+                };
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                _logger.LogError(ex, $"Fatura oluşturulurken hata: {ex.Message}");
+                return new ServiceMessage<GetInvoiceDto> { IsSuccess = false, Message = $"Fatura oluşturulurken hata: {ex.Message}" };
+            }
+        }
+
+        /// <summary>
+        /// Update invoice (only allowed for Draft invoices that haven't been PDF generated)
+        /// INVOICE IMMUTABILITY: Once PDF is generated, invoices become IMMUTABLE
+        /// </summary>
+        public async Task<ServiceMessage<GetInvoiceDto>> UpdateInvoiceAsync(int invoiceId, UpdateInvoiceDto updateDto)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                var invoice = await _invoiceRepository.GetByIdAsync(invoiceId);
+                if (invoice == null)
+                {
+                    return new ServiceMessage<GetInvoiceDto> { IsSuccess = false, Message = "Fatura bulunamadı." };
+                }
+
+                // INVOICE IMMUTABILITY: Check if invoice can be modified
+                ValidateInvoiceCanBeModified(invoice);
+
+                // Update allowed fields for Draft invoices only
+                if (!string.IsNullOrEmpty(updateDto.Notes))
+                {
+                    invoice.Notes = updateDto.Notes;
+                }
+
+                await _invoiceRepository.UpdateAsync(invoice);
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                var result = _mapper.Map<GetInvoiceDto>(invoice);
+                return new ServiceMessage<GetInvoiceDto> { IsSuccess = true, Message = "Fatura başarıyla güncellendi.", Data = result };
+            }
+            catch (InvalidOperationException ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                _logger.LogWarning(ex, $"Fatura güncelleme reddedildi (immutable): {ex.Message}");
+                return new ServiceMessage<GetInvoiceDto> { IsSuccess = false, Message = ex.Message };
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                _logger.LogError(ex, $"Fatura güncelleme hatası: {ex.Message}");
+                return new ServiceMessage<GetInvoiceDto> { IsSuccess = false, Message = $"Fatura güncelleme hatası: {ex.Message}" };
+            }
+        }
+
+        /// <summary>
+        /// Cancel invoice (only allowed for Draft invoices)
+        /// INVOICE IMMUTABILITY: Generated invoices cannot be cancelled
+        /// </summary>
+        public async Task<ServiceMessage> CancelInvoiceAsync(int invoiceId)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                var invoice = await _invoiceRepository.GetByIdAsync(invoiceId);
+                if (invoice == null)
+                {
+                    return new ServiceMessage { IsSuccess = false, Message = "Fatura bulunamadı." };
+                }
+
+                // INVOICE IMMUTABILITY: Check if invoice can be modified
+                ValidateInvoiceCanBeModified(invoice);
+
+                // Only Draft invoices can be cancelled
+                if (invoice.Status != InvoiceStatus.Draft)
+                {
+                    return new ServiceMessage { IsSuccess = false, Message = "Sadece Draft durumundaki faturalar iptal edilebilir." };
+                }
+
+                invoice.Status = InvoiceStatus.Cancelled;
+                await _invoiceRepository.UpdateAsync(invoice);
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                return new ServiceMessage { IsSuccess = true, Message = "Fatura başarıyla iptal edildi." };
+            }
+            catch (InvalidOperationException ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                _logger.LogWarning(ex, $"Fatura iptal reddedildi (immutable): {ex.Message}");
+                return new ServiceMessage { IsSuccess = false, Message = ex.Message };
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                _logger.LogError(ex, $"Fatura iptal hatası: {ex.Message}");
+                return new ServiceMessage { IsSuccess = false, Message = $"Fatura iptal hatası: {ex.Message}" };
+            }
+        }
+
+        /// <summary>
+        /// Generate a unique, sequential invoice number
+        /// INVOICE REALITY: Sequential numbering for financial records
+        /// </summary>
+        private async Task<int> GenerateInvoiceNumber()
+        {
+            try
+            {
+                // Get the highest existing invoice number
+                var lastInvoice = await _invoiceRepository.GetAll()
+                    .OrderByDescending(i => i.InvoiceNumber)
+                    .Select(i => i.InvoiceNumber)
+                    .FirstOrDefaultAsync();
+
+                // Start from 1000 if no invoices exist, otherwise increment
+                return lastInvoice >= 1000 ? lastInvoice + 1 : 1000;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating invoice number");
+                // Fallback to timestamp-based number to avoid conflicts
+                return (int)(DateTime.UtcNow.Ticks % int.MaxValue);
             }
         }
     }

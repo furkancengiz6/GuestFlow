@@ -26,21 +26,114 @@ import { tr } from 'date-fns/locale'
 import { useQuery } from '@tanstack/react-query'
 import { dropdownService } from '../../services/dropdownService'
 import { YachtTour, CreateYachtTourRequest, UpdateYachtTourRequest } from '../../services/tourService'
+import { TourCategory } from '../../types/enums'
+
+const optionalId = z.preprocess(
+  (val) => (val === '' || val === null || val === undefined ? undefined : Number(val)),
+  z.number().optional()
+)
 
 // Zod schema
 const yachtTourSchema = z.object({
   tourDate: z.date({ required_error: 'Tur tarihi gereklidir' }),
   numberOfPeople: z.number().min(1, 'Kişi sayısı en az 1 olmalıdır'),
+
+  // Group composition fields
+  childCount: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined ? undefined : Number(val)),
+    z.number().min(0, 'Çocuk sayısı 0 veya daha büyük olmalıdır').optional()
+  ),
+  infantCount: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined ? undefined : Number(val)),
+    z.number().min(0, 'Bebek sayısı 0 veya daha büyük olmalıdır').optional()
+  ),
+
   price: z.number().min(0.01, 'Fiyat 0.01\'den büyük olmalıdır'),
   specialRequest: z.string().optional(),
   yachtName: z.string().min(1, 'Yat adı gereklidir').max(100, 'Yat adı en fazla 100 karakter olabilir'),
+
+  // Group coordination fields
+  groupLeaderName: z.string().max(100, 'Grup lideri adı en fazla 100 karakter olabilir').optional(),
+  groupLeaderPhone: z.string().max(20, 'Grup lideri telefonu en fazla 20 karakter olabilir').optional(),
+
   ownerGuestId: z.number().min(1, 'Misafir seçilmelidir'),
-  personnelId: z.number().min(1, 'Personel seçilmelidir'),
+  personnelId: optionalId,
   cityId: z.number().min(1, 'Şehir seçilmelidir'),
   createInvoice: z.boolean().optional(),
-  discountPercentage: z.number().min(0).max(100).optional(),
+  discountPercentage: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined ? undefined : Number(val)),
+    z.number().min(0).max(100).optional()
+  ),
   invoiceDescription: z.string().optional(),
   currency: z.string().optional(),
+  pickupPier: z.string().optional(),
+  dropoffPier: z.string().optional(),
+  pierAddress: z.string().optional(),
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
+  tourCategory: z.nativeEnum(TourCategory).optional(),
+
+  // Safety & regulatory fields
+  lifeJacketsProvided: z.boolean().optional(),
+  lifeJacketCount: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined ? undefined : Number(val)),
+    z.number().min(1, 'Can yeleği sayısı en az 1 olmalıdır').optional()
+  ),
+  safetyEquipmentCheck: z.boolean().optional(),
+  emergencyEquipment: z.string().max(500, 'Acil durum malzemeleri en fazla 500 karakter olabilir').optional(),
+
+  // Capacity & compliance fields
+  yachtCapacity: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined ? undefined : Number(val)),
+    z.number().min(1, 'Yat kapasitesi en az 1 olmalıdır').optional()
+  ),
+  yachtType: z.string().max(50, 'Yat tipi en fazla 50 karakter olabilir').optional(),
+  yachtLicenceRequired: z.boolean().optional(),
+  coastGuardApproved: z.boolean().optional(),
+
+  // Operational details
+  crewSize: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined ? undefined : Number(val)),
+    z.number().min(1, 'Mürettebat sayısı en az 1 olmalıdır').optional()
+  ),
+  captainExperience: z.string().max(100, 'Kaptan deneyimi en fazla 100 karakter olabilir').optional(),
+  fuelRange: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined ? undefined : Number(val)),
+    z.number().min(1, 'Yakıt menzili en az 1 olmalıdır').optional()
+  ),
+  weatherBackupPlan: z.string().max(500, 'Hava durumu yedek planı en fazla 500 karakter olabilir').optional(),
+
+  captainPhone: z.string().optional(),
+  // isPaymentReceived removed - payment status is calculated from PaymentEntity
+  paymentNote: z.string().optional(),
+
+  // Guest safety fields
+  swimmingProficiency: z.string().max(100, 'Yüzme yeterliliği en fazla 100 karakter olabilir').optional(),
+  medicalConditions: z.string().max(500, 'Tıbbi durumlar en fazla 500 karakter olabilir').optional(),
+  alcoholPolicy: z.string().max(200, 'Alkol politikası en fazla 200 karakter olabilir').optional(),
+
+  // Amenities & experience fields
+  foodBeverageIncluded: z.boolean().optional(),
+  beverageType: z.string().max(200, 'İçecek tipi en fazla 200 karakter olabilir').optional(),
+  musicSystem: z.boolean().optional(),
+  waterSportsEquipment: z.string().max(300, 'Su sporu malzemeleri en fazla 300 karakter olabilir').optional(),
+
+  // Coordination fields
+  marinaContactName: z.string().max(100, 'Marina iletişim adı en fazla 100 karakter olabilir').optional(),
+  marinaContactPhone: z.string().max(20, 'Marina iletişim telefonu en fazla 20 karakter olabilir').optional(),
+
+  // Internal coordination fields
+  conciergeInternalNotes: z.string().max(1000, 'İç notlar en fazla 1000 karakter olabilir').optional(),
+
+  supplierName: z.string().optional(),
+  supplierCost: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined ? undefined : Number(val)),
+    z.number().optional()
+  ),
+  supplierCurrency: z.string().optional(),
+  supplierPaymentStatus: z.string().optional(),
+  supplierPaymentDate: z.string().optional(),
+  supplierInvoiceNumber: z.string().optional(),
 })
 
 type YachtTourFormData = z.infer<typeof yachtTourSchema>
@@ -63,20 +156,83 @@ const YachtTourForm = ({ open, onClose, onSubmit, yachtTour, isLoading = false }
     setValue,
     watch,
   } = useForm<YachtTourFormData>({
-    resolver: zodResolver(yachtTourSchema),
+    resolver: zodResolver(yachtTourSchema) as any,
     defaultValues: {
       tourDate: new Date(),
       numberOfPeople: 1,
+
+      // Group composition fields
+      childCount: null,
+      infantCount: null,
+
       price: 0,
       specialRequest: '',
       yachtName: '',
+
+      // Group coordination fields
+      groupLeaderName: '',
+      groupLeaderPhone: '',
+
       ownerGuestId: 0,
-      personnelId: 0,
+      personnelId: undefined,
       cityId: 0,
       createInvoice: false,
       discountPercentage: 0,
       invoiceDescription: '',
       currency: 'TRY',
+      pickupPier: '',
+      dropoffPier: '',
+      pierAddress: '',
+      startTime: '',
+      endTime: '',
+      tourCategory: TourCategory.Daily,
+
+      // Safety & regulatory fields
+      lifeJacketsProvided: false,
+      lifeJacketCount: null,
+      safetyEquipmentCheck: false,
+      emergencyEquipment: '',
+
+      // Capacity & compliance fields
+      yachtCapacity: null,
+      yachtType: '',
+      yachtLicenceRequired: false,
+      coastGuardApproved: false,
+
+      // Operational details
+      crewSize: null,
+      captainExperience: '',
+      fuelRange: null,
+      weatherBackupPlan: '',
+
+      captainPhone: '',
+      // isPaymentReceived removed - payment status is calculated from PaymentEntity
+      paymentNote: '',
+
+      // Guest safety fields
+      swimmingProficiency: '',
+      medicalConditions: '',
+      alcoholPolicy: '',
+
+      // Amenities & experience fields
+      foodBeverageIncluded: false,
+      beverageType: '',
+      musicSystem: false,
+      waterSportsEquipment: '',
+
+      // Coordination fields
+      marinaContactName: '',
+      marinaContactPhone: '',
+
+      supplierName: '',
+      supplierCost: undefined,
+      supplierCurrency: '',
+      supplierPaymentStatus: '',
+      supplierPaymentDate: '',
+      supplierInvoiceNumber: '',
+
+      // Internal coordination fields
+      conciergeInternalNotes: '',
     },
   })
 
@@ -87,11 +243,7 @@ const YachtTourForm = ({ open, onClose, onSubmit, yachtTour, isLoading = false }
     enabled: open,
   })
 
-  const { data: personnel } = useQuery({
-    queryKey: ['personnel-dropdown'],
-    queryFn: () => dropdownService.getPersonnel(),
-    enabled: open,
-  })
+  // Personnel is automatically assigned from logged-in user, no need for dropdown
 
   const { data: cities } = useQuery({
     queryKey: ['cities-dropdown'],
@@ -110,14 +262,73 @@ const YachtTourForm = ({ open, onClose, onSubmit, yachtTour, isLoading = false }
       setValue('specialRequest', yachtTour.specialRequest || '')
       setValue('yachtName', yachtTour.yachtName)
       setValue('ownerGuestId', yachtTour.ownerGuestId)
-      setValue('personnelId', yachtTour.personnelId)
+      setValue('personnelId', yachtTour.personnelId || undefined)
       setValue('cityId', yachtTour.cityId)
+      setValue('pickupPier', yachtTour.pickupPier || '')
+      setValue('dropoffPier', yachtTour.dropoffPier || '')
+      setValue('pierAddress', (yachtTour as any).pierAddress || '')
+      setValue('startTime', yachtTour.startTime || '')
+      setValue('endTime', yachtTour.endTime || '')
+      setValue('tourCategory', (yachtTour as any).tourCategory || TourCategory.Daily)
+      setValue('captainPhone', (yachtTour as any).captainPhone || '')
+      // isPaymentReceived removed - payment status is calculated from PaymentEntity
+      setValue('paymentNote', (yachtTour as any).paymentNote || '')
+      setValue('supplierName', (yachtTour as any).supplierName || '')
+      setValue('supplierCost', (yachtTour as any).supplierCost || undefined)
+      setValue('supplierCurrency', (yachtTour as any).supplierCurrency || '')
+      setValue('supplierPaymentStatus', (yachtTour as any).supplierPaymentStatus || '')
+      setValue('supplierPaymentDate', (yachtTour as any).supplierPaymentDate || '')
+      setValue('supplierInvoiceNumber', (yachtTour as any).supplierInvoiceNumber || '')
+
+      // Group composition fields
+      setValue('childCount', (yachtTour as any).childCount || null)
+      setValue('infantCount', (yachtTour as any).infantCount || null)
+
+      // Group coordination fields
+      setValue('groupLeaderName', (yachtTour as any).groupLeaderName || '')
+      setValue('groupLeaderPhone', (yachtTour as any).groupLeaderPhone || '')
+
+      // Safety & regulatory fields
+      setValue('lifeJacketsProvided', (yachtTour as any).lifeJacketsProvided || false)
+      setValue('lifeJacketCount', (yachtTour as any).lifeJacketCount || null)
+      setValue('safetyEquipmentCheck', (yachtTour as any).safetyEquipmentCheck || false)
+      setValue('emergencyEquipment', (yachtTour as any).emergencyEquipment || '')
+
+      // Capacity & compliance fields
+      setValue('yachtCapacity', (yachtTour as any).yachtCapacity || null)
+      setValue('yachtType', (yachtTour as any).yachtType || '')
+      setValue('yachtLicenceRequired', (yachtTour as any).yachtLicenceRequired || false)
+      setValue('coastGuardApproved', (yachtTour as any).coastGuardApproved || false)
+
+      // Operational details
+      setValue('crewSize', (yachtTour as any).crewSize || null)
+      setValue('captainExperience', (yachtTour as any).captainExperience || '')
+      setValue('fuelRange', (yachtTour as any).fuelRange || null)
+      setValue('weatherBackupPlan', (yachtTour as any).weatherBackupPlan || '')
+
+      // Guest safety fields
+      setValue('swimmingProficiency', (yachtTour as any).swimmingProficiency || '')
+      setValue('medicalConditions', (yachtTour as any).medicalConditions || '')
+      setValue('alcoholPolicy', (yachtTour as any).alcoholPolicy || '')
+
+      // Amenities & experience fields
+      setValue('foodBeverageIncluded', (yachtTour as any).foodBeverageIncluded || false)
+      setValue('beverageType', (yachtTour as any).beverageType || '')
+      setValue('musicSystem', (yachtTour as any).musicSystem || false)
+      setValue('waterSportsEquipment', (yachtTour as any).waterSportsEquipment || '')
+
+      // Coordination fields
+      setValue('marinaContactName', (yachtTour as any).marinaContactName || '')
+      setValue('marinaContactPhone', (yachtTour as any).marinaContactPhone || '')
+
+      // Internal coordination fields
+      setValue('conciergeInternalNotes', (yachtTour as any).conciergeInternalNotes || '')
     } else {
       reset()
     }
   }, [yachtTour, setValue, reset])
 
-  const handleFormSubmit = async (data: YachtTourFormData) => {
+  const handleFormSubmit = async (data: any) => {
     try {
       const submitData: any = {
         tourDate: data.tourDate.toISOString(),
@@ -127,6 +338,65 @@ const YachtTourForm = ({ open, onClose, onSubmit, yachtTour, isLoading = false }
         ownerGuestId: data.ownerGuestId,
         personnelId: data.personnelId,
         cityId: data.cityId,
+        pickupPier: data.pickupPier || undefined,
+        dropoffPier: data.dropoffPier || undefined,
+        pierAddress: data.pierAddress || undefined,
+        startTime: data.startTime || undefined,
+        endTime: data.endTime || undefined,
+        tourCategory: data.tourCategory,
+        captainPhone: data.captainPhone || undefined,
+        // isPaymentReceived removed - payment status is calculated from PaymentEntity
+        paymentNote: data.paymentNote || undefined,
+        supplierName: data.supplierName || undefined,
+        supplierCost: data.supplierCost ?? undefined,
+        supplierCurrency: data.supplierCurrency || undefined,
+        supplierPaymentStatus: data.supplierPaymentStatus || undefined,
+        supplierPaymentDate: data.supplierPaymentDate || undefined,
+        supplierInvoiceNumber: data.supplierInvoiceNumber || undefined,
+
+        // Group composition fields
+        childCount: data.childCount && data.childCount > 0 ? data.childCount : undefined,
+        infantCount: data.infantCount && data.infantCount > 0 ? data.infantCount : undefined,
+
+        // Group coordination fields
+        groupLeaderName: data.groupLeaderName || undefined,
+        groupLeaderPhone: data.groupLeaderPhone || undefined,
+
+        // Safety & regulatory fields
+        lifeJacketsProvided: data.lifeJacketsProvided || undefined,
+        lifeJacketCount: data.lifeJacketCount && data.lifeJacketCount > 0 ? data.lifeJacketCount : undefined,
+        safetyEquipmentCheck: data.safetyEquipmentCheck || undefined,
+        emergencyEquipment: data.emergencyEquipment || undefined,
+
+        // Capacity & compliance fields
+        yachtCapacity: data.yachtCapacity && data.yachtCapacity > 0 ? data.yachtCapacity : undefined,
+        yachtType: data.yachtType || undefined,
+        yachtLicenceRequired: data.yachtLicenceRequired || undefined,
+        coastGuardApproved: data.coastGuardApproved || undefined,
+
+        // Operational details
+        crewSize: data.crewSize && data.crewSize > 0 ? data.crewSize : undefined,
+        captainExperience: data.captainExperience || undefined,
+        fuelRange: data.fuelRange && data.fuelRange > 0 ? data.fuelRange : undefined,
+        weatherBackupPlan: data.weatherBackupPlan || undefined,
+
+        // Guest safety fields
+        swimmingProficiency: data.swimmingProficiency || undefined,
+        medicalConditions: data.medicalConditions || undefined,
+        alcoholPolicy: data.alcoholPolicy || undefined,
+
+        // Amenities & experience fields
+        foodBeverageIncluded: data.foodBeverageIncluded || undefined,
+        beverageType: data.beverageType || undefined,
+        musicSystem: data.musicSystem || undefined,
+        waterSportsEquipment: data.waterSportsEquipment || undefined,
+
+        // Coordination fields
+        marinaContactName: data.marinaContactName || undefined,
+        marinaContactPhone: data.marinaContactPhone || undefined,
+
+        // Internal coordination fields
+        conciergeInternalNotes: data.conciergeInternalNotes || undefined,
       }
 
       if (data.specialRequest) {
@@ -203,7 +473,7 @@ const YachtTourForm = ({ open, onClose, onSubmit, yachtTour, isLoading = false }
                     label="Yat Adı"
                     fullWidth
                     required
-                    {...register('yachtName')}
+                    value={watch('yachtName') || ''} onChange={(e) => setValue('yachtName', e.target.value)}
                     error={!!errors.yachtName}
                     helperText={errors.yachtName?.message}
                     disabled={isSubmitting || isLoading}
@@ -249,30 +519,7 @@ const YachtTourForm = ({ open, onClose, onSubmit, yachtTour, isLoading = false }
                   )}
                 </Grid>
 
-                <Grid item xs={12} md={6}>
-                  <FormControl fullWidth required error={!!errors.personnelId} disabled={isSubmitting || isLoading}>
-                    <InputLabel>Personel</InputLabel>
-                    <Controller
-                      name="personnelId"
-                      control={control}
-                      render={({ field }) => (
-                        <Select {...field} value={field.value || ''}>
-                          <MenuItem value="">Seçiniz</MenuItem>
-                          {personnel?.map((p) => (
-                            <MenuItem key={p.id} value={p.id}>
-                              {p.fullName}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      )}
-                    />
-                  </FormControl>
-                  {errors.personnelId && (
-                    <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
-                      {errors.personnelId.message}
-                    </Typography>
-                  )}
-                </Grid>
+                {/* Personnel is automatically assigned from logged-in user, no dropdown needed */}
 
                 <Grid item xs={12} md={6}>
                   <FormControl fullWidth required error={!!errors.cityId} disabled={isSubmitting || isLoading}>
@@ -299,15 +546,198 @@ const YachtTourForm = ({ open, onClose, onSubmit, yachtTour, isLoading = false }
                   )}
                 </Grid>
 
+                <Grid item xs={12} md={6}>
+                  <FormControl fullWidth error={!!errors.tourCategory} disabled={isSubmitting || isLoading}>
+                    <InputLabel>Tur Kategorisi (Opsiyonel)</InputLabel>
+                    <Controller
+                      name="tourCategory"
+                      control={control}
+                      render={({ field }) => (
+                        <Select {...field} value={field.value || ''}>
+                          <MenuItem value="">Seçiniz</MenuItem>
+                          {Object.values(TourCategory).map((cat) => (
+                            <MenuItem key={cat} value={cat}>
+                              {cat}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      )}
+                    />
+                  </FormControl>
+                  {errors.tourCategory && (
+                    <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
+                      {errors.tourCategory.message}
+                    </Typography>
+                  )}
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    label="Alış İskelesi (Opsiyonel)"
+                    fullWidth
+                    value={watch('pickupPier') || ''} onChange={(e) => setValue('pickupPier', e.target.value)}
+                    error={!!errors.pickupPier}
+                    helperText={errors.pickupPier?.message}
+                    disabled={isSubmitting || isLoading}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    label="Bırakış İskelesi (Opsiyonel)"
+                    fullWidth
+                    value={watch('dropoffPier') || ''} onChange={(e) => setValue('dropoffPier', e.target.value)}
+                    error={!!errors.dropoffPier}
+                    helperText={errors.dropoffPier?.message}
+                    disabled={isSubmitting || isLoading}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <TextField
+                    label="İskele Adresi (Opsiyonel)"
+                    fullWidth
+                    value={watch('pierAddress') || ''} onChange={(e) => setValue('pierAddress', e.target.value)}
+                    error={!!errors.pierAddress}
+                    helperText={errors.pierAddress?.message}
+                    disabled={isSubmitting || isLoading}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    label="Başlangıç Saati (Opsiyonel, HH:mm)"
+                    fullWidth
+                    value={watch('startTime') || ''} onChange={(e) => setValue('startTime', e.target.value)}
+                    error={!!errors.startTime}
+                    helperText={errors.startTime?.message}
+                    disabled={isSubmitting || isLoading}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    label="Bitiş Saati (Opsiyonel, HH:mm)"
+                    fullWidth
+                    value={watch('endTime') || ''} onChange={(e) => setValue('endTime', e.target.value)}
+                    error={!!errors.endTime}
+                    helperText={errors.endTime?.message}
+                    disabled={isSubmitting || isLoading}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    label="Kaptan Telefonu (Opsiyonel)"
+                    fullWidth
+                    value={watch('captainPhone') || ''} onChange={(e) => setValue('captainPhone', e.target.value)}
+                    error={!!errors.captainPhone}
+                    helperText={errors.captainPhone?.message}
+                    disabled={isSubmitting || isLoading}
+                  />
+                </Grid>
+
+                {/* isPaymentReceived toggle removed - payment status is calculated from PaymentEntity */}
+
+                <Grid item xs={12}>
+                  <TextField
+                    label="Ödeme Notu (Opsiyonel)"
+                    fullWidth
+                    multiline
+                    minRows={2}
+                    value={watch('paymentNote') || ''} onChange={(e) => setValue('paymentNote', e.target.value)}
+                    error={!!errors.paymentNote}
+                    helperText={errors.paymentNote?.message}
+                    disabled={isSubmitting || isLoading}
+                  />
+                </Grid>
+
                 <Grid item xs={12}>
                   <TextField
                     label="Özel İstek"
                     fullWidth
                     multiline
                     rows={3}
-                    {...register('specialRequest')}
+                    value={watch('specialRequest') || ''} onChange={(e) => setValue('specialRequest', e.target.value)}
                     error={!!errors.specialRequest}
                     helperText={errors.specialRequest?.message}
+                    disabled={isSubmitting || isLoading}
+                  />
+                </Grid>
+
+                {/* Tedarikçi Bilgileri */}
+                <Grid item xs={12}>
+                  <Typography variant="subtitle1" sx={{ mt: 2 }}>
+                    Tedarikçi Bilgileri (Opsiyonel)
+                  </Typography>
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    label="Tedarikçi Adı"
+                    fullWidth
+                    value={watch('supplierName') || ''} onChange={(e) => setValue('supplierName', e.target.value)}
+                    error={!!errors.supplierName}
+                    helperText={errors.supplierName?.message}
+                    disabled={isSubmitting || isLoading}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={3}>
+                  <TextField
+                    label="Tedarikçi Maliyeti"
+                    type="number"
+                    fullWidth
+                    {...register('supplierCost', { valueAsNumber: true })}
+                    error={!!errors.supplierCost}
+                    helperText={errors.supplierCost?.message}
+                    disabled={isSubmitting || isLoading}
+                    inputProps={{ step: '0.01', min: '0' }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={3}>
+                  <TextField
+                    label="Tedarikçi Para Birimi"
+                    fullWidth
+                    value={watch('supplierCurrency') || ''} onChange={(e) => setValue('supplierCurrency', e.target.value)}
+                    error={!!errors.supplierCurrency}
+                    helperText={errors.supplierCurrency?.message}
+                    disabled={isSubmitting || isLoading}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    label="Tedarikçi Ödeme Durumu"
+                    fullWidth
+                    value={watch('supplierPaymentStatus') || ''} onChange={(e) => setValue('supplierPaymentStatus', e.target.value)}
+                    error={!!errors.supplierPaymentStatus}
+                    helperText={errors.supplierPaymentStatus?.message}
+                    disabled={isSubmitting || isLoading}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    label="Tedarikçi Ödeme Tarihi"
+                    type="date"
+                    fullWidth
+                    InputLabelProps={{ shrink: true }}
+                    value={watch('supplierPaymentDate') || ''} onChange={(e) => setValue('supplierPaymentDate', e.target.value)}
+                    error={!!errors.supplierPaymentDate}
+                    helperText={errors.supplierPaymentDate?.message}
+                    disabled={isSubmitting || isLoading}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    label="Tedarikçi Fatura No"
+                    fullWidth
+                    value={watch('supplierInvoiceNumber') || ''} onChange={(e) => setValue('supplierInvoiceNumber', e.target.value)}
+                    error={!!errors.supplierInvoiceNumber}
+                    helperText={errors.supplierInvoiceNumber?.message}
                     disabled={isSubmitting || isLoading}
                   />
                 </Grid>
@@ -367,7 +797,7 @@ const YachtTourForm = ({ open, onClose, onSubmit, yachtTour, isLoading = false }
                             fullWidth
                             multiline
                             rows={2}
-                            {...register('invoiceDescription')}
+                            value={watch('invoiceDescription') || ''} onChange={(e) => setValue('invoiceDescription', e.target.value)}
                             error={!!errors.invoiceDescription}
                             helperText={errors.invoiceDescription?.message}
                             disabled={isSubmitting || isLoading}
@@ -395,4 +825,5 @@ const YachtTourForm = ({ open, onClose, onSubmit, yachtTour, isLoading = false }
 }
 
 export default YachtTourForm
+
 

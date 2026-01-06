@@ -85,7 +85,7 @@ namespace GuestFlow.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> CancelReservation(int id, [FromBody] CancelReservationRequest? request = null)
+        public async Task<IActionResult> CancelReservation(int id, [FromBody] GuestFlow.Api.Models.ReservationModels.CancelReservationRequest? request = null)
         {
             var cancellationReason = request?.CancellationReason;
             var result = await _reservationService.CancelReservationAsync(id, cancellationReason);

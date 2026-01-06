@@ -1,4 +1,5 @@
 using GuestFlow.Domain.Entities.Core;
+using GuestFlow.Domain.Entities.Enum;
 using GuestFlow.Domain.Entities.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -9,9 +10,13 @@ using System.Threading.Tasks;
 
 namespace GuestFlow.Application.Operations.Reports
 {
+    /// <summary>
+    /// Raporlama servisi - Tahsilat bazlı gelir hesaplaması (PaymentEntity'den)
+    /// </summary>
     public class ReportsService : IReportsService
     {
         private readonly IRepository<DailyRevenueEntity> _dailyRevenueRepository;
+        private readonly IRepository<PaymentEntity> _paymentRepository;
         private readonly IRepository<GuestEntity> _guestRepository;
         private readonly IRepository<CityTourEntity> _cityTourRepository;
         private readonly IRepository<YachtTourEntity> _yachtTourRepository;
@@ -23,6 +28,7 @@ namespace GuestFlow.Application.Operations.Reports
 
         public ReportsService(
             IRepository<DailyRevenueEntity> dailyRevenueRepository,
+            IRepository<PaymentEntity> paymentRepository,
             IRepository<GuestEntity> guestRepository,
             IRepository<CityTourEntity> cityTourRepository,
             IRepository<YachtTourEntity> yachtTourRepository,
@@ -33,6 +39,7 @@ namespace GuestFlow.Application.Operations.Reports
             ILogger<ReportsService> logger)
         {
             _dailyRevenueRepository = dailyRevenueRepository;
+            _paymentRepository = paymentRepository;
             _guestRepository = guestRepository;
             _cityTourRepository = cityTourRepository;
             _yachtTourRepository = yachtTourRepository;
@@ -43,6 +50,10 @@ namespace GuestFlow.Application.Operations.Reports
             _logger = logger;
         }
 
+        /// <summary>
+        /// Gelir özeti - Tahsilat bazlı (PaymentEntity'den hesaplanır)
+        /// Gelir = Tamamlanmış ödemeler (Status = Completed)
+        /// </summary>
         public async Task<RevenueSummaryDto> GetRevenueSummaryAsync(DateTime? startDate = null, DateTime? endDate = null)
         {
             try
@@ -50,41 +61,87 @@ namespace GuestFlow.Application.Operations.Reports
                 var start = startDate ?? DateTime.UtcNow.AddMonths(-1);
                 var end = endDate ?? DateTime.UtcNow;
 
-                var cityTourQuery = _cityTourRepository.GetAll()
-                    .Where(ct => ct.TourDate.Date >= start.Date && ct.TourDate.Date <= end.Date && ct.FinalPrice != null);
+                // Tamamlanmış ödemeleri çek (tahsilat bazlı gelir)
+                var completedPayments = await _paymentRepository.GetAll()
+                    .Where(p => p.PaymentDate.Date >= start.Date && 
+                               p.PaymentDate.Date <= end.Date && 
+                               p.Status == PaymentStatus.Completed && 
+                               !p.IsDeleted)
+                    .ToListAsync();
 
-                var yachtTourQuery = _yachtTourRepository.GetAll()
-                    .Where(yt => yt.TourDate.Date >= start.Date && yt.TourDate.Date <= end.Date && yt.FinalPrice != null);
+                // İade edilen ödemeleri çek
+                var refundedPayments = await _paymentRepository.GetAll()
+                    .Where(p => p.RefundDate.HasValue &&
+                               p.RefundDate.Value.Date >= start.Date && 
+                               p.RefundDate.Value.Date <= end.Date && 
+                               p.Status == PaymentStatus.Refunded && 
+                               !p.IsDeleted)
+                    .ToListAsync();
 
-                var transferQuery = _transferRepository.GetAll()
-                    .Where(t => t.TransferDate.Date >= start.Date && t.TransferDate.Date <= end.Date && t.FinalPrice != null);
+                // Currency bazlı grupla
+                var currencies = completedPayments.Select(p => p.Currency)
+                    .Union(refundedPayments.Select(p => p.Currency))
+                    .Distinct()
+                    .ToList();
 
-                var cityTourRevenue = await cityTourQuery.SumAsync(ct => (decimal?)ct.FinalPrice) ?? 0;
-                var yachtTourRevenue = await yachtTourQuery.SumAsync(yt => (decimal?)yt.FinalPrice) ?? 0;
-                var transferRevenue = await transferQuery.SumAsync(t => (decimal?)t.FinalPrice) ?? 0;
-
-                var cityTourCount = await cityTourQuery.CountAsync();
-                var yachtTourCount = await yachtTourQuery.CountAsync();
-                var transferCount = await transferQuery.CountAsync();
-
-                var totalRevenue = cityTourRevenue + yachtTourRevenue + transferRevenue;
-                var totalBookings = cityTourCount + yachtTourCount + transferCount;
-                var averageBookingValue = totalBookings > 0 ? totalRevenue / totalBookings : 0;
-
-                return new RevenueSummaryDto
+                var result = new RevenueSummaryDto
                 {
                     StartDate = start,
                     EndDate = end,
-                    TotalRevenue = totalRevenue,
-                    CityTourRevenue = cityTourRevenue,
-                    YachtTourRevenue = yachtTourRevenue,
-                    TransferRevenue = transferRevenue,
-                    TotalBookings = totalBookings,
-                    CityTourCount = cityTourCount,
-                    YachtTourCount = yachtTourCount,
-                    TransferCount = transferCount,
-                    AverageBookingValue = averageBookingValue
+                    TotalRevenueByCurrency = new Dictionary<string, decimal>(),
+                    TransferRevenueByCurrency = new Dictionary<string, decimal>(),
+                    CityTourRevenueByCurrency = new Dictionary<string, decimal>(),
+                    YachtTourRevenueByCurrency = new Dictionary<string, decimal>(),
+                    GeneralRevenueByCurrency = new Dictionary<string, decimal>(),
+                    RefundedAmountByCurrency = new Dictionary<string, decimal>(),
+                    NetRevenueByCurrency = new Dictionary<string, decimal>()
                 };
+
+                foreach (var currency in currencies)
+                {
+                    var currencyPayments = completedPayments.Where(p => p.Currency == currency).ToList();
+                    var currencyRefunds = refundedPayments.Where(p => p.Currency == currency).ToList();
+
+                    var transferRevenue = currencyPayments.Where(p => p.TransferId.HasValue).Sum(p => p.Amount);
+                    var cityTourRevenue = currencyPayments.Where(p => p.CityTourId.HasValue).Sum(p => p.Amount);
+                    var yachtTourRevenue = currencyPayments.Where(p => p.YachtTourId.HasValue).Sum(p => p.Amount);
+                    var generalRevenue = currencyPayments
+                        .Where(p => !p.TransferId.HasValue && !p.CityTourId.HasValue && !p.YachtTourId.HasValue)
+                        .Sum(p => p.Amount);
+
+                    var totalRevenue = transferRevenue + cityTourRevenue + yachtTourRevenue + generalRevenue;
+                    var refundedAmount = currencyRefunds.Sum(p => p.Amount);
+                    var netRevenue = totalRevenue - refundedAmount;
+
+                    result.TotalRevenueByCurrency[currency] = totalRevenue;
+                    result.TransferRevenueByCurrency[currency] = transferRevenue;
+                    result.CityTourRevenueByCurrency[currency] = cityTourRevenue;
+                    result.YachtTourRevenueByCurrency[currency] = yachtTourRevenue;
+                    result.GeneralRevenueByCurrency[currency] = generalRevenue;
+                    result.RefundedAmountByCurrency[currency] = refundedAmount;
+                    result.NetRevenueByCurrency[currency] = netRevenue;
+                }
+
+                // Rezervasyon sayıları (servis bazlı - değişmedi)
+                var cityTourCount = await _cityTourRepository.GetAll()
+                    .Where(ct => ct.TourDate.Date >= start.Date && ct.TourDate.Date <= end.Date)
+                    .CountAsync();
+
+                var yachtTourCount = await _yachtTourRepository.GetAll()
+                    .Where(yt => yt.TourDate.Date >= start.Date && yt.TourDate.Date <= end.Date)
+                    .CountAsync();
+
+                var transferCount = await _transferRepository.GetAll()
+                    .Where(t => t.TransferDate.Date >= start.Date && t.TransferDate.Date <= end.Date)
+                    .CountAsync();
+
+                result.CityTourCount = cityTourCount;
+                result.YachtTourCount = yachtTourCount;
+                result.TransferCount = transferCount;
+                result.TotalBookings = cityTourCount + yachtTourCount + transferCount;
+                result.TotalPaymentCount = completedPayments.Count;
+
+                return result;
             }
             catch (Exception ex)
             {
@@ -162,8 +219,13 @@ namespace GuestFlow.Application.Operations.Reports
                         .Where(ct => ct.TourDate.Date >= start.Date && ct.TourDate.Date <= end.Date);
 
                     var totalTours = await cityTours.CountAsync();
-                    var totalRevenue = await cityTours.SumAsync(ct => (decimal?)ct.FinalPrice) ?? 0;
-                    var averagePrice = totalTours > 0 ? totalRevenue / totalTours : 0;
+                    // REVENUE REALITY: Revenue = collected money only (from PaymentEntity)
+                    var cityTourIds = await cityTours.Select(ct => ct.Id).ToListAsync();
+                    var totalRevenue = await _paymentRepository.GetAll()
+                        .Where(p => p.CityTourId.HasValue && cityTourIds.Contains(p.CityTourId.Value) && p.Status == PaymentStatus.Completed)
+                        .SumAsync(p => (decimal?)p.Amount) ?? 0;
+                    var averageBookedPrice = await cityTours.AverageAsync(ct => (decimal?)ct.FinalPrice) ?? 0;
+                    var averagePrice = averageBookedPrice;
                     var completedTours = await cityTours.Where(ct => ct.TourDate < now).CountAsync();
                     var upcomingTours = await cityTours.Where(ct => ct.TourDate >= now).CountAsync();
 
@@ -198,8 +260,13 @@ namespace GuestFlow.Application.Operations.Reports
                         .Where(yt => yt.TourDate.Date >= start.Date && yt.TourDate.Date <= end.Date);
 
                     var totalTours = await yachtTours.CountAsync();
-                    var totalRevenue = await yachtTours.SumAsync(yt => (decimal?)yt.FinalPrice) ?? 0;
-                    var averagePrice = totalTours > 0 ? totalRevenue / totalTours : 0;
+                    // REVENUE REALITY: Revenue = collected money only (from PaymentEntity)
+                    var yachtTourIds = await yachtTours.Select(yt => yt.Id).ToListAsync();
+                    var totalRevenue = await _paymentRepository.GetAll()
+                        .Where(p => p.YachtTourId.HasValue && yachtTourIds.Contains(p.YachtTourId.Value) && p.Status == PaymentStatus.Completed)
+                        .SumAsync(p => (decimal?)p.Amount) ?? 0;
+                    var averageBookedPrice = await yachtTours.AverageAsync(yt => (decimal?)yt.FinalPrice) ?? 0;
+                    var averagePrice = averageBookedPrice;
                     var completedTours = await yachtTours.Where(yt => yt.TourDate < now).CountAsync();
                     var upcomingTours = await yachtTours.Where(yt => yt.TourDate >= now).CountAsync();
 
@@ -245,8 +312,13 @@ namespace GuestFlow.Application.Operations.Reports
                     .Where(t => t.TransferDate.Date >= start.Date && t.TransferDate.Date <= end.Date);
 
                 var totalTransfers = await transfers.CountAsync();
-                var totalRevenue = await transfers.SumAsync(t => (decimal?)t.FinalPrice) ?? 0;
-                var averagePrice = totalTransfers > 0 ? totalRevenue / totalTransfers : 0;
+                // REVENUE REALITY: Revenue = collected money only (from PaymentEntity)
+                var transferIds = await transfers.Select(t => t.Id).ToListAsync();
+                var totalRevenue = await _paymentRepository.GetAll()
+                    .Where(p => p.TransferId.HasValue && transferIds.Contains(p.TransferId.Value) && p.Status == PaymentStatus.Completed)
+                    .SumAsync(p => (decimal?)p.Amount) ?? 0;
+                var averageBookedPrice = await transfers.AverageAsync(t => (decimal?)t.FinalPrice) ?? 0;
+                var averagePrice = averageBookedPrice;
                 var fromAirportCount = await transfers.Where(t => t.IsFromAirport).CountAsync();
                 var toAirportCount = await transfers.Where(t => !t.IsFromAirport).CountAsync();
                 var completedTransfers = await transfers.Where(t => t.TransferDate < now).CountAsync();
@@ -294,20 +366,12 @@ namespace GuestFlow.Application.Operations.Reports
                     var monthStart = new DateTime(targetYear, month, 1);
                     var monthEnd = monthStart.AddMonths(1).AddDays(-1);
 
-                    var cityTourRevenue = await _cityTourRepository.GetAll()
-                        .Where(ct => ct.TourDate.Date >= monthStart.Date && ct.TourDate.Date <= monthEnd.Date)
-                        .SumAsync(ct => (decimal?)ct.FinalPrice) ?? 0;
+                    // REVENUE REALITY: Revenue = collected money, grouped by PaymentDate
+                    var totalRevenue = await _paymentRepository.GetAll()
+                        .Where(p => p.PaymentDate.Date >= monthStart.Date && p.PaymentDate.Date <= monthEnd.Date && p.Status == PaymentStatus.Completed)
+                        .SumAsync(p => (decimal?)p.Amount) ?? 0;
 
-                    var yachtTourRevenue = await _yachtTourRepository.GetAll()
-                        .Where(yt => yt.TourDate.Date >= monthStart.Date && yt.TourDate.Date <= monthEnd.Date)
-                        .SumAsync(yt => (decimal?)yt.FinalPrice) ?? 0;
-
-                    var transferRevenue = await _transferRepository.GetAll()
-                        .Where(t => t.TransferDate.Date >= monthStart.Date && t.TransferDate.Date <= monthEnd.Date)
-                        .SumAsync(t => (decimal?)t.FinalPrice) ?? 0;
-
-                    var totalRevenue = cityTourRevenue + yachtTourRevenue + transferRevenue;
-
+                    // Booking count remains based on service date (operational)
                     var bookingCount = await _cityTourRepository.GetAll()
                         .Where(ct => ct.TourDate.Date >= monthStart.Date && ct.TourDate.Date <= monthEnd.Date).CountAsync() +
                         await _yachtTourRepository.GetAll()
@@ -805,18 +869,18 @@ namespace GuestFlow.Application.Operations.Reports
                 var end = endDate ?? DateTime.UtcNow;
 
                 var transferPersonnelIds = await _transferRepository.GetAll()
-                    .Where(t => t.TransferDate >= start && t.TransferDate <= end && t.PersonnelId > 0)
-                    .Select(t => t.PersonnelId)
+                    .Where(t => t.TransferDate >= start && t.TransferDate <= end && t.PersonnelId.HasValue && t.PersonnelId.Value > 0)
+                    .Select(t => t.PersonnelId!.Value)
                     .ToListAsync();
 
                 var cityTourPersonnelIds = await _cityTourRepository.GetAll()
-                    .Where(ct => ct.TourDate >= start && ct.TourDate <= end && ct.PersonnelId > 0)
-                    .Select(ct => ct.PersonnelId)
+                    .Where(ct => ct.TourDate >= start && ct.TourDate <= end && ct.PersonnelId.HasValue && ct.PersonnelId.Value > 0)
+                    .Select(ct => ct.PersonnelId!.Value)
                     .ToListAsync();
 
                 var yachtTourPersonnelIds = await _yachtTourRepository.GetAll()
-                    .Where(yt => yt.TourDate >= start && yt.TourDate <= end && yt.PersonnelId > 0)
-                    .Select(yt => yt.PersonnelId)
+                    .Where(yt => yt.TourDate >= start && yt.TourDate <= end && yt.PersonnelId.HasValue && yt.PersonnelId.Value > 0)
+                    .Select(yt => yt.PersonnelId!.Value)
                     .ToListAsync();
 
                 var personnelIds = transferPersonnelIds
@@ -833,15 +897,15 @@ namespace GuestFlow.Application.Operations.Reports
                     if (personnel == null) continue;
 
                     var transfers = await _transferRepository.GetAll()
-                        .Where(t => t.PersonnelId == personnelId && t.TransferDate >= start && t.TransferDate <= end)
+                        .Where(t => t.PersonnelId.HasValue && t.PersonnelId.Value == personnelId && t.TransferDate >= start && t.TransferDate <= end)
                         .ToListAsync();
 
                     var cityTours = await _cityTourRepository.GetAll()
-                        .Where(ct => ct.PersonnelId == personnelId && ct.TourDate >= start && ct.TourDate <= end)
+                        .Where(ct => ct.PersonnelId.HasValue && ct.PersonnelId.Value == personnelId && ct.TourDate >= start && ct.TourDate <= end)
                         .ToListAsync();
 
                     var yachtTours = await _yachtTourRepository.GetAll()
-                        .Where(yt => yt.PersonnelId == personnelId && yt.TourDate >= start && yt.TourDate <= end)
+                        .Where(yt => yt.PersonnelId.HasValue && yt.PersonnelId.Value == personnelId && yt.TourDate >= start && yt.TourDate <= end)
                         .ToListAsync();
 
                     var totalBookings = transfers.Count + cityTours.Count + yachtTours.Count;

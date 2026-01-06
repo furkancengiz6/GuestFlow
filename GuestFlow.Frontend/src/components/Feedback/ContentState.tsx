@@ -1,6 +1,7 @@
 import { Box, Button, Skeleton, Stack, Typography } from '@mui/material'
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline'
 import InboxIcon from '@mui/icons-material/Inbox'
+import { SkeletonLoader } from './SkeletonLoader'
 
 type Props = {
   state: 'loading' | 'empty' | 'error'
@@ -20,13 +21,7 @@ const ContentState = ({
   skeletonLines = 3,
 }: Props) => {
   if (state === 'loading') {
-    return (
-      <Stack spacing={1}>
-        {Array.from({ length: skeletonLines }).map((_, idx) => (
-          <Skeleton key={idx} variant="rectangular" height={28} />
-        ))}
-      </Stack>
-    )
+    return <SkeletonLoader variant="list" rows={skeletonLines} />
   }
 
   const isError = state === 'error'

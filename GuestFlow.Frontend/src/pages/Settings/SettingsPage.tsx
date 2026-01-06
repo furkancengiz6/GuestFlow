@@ -6,10 +6,6 @@ import {
   Tabs,
   Tab,
   Grid,
-  TextField,
-  Button,
-  Switch,
-  FormControlLabel,
   Divider,
   Alert,
 } from '@mui/material'
@@ -21,10 +17,7 @@ import {
   Description as PdfIcon,
   Storage as StorageIcon,
 } from '@mui/icons-material'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useNotification } from '../../hooks/useNotification'
 import ContentState from '../../components/Feedback/ContentState'
-import api from '../../services/api'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -50,38 +43,15 @@ function TabPanel(props: TabPanelProps) {
 
 const SettingsPage = () => {
   const [tabValue, setTabValue] = useState(0)
-  const notification = useNotification()
-  const queryClient = useQueryClient()
+  // Settings functionality will be implemented later
+  const isLoading = false
+  const error = null
 
-  const { data: settings, isLoading, error } = useQuery({
-    queryKey: ['settings'],
-    queryFn: async () => {
-      const response = await api.get('/settings')
-      return response.data.data
-    },
-  })
-
-  const updateSettingMutation = useMutation({
-    mutationFn: async ({ key, value }: { key: string; value: any }) => {
-      const response = await api.put(`/settings/${key}`, { value })
-      return response.data
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['settings'] })
-      notification.showSuccess('Ayar başarıyla güncellendi.')
-    },
-    onError: (error: any) => {
-      notification.showError(error?.response?.data?.message || 'Ayar güncellenirken bir hata oluştu.')
-    },
-  })
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue)
   }
 
-  const handleSettingChange = (key: string, value: any) => {
-    updateSettingMutation.mutate({ key, value })
-  }
 
   if (isLoading) {
     return <ContentState state="loading" skeletonLines={6} />
@@ -94,7 +64,7 @@ const SettingsPage = () => {
         title="Ayarlar yüklenemedi"
         description="Lütfen daha sonra tekrar deneyin."
         actionLabel="Tekrar dene"
-        onAction={() => window.location.reload()}
+        onAction={() => {}}
       />
     )
   }

@@ -1,6 +1,7 @@
 using FluentAssertions;
 using GuestFlow.Application.Operations.Guest;
 using GuestFlow.Application.Operations.Guest.Dtos;
+using GuestFlow.Application.Operations.Notification;
 using GuestFlow.Application.Tests.Helpers;
 using GuestFlow.Domain.Entities.Core;
 using GuestFlow.Domain.Entities.Repositories;
@@ -22,8 +23,10 @@ public class GuestManagerTests : TestBase
     private readonly Mock<IRepository<CityTourEntity>> _cityTourRepositoryMock;
     private readonly Mock<IRepository<YachtTourEntity>> _yachtTourRepositoryMock;
     private readonly Mock<IRepository<InvoicesEntity>> _invoiceRepositoryMock;
+    private readonly Mock<IRepository<RoomAssignmentEntity>> _roomAssignmentRepositoryMock;
     private readonly Mock<ILogger<GuestManager>> _loggerMock;
     private readonly Mock<AutoMapper.IMapper> _mapperMock;
+    private readonly Mock<INotificationHubService> _notificationHubServiceMock;
     private readonly GuestManager _guestManager;
 
     public GuestManagerTests()
@@ -34,8 +37,10 @@ public class GuestManagerTests : TestBase
         _cityTourRepositoryMock = CreateMock<IRepository<CityTourEntity>>();
         _yachtTourRepositoryMock = CreateMock<IRepository<YachtTourEntity>>();
         _invoiceRepositoryMock = CreateMock<IRepository<InvoicesEntity>>();
+        _roomAssignmentRepositoryMock = CreateMock<IRepository<RoomAssignmentEntity>>();
         _loggerMock = CreateMock<ILogger<GuestManager>>();
         _mapperMock = CreateMock<AutoMapper.IMapper>();
+        _notificationHubServiceMock = CreateMock<INotificationHubService>();
         _guestManager = new GuestManager(
             _unitOfWorkMock.Object,
             _guestRepositoryMock.Object,
@@ -43,8 +48,10 @@ public class GuestManagerTests : TestBase
             _cityTourRepositoryMock.Object,
             _yachtTourRepositoryMock.Object,
             _invoiceRepositoryMock.Object,
+            _roomAssignmentRepositoryMock.Object,
             _loggerMock.Object,
-            _mapperMock.Object
+            _mapperMock.Object,
+            _notificationHubServiceMock.Object
         );
     }
 

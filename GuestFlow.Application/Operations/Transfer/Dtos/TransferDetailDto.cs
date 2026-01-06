@@ -1,3 +1,4 @@
+using GuestFlow.Domain.Entities.Enum;
 using System;
 using System.Collections.Generic;
 
@@ -11,13 +12,57 @@ namespace GuestFlow.Application.Operations.Transfer.Dtos
         // Temel Bilgiler
         public int Id { get; set; }
         public DateTime TransferDate { get; set; }
+        public TimeSpan? PickupTime { get; set; }
+        public TimeSpan? ServiceStartTime { get; set; }
+        public DateTime? PickupConfirmationTime { get; set; }
+        public DateTime? DropoffConfirmationTime { get; set; }
         public string PickupAddress { get; set; } = string.Empty;
         public string DropoffAddress { get; set; } = string.Empty;
         public decimal Price { get; set; }
         public decimal FinalPrice { get; set; }
         public string? Note { get; set; }
         public string Status { get; set; } = string.Empty;
-        public bool IsFromAirport { get; set; }
+        public TransferType TransferType { get; set; } = TransferType.Custom; // Transfer tipi
+        public decimal? DiscountPercentage { get; set; }
+        public string? Currency { get; set; }
+        
+        // Driver information
+        public string? DriverName { get; set; }
+
+        // Guest coordination fields
+        public string? ContactPersonName { get; set; }
+        public string? MeetingPointDetails { get; set; }
+
+        // Group management fields
+        public int? GroupSize { get; set; }
+        public int? ChildCount { get; set; }
+        public int? InfantCount { get; set; }
+
+        // Communication fields
+        public string? GuestLanguage { get; set; }
+        public string? EmergencyContactPhone { get; set; }
+        public string? PrimaryContactPhone { get; set; }
+        public string? SecondaryContactPhone { get; set; }
+
+        // External driver information
+        public string? ExternalVehiclePlate { get; set; }
+        public string? ExternalDriverName { get; set; }
+        public string? ExternalDriverPhone { get; set; }
+
+        // Service quality fields
+        public string? AccessibilityRequirements { get; set; }
+        public string? SpecialHandlingNotes { get; set; }
+
+        // Internal coordination fields
+        public string? ConciergeInternalNotes { get; set; }
+        public string? GuestVisibleNotes { get; set; }
+
+        // Priority and transport fields
+        public GuestFlow.Domain.Entities.Enum.TransferPriority Priority { get; set; }
+        public GuestFlow.Domain.Entities.Enum.TransportMode? TransportMode { get; set; }
+        public int? LuggageCount { get; set; }
+        public bool IsVip { get; set; }
+
         public DateTime CreatedDate { get; set; }
 
         // İlişkili Veriler
@@ -111,14 +156,17 @@ namespace GuestFlow.Application.Operations.Transfer.Dtos
     {
         public int Id { get; set; }
         public DateTime TransferDate { get; set; }
+        public TimeSpan? PickupTime { get; set; }
         public string PickupAddress { get; set; } = string.Empty;
         public string DropoffAddress { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
         public string GuestName { get; set; } = string.Empty;
         public string? PersonnelName { get; set; }
+        public string? DriverName { get; set; }
         public string? VehicleName { get; set; }
         public decimal FinalPrice { get; set; }
-        public bool IsFromAirport { get; set; }
+        public TransferType TransferType { get; set; }
+        public int? GroupSize { get; set; }
     }
 
     /// <summary>

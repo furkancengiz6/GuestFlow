@@ -3,18 +3,71 @@ using System.Collections.Generic;
 
 namespace GuestFlow.Application.Operations.Reports
 {
+    /// <summary>
+    /// Gelir özeti DTO'su - Tahsilat bazlı (PaymentEntity'den hesaplanır)
+    /// </summary>
     public class RevenueSummaryDto
     {
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
+        
+        /// <summary>
+        /// Currency bazlı toplam tahsilat
+        /// </summary>
+        public Dictionary<string, decimal> TotalRevenueByCurrency { get; set; } = new Dictionary<string, decimal>();
+        
+        /// <summary>
+        /// Currency bazlı transfer tahsilatları
+        /// </summary>
+        public Dictionary<string, decimal> TransferRevenueByCurrency { get; set; } = new Dictionary<string, decimal>();
+        
+        /// <summary>
+        /// Currency bazlı şehir turu tahsilatları
+        /// </summary>
+        public Dictionary<string, decimal> CityTourRevenueByCurrency { get; set; } = new Dictionary<string, decimal>();
+        
+        /// <summary>
+        /// Currency bazlı yat turu tahsilatları
+        /// </summary>
+        public Dictionary<string, decimal> YachtTourRevenueByCurrency { get; set; } = new Dictionary<string, decimal>();
+        
+        /// <summary>
+        /// Currency bazlı genel tahsilatlar
+        /// </summary>
+        public Dictionary<string, decimal> GeneralRevenueByCurrency { get; set; } = new Dictionary<string, decimal>();
+        
+        /// <summary>
+        /// Currency bazlı iade tutarları
+        /// </summary>
+        public Dictionary<string, decimal> RefundedAmountByCurrency { get; set; } = new Dictionary<string, decimal>();
+        
+        /// <summary>
+        /// Currency bazlı net gelir (tahsilat - iade)
+        /// </summary>
+        public Dictionary<string, decimal> NetRevenueByCurrency { get; set; } = new Dictionary<string, decimal>();
+        
+        // Eski alanlar - geriye uyumluluk için (deprecated)
+        [Obsolete("Use TotalRevenueByCurrency instead. This field will be removed.")]
         public decimal TotalRevenue { get; set; }
+        [Obsolete("Use CityTourRevenueByCurrency instead. This field will be removed.")]
         public decimal CityTourRevenue { get; set; }
+        [Obsolete("Use YachtTourRevenueByCurrency instead. This field will be removed.")]
         public decimal YachtTourRevenue { get; set; }
+        [Obsolete("Use TransferRevenueByCurrency instead. This field will be removed.")]
         public decimal TransferRevenue { get; set; }
+        
+        // Rezervasyon istatistikleri (bunlar servis bazlı, değişmedi)
         public int TotalBookings { get; set; }
         public int CityTourCount { get; set; }
         public int YachtTourCount { get; set; }
         public int TransferCount { get; set; }
+        
+        /// <summary>
+        /// Toplam ödeme sayısı
+        /// </summary>
+        public int TotalPaymentCount { get; set; }
+        
+        [Obsolete("Use TotalRevenueByCurrency / TotalPaymentCount instead.")]
         public decimal AverageBookingValue { get; set; }
     }
 
@@ -107,13 +160,23 @@ namespace GuestFlow.Application.Operations.Reports
         public string Status { get; set; } = string.Empty;
     }
 
+    /// <summary>
+    /// Günlük gelir DTO'su - Tahsilat bazlı
+    /// </summary>
     public class DailyRevenueDto
     {
         public DateTime Date { get; set; }
+        public string Currency { get; set; } = "TRY";
         public decimal TotalRevenue { get; set; }
+        public decimal TransferRevenue { get; set; }
         public decimal CityTourRevenue { get; set; }
         public decimal YachtTourRevenue { get; set; }
-        public decimal TransferRevenue { get; set; }
+        public decimal GeneralRevenue { get; set; }
+        public decimal RefundedAmount { get; set; }
+        public decimal NetRevenue { get; set; }
+        public int PaymentCount { get; set; }
+        
+        [Obsolete("Use PaymentCount instead")]
         public int BookingCount { get; set; }
     }
 

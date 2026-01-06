@@ -17,6 +17,32 @@ export interface InvoiceFilters {
   sortOrder?: 'asc' | 'desc'
 }
 
+export interface EligibleServiceRequest {
+  guestId: number
+  startDate?: Date
+  endDate?: Date
+}
+
+export interface CreateInvoiceRequest {
+  guestId: number
+  currency: string
+  notes?: string
+  startDate?: string
+  endDate?: string
+  selectedServiceIds?: number[]
+}
+
+export interface EligibleService {
+  serviceType: string
+  serviceId: number
+  serviceDescription: string
+  serviceDate: string
+  amount: number
+  currency: string
+  isAlreadyInvoiced: boolean
+  guestName?: string
+}
+
 export const invoiceService = {
   getInvoices: async (
     pageNumber: number = 1,
@@ -53,6 +79,43 @@ export const invoiceService = {
   getInvoiceDetail: async (id: number): Promise<InvoiceDetail> => {
     const response = await apiClient.get(`/Invoices/${id}/detail`)
     return response.data.data
+  },
+
+  getEligibleServices: async (request: EligibleServiceRequest): Promise<EligibleService[]> => {
+    const params: any = { guestId: request.guestId }
+    if (request.startDate) params.startDate = request.startDate.toISOString().split('T')[0]
+    if (request.endDate) params.endDate = request.endDate.toISOString().split('T')[0]
+
+    const response = await apiClient.post('/Invoices/eligible-services', params)
+    return response.data.data
+  },
+
+  createInvoice: async (request: CreateInvoiceRequest): Promise<Invoice> => {
+    const payload = {
+      guestId: request.guestId,
+      currency: request.currency,
+      notes: request.notes || '',
+      startDate: request.startDate,
+      endDate: request.endDate,
+      selectedServiceIds: request.selectedServiceIds || []
+    }
+
+    const response = await apiClient.post('/Invoices', payload)
+    return response.data.data
+  },
+
+  // Action methods for InvoiceDetailPage
+  generateInvoicePdf: async (id: number): Promise<string> => {
+    const response = await apiClient.post(`/Invoices/${id}/generate-pdf`)
+    return response.data.data.pdfUrl
+  },
+
+  sendInvoiceEmail: async (id: number): Promise<void> => {
+    await apiClient.post(`/Invoices/${id}/send-email`)
+  },
+
+  cancelInvoice: async (id: number): Promise<void> => {
+    await apiClient.post(`/Invoices/${id}/cancel`)
   },
 }
 

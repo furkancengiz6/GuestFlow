@@ -8,17 +8,53 @@ using System.Threading.Tasks;
 
 namespace GuestFlow.Domain.Entities.Core
 {
+    /// <summary>
+    /// Base entity with full audit traceability.
+    /// 
+    /// AUDIT TRACEABILITY (LOCKED PRODUCT DECISION):
+    /// - Date changes MUST leave an operational trace
+    /// - Track who created, who updated, and when
+    /// - Preserve historical truth at all times
+    /// </summary>
     public class BaseEntity
     {
         public int Id { get; set; }
         
+        /// <summary>
+        /// When this record was first created
+        /// </summary>
         public DateTime CreatedDate { get; set; }
+        
+        /// <summary>
+        /// Personnel ID who created this record (nullable for system-created records)
+        /// </summary>
+        public int? CreatedByPersonnelId { get; set; }
+        
+        /// <summary>
+        /// When this record was last updated (null if never updated)
+        /// </summary>
+        public DateTime? UpdatedDate { get; set; }
+        
+        /// <summary>
+        /// Personnel ID who last updated this record
+        /// </summary>
+        public int? UpdatedByPersonnelId { get; set; }
 
         public bool IsDeleted { get; set; }
+        
         public BaseEntity()
         {
-            CreatedDate = DateTime.Now;
+            CreatedDate = DateTime.UtcNow; // Use UTC for consistency
             IsDeleted = false;
+        }
+        
+        /// <summary>
+        /// Mark this entity as updated with audit trace
+        /// </summary>
+        public void MarkAsUpdated(int? personnelId = null)
+        {
+            UpdatedDate = DateTime.UtcNow;
+            UpdatedByPersonnelId = personnelId;
         }
     }
 
@@ -30,6 +66,12 @@ namespace GuestFlow.Domain.Entities.Core
         {
             builder.HasQueryFilter(x => !x.IsDeleted); // Soft delete filtresi
             //bu veritabanı üzerinde yapılacak tüm sogrulamalarda ve diğer linq işlemlerinde geçerli olacak bir giltreleme yazdık. bÖYLELİKLE HİÇBİR ZAMAN BİR DAHA SOft delete atılmış verelerle uğraşmayacağız. 
+            
+            // Audit trail fields indexing
+            builder.Property(x => x.CreatedDate).IsRequired();
+            builder.Property(x => x.UpdatedDate).IsRequired(false);
+            builder.Property(x => x.CreatedByPersonnelId).IsRequired(false);
+            builder.Property(x => x.UpdatedByPersonnelId).IsRequired(false);
         }
     }
 

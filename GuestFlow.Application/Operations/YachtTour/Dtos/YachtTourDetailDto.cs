@@ -16,6 +16,26 @@ namespace GuestFlow.Application.Operations.YachtTour.Dtos
         public decimal FinalPrice { get; set; }
         public string SpecialRequest { get; set; } = string.Empty;
         public string YachtName { get; set; } = string.Empty;
+
+        // Group coordination fields
+        public string? GroupLeaderName { get; set; }
+        public string? GroupLeaderPhone { get; set; }
+        public string? EmergencyContactName { get; set; }
+        public string? EmergencyContactPhone { get; set; }
+        public string? EmergencyContactRelation { get; set; }
+
+        public decimal? DiscountPercentage { get; set; }
+        public string? Currency { get; set; }
+        public int? PickupHotelId { get; set; } // Otelden alınacaksa otel ID
+        
+        // İskele bilgileri
+        public string? PickupPier { get; set; }
+        public string? DropoffPier { get; set; }
+        
+        // Zaman bilgileri
+        public TimeSpan? StartTime { get; set; }
+        public TimeSpan? EndTime { get; set; }
+        
         public DateTime CreatedDate { get; set; }
 
         // İlişkili Veriler

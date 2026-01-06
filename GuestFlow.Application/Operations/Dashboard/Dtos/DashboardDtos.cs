@@ -195,4 +195,44 @@ namespace GuestFlow.Application.Operations.Dashboard
         public int BookingCount { get; set; }
         public decimal TotalSpent { get; set; }
     }
+
+    /// <summary>
+    /// Kritik olay öğesi
+    /// </summary>
+    public class CriticalEventItemDto
+    {
+        public string Type { get; set; } = string.Empty; // Transfer, CityTour, YachtTour, Arrival, Departure, UnconfirmedService
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public DateTime Time { get; set; }
+        public string Urgency { get; set; } = "LOW"; // LOW, MEDIUM, HIGH, CRITICAL
+        public string ActionRequired { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Bugünkü kritik olaylar
+    /// </summary>
+    public class CriticalEventsDto
+    {
+        /// <summary>
+        /// Sonraki 2 saatte başlayacak hizmetler
+        /// </summary>
+        public IList<CriticalEventItemDto> UrgentServices { get; set; } = new List<CriticalEventItemDto>();
+
+        /// <summary>
+        /// Bugün varış yapacak ve transfer ihtiyacı olan konuklar
+        /// </summary>
+        public IList<CriticalEventItemDto> ArrivalsNeedingTransport { get; set; } = new List<CriticalEventItemDto>();
+
+        /// <summary>
+        /// Bugün ayrılacak ve checkout ihtiyacı olan konuklar
+        /// </summary>
+        public IList<CriticalEventItemDto> DeparturesRequiringCheckout { get; set; } = new List<CriticalEventItemDto>();
+
+        /// <summary>
+        /// Yarın için onaylanmamış hizmetler
+        /// </summary>
+        public IList<CriticalEventItemDto> UnconfirmedServices { get; set; } = new List<CriticalEventItemDto>();
+    }
 }

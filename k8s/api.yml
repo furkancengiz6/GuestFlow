@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: guestflow-api
+  namespace: guestflow
+  labels:
+    app: guestflow-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: guestflow-api
+  template:
+    metadata:
+      labels:
+        app: guestflow-api
+    spec:
+      containers:
+      - name: api
+        image: your-registry/guestflow-api:latest
+        ports:
+        - containerPort: 5000
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: guestflow-config
+              key: ASPNETCORE_ENVIRONMENT
+        - name: ASPNETCORE_URLS
+          valueFrom:
+            configMapKeyRef:
+              name: guestflow-config
+              key: ASPNETCORE_URLS
+        - name: ConnectionStrings__DefaultConnection
+          value: "Server=sqlserver,1433;Database=GuestFlow;User Id=sa;Password=$(DB_PASSWORD);TrustServerCertificate=True;"
+        - name: ConnectionStrings__Redis
+          value: "redis:6379"
+        - name: JWT__Key
+          valueFrom:
+            secretKeyRef:
+              name: guestflow-secrets
+              key: jwt-key
+        - name: JWT__Issuer
+          valueFrom:
+            configMapKeyRef:
+              name: guestflow-config
+              key: JWT__Issuer
+        - name: JWT__Audience
+          valueFrom:
+            configMapKeyRef:
+              name: guestflow-config
+              key: JWT__Audience
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: guestflow-secrets
+              key: db-password
+        envFrom:
+        - configMapRef:
+            name: guestflow-config
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: guestflow-api
+  namespace: guestflow
+spec:
+  selector:
+    app: guestflow-api
+  ports:
+  - port: 80
+    targetPort: 5000
+    name: http
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: guestflow-api-ingress
+  namespace: guestflow
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - api.guestflow.com
+    secretName: guestflow-api-tls
+  rules:
+  - host: api.guestflow.com
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: guestflow-api
+            port:
+              number: 80

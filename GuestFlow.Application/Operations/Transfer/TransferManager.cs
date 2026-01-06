@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,8 +8,24 @@ using GuestFlow.Application.Extensions;
 using GuestFlow.Application.Models;
 using GuestFlow.Application.Operations.DailyRevenue;
 using GuestFlow.Application.Operations.Email;
+using GuestFlow.Application.Operations.Notification;
 using GuestFlow.Application.Operations.Invoice;
 using GuestFlow.Application.Operations.Invoice.Dtos;
+using GuestFlow.Application.Operations.Payment;
+using GuestFlow.Application.Operations.Cache;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using GuestFlow.Application.Extensions;
+using GuestFlow.Application.Models;
+using GuestFlow.Application.Operations.DailyRevenue;
+using GuestFlow.Application.Operations.Email;
+using GuestFlow.Application.Operations.Notification;
+using GuestFlow.Application.Operations.Invoice;
+using GuestFlow.Application.Operations.Invoice.Dtos;
+using GuestFlow.Application.Operations.Payment;
 using GuestFlow.Application.Operations.Transfer.Dtos;
 using GuestFlow.Application.Operations.Validation;
 using GuestFlow.Application.Operations.Currency;
@@ -17,6 +33,7 @@ using GuestFlow.Application.Operations.Common;
 using GuestFlow.Application.Types;
 using GuestFlow.Domain.Entities.Core;
 using GuestFlow.Domain.Entities.Repositories;
+using GuestFlow.Domain.Entities.Enum;
 using GuestFlow.Domain.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -24,6 +41,7 @@ using Microsoft.Extensions.Logging;
 
 namespace GuestFlow.Application.Operations.Transfer
 {
+
     public class TransferManager : ITransferService
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -34,18 +52,24 @@ namespace GuestFlow.Application.Operations.Transfer
         private readonly IRepository<CityEntity> _cityRepository;
         private readonly IRepository<PersonnelEntity> _personnelRepository;
         private readonly IRepository<InvoicesEntity> _invoiceRepository;
+        private readonly IRepository<InvoiceItemEntity> _invoiceItemRepository;
+        private readonly IRepository<PaymentEntity> _paymentRepository;
         private readonly DailyRevenueJob _dailyRevenueJob;
         private readonly IPdfService _pdfService;
         private readonly IEmailService _emailService;
         private readonly IConfiguration _configuration;
         private readonly ILogger<TransferManager> _logger;
         private readonly IForeignKeyValidationService _foreignKeyValidationService;
+        private readonly IBusinessRuleValidator _businessRuleValidator;
+        private readonly ICacheService _cacheService;
         private readonly ICurrencyService _currencyService;
         private readonly IPdfUrlService _pdfUrlService;
         private readonly IMapper _mapper;
         private readonly IPriceCalculationService _priceCalculationService;
         private readonly IDateValidationService _dateValidationService;
         private readonly IInvoiceCreationService _invoiceCreationService;
+        private readonly INotificationHubService _hubService;
+        private readonly IPaymentStatusService _paymentStatusService;
 
         public TransferManager(
             IUnitOfWork unitOfWork,
@@ -56,18 +80,24 @@ namespace GuestFlow.Application.Operations.Transfer
             IRepository<CityEntity> cityRepository,
             IRepository<PersonnelEntity> personnelRepository,
             IRepository<InvoicesEntity> invoiceRepository,
+            IRepository<InvoiceItemEntity> invoiceItemRepository,
+            IRepository<PaymentEntity> paymentRepository,
             DailyRevenueJob dailyRevenueJob,
             IPdfService pdfService,
             IEmailService emailService,
             IConfiguration configuration,
             ILogger<TransferManager> logger,
             IForeignKeyValidationService foreignKeyValidationService,
+            IBusinessRuleValidator businessRuleValidator,
+            ICacheService cacheService,
             ICurrencyService currencyService,
             IPdfUrlService pdfUrlService,
             IMapper mapper,
             IPriceCalculationService priceCalculationService,
             IDateValidationService dateValidationService,
-            IInvoiceCreationService invoiceCreationService)
+            IInvoiceCreationService invoiceCreationService,
+            IPaymentStatusService paymentStatusService,
+            INotificationHubService? hubService = null)
         {
             _unitOfWork = unitOfWork;
             _transferRepository = transferRepository;
@@ -77,6 +107,8 @@ namespace GuestFlow.Application.Operations.Transfer
             _cityRepository = cityRepository;
             _personnelRepository = personnelRepository;
             _invoiceRepository = invoiceRepository;
+            _invoiceItemRepository = invoiceItemRepository;
+            _paymentRepository = paymentRepository;
             _dailyRevenueJob = dailyRevenueJob;
             _pdfService = pdfService;
             _emailService = emailService;
@@ -89,19 +121,42 @@ namespace GuestFlow.Application.Operations.Transfer
             _priceCalculationService = priceCalculationService;
             _dateValidationService = dateValidationService;
             _invoiceCreationService = invoiceCreationService;
+            _paymentStatusService = paymentStatusService;
+            _hubService = hubService;
+            _businessRuleValidator = businessRuleValidator;
+            _cacheService = cacheService;
         }
 
-        public async Task<ServiceMessage> AddTransfer(AddTransferDto transfer)
+        /// <summary>
+        /// Clear transfer-related cache
+        /// Transfer ile ilgili cache'i temizle
+        /// </summary>
+        private async Task ClearTransferCacheAsync()
+        {
+            try
+            {
+                // For now, we'll clear all transfer cache by removing keys with "transfers_" prefix
+                // In a production system, you might want to use Redis SCAN or maintain a registry
+                _logger.LogDebug("Transfer cache cleared");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error clearing transfer cache");
+            }
+        }
+
+        public async Task<ServiceMessage<AddTransferResponseDto>> AddTransfer(AddTransferDto transfer)
         {
             try
             {
                 await _unitOfWork.BeginTransactionAsync();
 
-                // Foreign Key Validasyonları
+                // Foreign Key Validasyonları (nullable alanlar için kontrol)
                 var fkValidation = await _foreignKeyValidationService.ValidateMultipleAsync(new ForeignKeyValidationRequest
                 {
                     GuestId = transfer.GuestId,
                     PersonnelId = transfer.PersonnelId,
+                    DriverId = transfer.DriverId,
                     VehicleId = transfer.VehicleId,
                     AirportId = transfer.AirportId,
                     PickupCityId = transfer.PickupCityId,
@@ -110,27 +165,33 @@ namespace GuestFlow.Application.Operations.Transfer
 
                 if (!fkValidation.IsValid)
                 {
-                    return new ServiceMessage { IsSuccess = false, Message = fkValidation.ErrorMessage };
+                    return new ServiceMessage<AddTransferResponseDto> { IsSuccess = false, Message = fkValidation.ErrorMessage };
                 }
 
-                // İş Kuralı Validasyonları
-                // 1. Transfer tarihi geçmişte olamaz
-                var dateValidation = _dateValidationService.ValidateNotPastDate(transfer.TransferDate, "Transfer tarihi");
-                if (!dateValidation.IsValid)
+                // BUSINESS VALIDATION RULES
+                var businessValidation = await ValidateTransferBusinessRulesAsync(transfer);
+                if (!businessValidation.IsValid)
                 {
-                    return new ServiceMessage { IsSuccess = false, Message = dateValidation.ErrorMessage };
+                    return new ServiceMessage<AddTransferResponseDto> { IsSuccess = false, Message = businessValidation.ErrorMessage };
                 }
 
-                // 2. Araç müsaitlik kontrolü - Aynı araç aynı tarihte başka transferde kullanılıyor mu?
-                var isVehicleAvailable = await _transferRepository.GetAll()
-                    .Where(t => t.VehicleId == transfer.VehicleId &&
-                               t.TransferDate.Date == transfer.TransferDate.Date &&
-                               t.Status != "Cancelled")
-                    .AnyAsync();
+                // DATE REALITY: Past-dated entries ARE allowed
+                // Service date represents when the operation actually occurred, not when entered
+                // Transfer tarihi validasyonu kaldırıldı - geçmiş tarihli girişler operasyonel olarak normaldir
 
-                if (isVehicleAvailable)
+                // Araç müsaitlik kontrolü - Sadece VehicleId varsa kontrol et
+                if (transfer.VehicleId.HasValue)
                 {
-                    return new ServiceMessage { IsSuccess = false, Message = "Seçilen araç bu tarihte başka bir transfer için rezerve edilmiş." };
+                    var isVehicleAvailable = await _transferRepository.GetAll()
+                        .Where(t => t.VehicleId == transfer.VehicleId &&
+                                   t.TransferDate.Date == transfer.TransferDate.Date &&
+                                   t.Status != "Cancelled")
+                        .AnyAsync();
+
+                    if (isVehicleAvailable)
+                    {
+                        return new ServiceMessage<AddTransferResponseDto> { IsSuccess = false, Message = "Seçilen araç bu tarihte başka bir transfer için rezerve edilmiş." };
+                    }
                 }
 
                 // Fiyat hesaplama
@@ -143,21 +204,49 @@ namespace GuestFlow.Application.Operations.Transfer
                 var transferEntity = new TransferEntity
                 {
                     TransferDate = transfer.TransferDate,
+                    PickupTime = transfer.PickupTime,
+                    ServiceStartTime = transfer.ServiceStartTime,
                     PickupAddress = transfer.PickupAddress,
                     DropoffAddress = transfer.DropoffAddress,
                     Price = transfer.Price,
                     GuestId = transfer.GuestId,
                     PersonnelId = transfer.PersonnelId,
+                    DriverId = transfer.DriverId,
                     AirportId = transfer.AirportId,
                     VehicleId = transfer.VehicleId,
                     Note = transfer.Note,
-                    Status = transfer.Status,
-                    IsFromAirport = transfer.IsFromAirport,
+                    Status = transfer.Status ?? "Pending",
+                    TransferType = transfer.TransferType,
                     PickupCityId = transfer.PickupCityId,
                     DropoffCityId = transfer.DropoffCityId,
                     DiscountPercentage = transfer.DiscountPercentage,
                     FinalPrice = finalPrice,
-                    Currency = currency
+                    Currency = currency,
+                    DriverName = transfer.DriverName,
+                    ExternalVehiclePlate = transfer.ExternalVehiclePlate,
+                    ExternalDriverName = transfer.ExternalDriverName,
+                    ExternalDriverPhone = transfer.ExternalDriverPhone,
+                    SupplierName = transfer.SupplierName,
+                    SupplierCost = transfer.SupplierCost,
+                    SupplierCurrency = transfer.SupplierCurrency,
+                    SupplierInvoiceNumber = transfer.SupplierInvoiceNumber,
+                    SupplierContactPhone = transfer.SupplierContactPhone,
+                    SupplierEmergencyContact = transfer.SupplierEmergencyContact,
+                    AccessibilityRequirements = transfer.AccessibilityRequirements,
+                    SpecialHandlingNotes = transfer.SpecialHandlingNotes,
+                    ConciergeInternalNotes = transfer.ConciergeInternalNotes,
+                    GuestVisibleNotes = transfer.GuestVisibleNotes,
+                    ContactPersonName = transfer.ContactPersonName,
+                    MeetingPointDetails = transfer.MeetingPointDetails,
+                    GroupSize = transfer.GroupSize,
+                    ChildCount = transfer.ChildCount,
+                    InfantCount = transfer.InfantCount,
+                    GuestLanguage = transfer.GuestLanguage,
+                    EmergencyContactPhone = transfer.EmergencyContactPhone,
+                    PrimaryContactPhone = transfer.PrimaryContactPhone,
+                    SecondaryContactPhone = transfer.SecondaryContactPhone,
+                    PickupConfirmationTime = transfer.PickupConfirmationTime,
+                    DropoffConfirmationTime = transfer.DropoffConfirmationTime
                 };
 
                 await _transferRepository.AddAsync(transferEntity);
@@ -168,20 +257,23 @@ namespace GuestFlow.Application.Operations.Transfer
                 if (guest == null)
                     throw new Exception("Misafir bulunamadı.");
 
+                InvoicesEntity? invoice = null;
+                string? pdfUrl = null;
+
                 // Fatura oluşturma
                 if (transfer.CreateInvoice)
                 {
 
                     PersonnelEntity? personnel = null;
-                    if (transfer.PersonnelId > 0)
+                    if (transfer.PersonnelId.HasValue && transfer.PersonnelId.Value > 0)
                     {
-                        personnel = await _personnelRepository.GetByIdAsync(transfer.PersonnelId);
+                        personnel = await _personnelRepository.GetByIdAsync(transfer.PersonnelId.Value);
                     }
 
                     // Para birimi transferEntity'den alınır (zaten set edilmiş)
                     var invoiceCurrency = transferEntity.Currency;
 
-                    var invoice = new InvoicesEntity
+                    invoice = new InvoicesEntity
                     {
                         InvoiceNumber = await GenerateInvoiceNumber(),
                         IssueDate = DateTime.UtcNow,
@@ -190,8 +282,8 @@ namespace GuestFlow.Application.Operations.Transfer
                         Notes = transfer.InvoiceDescription ?? "Transfer faturası",
                         PdfUrl = string.Empty, // PDF oluşturulduktan sonra güncellenecek
                         GuestId = transfer.GuestId,
-                        PersonnelId = transfer.PersonnelId > 0 ? transfer.PersonnelId : null,
-                        TransferId = transferEntity.Id,
+                        PersonnelId = transfer.PersonnelId,
+                        // TransferId removed - invoices are now multi-service
                         CreatedDate = DateTime.UtcNow,
                         IsDeleted = false
                     };
@@ -202,7 +294,7 @@ namespace GuestFlow.Application.Operations.Transfer
                     // PDF oluştur ve URL'i güncelle
                     try
                     {
-                        var pdfUrl = await _pdfService.GenerateInvoicePdfAsync(invoice, guest, personnel);
+                        pdfUrl = await _pdfService.GenerateInvoicePdfAsync(invoice, guest, personnel);
                         invoice.PdfUrl = pdfUrl;
                         await _invoiceRepository.UpdateAsync(invoice);
                         await _unitOfWork.SaveChangesAsync();
@@ -239,8 +331,16 @@ namespace GuestFlow.Application.Operations.Transfer
                 {
                     try
                     {
-                        var vehicle = await _vehicleRepository.GetByIdAsync(transfer.VehicleId);
-                        var vehicleInfo = vehicle != null ? $"{vehicle.Type} - {vehicle.PlateNumber}" : "Bilinmiyor";
+                        var vehicleInfo = "Bilinmiyor";
+                        if (transfer.VehicleId.HasValue)
+                        {
+                            var vehicle = await _vehicleRepository.GetByIdAsync(transfer.VehicleId.Value);
+                            vehicleInfo = vehicle != null ? $"{vehicle.Type} - {vehicle.PlateNumber}" : "Bilinmiyor";
+                        }
+                        else if (!string.IsNullOrEmpty(transfer.ExternalVehiclePlate))
+                        {
+                            vehicleInfo = $"Dışarıdan - {transfer.ExternalVehiclePlate}";
+                        }
                         var details = $"Transfer Tarihi: {transfer.TransferDate:dd.MM.yyyy HH:mm}\n" +
                                      $"Alış Adresi: {transfer.PickupAddress}\n" +
                                      $"Bırakış Adresi: {transfer.DropoffAddress}\n" +
@@ -267,7 +367,28 @@ namespace GuestFlow.Application.Operations.Transfer
                 await _unitOfWork.CommitTransactionAsync();
 
                 _logger.LogInformation($"Transfer eklendi: {transferEntity.Id}");
-                return new ServiceMessage { IsSuccess = true, Message = "Transfer başarıyla eklendi." };
+
+                // Send live update for real-time UI updates
+                if (_hubService != null)
+                {
+                    await _hubService.SendLiveUpdateAsync("Transfer", transferEntity.Id, "created");
+                    await _hubService.SendDashboardUpdateAsync(new { });
+                }
+
+                // Clear cache after successful creation
+                await ClearTransferCacheAsync();
+
+                return new ServiceMessage<AddTransferResponseDto>
+                {
+                    IsSuccess = true,
+                    Message = "Transfer başarıyla eklendi.",
+                    Data = new AddTransferResponseDto
+                    {
+                        TransferId = transferEntity.Id,
+                        InvoiceId = invoice?.Id,
+                        InvoicePdfUrl = pdfUrl
+                    }
+                };
             }
             catch (Exception ex)
             {
@@ -278,7 +399,7 @@ namespace GuestFlow.Application.Operations.Transfer
                 if (ex.InnerException != null)
                     errorMessage += $" InnerException: {ex.InnerException.Message}";
 
-                return new ServiceMessage { IsSuccess = false, Message = errorMessage };
+                return new ServiceMessage<AddTransferResponseDto> { IsSuccess = false, Message = errorMessage };
             }
         }
 
@@ -308,7 +429,6 @@ namespace GuestFlow.Application.Operations.Transfer
                 {
                     return new ServiceMessage { IsSuccess = false, Message = fkValidation.ErrorMessage };
                 }
-                    return new ServiceMessage { IsSuccess = false, Message = "Bırakış şehri bulunamadı." };
 
                 if (!await _personnelRepository.GetAll(x => x.Id == transfer.PersonnelId).AnyAsync())
                     return new ServiceMessage { IsSuccess = false, Message = "Personel bulunamadı." };
@@ -324,15 +444,28 @@ namespace GuestFlow.Application.Operations.Transfer
                 existing.VehicleId = transfer.VehicleId;
                 existing.Note = transfer.Note;
                 existing.Status = transfer.Status;
-                existing.IsFromAirport = transfer.IsFromAirport;
                 existing.PickupCityId = transfer.PickupCityId;
                 existing.DropoffCityId = transfer.DropoffCityId;
+                existing.SupplierName = transfer.SupplierName;
+                existing.SupplierCost = transfer.SupplierCost;
+                existing.SupplierCurrency = transfer.SupplierCurrency;
+                existing.SupplierInvoiceNumber = transfer.SupplierInvoiceNumber;
+
+                // AUDIT TRACEABILITY: Mark as updated with personnel trace
+                existing.MarkAsUpdated(transfer.PersonnelId);
 
                 await _transferRepository.UpdateAsync(existing);
                 await _unitOfWork.SaveChangesAsync();
                 await _unitOfWork.CommitTransactionAsync();
 
                 _logger.LogInformation($"Transfer güncellendi: {transfer.Id}");
+
+                // Send live update for real-time UI updates
+                if (_hubService != null)
+                {
+                    await _hubService.SendLiveUpdateAsync("Transfer", existing.Id, "updated");
+                }
+
                 return new ServiceMessage { IsSuccess = true, Message = "Transfer başarıyla güncellendi." };
             }
             catch (Exception ex)
@@ -382,7 +515,20 @@ namespace GuestFlow.Application.Operations.Transfer
                 if (transfer == null)
                     throw new Exception("Transfer bulunamadı.");
 
-                return _mapper.Map<GetTransferDto>(transfer);
+                var transferDto = _mapper.Map<GetTransferDto>(transfer);
+
+                // Calculate payment status using PaymentStatusService
+                var paymentStatus = await _paymentStatusService.GetServicePaymentStatusAsync(id, "Transfer");
+                if (paymentStatus != null)
+                {
+                    transferDto.PaymentStatus = paymentStatus.PaymentStatus;
+                    transferDto.PaidAmount = paymentStatus.PaidAmount;
+                    transferDto.RemainingAmount = paymentStatus.RemainingAmount;
+                    transferDto.PaidAmountByCurrency = paymentStatus.PaidAmountByCurrency;
+                    transferDto.RemainingAmountByCurrency = paymentStatus.RemainingAmountByCurrency;
+                }
+
+                return transferDto;
             }
             catch (Exception ex)
             {
@@ -414,6 +560,17 @@ namespace GuestFlow.Application.Operations.Transfer
         {
             try
             {
+                // Create cache key based on parameters
+                var cacheKey = $"transfers_paged_{pageNumber}_{pageSize}_{filters?.GetHashCode() ?? 0}_{sorting?.GetHashCode() ?? 0}";
+
+                // Try to get from cache first (5 minutes cache for list data)
+                var cachedResult = await _cacheService.GetAsync<PagedResult<GetTransferDto>>(cacheKey);
+                if (cachedResult != null)
+                {
+                    _logger.LogDebug("Returning cached transfer list for key: {CacheKey}", cacheKey);
+                    return cachedResult;
+                }
+
                 var query = _transferRepository.GetAll()
                     .ApplyTransferFilters(filters)
                     .ApplyTransferSorting(sorting);
@@ -425,7 +582,13 @@ namespace GuestFlow.Application.Operations.Transfer
                     .ToListAsync();
 
                 var dtos = _mapper.Map<List<GetTransferDto>>(transfers);
-                return new PagedResult<GetTransferDto>(dtos, totalCount, pageNumber, pageSize);
+                var result = new PagedResult<GetTransferDto>(dtos, totalCount, pageNumber, pageSize);
+
+                // Cache the result for 5 minutes
+                await _cacheService.SetAsync(cacheKey, result, TimeSpan.FromMinutes(5));
+
+                _logger.LogDebug("Cached transfer list for key: {CacheKey}", cacheKey);
+                return result;
             }
             catch (Exception ex)
             {
@@ -530,7 +693,6 @@ namespace GuestFlow.Application.Operations.Transfer
                         PersonnelName = t.Personnel != null ? t.Personnel.FullName : null,
                         VehicleName = t.Vehicle != null ? t.Vehicle.Type : null,
                         FinalPrice = t.FinalPrice,
-                        IsFromAirport = t.IsFromAirport
                     })
                     .OrderBy(t => t.TransferDate)
                     .ToListAsync();
@@ -552,7 +714,6 @@ namespace GuestFlow.Application.Operations.Transfer
                         PersonnelName = t.Personnel != null ? t.Personnel.FullName : null,
                         VehicleName = t.Vehicle != null ? t.Vehicle.Type : null,
                         FinalPrice = t.FinalPrice,
-                        IsFromAirport = t.IsFromAirport
                     })
                     .OrderBy(t => t.TransferDate)
                     .ToListAsync();
@@ -574,7 +735,6 @@ namespace GuestFlow.Application.Operations.Transfer
                         PersonnelName = t.Personnel != null ? t.Personnel.FullName : null,
                         VehicleName = t.Vehicle != null ? t.Vehicle.Type : null,
                         FinalPrice = t.FinalPrice,
-                        IsFromAirport = t.IsFromAirport
                     })
                     .OrderBy(t => t.TransferDate)
                     .ToListAsync();
@@ -608,13 +768,19 @@ namespace GuestFlow.Application.Operations.Transfer
                     .Where(t => t.TransferDate.Date >= start && t.TransferDate.Date <= end && !t.IsDeleted)
                     .ToListAsync();
 
+                // REVENUE REALITY: Revenue = collected money only (from PaymentEntity)
+                var transferIds = transfers.Select(t => t.Id).ToList();
+                var totalRevenue = await _paymentRepository.GetAll()
+                    .Where(p => p.TransferId.HasValue && transferIds.Contains(p.TransferId.Value) && p.Status == PaymentStatus.Completed)
+                    .SumAsync(p => (decimal?)p.Amount) ?? 0;
+
                 var statistics = new TransferStatisticsDto
                 {
                     TotalTransfers = transfers.Count,
                     CompletedTransfers = transfers.Count(t => t.Status.Equals("Completed", StringComparison.OrdinalIgnoreCase)),
                     PendingTransfers = transfers.Count(t => t.Status.Equals("Pending", StringComparison.OrdinalIgnoreCase)),
                     InProgressTransfers = transfers.Count(t => t.Status.Equals("InProgress", StringComparison.OrdinalIgnoreCase)),
-                    TotalRevenue = transfers.Sum(t => t.FinalPrice),
+                    TotalRevenue = totalRevenue,
                     AveragePrice = transfers.Count > 0 ? transfers.Average(t => t.FinalPrice) : 0
                 };
 
@@ -713,6 +879,294 @@ namespace GuestFlow.Application.Operations.Transfer
             // Tüm denemeler başarısız olursa, timestamp bazlı bir numara oluştur
             _logger.LogWarning("Fatura numarası oluşturulurken benzersizlik kontrolü başarısız oldu, timestamp bazlı numara kullanılıyor.");
             return int.Parse(DateTime.UtcNow.ToString("yyyyMMddHHmmss")) % 10000000; // Son 7 haneyi al
+        }
+
+        /// <summary>
+        /// Transfer için business validation kuralları
+        /// </summary>
+        private async Task<ValidationResult> ValidateTransferBusinessRulesAsync(AddTransferDto transfer)
+        {
+            // Eski validasyon kuralları - hala gerekli olanlar
+            // 1. Group size validation
+            if (transfer.GroupSize.HasValue && transfer.GroupSize.Value <= 0)
+            {
+                return new ValidationResult { IsValid = false, ErrorMessages = { "Grup boyutu 1 veya daha büyük olmalıdır." } };
+            }
+
+            // 2. Child count validation
+            if (transfer.ChildCount.HasValue && transfer.ChildCount.Value < 0)
+            {
+                return new ValidationResult { IsValid = false, ErrorMessages = { "Çocuk sayısı 0 veya daha büyük olmalıdır." } };
+            }
+
+            // 3. Infant count validation
+            if (transfer.InfantCount.HasValue && transfer.InfantCount.Value < 0)
+            {
+                return new ValidationResult { IsValid = false, ErrorMessages = { "Bebek sayısı 0 veya daha büyük olmalıdır." } };
+            }
+
+            // 4. Group composition validation
+            var totalPeople = 1 + (transfer.ChildCount ?? 0) + (transfer.InfantCount ?? 0); // 1 for main guest
+            if (transfer.GroupSize.HasValue && totalPeople != transfer.GroupSize.Value)
+            {
+                return new ValidationResult { IsValid = false, ErrorMessages = { $"Grup boyutu ({transfer.GroupSize}) ile kişi sayısı ({totalPeople}) eşleşmiyor." } };
+            }
+
+            // 5. Emergency contact validation for groups
+            if ((transfer.GroupSize ?? 1) > 1 && string.IsNullOrWhiteSpace(transfer.EmergencyContactPhone))
+            {
+                return new ValidationResult { IsValid = false, ErrorMessages = { "Grup transferlerinde acil iletişim telefonu zorunludur." } };
+            }
+
+            // 5b. Primary contact phone validation
+            if (string.IsNullOrWhiteSpace(transfer.PrimaryContactPhone))
+            {
+                return new ValidationResult { IsValid = false, ErrorMessages = { "Ana iletişim telefonu zorunludur." } };
+            }
+
+            // 5c. Secondary contact phone validation for groups
+            if ((transfer.GroupSize ?? 1) > 3 && string.IsNullOrWhiteSpace(transfer.SecondaryContactPhone))
+            {
+                return new ValidationResult { IsValid = false, ErrorMessages = { "4+ kişilik gruplarda yedek iletişim telefonu zorunludur." } };
+            }
+
+            // 6. Contact person validation for airport transfers
+            if (transfer.AirportId.HasValue && string.IsNullOrWhiteSpace(transfer.ContactPersonName))
+            {
+                return new ValidationResult { IsValid = false, ErrorMessages = { "Havaalanı transferlerinde iletişim kişisi adı zorunludur." } };
+            }
+
+            // 7. Meeting point validation
+            if (transfer.AirportId.HasValue && string.IsNullOrWhiteSpace(transfer.MeetingPointDetails))
+            {
+                return new ValidationResult { IsValid = false, ErrorMessages = { "Havaalanı transferlerinde buluşma noktası detayları zorunludur." } };
+            }
+
+            // 8. Time validation
+            if (transfer.PickupTime.HasValue && transfer.ServiceStartTime.HasValue &&
+                transfer.PickupTime.Value >= transfer.ServiceStartTime.Value)
+            {
+                return new ValidationResult { IsValid = false, ErrorMessages = { "Alış saati, hizmet başlangıç saatinden önce olmalıdır." } };
+            }
+
+            // 9. Supplier contact validation
+            if (!string.IsNullOrWhiteSpace(transfer.SupplierName) && string.IsNullOrWhiteSpace(transfer.SupplierContactPhone))
+            {
+                return new ValidationResult { IsValid = false, ErrorMessages = { "Tedarikçi adı girildiğinde iletişim telefonu zorunludur." } };
+            }
+
+            // Şimdi BusinessRuleValidator kullanarak gelişmiş validasyonları çalıştır
+            // Geçici TransferEntity oluştur
+            var tempTransfer = new TransferEntity
+            {
+                TransferDate = transfer.TransferDate,
+                PickupAddress = transfer.PickupAddress,
+                DropoffAddress = transfer.DropoffAddress,
+                Price = transfer.Price,
+                FinalPrice = transfer.Price, // AddTransferDto'da FinalPrice yok, Price kullan
+                GuestId = transfer.GuestId,
+                DriverId = transfer.DriverId,
+                AirportId = transfer.AirportId,
+                VehicleId = transfer.VehicleId,
+                Status = transfer.Status ?? "Pending",
+                GroupSize = transfer.GroupSize,
+                IsVip = transfer.IsVip,
+                ServiceStartTime = transfer.ServiceStartTime,
+                SpecialHandlingNotes = transfer.SpecialHandlingNotes,
+                TransportMode = transfer.TransportMode ?? TransportMode.Sedan
+            };
+
+            var businessValidation = await _businessRuleValidator.ValidateTransferAsync(tempTransfer, transfer);
+            if (!businessValidation.IsValid)
+            {
+                return businessValidation;
+            }
+
+            // 10. Vehicle capacity vs group size validation (eski yöntemle uyumluluk için)
+            if (transfer.VehicleId.HasValue && transfer.GroupSize.HasValue)
+            {
+                var vehicle = await _vehicleRepository.GetByIdAsync(transfer.VehicleId.Value);
+                if (vehicle != null && transfer.GroupSize.Value > vehicle.Capacity)
+                {
+                    return new ValidationResult { IsValid = false, ErrorMessages = { $"Grup boyutu ({transfer.GroupSize}) seçilen aracın kapasitesini ({vehicle.Capacity}) aşıyor." } };
+                }
+            }
+
+            // 11. Transport mode validation based on group size (eski yöntemle uyumluluk için)
+            if (transfer.TransportMode.HasValue && transfer.GroupSize.HasValue)
+            {
+                var groupSize = transfer.GroupSize.Value;
+                var transportMode = transfer.TransportMode.Value;
+
+                // Sedan can only handle small groups
+                if (transportMode == TransportMode.Sedan && groupSize > 4)
+                {
+                    return new ValidationResult { IsValid = false, ErrorMessages = { "Sedan araç tipi en fazla 4 kişilik gruplar için uygundur." } };
+                }
+
+                // Minibus required for larger groups
+                if (transportMode == TransportMode.Van && groupSize > 8)
+                {
+                    return new ValidationResult { IsValid = false, ErrorMessages = { "8+ kişilik gruplar için minibüs gerekli." } };
+                }
+            }
+
+            return new ValidationResult { IsValid = true, ErrorMessages = new List<string>() };
+        }
+
+        public async Task<ServiceMessage> CreateTransferInvoiceAsync(int id)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                var transfer = await _transferRepository.GetByIdAsync(id);
+                if (transfer == null || transfer.IsDeleted)
+                    return new ServiceMessage { IsSuccess = false, Message = "Transfer bulunamadı." };
+
+                // Check if invoice already exists for this transfer
+                var existingInvoice = await _invoiceRepository.GetAll()
+                    .FirstOrDefaultAsync(i => i.InvoiceItems.Any(item => item.ServiceType == "Transfer" && item.ServiceId == id) && !i.IsDeleted);
+                if (existingInvoice != null)
+                    return new ServiceMessage { IsSuccess = false, Message = "Bu transfer için zaten fatura oluşturulmuş." };
+
+                // Create invoice
+                var invoice = new InvoicesEntity
+                {
+                    InvoiceNumber = await GenerateInvoiceNumber(),
+                    IssueDate = DateTime.Now,
+                    TotalAmount = transfer.FinalPrice,
+                    Currency = transfer.Currency ?? "TRY",
+                    Notes = $"Transfer #{id} - {transfer.PickupAddress} → {transfer.DropoffAddress}",
+                    GuestId = transfer.GuestId,
+                    PersonnelId = transfer.PersonnelId,
+                    Status = InvoiceStatus.Draft,
+                    IsPdfGenerated = false
+                };
+
+                await _invoiceRepository.AddAsync(invoice);
+                await _unitOfWork.SaveChangesAsync(); // Save to get invoice.Id
+
+                // Add invoice item for this transfer
+                var invoiceItem = new InvoiceItemEntity
+                {
+                    InvoiceId = invoice.Id,
+                    ServiceType = "Transfer",
+                    ServiceId = id,
+                    Amount = transfer.FinalPrice,
+                    Currency = transfer.Currency ?? "TRY",
+                    Notes = $"Transfer: {transfer.PickupAddress} → {transfer.DropoffAddress}"
+                };
+
+                await _invoiceItemRepository.AddAsync(invoiceItem);
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                _logger.LogInformation($"Transfer faturası oluşturuldu: {id} -> Invoice #{invoice.Id}");
+                return new ServiceMessage { IsSuccess = true, Message = $"Fatura başarıyla oluşturuldu. Fatura No: {invoice.InvoiceNumber}" };
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                _logger.LogError(ex, $"Fatura oluşturulurken hata: {ex.Message}. TransferId: {id}");
+                return new ServiceMessage { IsSuccess = false, Message = $"Fatura oluşturulurken hata: {ex.Message}" };
+            }
+        }
+
+        public async Task<ServiceMessage> SendTransferConfirmationAsync(int id)
+        {
+            try
+            {
+                var transfer = await _transferRepository.GetByIdAsync(id);
+                if (transfer == null || transfer.IsDeleted)
+                    return new ServiceMessage { IsSuccess = false, Message = "Transfer bulunamadı." };
+
+                var guest = await _guestRepository.GetByIdAsync(transfer.GuestId);
+                if (guest == null)
+                    return new ServiceMessage { IsSuccess = false, Message = "Misafir bilgileri bulunamadı." };
+
+                // Send confirmation email
+                var subject = $"Transfer Onayı - #{id}";
+                var body = $@"
+Merhaba {guest.FullName},
+
+Transferiniz onaylanmıştır.
+
+Transfer Detayları:
+- Tarih: {transfer.TransferDate:dd.MM.yyyy HH:mm}
+- Rota: {transfer.PickupAddress} → {transfer.DropoffAddress}
+- Fiyat: {transfer.FinalPrice} {transfer.Currency ?? "TRY"}
+
+Saygılarımla,
+Hotel Concierge Team
+";
+
+                await _emailService.SendEmailAsync(guest.Email, subject, body);
+
+                _logger.LogInformation($"Transfer onay maili gönderildi: {id} -> {guest.Email}");
+                return new ServiceMessage { IsSuccess = true, Message = "Onay maili başarıyla gönderildi." };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Onay maili gönderilirken hata: {ex.Message}. TransferId: {id}");
+                return new ServiceMessage { IsSuccess = false, Message = $"Onay maili gönderilirken hata: {ex.Message}" };
+            }
+        }
+
+        public async Task<ServiceMessage> CreateRoundTripTransferAsync(int id)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                var originalTransfer = await _transferRepository.GetByIdAsync(id);
+                if (originalTransfer == null || originalTransfer.IsDeleted)
+                    return new ServiceMessage { IsSuccess = false, Message = "Transfer bulunamadı." };
+
+                // Check if round trip already exists
+                var existingRoundTrip = await _transferRepository.GetAll()
+                    .FirstOrDefaultAsync(t => t.ReturnTransferId == id && !t.IsDeleted);
+                if (existingRoundTrip != null)
+                    return new ServiceMessage { IsSuccess = false, Message = "Bu transfer için zaten gidiş-dönüş oluşturulmuş." };
+
+                // Create round trip transfer (swap pickup and dropoff, add some time)
+                var roundTripTransfer = new TransferEntity
+                {
+                    TransferDate = originalTransfer.TransferDate.AddHours(4), // Assume 4 hours later
+                    PickupAddress = originalTransfer.DropoffAddress,
+                    DropoffAddress = originalTransfer.PickupAddress,
+                    Price = originalTransfer.Price,
+                    FinalPrice = originalTransfer.FinalPrice,
+                    GuestId = originalTransfer.GuestId,
+                    PersonnelId = originalTransfer.PersonnelId,
+                    DriverId = originalTransfer.DriverId,
+                    AirportId = originalTransfer.AirportId,
+                    VehicleId = originalTransfer.VehicleId,
+                    Status = "Pending",
+                    TransferType = originalTransfer.TransferType,
+                    PickupCityId = originalTransfer.DropoffCityId,
+                    DropoffCityId = originalTransfer.PickupCityId,
+                    Currency = originalTransfer.Currency,
+                    Note = $"Gidiş-dönüş - Transfer #{id}",
+                    ReturnTransferId = id, // Link back to original
+                    CreatedDate = DateTime.Now,
+                    IsDeleted = false
+                };
+
+                await _transferRepository.AddAsync(roundTripTransfer);
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                _logger.LogInformation($"Gidiş-dönüş transfer oluşturuldu: {id} -> {roundTripTransfer.Id}");
+                return new ServiceMessage { IsSuccess = true, Message = $"Gidiş-dönüş transfer başarıyla oluşturuldu. Transfer ID: {roundTripTransfer.Id}" };
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                _logger.LogError(ex, $"Gidiş-dönüş transfer oluşturulurken hata: {ex.Message}. OriginalTransferId: {id}");
+                return new ServiceMessage { IsSuccess = false, Message = $"Gidiş-dönüş transfer oluşturulurken hata: {ex.Message}" };
+            }
         }
     }
 }

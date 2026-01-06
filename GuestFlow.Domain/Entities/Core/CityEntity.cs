@@ -14,6 +14,7 @@ namespace GuestFlow.Domain.Entities.Core
         public virtual ICollection<CityTourEntity> CityTours { get; set; } = new List<CityTourEntity>();
         public virtual ICollection<TransferEntity> PickupTransfers { get; set; } = new List<TransferEntity>(); // PickupCityId için
         public virtual ICollection<TransferEntity> DropoffTransfers { get; set; } = new List<TransferEntity>(); // DropoffCityId için
+        public virtual ICollection<TourEntity> Tours { get; set; } = new List<TourEntity>(); // TourEntity için
     }
 
     public class CityConfiguration : BaseConfiguration<CityEntity>

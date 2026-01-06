@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: guestflow-config
+  namespace: guestflow
+data:
+  ASPNETCORE_ENVIRONMENT: "Production"
+  ASPNETCORE_URLS: "http://+:5000"
+  Logging__LogLevel__Default: "Information"
+  Logging__LogLevel__Microsoft: "Warning"
+  Logging__LogLevel__Microsoft.Hosting.Lifetime: "Information"
+  JWT__Issuer: "GuestFlow"
+  JWT__Audience: "GuestFlowUsers"
+  Email__SmtpServer: "smtp.gmail.com"
+  Email__SmtpPort: "587"

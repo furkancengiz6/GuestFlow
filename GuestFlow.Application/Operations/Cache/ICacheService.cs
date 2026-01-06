@@ -29,6 +29,11 @@ namespace GuestFlow.Application.Operations.Cache
         void Remove(string key);
 
         /// <summary>
+        /// Cache'den değer kaldırır (async)
+        /// </summary>
+        Task RemoveAsync(string key);
+
+        /// <summary>
         /// Belirli bir pattern'e uyan tüm cache key'lerini kaldırır
         /// </summary>
         void RemoveByPattern(string pattern);
@@ -42,6 +47,15 @@ namespace GuestFlow.Application.Operations.Cache
         /// Cache'de key var mı kontrol eder
         /// </summary>
         bool Exists(string key);
+
+        /// <summary>
+        /// Cache'den değer getirir (async)
+        /// </summary>
+        Task<T?> GetAsync<T>(string key) where T : class;
+
+        /// <summary>
+        /// Cache'e değer ekler (async)
+        /// </summary>
+        Task SetAsync<T>(string key, T value, TimeSpan? expiration = null) where T : class;
     }
 }
-

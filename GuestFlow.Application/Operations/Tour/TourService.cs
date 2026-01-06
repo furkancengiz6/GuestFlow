@@ -1,6 +1,7 @@
 using GuestFlow.Application.Operations.CityTour.Dtos;
 using GuestFlow.Domain.Entities.Core;
 using GuestFlow.Domain.Entities.Repositories;
+using GuestFlow.Domain.Entities.Enum;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
@@ -14,15 +15,21 @@ namespace GuestFlow.Application.Operations.Tour
     {
         private readonly IRepository<CityTourEntity> _cityTourRepository;
         private readonly IRepository<YachtTourEntity> _yachtTourRepository;
+        private readonly IRepository<TourEntity> _tourRepository;
+        private readonly IRepository<PaymentEntity> _paymentRepository;
         private readonly ILogger<TourService> _logger;
 
         public TourService(
             IRepository<CityTourEntity> cityTourRepository,
             IRepository<YachtTourEntity> yachtTourRepository,
+            IRepository<TourEntity> tourRepository,
+            IRepository<PaymentEntity> paymentRepository,
             ILogger<TourService> logger)
         {
             _cityTourRepository = cityTourRepository;
             _yachtTourRepository = yachtTourRepository;
+            _tourRepository = tourRepository;
+            _paymentRepository = paymentRepository;
             _logger = logger;
         }
 
@@ -201,17 +208,32 @@ namespace GuestFlow.Application.Operations.Tour
                     .Distinct()
                     .Count();
 
+                // REVENUE REALITY: Revenue = collected money only (from PaymentEntity)
+                var cityTourIds = cityTours.Select(ct => ct.Id).ToList();
+                var yachtTourIds = yachtTours.Select(yt => yt.Id).ToList();
+                
+                var cityTourRevenue = await _paymentRepository.GetAll()
+                    .Where(p => p.CityTourId.HasValue && cityTourIds.Contains(p.CityTourId.Value) && p.Status == PaymentStatus.Completed)
+                    .SumAsync(p => (decimal?)p.Amount) ?? 0;
+                    
+                var yachtTourRevenue = await _paymentRepository.GetAll()
+                    .Where(p => p.YachtTourId.HasValue && yachtTourIds.Contains(p.YachtTourId.Value) && p.Status == PaymentStatus.Completed)
+                    .SumAsync(p => (decimal?)p.Amount) ?? 0;
+                    
+                var totalRevenue = cityTourRevenue + yachtTourRevenue;
+                var averageBookedPrice = totalTours > 0 
+                    ? (cityTours.Sum(ct => ct.FinalPrice) + yachtTours.Sum(yt => yt.FinalPrice)) / totalTours 
+                    : 0;
+
                 var statistics = new TourStatisticsDto
                 {
                     TotalCityTours = cityTours.Count,
                     TotalYachtTours = yachtTours.Count,
                     TotalTours = totalTours,
-                    CityTourRevenue = cityTours.Sum(ct => ct.FinalPrice),
-                    YachtTourRevenue = yachtTours.Sum(yt => yt.FinalPrice),
-                    TotalRevenue = cityTours.Sum(ct => ct.FinalPrice) + yachtTours.Sum(yt => yt.FinalPrice),
-                    AveragePrice = totalTours > 0 
-                        ? (cityTours.Sum(ct => ct.FinalPrice) + yachtTours.Sum(yt => yt.FinalPrice)) / totalTours 
-                        : 0,
+                    CityTourRevenue = cityTourRevenue,
+                    YachtTourRevenue = yachtTourRevenue,
+                    TotalRevenue = totalRevenue,
+                    AveragePrice = averageBookedPrice,
                     TotalGuests = totalGuests
                 };
 
@@ -220,6 +242,38 @@ namespace GuestFlow.Application.Operations.Tour
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Tur istatistikleri getirilirken hata: {ex.Message}");
+                throw;
+            }
+        }
+
+        public async Task<IList<TourLookupDto>> GetToursAsync(int? cityId = null, bool? isActive = true)
+        {
+            try
+            {
+                var query = _tourRepository.GetAll().Where(t => !t.IsDeleted);
+
+                if (cityId.HasValue)
+                    query = query.Where(t => t.CityId == cityId.Value);
+
+                if (isActive.HasValue)
+                    query = query.Where(t => t.IsActive == isActive.Value);
+
+                var list = await query
+                    .OrderBy(t => t.Name)
+                    .Select(t => new TourLookupDto
+                    {
+                        Id = t.Id,
+                        Name = t.Name,
+                        CityId = t.CityId,
+                        IsActive = t.IsActive
+                    })
+                    .ToListAsync();
+
+                return list;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Tur listesi getirilirken hata: {ex.Message}");
                 throw;
             }
         }

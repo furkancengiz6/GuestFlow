@@ -99,12 +99,10 @@ namespace GuestFlow.Persistence.Repositories
 
         public IQueryable<TEntity> GetAll(Expression<Func<TEntity, bool>> predicate = null, bool includeDeleted = false)
         {
-            var query = _dbSet.AsQueryable();
-
-            if (!includeDeleted)
-            {
-                query = query.Where(e => !e.IsDeleted);
-            }
+            // If includeDeleted is true, ignore the global query filter
+            var query = includeDeleted 
+                ? _dbSet.IgnoreQueryFilters().AsQueryable()
+                : _dbSet.AsQueryable();
 
             if (predicate != null)
             {

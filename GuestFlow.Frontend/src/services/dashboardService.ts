@@ -6,6 +6,8 @@ import type {
   RevenueChartData,
   UpcomingBookings,
   GuestStatistics,
+  UnpaidServices,
+  UpcomingServices,
 } from '../types/dashboard'
 
 export const dashboardService = {
@@ -54,6 +56,22 @@ export const dashboardService = {
   // Misafir istatistikleri
   getGuestStatistics: async (): Promise<GuestStatistics> => {
     const response = await apiClient.get('/dashboard/guest-statistics')
+    return response.data.data || response.data
+  },
+
+  // Ödemesi alınmamış hizmetler
+  getUnpaidServices: async (startDate?: string, endDate?: string): Promise<UnpaidServices> => {
+    const response = await apiClient.get('/dashboard/unpaid-services', {
+      params: { startDate, endDate },
+    })
+    return response.data.data || response.data
+  },
+
+  // Yaklaşan hizmetler
+  getUpcomingServices: async (startDate?: string, endDate?: string): Promise<UpcomingServices> => {
+    const response = await apiClient.get('/dashboard/upcoming-services', {
+      params: { startDate, endDate },
+    })
     return response.data.data || response.data
   },
 }

@@ -10,6 +10,7 @@ import {
   Divider,
   IconButton,
 } from '@mui/material'
+import { useLiveUpdates } from '../../hooks/useLiveUpdates'
 import {
   ArrowBack as ArrowBackIcon,
   Person as PersonIcon,
@@ -17,9 +18,13 @@ import {
   AttachMoney as AttachMoneyIcon,
   Language as LanguageIcon,
   AccessTime as AccessTimeIcon,
+  Edit as EditIcon,
+  Receipt as ReceiptIcon,
+  Email as EmailIcon,
 } from '@mui/icons-material'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { tourService } from '../../services/tourService'
+import { useNotification } from '../../hooks/useNotification'
 import { formatDate, formatCurrency, formatDateTime } from '../../utils/formatters'
 import ContentState from '../../components/Feedback/ContentState'
 
@@ -28,10 +33,63 @@ const CityTourDetailPage = () => {
   const navigate = useNavigate()
   const tourId = id ? parseInt(id, 10) : 0
 
+  // Enable real-time updates for city tour changes
+  useLiveUpdates(['citytour'])
+
   const { data: tour, isLoading, error } = useQuery({
     queryKey: ['city-tour-detail', tourId],
     queryFn: () => tourService.getCityTourDetail(tourId),
     enabled: !!tourId && !isNaN(tourId),
+  })
+
+  const queryClient = useQueryClient()
+  const notification = useNotification()
+
+  // Mutations for action buttons
+  const markCompletedMutation = useMutation({
+    mutationFn: () => tourService.markCityTourCompleted(tourId),
+    onSuccess: () => {
+      notification.showSuccess('Şehir turu tamamlandı olarak işaretlendi')
+      queryClient.invalidateQueries({ queryKey: ['city-tour-detail', tourId] })
+      queryClient.invalidateQueries({ queryKey: ['city-tours'] })
+    },
+    onError: (error: any) => {
+      notification.showError(`Hata: ${error.response?.data?.message || 'Durum güncellenemedi'}`)
+    }
+  })
+
+  const cancelTourMutation = useMutation({
+    mutationFn: () => tourService.cancelCityTour(tourId),
+    onSuccess: () => {
+      notification.showSuccess('Şehir turu iptal edildi')
+      queryClient.invalidateQueries({ queryKey: ['city-tour-detail', tourId] })
+      queryClient.invalidateQueries({ queryKey: ['city-tours'] })
+    },
+    onError: (error: any) => {
+      notification.showError(`Hata: ${error.response?.data?.message || 'Tur iptal edilemedi'}`)
+    }
+  })
+
+  const createCityTourInvoiceMutation = useMutation({
+    mutationFn: () => tourService.createCityTourInvoice(tourId),
+    onSuccess: () => {
+      notification.showSuccess('Fatura başarıyla oluşturuldu')
+      queryClient.invalidateQueries({ queryKey: ['city-tour-detail', tourId] })
+      queryClient.invalidateQueries({ queryKey: ['invoices'] })
+    },
+    onError: (error: any) => {
+      notification.showError(`Hata: ${error.response?.data?.message || 'Fatura oluşturulamadı'}`)
+    }
+  })
+
+  const sendCityTourConfirmationMutation = useMutation({
+    mutationFn: () => tourService.sendCityTourConfirmation(tourId),
+    onSuccess: () => {
+      notification.showSuccess('Onay maili gönderildi')
+    },
+    onError: (error: any) => {
+      notification.showError(`Hata: ${error.response?.data?.message || 'Mail gönderilemedi'}`)
+    }
   })
 
   if (isLoading) {
@@ -61,7 +119,58 @@ const CityTourDetailPage = () => {
         </Typography>
       </Box>
 
-      {/* Tur Bilgileri */}
+      {/* ACTION BUTTONS */}
+      <Box sx={{ mb: 3, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<EditIcon />}
+          onClick={() => navigate(`/tours/city/${tourId}/edit`)}
+        >
+          Düzenle
+        </Button>
+        <Button
+          variant="outlined"
+          color="success"
+          startIcon={<PersonIcon />}
+          onClick={() => markCompletedMutation.mutate()}
+          disabled={tour.status === 'Completed' || markCompletedMutation.isPending}
+        >
+          {markCompletedMutation.isPending ? 'İşleniyor...' : 'Tamamlandı İşaretle'}
+        </Button>
+        <Button
+          variant="outlined"
+          color="warning"
+          startIcon={<ReceiptIcon />}
+          onClick={() => createCityTourInvoiceMutation.mutate()}
+          disabled={createCityTourInvoiceMutation.isPending}
+        >
+          {createCityTourInvoiceMutation.isPending ? 'Oluşturuluyor...' : 'Fatura Oluştur'}
+        </Button>
+        <Button
+          variant="outlined"
+          color="info"
+          startIcon={<EmailIcon />}
+          onClick={() => sendCityTourConfirmationMutation.mutate()}
+          disabled={sendCityTourConfirmationMutation.isPending}
+        >
+          {sendCityTourConfirmationMutation.isPending ? 'Gönderiliyor...' : 'Onay Gönder'}
+        </Button>
+        <Button
+          variant="outlined"
+          color="error"
+          onClick={() => {
+            if (window.confirm('Bu şehir turunu iptal etmek istediğinizden emin misiniz?')) {
+              cancelTourMutation.mutate()
+            }
+          }}
+          disabled={tour.status === 'Cancelled' || cancelTourMutation.isPending}
+        >
+          {cancelTourMutation.isPending ? 'İptal Ediliyor...' : 'İptal Et'}
+        </Button>
+      </Box>
+
+      {/* Şehir Turu Bilgileri */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
@@ -101,6 +210,49 @@ const CityTourDetailPage = () => {
                 {formatCurrency(tour.finalPrice)} (Orijinal: {formatCurrency(tour.price)})
               </Typography>
             </Grid>
+            {tour.paymentStatus && (
+              <Grid item xs={12}>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  Ödeme Durumu
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <Chip
+                    label={tour.paymentStatus === 'Paid' ? 'Ödendi' :
+                           tour.paymentStatus === 'PartiallyPaid' ? 'Kısmi Ödeme' : 'Ödenmedi'}
+                    color={tour.paymentStatus === 'Paid' ? 'success' :
+                           tour.paymentStatus === 'PartiallyPaid' ? 'warning' : 'error'}
+                    size="small"
+                  />
+                  {tour.paidAmount !== undefined && tour.remainingAmount !== undefined && (
+                    <Box sx={{ display: 'flex', gap: 2, ml: 2 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Ödenen: <span style={{ fontWeight: 'bold', color: '#2e7d32' }}>{formatCurrency(tour.paidAmount)}</span>
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Kalan: <span style={{ fontWeight: 'bold', color: '#d32f2f' }}>{formatCurrency(tour.remainingAmount)}</span>
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+                {tour.paidAmountByCurrency && Object.keys(tour.paidAmountByCurrency).length > 0 && (
+                  <Box sx={{ mt: 1 }}>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      Para Birimine Göre Ödemeler:
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                      {Object.entries(tour.paidAmountByCurrency).map(([currency, amount]) => (
+                        <Chip
+                          key={currency}
+                          label={`${currency}: ${formatCurrency(amount)}`}
+                          variant="outlined"
+                          size="small"
+                        />
+                      ))}
+                    </Box>
+                  </Box>
+                )}
+              </Grid>
+            )}
             <Grid item xs={12} md={6}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <LanguageIcon color="action" />

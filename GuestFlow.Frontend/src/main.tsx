@@ -1,6 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { QueryClient, QueryClientProvider, QueryErrorResetBoundary } from '@tanstack/react-query'
+import { QueryClientProvider, QueryErrorResetBoundary } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import CssBaseline from '@mui/material/CssBaseline'
 import App from './App'
@@ -9,22 +9,12 @@ import NotificationProvider from './components/Common/NotificationProvider'
 import AppErrorBoundary from './components/Common/AppErrorBoundary'
 import QueryErrorFallback from './components/Common/QueryErrorFallback'
 import GlobalLoadingIndicator from './components/Common/GlobalLoadingIndicator'
+import { createQueryClient } from './config/queryClient'
+import './i18n/config' // Initialize i18n
 import './styles/print.css'
 
-// React Query client oluştur
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: 1,
-      staleTime: 5 * 60 * 1000, // 5 dakika
-      useErrorBoundary: true,
-    },
-    mutations: {
-      useErrorBoundary: true,
-    },
-  },
-})
+// React Query client oluştur (optimized configuration)
+const queryClient = createQueryClient()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

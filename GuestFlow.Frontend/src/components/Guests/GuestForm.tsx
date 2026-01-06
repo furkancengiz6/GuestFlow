@@ -12,8 +12,14 @@ import {
   Box,
   FormControlLabel,
   Switch,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Typography,
 } from '@mui/material'
 import { Guest, CreateGuestRequest, UpdateGuestRequest } from '../../services/guestService'
+import { COUNTRIES } from '../../utils/countries'
 
 // Zod schema
 const guestSchema = z.object({
@@ -134,15 +140,28 @@ const GuestForm = ({ open, onClose, onSubmit, guest, isLoading = false }: GuestF
               disabled={isSubmitting || isLoading}
             />
 
-            <TextField
-              label="Uyruk"
-              fullWidth
-              required
-              {...register('nationality')}
-              error={!!errors.nationality}
-              helperText={errors.nationality?.message}
-              disabled={isSubmitting || isLoading}
-            />
+            <FormControl fullWidth required error={!!errors.nationality} disabled={isSubmitting || isLoading}>
+              <InputLabel>Uyruk</InputLabel>
+              <Controller
+                name="nationality"
+                control={control}
+                render={({ field }) => (
+                  <Select {...field} value={field.value || ''} label="Uyruk">
+                    <MenuItem value="">Seçiniz</MenuItem>
+                    {COUNTRIES.map((country) => (
+                      <MenuItem key={country.code} value={country.name}>
+                        {country.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                )}
+              />
+              {errors.nationality && (
+                <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
+                  {errors.nationality.message}
+                </Typography>
+              )}
+            </FormControl>
 
             <Controller
               name="isSpecialGuest"

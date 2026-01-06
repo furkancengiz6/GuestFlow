@@ -8,9 +8,23 @@ export interface Invoice {
   pdfUrl: string
   guestId: number
   personnelId?: number
-  transferId?: number
-  cityTourId?: number
-  yachtTourId?: number
+  status: 'Draft' | 'Generated' | 'Cancelled'
+  isPdfGenerated: boolean
+  pdfGeneratedDate?: string
+  lockedByPersonnelId?: number
+  createdDate: string
+  updatedDate?: string
+  invoiceItems?: InvoiceItem[]
+}
+
+export interface InvoiceItem {
+  id: number
+  invoiceId: number
+  serviceType: string
+  serviceId: number
+  amount: number
+  currency: string
+  notes?: string
   createdDate: string
 }
 
@@ -62,6 +76,11 @@ export interface InvoiceDetail {
   pdfUrl: string
   hasPdf: boolean
   createdDate: string
+  paymentStatus?: 'Unpaid' | 'PartiallyPaid' | 'Paid'
+  paidAmount?: number
+  remainingAmount?: number
+  paidAmountByCurrency?: Record<string, number>
+  remainingAmountByCurrency?: Record<string, number>
   guest?: InvoiceGuest
   personnel?: InvoicePersonnel
   service?: InvoiceService

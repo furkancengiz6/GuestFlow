@@ -23,19 +23,22 @@ namespace GuestFlow.Application.Operations.Notification
         private readonly IEmailService _emailService;
         private readonly ILogger<NotificationService> _logger;
         private readonly IMapper _mapper;
+        private readonly INotificationHubService? _hubService;
 
         public NotificationService(
             IUnitOfWork unitOfWork,
             IRepository<NotificationEntity> notificationRepository,
             IEmailService emailService,
             ILogger<NotificationService> logger,
-            IMapper mapper)
+            IMapper mapper,
+            INotificationHubService? hubService = null)
         {
             _unitOfWork = unitOfWork;
             _notificationRepository = notificationRepository;
             _emailService = emailService;
             _logger = logger;
             _mapper = mapper;
+            _hubService = hubService;
         }
 
         public async Task<ServiceMessage<NotificationDto>> CreateAndSendNotificationAsync(CreateNotificationDto dto)
@@ -100,6 +103,27 @@ namespace GuestFlow.Application.Operations.Notification
                 await _unitOfWork.CommitTransactionAsync();
 
                 var notificationDto = MapToDto(notification);
+
+                // Send via SignalR if hub service is available
+                if (_hubService != null)
+                {
+                    try
+                    {
+                        if (dto.RecipientPersonnelId.HasValue)
+                        {
+                            await _hubService.SendNotificationToUserAsync(dto.RecipientPersonnelId.Value, notificationDto);
+                        }
+                        else
+                        {
+                            // Send to all users if no specific recipient
+                            await _hubService.SendNotificationToAllAsync(notificationDto);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "SignalR notification gönderilirken hata oluştu, ancak bildirim kaydedildi.");
+                    }
+                }
 
                 return new ServiceMessage<NotificationDto>
                 {

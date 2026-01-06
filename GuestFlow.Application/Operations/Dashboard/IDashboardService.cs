@@ -37,6 +37,21 @@ namespace GuestFlow.Application.Operations.Dashboard
         /// Misafir istatistik kartı verilerini getirir
         /// </summary>
         Task<GuestStatisticsCardDto> GetGuestStatisticsCardAsync();
+
+        /// <summary>
+        /// Ödemesi alınmamış hizmetleri getirir
+        /// </summary>
+        Task<UnpaidServicesDto> GetUnpaidServicesAsync(DateTime? startDate = null, DateTime? endDate = null);
+
+        /// <summary>
+        /// Yaklaşan hizmetleri getirir (transfer/city/yacht)
+        /// </summary>
+        Task<UpcomingServicesDto> GetUpcomingServicesAsync(DateTime? startDate = null, DateTime? endDate = null);
+
+        /// <summary>
+        /// Bugünkü kritik olayları getirir (acil müdahale gerekenler)
+        /// </summary>
+        Task<CriticalEventsDto> GetCriticalEventsAsync();
     }
 }
 

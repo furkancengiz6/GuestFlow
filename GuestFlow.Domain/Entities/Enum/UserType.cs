@@ -8,7 +8,11 @@ namespace GuestFlow.Domain.Entities.Enum
 {
     public enum UserType
     {
+        Owner,
+        Manager,
         Admin,
+        Concierge,
+        Reception,
         Staff
     }
 }

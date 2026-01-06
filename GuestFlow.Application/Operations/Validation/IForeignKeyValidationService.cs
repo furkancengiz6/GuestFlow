@@ -33,20 +33,36 @@ namespace GuestFlow.Application.Operations.Validation
         Task<ValidationResult> ValidateCityIdAsync(int cityId);
 
         /// <summary>
+        /// Tur ID'sinin geçerli olup olmadığını kontrol eder
+        /// </summary>
+        Task<ValidationResult> ValidateTourIdAsync(int tourId);
+
+        /// <summary>
+        /// Şoför ID'sinin geçerli olup olmadığını kontrol eder
+        /// </summary>
+        Task<ValidationResult> ValidateDriverIdAsync(int driverId);
+
+        /// <summary>
+        /// Yat ID'sinin geçerli olup olmadığını kontrol eder
+        /// </summary>
+        Task<ValidationResult> ValidateYachtIdAsync(int yachtId);
+
+        /// <summary>
+        /// Kaptan ID'sinin geçerli olup olmadığını kontrol eder
+        /// </summary>
+        Task<ValidationResult> ValidateCaptainIdAsync(int captainId);
+
+        /// <summary>
+        /// Tur rehberi ID'sinin geçerli olup olmadığını kontrol eder
+        /// </summary>
+        Task<ValidationResult> ValidateTourGuideIdAsync(int tourGuideId);
+
+        /// <summary>
         /// Birden fazla foreign key'i toplu olarak kontrol eder
         /// </summary>
         Task<ValidationResult> ValidateMultipleAsync(ForeignKeyValidationRequest request);
     }
 
-    /// <summary>
-    /// Validasyon sonucu
-    /// </summary>
-    public class ValidationResult
-    {
-        public bool IsValid { get; set; }
-        public string ErrorMessage { get; set; } = string.Empty;
-        public string FieldName { get; set; } = string.Empty;
-    }
 
     /// <summary>
     /// Toplu foreign key validasyon isteği
@@ -55,11 +71,17 @@ namespace GuestFlow.Application.Operations.Validation
     {
         public int? GuestId { get; set; }
         public int? PersonnelId { get; set; }
+        public int? DriverId { get; set; }
         public int? VehicleId { get; set; }
         public int? AirportId { get; set; }
         public int? CityId { get; set; }
         public int? PickupCityId { get; set; }
         public int? DropoffCityId { get; set; }
+        public int? TourId { get; set; }
+        public int? YachtId { get; set; }
+        public int? CaptainId { get; set; }
+        public int? TourGuideId { get; set; }
+        public int? AssistantGuideId { get; set; }
     }
 }
 

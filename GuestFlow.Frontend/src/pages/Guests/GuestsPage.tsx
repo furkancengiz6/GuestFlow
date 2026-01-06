@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useLiveUpdates } from '../../hooks/useLiveUpdates'
 import {
   Box,
   Paper,
@@ -28,8 +29,6 @@ import {
   MenuItem,
   Grid,
   Collapse,
-  FormControlLabel,
-  Switch,
 } from '@mui/material'
 import {
   Add as AddIcon,
@@ -54,6 +53,10 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload'
 
 const GuestsPage = () => {
   const navigate = useNavigate()
+
+  // Enable real-time updates for guest changes
+  useLiveUpdates(['guest'])
+
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const [formOpen, setFormOpen] = useState(false)
@@ -194,7 +197,7 @@ const GuestsPage = () => {
         title="Misafirler yüklenemedi"
         description="Lütfen daha sonra tekrar deneyin."
         actionLabel="Tekrar dene"
-        onAction={() => window.location.reload()}
+        onAction={() => queryClient.refetchQueries({ queryKey: ['guests'] })}
       />
     )
   }
@@ -396,7 +399,7 @@ const GuestsPage = () => {
         <ContentState
           state="empty"
           title="Misafir bulunamadı"
-          description="Kayıtlı misafir olmadığında burada listelenecek."
+          description="Henüz kayıtlı misafir bulunmamaktadır."
         />
       ) : (
         <TableContainer component={Paper}>

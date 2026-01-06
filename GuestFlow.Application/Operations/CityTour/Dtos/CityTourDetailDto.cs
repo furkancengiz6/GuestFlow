@@ -15,6 +15,35 @@ namespace GuestFlow.Application.Operations.CityTour.Dtos
         public int DurationHours { get; set; }
         public decimal Price { get; set; }
         public decimal FinalPrice { get; set; }
+        public int? TourId { get; set; } // Nullable - mevcut kayıtlarda null olabilir
+        public decimal? DiscountPercentage { get; set; }
+        public string? Currency { get; set; }
+        public int? PickupHotelId { get; set; } // Otelden alınacaksa otel ID
+        
+        // Zaman bilgileri
+        public TimeSpan? StartTime { get; set; }
+        public TimeSpan? EndTime { get; set; }
+        
+        // Şoför ve araç bilgileri
+        public int? VehicleId { get; set; }
+        public string? DriverName { get; set; }
+        
+        // Rehber bilgileri
+        public string? GuideName { get; set; }
+        public string? GuidePhone { get; set; }
+
+        // Safety & emergency fields
+        public string? GroupLeaderName { get; set; }
+        public string? GroupLeaderPhone { get; set; }
+        public string? EmergencyContactName { get; set; }
+        public string? EmergencyContactPhone { get; set; }
+        public string? EmergencyContactRelation { get; set; }
+        
+        // Dışarıdan çekilen araç ve şoför bilgileri
+        public string? ExternalVehiclePlate { get; set; }
+        public string? ExternalDriverName { get; set; }
+        public string? ExternalDriverPhone { get; set; }
+        
         public DateTime CreatedDate { get; set; }
 
         // İlişkili Veriler

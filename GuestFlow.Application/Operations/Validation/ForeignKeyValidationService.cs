@@ -15,6 +15,7 @@ namespace GuestFlow.Application.Operations.Validation
         private readonly IRepository<VehicleEntity> _vehicleRepository;
         private readonly IRepository<AirportEntity> _airportRepository;
         private readonly IRepository<CityEntity> _cityRepository;
+        private readonly IRepository<TourEntity> _tourRepository;
         private readonly ILogger<ForeignKeyValidationService> _logger;
 
         public ForeignKeyValidationService(
@@ -23,6 +24,7 @@ namespace GuestFlow.Application.Operations.Validation
             IRepository<VehicleEntity> vehicleRepository,
             IRepository<AirportEntity> airportRepository,
             IRepository<CityEntity> cityRepository,
+            IRepository<TourEntity> tourRepository,
             ILogger<ForeignKeyValidationService> logger)
         {
             _guestRepository = guestRepository;
@@ -30,6 +32,7 @@ namespace GuestFlow.Application.Operations.Validation
             _vehicleRepository = vehicleRepository;
             _airportRepository = airportRepository;
             _cityRepository = cityRepository;
+            _tourRepository = tourRepository;
             _logger = logger;
         }
 
@@ -228,6 +231,192 @@ namespace GuestFlow.Application.Operations.Validation
             }
         }
 
+        public async Task<ValidationResult> ValidateTourIdAsync(int tourId)
+        {
+            try
+            {
+                if (tourId <= 0)
+                {
+                    return new ValidationResult
+                    {
+                        IsValid = false,
+                        ErrorMessage = "Geçerli bir tur ID'si gereklidir.",
+                        FieldName = "TourId"
+                    };
+                }
+
+                var exists = await _tourRepository.GetAll(x => x.Id == tourId && !x.IsDeleted && x.IsActive).AnyAsync();
+                if (!exists)
+                {
+                    return new ValidationResult
+                    {
+                        IsValid = false,
+                        ErrorMessage = $"ID'si {tourId} olan tur bulunamadı, silinmiş veya aktif değil.",
+                        FieldName = "TourId"
+                    };
+                }
+
+                return new ValidationResult { IsValid = true };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Tur ID validasyonu sırasında hata: {ex.Message}. TourId: {tourId}");
+                return new ValidationResult
+                {
+                    IsValid = false,
+                    ErrorMessage = "Tur ID validasyonu sırasında bir hata oluştu.",
+                    FieldName = "TourId"
+                };
+            }
+        }
+
+        public async Task<ValidationResult> ValidateDriverIdAsync(int driverId)
+        {
+            try
+            {
+                if (driverId <= 0)
+                {
+                    return new ValidationResult
+                    {
+                        IsValid = false,
+                        ErrorMessage = "Geçerli bir şoför ID'si gereklidir.",
+                        FieldName = "DriverId"
+                    };
+                }
+
+                var exists = await _personnelRepository.GetAll(x => x.Id == driverId && !x.IsDeleted).AnyAsync();
+                if (!exists)
+                {
+                    return new ValidationResult
+                    {
+                        IsValid = false,
+                        ErrorMessage = $"ID'si {driverId} olan şoför bulunamadı veya silinmiş.",
+                        FieldName = "DriverId"
+                    };
+                }
+
+                return new ValidationResult { IsValid = true };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Şoför ID validasyonu sırasında hata: {ex.Message}. DriverId: {driverId}");
+                return new ValidationResult
+                {
+                    IsValid = false,
+                    ErrorMessage = "Şoför ID validasyonu sırasında bir hata oluştu.",
+                    FieldName = "DriverId"
+                };
+            }
+        }
+
+        public async Task<ValidationResult> ValidateYachtIdAsync(int yachtId)
+        {
+            try
+            {
+                if (yachtId <= 0)
+                {
+                    return new ValidationResult
+                    {
+                        IsValid = false,
+                        ErrorMessage = "Geçerli bir yat ID'si gereklidir.",
+                        FieldName = "YachtId"
+                    };
+                }
+
+                // For now, assume yacht validation will be implemented later
+                // TODO: Add yacht repository validation
+                return new ValidationResult { IsValid = true };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Yat ID validasyonu sırasında hata: {ex.Message}. YachtId: {yachtId}");
+                return new ValidationResult
+                {
+                    IsValid = false,
+                    ErrorMessage = "Yat ID validasyonu sırasında bir hata oluştu.",
+                    FieldName = "YachtId"
+                };
+            }
+        }
+
+        public async Task<ValidationResult> ValidateCaptainIdAsync(int captainId)
+        {
+            try
+            {
+                if (captainId <= 0)
+                {
+                    return new ValidationResult
+                    {
+                        IsValid = false,
+                        ErrorMessage = "Geçerli bir kaptan ID'si gereklidir.",
+                        FieldName = "CaptainId"
+                    };
+                }
+
+                var exists = await _personnelRepository.GetAll(x => x.Id == captainId && !x.IsDeleted).AnyAsync();
+                if (!exists)
+                {
+                    return new ValidationResult
+                    {
+                        IsValid = false,
+                        ErrorMessage = $"ID'si {captainId} olan kaptan bulunamadı veya silinmiş.",
+                        FieldName = "CaptainId"
+                    };
+                }
+
+                return new ValidationResult { IsValid = true };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Kaptan ID validasyonu sırasında hata: {ex.Message}. CaptainId: {captainId}");
+                return new ValidationResult
+                {
+                    IsValid = false,
+                    ErrorMessage = "Kaptan ID validasyonu sırasında bir hata oluştu.",
+                    FieldName = "CaptainId"
+                };
+            }
+        }
+
+        public async Task<ValidationResult> ValidateTourGuideIdAsync(int tourGuideId)
+        {
+            try
+            {
+                if (tourGuideId <= 0)
+                {
+                    return new ValidationResult
+                    {
+                        IsValid = false,
+                        ErrorMessage = "Geçerli bir tur rehberi ID'si gereklidir.",
+                        FieldName = "TourGuideId"
+                    };
+                }
+
+                var exists = await _personnelRepository.GetAll(x => x.Id == tourGuideId && !x.IsDeleted).AnyAsync();
+                if (!exists)
+                {
+                    return new ValidationResult
+                    {
+                        IsValid = false,
+                        ErrorMessage = $"ID'si {tourGuideId} olan tur rehberi bulunamadı veya silinmiş.",
+                        FieldName = "TourGuideId"
+                    };
+                }
+
+                return new ValidationResult { IsValid = true };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Tur rehberi ID validasyonu sırasında hata: {ex.Message}. TourGuideId: {tourGuideId}");
+                return new ValidationResult
+                {
+                    IsValid = false,
+                    ErrorMessage = "Tur rehberi ID validasyonu sırasında bir hata oluştu.",
+                    FieldName = "TourGuideId"
+                };
+            }
+        }
+
         public async Task<ValidationResult> ValidateMultipleAsync(ForeignKeyValidationRequest request)
         {
             try
@@ -293,6 +482,58 @@ namespace GuestFlow.Application.Operations.Validation
                         dropoffCityResult.FieldName = "DropoffCityId";
                         dropoffCityResult.ErrorMessage = dropoffCityResult.ErrorMessage.Replace("şehir", "bırakış şehri");
                         return dropoffCityResult;
+                    }
+                }
+
+                // Tur ID kontrolü
+                if (request.TourId.HasValue)
+                {
+                    var tourResult = await ValidateTourIdAsync(request.TourId.Value);
+                    if (!tourResult.IsValid)
+                        return tourResult;
+                }
+
+                // Şoför ID kontrolü
+                if (request.DriverId.HasValue)
+                {
+                    var driverResult = await ValidateDriverIdAsync(request.DriverId.Value);
+                    if (!driverResult.IsValid)
+                        return driverResult;
+                }
+
+                // Yat ID kontrolü
+                if (request.YachtId.HasValue)
+                {
+                    var yachtResult = await ValidateYachtIdAsync(request.YachtId.Value);
+                    if (!yachtResult.IsValid)
+                        return yachtResult;
+                }
+
+                // Kaptan ID kontrolü
+                if (request.CaptainId.HasValue)
+                {
+                    var captainResult = await ValidateCaptainIdAsync(request.CaptainId.Value);
+                    if (!captainResult.IsValid)
+                        return captainResult;
+                }
+
+                // Tur rehberi ID kontrolü
+                if (request.TourGuideId.HasValue)
+                {
+                    var tourGuideResult = await ValidateTourGuideIdAsync(request.TourGuideId.Value);
+                    if (!tourGuideResult.IsValid)
+                        return tourGuideResult;
+                }
+
+                // Asistan tur rehberi ID kontrolü
+                if (request.AssistantGuideId.HasValue)
+                {
+                    var assistantGuideResult = await ValidateTourGuideIdAsync(request.AssistantGuideId.Value);
+                    if (!assistantGuideResult.IsValid)
+                    {
+                        assistantGuideResult.FieldName = "AssistantGuideId";
+                        assistantGuideResult.ErrorMessage = assistantGuideResult.ErrorMessage.Replace("tur rehberi", "asistan tur rehberi");
+                        return assistantGuideResult;
                     }
                 }
 

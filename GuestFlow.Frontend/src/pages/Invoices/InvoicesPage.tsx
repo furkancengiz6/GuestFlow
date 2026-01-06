@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useLiveUpdates } from '../../hooks/useLiveUpdates'
 import {
   Box,
   Paper,
@@ -35,7 +36,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 import { tr } from 'date-fns/locale'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { invoiceService, InvoiceFilters } from '../../services/invoiceService'
 import { dropdownService } from '../../services/dropdownService'
 import { formatDate, formatCurrency } from '../../utils/formatters'
@@ -47,6 +48,11 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload'
 const InvoicesPage = () => {
   const navigate = useNavigate()
   const notification = useNotification()
+  const queryClient = useQueryClient()
+
+  // Enable real-time updates for invoice changes
+  useLiveUpdates(['invoice'])
+
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -135,7 +141,7 @@ const InvoicesPage = () => {
         title="Faturalar yüklenemedi"
         description="Lütfen daha sonra tekrar deneyin."
         actionLabel="Tekrar dene"
-        onAction={() => window.location.reload()}
+        onAction={() => queryClient.refetchQueries({ queryKey: ['invoices'] })}
       />
     )
   }
@@ -456,7 +462,7 @@ const InvoicesPage = () => {
         <ContentState
           state="empty"
           title="Fatura bulunamadı"
-          description="Kayıtlı fatura olmadığında burada listelenecek."
+          description="Henüz kayıtlı fatura bulunmamaktadır."
         />
       ) : (
         <TableContainer component={Paper}>

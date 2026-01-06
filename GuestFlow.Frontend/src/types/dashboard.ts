@@ -120,6 +120,39 @@ export interface GuestStatistics {
   topGuests: TopGuest[]
 }
 
+export interface UnpaidServiceItem {
+  serviceType: 'Transfer' | 'CityTour' | 'YachtTour'
+  serviceId: number
+  serviceDate: string
+  guestName: string
+  roomNumber?: string
+  cityName?: string
+  amount: number
+  currency?: string
+  status?: string
+  remainingAmount: number
+  daysOverdue: number
+}
+
+export interface UnpaidServices {
+  items: UnpaidServiceItem[]
+}
+
+export interface UpcomingServiceItem {
+  serviceType: 'Transfer' | 'CityTour' | 'YachtTour'
+  serviceId: number
+  serviceDate: string
+  guestName: string
+  roomNumber?: string
+  cityName?: string
+  status?: string
+  isUrgent: boolean
+}
+
+export interface UpcomingServices {
+  items: UpcomingServiceItem[]
+}
+
 export interface TopGuest {
   guestId: number
   fullName: string

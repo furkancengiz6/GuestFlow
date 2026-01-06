@@ -10,10 +10,12 @@ using GuestFlow.Application.Operations.DailyRevenue;
 using GuestFlow.Application.Operations.Email;
 using GuestFlow.Application.Operations.Invoice;
 using GuestFlow.Application.Operations.Invoice.Dtos;
+using GuestFlow.Application.Operations.Payment;
 using GuestFlow.Application.Operations.YachtTour.Dtos;
 using GuestFlow.Application.Operations.Validation;
 using GuestFlow.Application.Operations.Currency;
 using GuestFlow.Application.Operations.Common;
+using GuestFlow.Application.Operations.Notification;
 using GuestFlow.Application.Types;
 using GuestFlow.Domain.Entities.Core;
 using GuestFlow.Domain.Entities.Repositories;
@@ -32,6 +34,7 @@ namespace GuestFlow.Application.Operations.YachtTour
         private readonly IRepository<CityEntity> _cityRepository;
         private readonly IRepository<PersonnelEntity> _personnelRepository;
         private readonly IRepository<InvoicesEntity> _invoiceRepository;
+        private readonly IRepository<InvoiceItemEntity> _invoiceItemRepository;
         private readonly DailyRevenueJob _dailyRevenueJob;
         private readonly IPdfService _pdfService;
         private readonly IEmailService _emailService;
@@ -44,6 +47,8 @@ namespace GuestFlow.Application.Operations.YachtTour
         private readonly IPriceCalculationService _priceCalculationService;
         private readonly IDateValidationService _dateValidationService;
         private readonly IInvoiceCreationService _invoiceCreationService;
+        private readonly IPaymentStatusService _paymentStatusService;
+        private readonly INotificationHubService _hubService;
 
         public YachtTourManager(
             IUnitOfWork unitOfWork,
@@ -52,6 +57,7 @@ namespace GuestFlow.Application.Operations.YachtTour
             IRepository<CityEntity> cityRepository,
             IRepository<PersonnelEntity> personnelRepository,
             IRepository<InvoicesEntity> invoiceRepository,
+            IRepository<InvoiceItemEntity> invoiceItemRepository,
             DailyRevenueJob dailyRevenueJob,
             IPdfService pdfService,
             IEmailService emailService,
@@ -63,7 +69,9 @@ namespace GuestFlow.Application.Operations.YachtTour
             IMapper mapper,
             IPriceCalculationService priceCalculationService,
             IDateValidationService dateValidationService,
-            IInvoiceCreationService invoiceCreationService)
+            IInvoiceCreationService invoiceCreationService,
+            IPaymentStatusService paymentStatusService,
+            INotificationHubService? hubService = null)
         {
             _unitOfWork = unitOfWork;
             _yachtTourRepository = yachtTourRepository;
@@ -71,6 +79,7 @@ namespace GuestFlow.Application.Operations.YachtTour
             _cityRepository = cityRepository;
             _personnelRepository = personnelRepository;
             _invoiceRepository = invoiceRepository;
+            _invoiceItemRepository = invoiceItemRepository;
             _dailyRevenueJob = dailyRevenueJob;
             _pdfService = pdfService;
             _emailService = emailService;
@@ -83,9 +92,11 @@ namespace GuestFlow.Application.Operations.YachtTour
             _priceCalculationService = priceCalculationService;
             _dateValidationService = dateValidationService;
             _invoiceCreationService = invoiceCreationService;
+            _paymentStatusService = paymentStatusService;
+            _hubService = hubService;
         }
 
-        public async Task<ServiceMessage> AddYachtTour(AddYachtTourDto yachtTour)
+        public async Task<ServiceMessage<AddYachtTourResponseDto>> AddYachtTour(AddYachtTourDto yachtTour)
         {
             try
             {
@@ -101,20 +112,17 @@ namespace GuestFlow.Application.Operations.YachtTour
 
                 if (!fkValidation.IsValid)
                 {
-                    return new ServiceMessage { IsSuccess = false, Message = fkValidation.ErrorMessage };
+                    return new ServiceMessage<AddYachtTourResponseDto> { IsSuccess = false, Message = fkValidation.ErrorMessage };
                 }
 
-                // İş Kuralı Validasyonları
-                // 1. Tur tarihi geçmişte olamaz
-                if (yachtTour.TourDate.Date < DateTime.UtcNow.Date)
-                {
-                    return new ServiceMessage { IsSuccess = false, Message = "Tur tarihi bugünden önceki bir tarih olamaz." };
-                }
+                // DATE REALITY: Past-dated entries ARE allowed
+                // Service date represents when the operation actually occurred, not when entered
+                // Tur tarihi validasyonu kaldırıldı - geçmiş tarihli girişler operasyonel olarak normaldir
 
-                // 2. Kişi sayısı kontrolü (1-100 arası)
+                // Kişi sayısı kontrolü (1-100 arası)
                 if (yachtTour.NumberOfPeople < 1 || yachtTour.NumberOfPeople > 100)
                 {
-                    return new ServiceMessage { IsSuccess = false, Message = "Kişi sayısı 1 ile 100 arasında olmalıdır." };
+                    return new ServiceMessage<AddYachtTourResponseDto> { IsSuccess = false, Message = "Kişi sayısı 1 ile 100 arasında olmalıdır." };
                 }
 
                 // Fiyat hesaplama
@@ -136,7 +144,52 @@ namespace GuestFlow.Application.Operations.YachtTour
                     CityId = yachtTour.CityId,
                     DiscountPercentage = yachtTour.DiscountPercentage,
                     FinalPrice = finalPrice,
-                    Currency = currency
+                    Currency = currency,
+                    PickupPier = yachtTour.PickupPier,
+                    DropoffPier = yachtTour.DropoffPier,
+                    PierAddress = yachtTour.PierAddress,
+                    StartTime = yachtTour.StartTime,
+                    EndTime = yachtTour.EndTime,
+                    SafetyBriefingTime = yachtTour.SafetyBriefingTime,
+                    MarinaPickupTime = yachtTour.MarinaPickupTime,
+                    WeatherCheckTime = yachtTour.WeatherCheckTime,
+                    FuelLevelCheck = yachtTour.FuelLevelCheck,
+                    TourCategory = yachtTour.TourCategory,
+                    YachtId = yachtTour.YachtId,
+                    CaptainId = yachtTour.CaptainId,
+                    LifeGuardCertified = yachtTour.LifeGuardCertified,
+                    CoastGuardInspectionDate = yachtTour.CoastGuardInspectionDate,
+                    GroupLeaderName = yachtTour.GroupLeaderName,
+                    GroupLeaderPhone = yachtTour.GroupLeaderPhone,
+                    EmergencyContactName = yachtTour.EmergencyContactName,
+                    EmergencyContactPhone = yachtTour.EmergencyContactPhone,
+                    EmergencyContactRelation = yachtTour.EmergencyContactRelation,
+                    LifeJacketsProvided = yachtTour.LifeJacketsProvided,
+                    LifeJacketCount = yachtTour.LifeJacketCount,
+                    SafetyEquipmentCheck = yachtTour.SafetyEquipmentCheck,
+                    EmergencyEquipment = yachtTour.EmergencyEquipment,
+                    YachtCapacity = yachtTour.YachtCapacity,
+                    YachtType = yachtTour.YachtType,
+                    YachtLicenceRequired = yachtTour.YachtLicenceRequired,
+                    CoastGuardApproved = yachtTour.CoastGuardApproved,
+                    CrewSize = yachtTour.CrewSize,
+                    CaptainExperience = yachtTour.CaptainExperience,
+                    FuelRange = yachtTour.FuelRange,
+                    WeatherBackupPlan = yachtTour.WeatherBackupPlan,
+                    SwimmingProficiency = yachtTour.SwimmingProficiency,
+                    MedicalConditions = yachtTour.MedicalConditions,
+                    AlcoholPolicy = yachtTour.AlcoholPolicy,
+                    FoodBeverageIncluded = yachtTour.FoodBeverageIncluded,
+                    BeverageType = yachtTour.BeverageType,
+                    MusicSystem = yachtTour.MusicSystem,
+                    WaterSportsEquipment = yachtTour.WaterSportsEquipment,
+                    MarinaContactName = yachtTour.MarinaContactName,
+                    MarinaContactPhone = yachtTour.MarinaContactPhone,
+                    SupplierName = yachtTour.SupplierName,
+                    SupplierCost = yachtTour.SupplierCost,
+                    SupplierCurrency = yachtTour.SupplierCurrency,
+                    SupplierInvoiceNumber = yachtTour.SupplierInvoiceNumber,
+                    ConciergeInternalNotes = yachtTour.ConciergeInternalNotes
                 };
 
                 await _yachtTourRepository.AddAsync(yachtTourEntity);
@@ -147,20 +200,23 @@ namespace GuestFlow.Application.Operations.YachtTour
                 if (guest == null)
                     throw new Exception("Misafir bulunamadı.");
 
+                InvoicesEntity? invoice = null;
+                string? pdfUrl = null;
+
                 // Fatura oluşturma
                 if (yachtTour.CreateInvoice)
                 {
 
                     PersonnelEntity? personnel = null;
-                    if (yachtTour.PersonnelId > 0)
+                    if (yachtTour.PersonnelId.HasValue && yachtTour.PersonnelId.Value > 0)
                     {
-                        personnel = await _personnelRepository.GetByIdAsync(yachtTour.PersonnelId);
+                        personnel = await _personnelRepository.GetByIdAsync(yachtTour.PersonnelId.Value);
                     }
 
                     // Para birimi yachtTourEntity'den alınır (zaten set edilmiş)
                     var invoiceCurrency = yachtTourEntity.Currency;
 
-                    var invoice = new InvoicesEntity
+                    invoice = new InvoicesEntity
                     {
                         InvoiceNumber = await GenerateInvoiceNumber(),
                         IssueDate = DateTime.UtcNow,
@@ -169,8 +225,8 @@ namespace GuestFlow.Application.Operations.YachtTour
                         Notes = yachtTour.InvoiceDescription ?? "Yat turu faturası",
                         PdfUrl = string.Empty, // PDF oluşturulduktan sonra güncellenecek
                         GuestId = yachtTour.OwnerGuestId,
-                        PersonnelId = yachtTour.PersonnelId > 0 ? yachtTour.PersonnelId : null,
-                        YachtTourId = yachtTourEntity.Id,
+                        PersonnelId = yachtTour.PersonnelId,
+                        // YachtTourId removed - invoices are now multi-service
                         CreatedDate = DateTime.UtcNow,
                         IsDeleted = false
                     };
@@ -181,7 +237,7 @@ namespace GuestFlow.Application.Operations.YachtTour
                     // PDF oluştur ve URL'i güncelle
                     try
                     {
-                        var pdfUrl = await _pdfService.GenerateInvoicePdfAsync(invoice, guest, personnel);
+                        pdfUrl = await _pdfService.GenerateInvoicePdfAsync(invoice, guest, personnel);
                         invoice.PdfUrl = pdfUrl;
                         await _invoiceRepository.UpdateAsync(invoice);
                         await _unitOfWork.SaveChangesAsync();
@@ -246,7 +302,17 @@ namespace GuestFlow.Application.Operations.YachtTour
                 await _unitOfWork.CommitTransactionAsync();
 
                 _logger.LogInformation($"Yat turu eklendi: {yachtTourEntity.Id}");
-                return new ServiceMessage { IsSuccess = true, Message = "Yat turu başarıyla eklendi." };
+                return new ServiceMessage<AddYachtTourResponseDto>
+                {
+                    IsSuccess = true,
+                    Message = "Yat turu başarıyla eklendi.",
+                    Data = new AddYachtTourResponseDto
+                    {
+                        YachtTourId = yachtTourEntity.Id,
+                        InvoiceId = invoice?.Id,
+                        InvoicePdfUrl = pdfUrl
+                    }
+                };
             }
             catch (Exception ex)
             {
@@ -257,7 +323,7 @@ namespace GuestFlow.Application.Operations.YachtTour
                 if (ex.InnerException != null)
                     errorMessage += $" InnerException: {ex.InnerException.Message}";
 
-                return new ServiceMessage { IsSuccess = false, Message = errorMessage };
+                return new ServiceMessage<AddYachtTourResponseDto> { IsSuccess = false, Message = errorMessage };
             }
         }
 
@@ -285,13 +351,10 @@ namespace GuestFlow.Application.Operations.YachtTour
                 }
 
                 // İş Kuralı Validasyonları
-                // 1. Tur tarihi geçmişte olamaz
-                if (yachtTour.TourDate.Date < DateTime.UtcNow.Date)
-                {
-                    return new ServiceMessage { IsSuccess = false, Message = "Tur tarihi bugünden önceki bir tarih olamaz." };
-                }
+                // DATE REALITY: Past-dated entries ARE allowed
+                // Service date represents when the operation actually occurred, not when entered
 
-                // 2. Kişi sayısı kontrolü (1-100 arası)
+                // Kişi sayısı kontrolü (1-100 arası)
                 if (yachtTour.NumberOfPeople < 1 || yachtTour.NumberOfPeople > 100)
                 {
                     return new ServiceMessage { IsSuccess = false, Message = "Kişi sayısı 1 ile 100 arasında olmalıdır." };
@@ -306,6 +369,54 @@ namespace GuestFlow.Application.Operations.YachtTour
                 existing.OwnerGuestId = yachtTour.OwnerGuestId;
                 existing.PersonnelId = yachtTour.PersonnelId;
                 existing.CityId = yachtTour.CityId;
+                existing.PickupPier = yachtTour.PickupPier;
+                existing.DropoffPier = yachtTour.DropoffPier;
+                existing.PierAddress = yachtTour.PierAddress;
+                existing.StartTime = yachtTour.StartTime;
+                existing.EndTime = yachtTour.EndTime;
+                existing.SafetyBriefingTime = yachtTour.SafetyBriefingTime;
+                existing.MarinaPickupTime = yachtTour.MarinaPickupTime;
+                existing.WeatherCheckTime = yachtTour.WeatherCheckTime;
+                existing.FuelLevelCheck = yachtTour.FuelLevelCheck;
+                existing.TourCategory = yachtTour.TourCategory;
+                existing.YachtId = yachtTour.YachtId;
+                existing.CaptainId = yachtTour.CaptainId;
+                existing.LifeGuardCertified = yachtTour.LifeGuardCertified;
+                existing.CoastGuardInspectionDate = yachtTour.CoastGuardInspectionDate;
+                existing.GroupLeaderName = yachtTour.GroupLeaderName;
+                existing.GroupLeaderPhone = yachtTour.GroupLeaderPhone;
+                existing.EmergencyContactName = yachtTour.EmergencyContactName;
+                existing.EmergencyContactPhone = yachtTour.EmergencyContactPhone;
+                existing.EmergencyContactRelation = yachtTour.EmergencyContactRelation;
+                existing.LifeJacketsProvided = yachtTour.LifeJacketsProvided;
+                existing.LifeJacketCount = yachtTour.LifeJacketCount;
+                existing.SafetyEquipmentCheck = yachtTour.SafetyEquipmentCheck;
+                existing.EmergencyEquipment = yachtTour.EmergencyEquipment;
+                existing.YachtCapacity = yachtTour.YachtCapacity;
+                existing.YachtType = yachtTour.YachtType;
+                existing.YachtLicenceRequired = yachtTour.YachtLicenceRequired;
+                existing.CoastGuardApproved = yachtTour.CoastGuardApproved;
+                existing.CrewSize = yachtTour.CrewSize;
+                existing.CaptainExperience = yachtTour.CaptainExperience;
+                existing.FuelRange = yachtTour.FuelRange;
+                existing.WeatherBackupPlan = yachtTour.WeatherBackupPlan;
+                existing.SwimmingProficiency = yachtTour.SwimmingProficiency;
+                existing.MedicalConditions = yachtTour.MedicalConditions;
+                existing.AlcoholPolicy = yachtTour.AlcoholPolicy;
+                existing.FoodBeverageIncluded = yachtTour.FoodBeverageIncluded;
+                existing.BeverageType = yachtTour.BeverageType;
+                existing.MusicSystem = yachtTour.MusicSystem;
+                existing.WaterSportsEquipment = yachtTour.WaterSportsEquipment;
+                existing.MarinaContactName = yachtTour.MarinaContactName;
+                existing.MarinaContactPhone = yachtTour.MarinaContactPhone;
+                existing.SupplierName = yachtTour.SupplierName;
+                existing.SupplierCost = yachtTour.SupplierCost;
+                existing.SupplierCurrency = yachtTour.SupplierCurrency;
+                existing.SupplierInvoiceNumber = yachtTour.SupplierInvoiceNumber;
+                existing.ConciergeInternalNotes = yachtTour.ConciergeInternalNotes;
+
+                // AUDIT TRACEABILITY: Mark as updated with personnel trace
+                existing.MarkAsUpdated(yachtTour.PersonnelId);
 
                 await _yachtTourRepository.UpdateAsync(existing);
                 await _unitOfWork.SaveChangesAsync();
@@ -361,7 +472,20 @@ namespace GuestFlow.Application.Operations.YachtTour
                 if (yachtTour == null)
                     throw new Exception("Yat turu bulunamadı.");
 
-                return _mapper.Map<GetYachtTourDto>(yachtTour);
+                var yachtTourDto = _mapper.Map<GetYachtTourDto>(yachtTour);
+
+                // Calculate payment status using PaymentStatusService
+                var paymentStatus = await _paymentStatusService.GetServicePaymentStatusAsync(id, "YachtTour");
+                if (paymentStatus != null)
+                {
+                    yachtTourDto.PaymentStatus = paymentStatus.PaymentStatus;
+                    yachtTourDto.PaidAmount = paymentStatus.PaidAmount;
+                    yachtTourDto.RemainingAmount = paymentStatus.RemainingAmount;
+                    yachtTourDto.PaidAmountByCurrency = paymentStatus.PaidAmountByCurrency;
+                    yachtTourDto.RemainingAmountByCurrency = paymentStatus.RemainingAmountByCurrency;
+                }
+
+                return yachtTourDto;
             }
             catch (Exception ex)
             {
@@ -459,6 +583,172 @@ namespace GuestFlow.Application.Operations.YachtTour
             // Tüm denemeler başarısız olursa, timestamp bazlı bir numara oluştur
             _logger.LogWarning("Fatura numarası oluşturulurken benzersizlik kontrolü başarısız oldu, timestamp bazlı numara kullanılıyor.");
             return int.Parse(DateTime.UtcNow.ToString("yyyyMMddHHmmss")) % 10000000; // Son 7 haneyi al
+        }
+
+        public async Task<ServiceMessage> CreateYachtTourInvoiceAsync(int id)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                var yachtTour = await _yachtTourRepository.GetByIdAsync(id);
+                if (yachtTour == null || yachtTour.IsDeleted)
+                    return new ServiceMessage { IsSuccess = false, Message = "Yat turu bulunamadı." };
+
+                // Check if invoice already exists for this yacht tour
+                var existingInvoice = await _invoiceRepository.GetAll()
+                    .FirstOrDefaultAsync(i => i.InvoiceItems.Any(item => item.ServiceType == "YachtTour" && item.ServiceId == id) && !i.IsDeleted);
+                if (existingInvoice != null)
+                    return new ServiceMessage { IsSuccess = false, Message = "Bu yat turu için zaten fatura oluşturulmuş." };
+
+                // Create invoice
+                var invoice = new InvoicesEntity
+                {
+                    InvoiceNumber = await GenerateInvoiceNumber(),
+                    IssueDate = DateTime.Now,
+                    TotalAmount = yachtTour.FinalPrice,
+                    Currency = yachtTour.Currency ?? "TRY",
+                    Notes = $"Yat Turu #{id} - {yachtTour.YachtName ?? "Yat"}",
+                    GuestId = yachtTour.OwnerGuestId,
+                    PersonnelId = yachtTour.CreatedByPersonnelId,
+                    Status = InvoiceStatus.Draft,
+                    IsPdfGenerated = false
+                };
+
+                await _invoiceRepository.AddAsync(invoice);
+                await _unitOfWork.SaveChangesAsync(); // Save to get invoice.Id
+
+                // Add invoice item for this yacht tour
+                var invoiceItem = new InvoiceItemEntity
+                {
+                    InvoiceId = invoice.Id,
+                    ServiceType = "YachtTour",
+                    ServiceId = id,
+                    Amount = yachtTour.FinalPrice,
+                    Currency = yachtTour.Currency ?? "TRY",
+                    Notes = $"Yat Turu: {yachtTour.YachtName ?? "Yat"}"
+                };
+
+                await _invoiceItemRepository.AddAsync(invoiceItem);
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                _logger.LogInformation($"Yat turu faturası oluşturuldu: {id} -> Invoice #{invoice.Id}");
+                return new ServiceMessage { IsSuccess = true, Message = $"Fatura başarıyla oluşturuldu. Fatura No: {invoice.InvoiceNumber}" };
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                _logger.LogError(ex, $"Fatura oluşturulurken hata: {ex.Message}. YachtTourId: {id}");
+                return new ServiceMessage { IsSuccess = false, Message = $"Fatura oluşturulurken hata: {ex.Message}" };
+            }
+        }
+
+        public async Task<ServiceMessage> SendYachtTourConfirmationAsync(int id)
+        {
+            try
+            {
+                var yachtTour = await _yachtTourRepository.GetByIdAsync(id);
+                if (yachtTour == null || yachtTour.IsDeleted)
+                    return new ServiceMessage { IsSuccess = false, Message = "Yat turu bulunamadı." };
+
+                var guest = await _guestRepository.GetByIdAsync(yachtTour.OwnerGuestId);
+                if (guest == null)
+                    return new ServiceMessage { IsSuccess = false, Message = "Misafir bilgileri bulunamadı." };
+
+                // Send confirmation email
+                var subject = $"Yat Turu Onayı - #{id}";
+                var body = $@"
+Merhaba {guest.FullName},
+
+Yat turunuz onaylanmıştır.
+
+Tur Detayları:
+- Tarih: {yachtTour.TourDate:dd.MM.yyyy HH:mm}
+- Yat: {yachtTour.YachtName ?? "Yat"}
+- Fiyat: {yachtTour.FinalPrice} {yachtTour.Currency ?? "TRY"}
+
+Saygılarımla,
+Hotel Concierge Team
+";
+
+                await _emailService.SendEmailAsync(guest.Email, subject, body);
+
+                _logger.LogInformation($"Yat turu onay maili gönderildi: {id} -> {guest.Email}");
+                return new ServiceMessage { IsSuccess = true, Message = "Onay maili başarıyla gönderildi." };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Onay maili gönderilirken hata: {ex.Message}. YachtTourId: {id}");
+                return new ServiceMessage { IsSuccess = false, Message = $"Onay maili gönderilirken hata: {ex.Message}" };
+            }
+        }
+
+        /// <summary>
+        /// Update yacht tour status (mark completed/cancelled)
+        /// </summary>
+        public async Task<ServiceMessage> UpdateYachtTourStatusAsync(int id, string status)
+        {
+            try
+            {
+                var yachtTour = await _yachtTourRepository.GetByIdAsync(id);
+                if (yachtTour == null || yachtTour.IsDeleted)
+                {
+                    return new ServiceMessage { IsSuccess = false, Message = "Yat turu bulunamadı." };
+                }
+
+                // Validate status transitions
+                if (!IsValidStatusTransition(yachtTour.Status, status))
+                {
+                    return new ServiceMessage { IsSuccess = false, Message = $"Geçersiz durum geçişi: {yachtTour.Status} -> {status}" };
+                }
+
+                yachtTour.Status = status;
+                yachtTour.UpdatedDate = DateTime.UtcNow;
+
+                await _unitOfWork.SaveChangesAsync();
+
+                // Send live update
+                if (_hubService != null)
+                {
+                    await _hubService.SendLiveUpdateAsync("YachtTour", id, "status_updated");
+                    await _hubService.SendDashboardUpdateAsync(new { });
+                }
+
+                _logger.LogInformation($"Yat turu durumu güncellendi: {id} -> {status}");
+                return new ServiceMessage { IsSuccess = true, Message = "Yat turu durumu başarıyla güncellendi." };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Yat turu durumu güncellenirken hata: {ex.Message}. YachtTourId: {id}");
+                return new ServiceMessage { IsSuccess = false, Message = $"Yat turu durumu güncellenirken hata: {ex.Message}" };
+            }
+        }
+
+        /// <summary>
+        /// Validate status transitions for yacht tours
+        /// </summary>
+        private bool IsValidStatusTransition(string currentStatus, string newStatus)
+        {
+            // Allow transitions from any status to Completed or Cancelled
+            if (newStatus == "Completed" || newStatus == "Cancelled")
+            {
+                return true;
+            }
+
+            // Allow transition from Pending to Confirmed
+            if (currentStatus == "Pending" && newStatus == "Confirmed")
+            {
+                return true;
+            }
+
+            // Allow transition from Confirmed to InProgress
+            if (currentStatus == "Confirmed" && newStatus == "InProgress")
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 }

@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: guestflow-frontend
+  namespace: guestflow
+  labels:
+    app: guestflow-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: guestflow-frontend
+  template:
+    metadata:
+      labels:
+        app: guestflow-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: your-registry/guestflow-frontend:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: VITE_API_BASE_URL
+          value: "http://guestflow-api/api/v1.0"
+        - name: VITE_ENV
+          value: "production"
+        - name: VITE_APP_NAME
+          value: "GuestFlow"
+        - name: VITE_APP_VERSION
+          value: "1.0.0"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: guestflow-frontend
+  namespace: guestflow
+spec:
+  selector:
+    app: guestflow-frontend
+  ports:
+  - port: 80
+    targetPort: 80
+    name: http
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: guestflow-frontend-ingress
+  namespace: guestflow
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - app.guestflow.com
+    secretName: guestflow-frontend-tls
+  rules:
+  - host: app.guestflow.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: guestflow-frontend
+            port:
+              number: 80

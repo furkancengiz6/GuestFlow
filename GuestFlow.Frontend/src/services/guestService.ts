@@ -1,6 +1,9 @@
 import apiClient from './api'
 import { Guest, PagedGuests, GuestDetail } from '../types/guest'
 
+// Re-export types for convenience
+export type { Guest, PagedGuests, GuestDetail }
+
 export interface CreateGuestRequest {
   fullName: string
   email?: string

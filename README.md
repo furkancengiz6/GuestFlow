@@ -29,8 +29,14 @@ The project is built using modern .NET practices, following a **Domain-Driven De
 - **Guest Management**: CRUD operations for guests with support for special guests.
 - **Airport Management**: Manage airports with unique codes and associated cities.
 - **City Management**: Manage cities and their associated airports, tours, and transfers.
-- **Transfer Management**: Schedule and manage transfers with invoice and discount support.
+- **Hotel Management**: Manage hotels with star ratings, amenities, and location information.
+- **Restaurant Management**: Manage restaurants with cuisine types, capacity, and reservation requirements.
+- **Transfer Management**: Schedule and manage transfers with invoice and discount support. Supports multiple transfer types (AirportToHotel, HotelToRestaurant, HotelToCity, etc.).
 - **City Tours & Yacht Tours**: Organize and manage tours with pricing, discounts, and invoice generation.
+- **Itinerary Management**: Create and manage guest travel plans with timeline visualization.
+- **Restaurant Reservations**: Manage restaurant bookings with transfer integration.
+- **Service Packages**: Create service packages combining transfers, tours, and restaurant reservations.
+- **Transfer Recommendations**: Intelligent transfer recommendations based on guest activities.
 - **Daily Revenues**: Automatically calculate daily revenues.
 - **Invoices**: Generate and manage invoices with PDF export support.
 - **Daily Notes**: Add and manage daily notes for staff.
@@ -104,7 +110,36 @@ Before running the project, ensure you have the following installed:
    dotnet build
    ```
 
+5. **Seed Demo Data (Development Only)**
+   ```bash
+   # Set environment to Development and enable demo data seeding
+   set ASPNETCORE_ENVIRONMENT=Development
+   set SeedDemoData=true
+
+   # Run the application - demo data will be seeded automatically
+   dotnet run --project GuestFlow.Api
+   ```
+
+   **⚠️ SECURITY WARNING:**
+   - Demo data seeding is **DISABLED by default** in production
+   - Only works when `ASPNETCORE_ENVIRONMENT=Development` AND `SeedDemoData=true`
+   - Demo users are created with **randomly generated passwords** (logged to console)
+   - Demo emails use `@guestflow.local` domain (clearly not real)
+   - **Never enable in production environments**
+
+   **Demo Credentials:**
+   After seeding, check the application logs for generated credentials:
+   ```
+   🚨 DEMO USERS CREATED - SAVE THESE CREDENTIALS! 🚨
+   Admin: demo.admin.demo.admin@guestflow.local / [random-password]
+   Staff1: demo.staff.1.demo.staff@guestflow.local / [random-password]
+   Staff2: demo.staff.2.demo.staff@guestflow.local / [random-password]
+   Staff3: demo.staff.3.demo.staff@guestflow.local / [random-password]
+   ```
+
 ---
+
+
 
 ## ⚙️ Configuration
 

@@ -7,14 +7,33 @@ namespace GuestFlow.Application.Operations.Payment.Dtos
     {
         public int Id { get; set; }
         public string PaymentNumber { get; set; }
-        public int InvoiceId { get; set; }
-        public int InvoiceNumber { get; set; }
-        public decimal InvoiceAmount { get; set; }
-        public string InvoiceCurrency { get; set; }
+        
+        // Fatura bilgisi (opsiyonel)
+        public int? InvoiceId { get; set; }
+        public string? InvoiceNumber { get; set; }
+        public decimal? InvoiceAmount { get; set; }
+        public string? InvoiceCurrency { get; set; }
+        
+        // Misafir bilgisi
         public int GuestId { get; set; }
         public string GuestName { get; set; }
-        public string GuestEmail { get; set; }
-        public string GuestPhoneNumber { get; set; }
+        public string? GuestEmail { get; set; }
+        public string? GuestPhoneNumber { get; set; }
+        
+        // Tahsil eden personel bilgisi
+        public int CollectedByPersonnelId { get; set; }
+        public string CollectedByPersonnelName { get; set; }
+        
+        // Servis bağlantıları (opsiyonel)
+        public int? TransferId { get; set; }
+        public string? TransferDescription { get; set; }
+        public int? CityTourId { get; set; }
+        public string? CityTourDescription { get; set; }
+        public int? YachtTourId { get; set; }
+        public string? YachtTourDescription { get; set; }
+        public string? ServiceType { get; set; } // "Transfer", "CityTour", "YachtTour", "General"
+        
+        // Ödeme detayları
         public decimal Amount { get; set; }
         public string Currency { get; set; }
         public string PaymentMethod { get; set; }

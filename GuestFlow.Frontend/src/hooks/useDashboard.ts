@@ -7,6 +7,8 @@ import type {
   RevenueChartData,
   UpcomingBookings,
   GuestStatistics,
+  UnpaidServices,
+  UpcomingServices,
 } from '../types/dashboard'
 
 export const useDashboardOverview = () => {
@@ -60,6 +62,22 @@ export const useGuestStatistics = () => {
     queryKey: ['dashboard', 'guest-statistics'],
     queryFn: () => dashboardService.getGuestStatistics(),
     staleTime: 2 * 60 * 1000,
+  })
+}
+
+export const useUnpaidServices = (startDate?: string, endDate?: string) => {
+  return useQuery<UnpaidServices>({
+    queryKey: ['dashboard', 'unpaid-services', startDate, endDate],
+    queryFn: () => dashboardService.getUnpaidServices(startDate, endDate),
+    staleTime: 1 * 60 * 1000,
+  })
+}
+
+export const useUpcomingServices = (startDate?: string, endDate?: string) => {
+  return useQuery<UpcomingServices>({
+    queryKey: ['dashboard', 'upcoming-services', startDate, endDate],
+    queryFn: () => dashboardService.getUpcomingServices(startDate, endDate),
+    staleTime: 1 * 60 * 1000,
   })
 }
 

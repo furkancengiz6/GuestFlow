@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  guestflow-api:
+    build:
+      context: ..
+      dockerfile: GuestFlow.Api/Dockerfile
+    container_name: guestflow-api
+    restart: unless-stopped
+    ports:
+      - "5146:5146"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://*:5146
+      # Database
+      - ConnectionStrings__DefaultConnection=${ConnectionStrings__DefaultConnection}
+      # JWT
+      - Jwt__SecretKey=${Jwt__SecretKey}
+      - Jwt__Audience=${Jwt__Audience}
+      # CORS
+      - Cors__AllowedOrigins=${Cors__AllowedOrigins}
+      # Email (optional)
+      - EmailSettings__SmtpHost=${EmailSettings__SmtpHost}
+      - EmailSettings__SmtpUsername=${EmailSettings__SmtpUsername}
+      - EmailSettings__SmtpPassword=${EmailSettings__SmtpPassword}
+      - EmailSettings__FromEmail=${EmailSettings__FromEmail}
+      - EmailSettings__BaseUrl=${EmailSettings__BaseUrl}
+      # Monitoring (optional)
+      - Serilog__WriteTo__1__Args__serverUrl=${Serilog__WriteTo__1__Args__serverUrl}
+    volumes:
+      - ./logs:/app/logs
+      - ./wwwroot:/app/wwwroot
+    networks:
+      - guestflow-network
+    depends_on:
+      - guestflow-db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5146/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  guestflow-db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: guestflow-db
+    restart: unless-stopped
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=${DB_SA_PASSWORD}
+      - MSSQL_PID=Express
+    ports:
+      - "1433:1433"
+    volumes:
+      - guestflow-db-data:/var/opt/mssql
+      - ./db/init:/docker-entrypoint-initdb.d
+    networks:
+      - guestflow-network
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P ${DB_SA_PASSWORD} -Q 'SELECT 1'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  guestflow-db-data:
+
+networks:
+  guestflow-network:
+    driver: bridge

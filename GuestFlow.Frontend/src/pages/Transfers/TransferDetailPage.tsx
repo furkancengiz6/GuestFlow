@@ -1,7 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   Box,
-  Paper,
   Typography,
   Grid,
   Card,
@@ -11,16 +10,21 @@ import {
   Divider,
   IconButton,
 } from '@mui/material'
+import { useLiveUpdates } from '../../hooks/useLiveUpdates'
 import {
   ArrowBack as ArrowBackIcon,
   Person as PersonIcon,
   DirectionsCar as DirectionsCarIcon,
   FlightTakeoff as FlightTakeoffIcon,
   LocationOn as LocationOnIcon,
+  Edit as EditIcon,
+  Receipt as ReceiptIcon,
+  Email as EmailIcon,
   AttachMoney as AttachMoneyIcon,
 } from '@mui/icons-material'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { transferService } from '../../services/transferService'
+import { useNotification } from '../../hooks/useNotification'
 import { formatDate, formatCurrency, formatDateTime } from '../../utils/formatters'
 import ContentState from '../../components/Feedback/ContentState'
 
@@ -59,10 +63,74 @@ const TransferDetailPage = () => {
   const navigate = useNavigate()
   const transferId = id ? parseInt(id, 10) : 0
 
+  // Enable real-time updates for transfer changes
+  useLiveUpdates(['transfer'])
+
   const { data: transfer, isLoading, error } = useQuery({
     queryKey: ['transfer-detail', transferId],
     queryFn: () => transferService.getTransferDetail(transferId),
     enabled: !!transferId && !isNaN(transferId),
+  })
+
+  const queryClient = useQueryClient()
+  const notification = useNotification()
+
+  // Mutations for action buttons
+  const markCompletedMutation = useMutation({
+    mutationFn: () => transferService.markTransferCompleted(transferId),
+    onSuccess: () => {
+      notification.showSuccess('Transfer tamamlandı olarak işaretlendi')
+      queryClient.invalidateQueries({ queryKey: ['transfer-detail', transferId] })
+      queryClient.invalidateQueries({ queryKey: ['transfers'] })
+    },
+    onError: (error: any) => {
+      notification.showError(`Hata: ${error.response?.data?.message || 'Transfer tamamlanamadı'}`)
+    }
+  })
+
+  const cancelTransferMutation = useMutation({
+    mutationFn: () => transferService.cancelTransfer(transferId),
+    onSuccess: () => {
+      notification.showSuccess('Transfer iptal edildi')
+      queryClient.invalidateQueries({ queryKey: ['transfer-detail', transferId] })
+      queryClient.invalidateQueries({ queryKey: ['transfers'] })
+    },
+    onError: (error: any) => {
+      notification.showError(`Hata: ${error.response?.data?.message || 'Transfer iptal edilemedi'}`)
+    }
+  })
+
+  const createInvoiceMutation = useMutation({
+    mutationFn: () => transferService.createTransferInvoice(transferId),
+    onSuccess: () => {
+      notification.showSuccess('Fatura başarıyla oluşturuldu')
+      queryClient.invalidateQueries({ queryKey: ['transfer-detail', transferId] })
+      queryClient.invalidateQueries({ queryKey: ['invoices'] })
+    },
+    onError: (error: any) => {
+      notification.showError(`Hata: ${error.response?.data?.message || 'Fatura oluşturulamadı'}`)
+    }
+  })
+
+  const sendConfirmationMutation = useMutation({
+    mutationFn: () => transferService.sendTransferConfirmation(transferId),
+    onSuccess: () => {
+      notification.showSuccess('Onay maili gönderildi')
+    },
+    onError: (error: any) => {
+      notification.showError(`Hata: ${error.response?.data?.message || 'Mail gönderilemedi'}`)
+    }
+  })
+
+  const createRoundTripMutation = useMutation({
+    mutationFn: () => transferService.createRoundTrip(transferId),
+    onSuccess: () => {
+      notification.showSuccess('Gidiş-dönüş transfer oluşturuldu')
+      queryClient.invalidateQueries({ queryKey: ['transfers'] })
+    },
+    onError: (error: any) => {
+      notification.showError(`Hata: ${error.response?.data?.message || 'Gidiş-dönüş transfer oluşturulamadı'}`)
+    }
   })
 
   if (isLoading) {
@@ -92,313 +160,292 @@ const TransferDetailPage = () => {
         </Typography>
       </Box>
 
-      {/* Transfer Bilgileri */}
-      <Card sx={{ mb: 3 }}>
+      {/* HEADER - Transfer ID, Priority & Status */}
+      <Card sx={{ mb: 3, backgroundColor: 'primary.light', color: 'white' }}>
         <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Box>
-              <Typography variant="h5" gutterBottom>
+              <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
                 Transfer #{transfer.id}
               </Typography>
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mt: 2 }}>
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                 <Chip
-                  label={getStatusLabel(transfer.status)}
-                  color={getStatusColor(transfer.status) as any}
-                  size="medium"
+                  label="ACİL"
+                  color="error"
+                  size="small"
+                  sx={{ backgroundColor: 'white', color: 'error.main', fontWeight: 'bold' }}
                 />
-                {transfer.isFromAirport && (
-                  <Chip icon={<FlightTakeoffIcon />} label="Havaalanından" color="info" />
-                )}
+                <Chip
+                  label={getStatusLabel(transfer.status || 'pending')}
+                  color={getStatusColor(transfer.status || 'pending') as any}
+                  size="small"
+                  sx={{ backgroundColor: 'white' }}
+                />
+                <Chip
+                  label="VIP"
+                  color="warning"
+                  size="small"
+                  sx={{ backgroundColor: 'white', color: 'warning.dark' }}
+                />
               </Box>
             </Box>
             <Box sx={{ textAlign: 'right' }}>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{ opacity: 0.8 }}>
                 Oluşturulma Tarihi
               </Typography>
-              <Typography variant="body1">{formatDate(transfer.createdDate)}</Typography>
+              <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+                {formatDate(transfer.createdDate)}
+              </Typography>
             </Box>
           </Box>
-          <Divider sx={{ my: 2 }} />
+        </CardContent>
+      </Card>
+
+      {/* ACTION BUTTONS */}
+      <Box sx={{ mb: 3, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<EditIcon />}
+          onClick={() => navigate(`/transfers/${transferId}/edit`)}
+        >
+          Düzenle
+        </Button>
+        <Button
+          variant="outlined"
+          color="success"
+          startIcon={<PersonIcon />}
+          onClick={() => markCompletedMutation.mutate()}
+          disabled={transfer.status === 'Completed' || markCompletedMutation.isPending}
+        >
+          {markCompletedMutation.isPending ? 'İşleniyor...' : 'Tamamlandı İşaretle'}
+        </Button>
+        <Button
+          variant="outlined"
+          color="warning"
+          startIcon={<ReceiptIcon />}
+          onClick={() => createInvoiceMutation.mutate()}
+          disabled={createInvoiceMutation.isPending}
+        >
+          {createInvoiceMutation.isPending ? 'Oluşturuluyor...' : 'Fatura Oluştur'}
+        </Button>
+        <Button
+          variant="outlined"
+          color="info"
+          startIcon={<EmailIcon />}
+          onClick={() => sendConfirmationMutation.mutate()}
+          disabled={sendConfirmationMutation.isPending}
+        >
+          {sendConfirmationMutation.isPending ? 'Gönderiliyor...' : 'Onay Gönder'}
+        </Button>
+        <Button
+          variant="outlined"
+          color="secondary"
+          onClick={() => createRoundTripMutation.mutate()}
+          disabled={createRoundTripMutation.isPending}
+        >
+          {createRoundTripMutation.isPending ? 'Oluşturuluyor...' : 'Gidiş-Dönüş Oluştur'}
+        </Button>
+        <Button
+          variant="outlined"
+          color="error"
+          onClick={() => {
+            if (window.confirm('Bu transferi iptal etmek istediğinizden emin misiniz?')) {
+              cancelTransferMutation.mutate()
+            }
+          }}
+          disabled={transfer.status === 'Cancelled' || cancelTransferMutation.isPending}
+        >
+          {cancelTransferMutation.isPending ? 'İptal Ediliyor...' : 'İptal Et'}
+        </Button>
+      </Box>
+
+      {/* GUEST INFO CARD */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <PersonIcon color="primary" />
+            MİSAFİR BİLGİLERİ
+          </Typography>
+          <Divider sx={{ mb: 2 }} />
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                Transfer Tarihi
-              </Typography>
+              <Typography variant="body2" color="text.secondary">Misafir Adı</Typography>
               <Typography variant="body1" fontWeight="medium">
-                {formatDateTime(transfer.transferDate)}
+                {transfer.guest?.fullName || 'Bilinmiyor'}
               </Typography>
             </Grid>
             <Grid item xs={12} md={6}>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                Fiyat
-              </Typography>
-              <Typography variant="body1" fontWeight="medium" color="primary">
-                {formatCurrency(transfer.finalPrice)} (Orijinal: {formatCurrency(transfer.price)})
-              </Typography>
+              <Typography variant="body2" color="text.secondary">İletişim</Typography>
+              <Typography variant="body1">{transfer.guest?.phoneNumber || '-'}</Typography>
+              <Typography variant="body2">{transfer.guest?.email || '-'}</Typography>
             </Grid>
             <Grid item xs={12} md={6}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <LocationOnIcon color="action" />
-                <Typography variant="body2" color="text.secondary">
-                  Alış Adresi
-                </Typography>
-              </Box>
-              <Typography variant="body1">{transfer.pickupAddress}</Typography>
-              {transfer.pickupCity && (
-                <Typography variant="body2" color="text.secondary">
-                  {transfer.pickupCity.cityName} {transfer.pickupCity.country && `- ${transfer.pickupCity.country}`}
-                </Typography>
-              )}
+              <Typography variant="body2" color="text.secondary">Konuşulan Dil</Typography>
+              <Typography variant="body1">{(transfer as any).guestLanguage || 'Türkçe'}</Typography>
             </Grid>
             <Grid item xs={12} md={6}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <LocationOnIcon color="action" />
-                <Typography variant="body2" color="text.secondary">
-                  Bırakış Adresi
-                </Typography>
-              </Box>
-              <Typography variant="body1">{transfer.dropoffAddress}</Typography>
-              {transfer.dropoffCity && (
-                <Typography variant="body2" color="text.secondary">
-                  {transfer.dropoffCity.cityName} {transfer.dropoffCity.country && `- ${transfer.dropoffCity.country}`}
-                </Typography>
-              )}
+              <Typography variant="body2" color="text.secondary">Acil İletişim</Typography>
+              <Typography variant="body1">{(transfer as any).emergencyContactPhone || '-'}</Typography>
             </Grid>
-            {transfer.note && (
-              <Grid item xs={12}>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Not
-                </Typography>
-                <Typography variant="body1">{transfer.note}</Typography>
-              </Grid>
-            )}
+            <Grid item xs={12} md={6}>
+              <Typography variant="body2" color="text.secondary">Grup Boyutu</Typography>
+              <Typography variant="body1">{(transfer as any).groupSize || 1} kişi</Typography>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Typography variant="body2" color="text.secondary">Çocuk/Bebek</Typography>
+              <Typography variant="body1">
+                {(transfer as any).childCount || 0} çocuk, {(transfer as any).infantCount || 0} bebek
+              </Typography>
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="body2" color="text.secondary">Özel İhtiyaçlar</Typography>
+              <Typography variant="body1">{(transfer as any).accessibilityRequirements || 'Yok'}</Typography>
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="body2" color="text.secondary">Misafir Notları</Typography>
+              <Typography variant="body1">{(transfer as any).guestVisibleNotes || 'Yok'}</Typography>
+            </Grid>
           </Grid>
         </CardContent>
       </Card>
 
-      <Grid container spacing={3}>
-        {/* Misafir Bilgileri */}
-        {transfer.guest && (
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                  <PersonIcon color="primary" />
-                  <Typography variant="h6">Misafir</Typography>
-                </Box>
-                <Divider sx={{ mb: 2 }} />
-                <Typography variant="body2" color="text.secondary">
-                  Ad Soyad
-                </Typography>
-                <Typography variant="body1" fontWeight="medium" gutterBottom>
-                  {transfer.guest.fullName}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Misafir Kodu
-                </Typography>
-                <Typography variant="body1" gutterBottom>
-                  {transfer.guest.guestCode}
-                </Typography>
-                {transfer.guest.email && (
-                  <>
-                    <Typography variant="body2" color="text.secondary">
-                      E-posta
-                    </Typography>
-                    <Typography variant="body1" gutterBottom>
-                      {transfer.guest.email}
-                    </Typography>
-                  </>
-                )}
-                {transfer.guest.phoneNumber && (
-                  <>
-                    <Typography variant="body2" color="text.secondary">
-                      Telefon
-                    </Typography>
-                    <Typography variant="body1" gutterBottom>
-                      {transfer.guest.phoneNumber}
-                    </Typography>
-                  </>
-                )}
-                <Typography variant="body2" color="text.secondary">
-                  Uyruk
-                </Typography>
-                <Typography variant="body1" gutterBottom>
-                  {transfer.guest.nationality}
-                </Typography>
-                {transfer.guest.isSpecialGuest && (
-                  <Chip label="Özel Misafir" color="primary" size="small" sx={{ mt: 1 }} />
-                )}
-                <Button
-                  variant="outlined"
+      {/* LOGISTICS CARD */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <DirectionsCarIcon color="primary" />
+            LOJİSTİK BİLGİLERİ
+          </Typography>
+          <Divider sx={{ mb: 2 }} />
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <Typography variant="body2" color="text.secondary">Rota</Typography>
+              <Typography variant="body1" fontWeight="medium">
+                {transfer.pickupAddress} → {transfer.dropoffAddress}
+              </Typography>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Typography variant="body2" color="text.secondary">Transfer Tarihi</Typography>
+              <Typography variant="body1">{formatDateTime(transfer.transferDate)}</Typography>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Typography variant="body2" color="text.secondary">Alış Saati</Typography>
+              <Typography variant="body1">{transfer.pickupTime || '-'}</Typography>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Typography variant="body2" color="text.secondary">Servis Başlangıç</Typography>
+              <Typography variant="body1">{transfer.serviceStartTime || '-'}</Typography>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Typography variant="body2" color="text.secondary">Onay Zamanları</Typography>
+              <Typography variant="body1">
+                Alış: {(transfer as any).pickupConfirmationTime ? formatDateTime((transfer as any).pickupConfirmationTime) : '-'}
+              </Typography>
+              <Typography variant="body1">
+                Bırakış: {(transfer as any).dropoffConfirmationTime ? formatDateTime((transfer as any).dropoffConfirmationTime) : '-'}
+              </Typography>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Typography variant="body2" color="text.secondary">Şoför Ataması</Typography>
+              <Typography variant="body1">{(transfer as any).driverName || 'Atanmamış'}</Typography>
+              <Typography variant="body2" color="text.secondary">Şoför ID: {transfer.driverId || '-'}</Typography>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Typography variant="body2" color="text.secondary">Araç Ataması</Typography>
+              <Typography variant="body1">{transfer.vehicleId ? `Araç #${transfer.vehicleId}` : 'Atanmamış'}</Typography>
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="body2" color="text.secondary">Koordinasyon Noktası</Typography>
+              <Typography variant="body1">{(transfer as any).meetingPointDetails || 'Belirtilmemiş'}</Typography>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+
+      {/* FINANCIAL CARD */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <AttachMoneyIcon color="primary" />
+            FİNANSAL BİLGİLER
+          </Typography>
+          <Divider sx={{ mb: 2 }} />
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={4}>
+              <Typography variant="body2" color="text.secondary">Taban Fiyat</Typography>
+              <Typography variant="h6" color="primary.main">
+                {formatCurrency(transfer.price)}
+              </Typography>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Typography variant="body2" color="text.secondary">İndirim</Typography>
+              <Typography variant="h6" color="error.main">
+                -{formatCurrency((transfer.price - transfer.finalPrice))}
+              </Typography>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Typography variant="body2" color="text.secondary">Final Fiyat</Typography>
+              <Typography variant="h6" color="success.main" fontWeight="bold">
+                {formatCurrency(transfer.finalPrice)}
+              </Typography>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Typography variant="body2" color="text.secondary">Ödeme Durumu</Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Chip
+                  label={transfer.paymentStatus === 'Paid' ? 'Ödendi' :
+                         transfer.paymentStatus === 'PartiallyPaid' ? 'Kısmi Ödeme' : 'Ödenmedi'}
+                  color={transfer.paymentStatus === 'Paid' ? 'success' :
+                         transfer.paymentStatus === 'PartiallyPaid' ? 'warning' : 'error'}
                   size="small"
-                  sx={{ mt: 2 }}
-                  onClick={() => navigate(`/guests/${transfer.guest!.id}`)}
-                >
-                  Misafir Detayı
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
-        )}
-
-        {/* Personel Bilgileri */}
-        {transfer.personnel && (
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                  <PersonIcon color="primary" />
-                  <Typography variant="h6">Personel</Typography>
-                </Box>
-                <Divider sx={{ mb: 2 }} />
-                <Typography variant="body2" color="text.secondary">
-                  Ad Soyad
-                </Typography>
-                <Typography variant="body1" fontWeight="medium" gutterBottom>
-                  {transfer.personnel.fullName}
-                </Typography>
-                {transfer.personnel.email && (
-                  <>
-                    <Typography variant="body2" color="text.secondary">
-                      E-posta
-                    </Typography>
-                    <Typography variant="body1" gutterBottom>
-                      {transfer.personnel.email}
-                    </Typography>
-                  </>
+                />
+                {transfer.remainingAmount > 0 && (
+                  <Typography variant="body2" color="error.main">
+                    Kalan: {formatCurrency(transfer.remainingAmount)}
+                  </Typography>
                 )}
-                <Typography variant="body2" color="text.secondary">
-                  Rol
-                </Typography>
-                <Typography variant="body1">{transfer.personnel.userType}</Typography>
-              </CardContent>
-            </Card>
+              </Box>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Typography variant="body2" color="text.secondary">Tedarikçi Maliyeti</Typography>
+              <Typography variant="body1">
+                {(transfer as any).supplierCost ? formatCurrency((transfer as any).supplierCost) : '-'}
+              </Typography>
+            </Grid>
           </Grid>
-        )}
+        </CardContent>
+      </Card>
 
-        {/* Araç Bilgileri */}
-        {transfer.vehicle && (
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                  <DirectionsCarIcon color="primary" />
-                  <Typography variant="h6">Araç</Typography>
-                </Box>
-                <Divider sx={{ mb: 2 }} />
-                <Typography variant="body2" color="text.secondary">
-                  Araç Tipi
-                </Typography>
-                <Typography variant="body1" fontWeight="medium" gutterBottom>
-                  {transfer.vehicle.vehicleType}
-                </Typography>
-                {transfer.vehicle.licensePlate && (
-                  <>
-                    <Typography variant="body2" color="text.secondary">
-                      Plaka
-                    </Typography>
-                    <Typography variant="body1" gutterBottom>
-                      {transfer.vehicle.licensePlate}
-                    </Typography>
-                  </>
-                )}
-                <Typography variant="body2" color="text.secondary">
-                  Kapasite
-                </Typography>
-                <Typography variant="body1">{transfer.vehicle.capacity} kişi</Typography>
-              </CardContent>
-            </Card>
+      {/* COORDINATION CARD - INTERNAL ONLY */}
+      <Card sx={{ mb: 3, border: '2px solid', borderColor: 'warning.main' }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'warning.main' }}>
+            🔒 İÇ KOORDİNASYON (PERSONEL GÖRÜNÜMLÜ)
+          </Typography>
+          <Divider sx={{ mb: 2 }} />
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <Typography variant="body2" color="text.secondary">Concierge Notları</Typography>
+              <Typography variant="body1">{(transfer as any).conciergeInternalNotes || 'Not yok'}</Typography>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Typography variant="body2" color="text.secondary">Tedarikçi İletişim</Typography>
+              <Typography variant="body1">{(transfer as any).supplierContactPhone || '-'}</Typography>
+              <Typography variant="body2">{(transfer as any).supplierEmergencyContact || '-'}</Typography>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Typography variant="body2" color="text.secondary">Son Güncelleme</Typography>
+              <Typography variant="body1">{formatDateTime(transfer.updatedDate)}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                Personel ID: {transfer.updatedByPersonnelId || transfer.createdByPersonnelId}
+              </Typography>
+            </Grid>
           </Grid>
-        )}
-
-        {/* Havaalanı Bilgileri */}
-        {transfer.airport && (
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                  <FlightTakeoffIcon color="primary" />
-                  <Typography variant="h6">Havaalanı</Typography>
-                </Box>
-                <Divider sx={{ mb: 2 }} />
-                <Typography variant="body2" color="text.secondary">
-                  Havaalanı Adı
-                </Typography>
-                <Typography variant="body1" fontWeight="medium" gutterBottom>
-                  {transfer.airport.airportName}
-                </Typography>
-                {transfer.airport.cityName && (
-                  <>
-                    <Typography variant="body2" color="text.secondary">
-                      Şehir
-                    </Typography>
-                    <Typography variant="body1" gutterBottom>
-                      {transfer.airport.cityName}
-                    </Typography>
-                  </>
-                )}
-                {transfer.airport.country && (
-                  <>
-                    <Typography variant="body2" color="text.secondary">
-                      Ülke
-                    </Typography>
-                    <Typography variant="body1">{transfer.airport.country}</Typography>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
-        )}
-
-        {/* İstatistikler */}
-        {transfer.statistics && (
-          <Grid item xs={12}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  İstatistikler
-                </Typography>
-                <Divider sx={{ mb: 2 }} />
-                <Grid container spacing={3}>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <Typography variant="body2" color="text.secondary">
-                      Toplam Transfer
-                    </Typography>
-                    <Typography variant="h5">{transfer.statistics.totalTransfers}</Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <Typography variant="body2" color="text.secondary">
-                      Tamamlanan
-                    </Typography>
-                    <Typography variant="h5" color="success.main">
-                      {transfer.statistics.completedTransfers}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <Typography variant="body2" color="text.secondary">
-                      Toplam Gelir
-                    </Typography>
-                    <Typography variant="h5" color="primary">
-                      {formatCurrency(transfer.statistics.totalRevenue)}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <Typography variant="body2" color="text.secondary">
-                      Ortalama Fiyat
-                    </Typography>
-                    <Typography variant="h5">
-                      {formatCurrency(transfer.statistics.averagePrice)}
-                    </Typography>
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
-          </Grid>
-        )}
-      </Grid>
+        </CardContent>
+      </Card>
     </Box>
   )
 }
 
 export default TransferDetailPage
-

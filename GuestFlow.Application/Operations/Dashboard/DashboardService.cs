@@ -1,4 +1,6 @@
+using GuestFlow.Application.Operations.Payment;
 using GuestFlow.Domain.Entities.Core;
+using GuestFlow.Domain.Entities.Enum;
 using GuestFlow.Domain.Entities.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -9,6 +11,9 @@ using System.Threading.Tasks;
 
 namespace GuestFlow.Application.Operations.Dashboard
 {
+    /// <summary>
+    /// Dashboard servisi - Tahsilat bazlı gelir ve ödeme durumu hesaplaması
+    /// </summary>
     public class DashboardService : IDashboardService
     {
         private readonly IRepository<GuestEntity> _guestRepository;
@@ -19,6 +24,8 @@ namespace GuestFlow.Application.Operations.Dashboard
         private readonly IRepository<YachtTourEntity> _yachtTourRepository;
         private readonly IRepository<TransferEntity> _transferRepository;
         private readonly IRepository<InvoicesEntity> _invoiceRepository;
+        private readonly IRepository<PaymentEntity> _paymentRepository;
+        private readonly IPaymentStatusService _paymentStatusService;
         private readonly ILogger<DashboardService> _logger;
 
         public DashboardService(
@@ -30,6 +37,8 @@ namespace GuestFlow.Application.Operations.Dashboard
             IRepository<YachtTourEntity> yachtTourRepository,
             IRepository<TransferEntity> transferRepository,
             IRepository<InvoicesEntity> invoiceRepository,
+            IRepository<PaymentEntity> paymentRepository,
+            IPaymentStatusService paymentStatusService,
             ILogger<DashboardService> logger)
         {
             _guestRepository = guestRepository;
@@ -40,6 +49,8 @@ namespace GuestFlow.Application.Operations.Dashboard
             _yachtTourRepository = yachtTourRepository;
             _transferRepository = transferRepository;
             _invoiceRepository = invoiceRepository;
+            _paymentRepository = paymentRepository;
+            _paymentStatusService = paymentStatusService;
             _logger = logger;
         }
 
@@ -159,35 +170,58 @@ namespace GuestFlow.Application.Operations.Dashboard
             try
             {
                 var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
-                var totalGuests = await _guestRepository.GetAll().CountAsync();
-                var activeGuests = await _guestRepository.GetAll()
-                    .Where(g => g.Transfers.Any(t => t.TransferDate >= thirtyDaysAgo) ||
-                               g.CityTours.Any(ct => ct.TourDate >= thirtyDaysAgo) ||
-                               g.YachtTours.Any(yt => yt.TourDate >= thirtyDaysAgo))
-                    .CountAsync();
 
-                var totalPersonnel = await _personnelRepository.GetAll().CountAsync();
-                var totalTransfers = await _transferRepository.GetAll().CountAsync();
-                var totalCityTours = await _cityTourRepository.GetAll().CountAsync();
-                var totalYachtTours = await _yachtTourRepository.GetAll().CountAsync();
-                var totalInvoices = await _invoiceRepository.GetAll().CountAsync();
+                // PERFORMANCE: Execute all count queries in parallel to reduce database round trips
+                var countTasks = new[]
+                {
+                    _guestRepository.GetAll().CountAsync(),
+                    _personnelRepository.GetAll().CountAsync(),
+                    _transferRepository.GetAll().CountAsync(),
+                    _cityTourRepository.GetAll().CountAsync(),
+                    _yachtTourRepository.GetAll().CountAsync(),
+                    _invoiceRepository.GetAll().CountAsync()
+                };
 
-                var totalRevenue = await _cityTourRepository.GetAll()
-                    .SumAsync(ct => (decimal?)ct.FinalPrice) ?? 0 +
-                    await _yachtTourRepository.GetAll()
-                    .SumAsync(yt => (decimal?)yt.FinalPrice) ?? 0 +
-                    await _transferRepository.GetAll()
-                    .SumAsync(t => (decimal?)t.FinalPrice) ?? 0;
+                var counts = await Task.WhenAll(countTasks);
+
+                // PERFORMANCE: Optimized active guests query - use UNION instead of OR with EXISTS
+                var activeGuestsQuery = await Task.WhenAll(
+                    _transferRepository.GetAll()
+                        .Where(t => t.TransferDate >= thirtyDaysAgo)
+                        .Select(t => t.GuestId)
+                        .Distinct()
+                        .CountAsync(),
+
+                    _cityTourRepository.GetAll()
+                        .Where(ct => ct.TourDate >= thirtyDaysAgo)
+                        .Select(ct => ct.OwnerGuestId)
+                        .Distinct()
+                        .CountAsync(),
+
+                    _yachtTourRepository.GetAll()
+                        .Where(yt => yt.TourDate >= thirtyDaysAgo)
+                        .Select(yt => yt.OwnerGuestId)
+                        .Distinct()
+                        .CountAsync()
+                );
+
+                var activeGuests = activeGuestsQuery.Sum();
+
+                // REVENUE REALITY: Revenue = collected money only (from PaymentEntity)
+                // PERFORMANCE: Use indexed query for completed payments
+                var totalRevenue = await _paymentRepository.GetAll()
+                    .Where(p => p.Status == PaymentStatus.Completed)
+                    .SumAsync(p => (decimal?)p.Amount) ?? 0;
 
                 return new QuickStatsDto
                 {
-                    TotalGuests = totalGuests,
+                    TotalGuests = counts[0],
                     ActiveGuests = activeGuests,
-                    TotalPersonnel = totalPersonnel,
-                    TotalTransfers = totalTransfers,
-                    TotalCityTours = totalCityTours,
-                    TotalYachtTours = totalYachtTours,
-                    TotalInvoices = totalInvoices,
+                    TotalPersonnel = counts[1],
+                    TotalTransfers = counts[2],
+                    TotalCityTours = counts[3],
+                    TotalYachtTours = counts[4],
+                    TotalInvoices = counts[5],
                     TotalRevenue = totalRevenue
                 };
             }
@@ -252,21 +286,67 @@ namespace GuestFlow.Application.Operations.Dashboard
             }
         }
 
+        /// <summary>
+        /// Geliri tahsilat bazlı hesaplar (PaymentEntity'den)
+        /// Gelir = Tamamlanmış ödemeler (Status = Completed), PaymentDate bazlı
+        /// </summary>
         private async Task<decimal> GetRevenueForDateRangeAsync(DateTime startDate, DateTime endDate)
         {
-            var cityTourRevenue = await _cityTourRepository.GetAll()
-                .Where(ct => ct.TourDate.Date >= startDate.Date && ct.TourDate.Date <= endDate.Date)
-                .SumAsync(ct => (decimal?)ct.FinalPrice) ?? 0;
+            // Tahsilat bazlı gelir (PaymentEntity'den)
+            var completedPayments = await _paymentRepository.GetAll()
+                .Where(p => p.PaymentDate.Date >= startDate.Date && 
+                           p.PaymentDate.Date <= endDate.Date && 
+                           p.Status == PaymentStatus.Completed && 
+                           !p.IsDeleted)
+                .SumAsync(p => (decimal?)p.Amount) ?? 0;
 
-            var yachtTourRevenue = await _yachtTourRepository.GetAll()
-                .Where(yt => yt.TourDate.Date >= startDate.Date && yt.TourDate.Date <= endDate.Date)
-                .SumAsync(yt => (decimal?)yt.FinalPrice) ?? 0;
+            // İade edilen tutarları çıkar
+            var refundedPayments = await _paymentRepository.GetAll()
+                .Where(p => p.RefundDate.HasValue &&
+                           p.RefundDate.Value.Date >= startDate.Date && 
+                           p.RefundDate.Value.Date <= endDate.Date && 
+                           p.Status == PaymentStatus.Refunded && 
+                           !p.IsDeleted)
+                .SumAsync(p => (decimal?)p.Amount) ?? 0;
 
-            var transferRevenue = await _transferRepository.GetAll()
-                .Where(t => t.TransferDate.Date >= startDate.Date && t.TransferDate.Date <= endDate.Date)
-                .SumAsync(t => (decimal?)t.FinalPrice) ?? 0;
+            return completedPayments - refundedPayments;
+        }
 
-            return cityTourRevenue + yachtTourRevenue + transferRevenue;
+        /// <summary>
+        /// Currency bazlı geliri hesaplar
+        /// </summary>
+        private async Task<Dictionary<string, decimal>> GetRevenueForDateRangeByCurrencyAsync(DateTime startDate, DateTime endDate)
+        {
+            var payments = await _paymentRepository.GetAll()
+                .Where(p => p.PaymentDate.Date >= startDate.Date && 
+                           p.PaymentDate.Date <= endDate.Date && 
+                           p.Status == PaymentStatus.Completed && 
+                           !p.IsDeleted)
+                .GroupBy(p => p.Currency)
+                .Select(g => new { Currency = g.Key, Total = g.Sum(p => p.Amount) })
+                .ToListAsync();
+
+            var refunds = await _paymentRepository.GetAll()
+                .Where(p => p.RefundDate.HasValue &&
+                           p.RefundDate.Value.Date >= startDate.Date && 
+                           p.RefundDate.Value.Date <= endDate.Date && 
+                           p.Status == PaymentStatus.Refunded && 
+                           !p.IsDeleted)
+                .GroupBy(p => p.Currency)
+                .Select(g => new { Currency = g.Key, Total = g.Sum(p => p.Amount) })
+                .ToListAsync();
+
+            var result = payments.ToDictionary(x => x.Currency, x => x.Total);
+            
+            foreach (var refund in refunds)
+            {
+                if (result.ContainsKey(refund.Currency))
+                    result[refund.Currency] -= refund.Total;
+                else
+                    result[refund.Currency] = -refund.Total;
+            }
+
+            return result;
         }
 
         private async Task<List<RecentBookingDto>> GetRecentBookingsAsync(int limit)
@@ -332,43 +412,75 @@ namespace GuestFlow.Application.Operations.Dashboard
 
         private async Task<List<PopularServiceDto>> GetPopularServicesAsync()
         {
-            var transferStats = await _transferRepository.GetAll()
-                .GroupBy(t => "Transfer")
-                .Select(g => new PopularServiceDto
+            // REVENUE REALITY: Revenue = collected money only (from PaymentEntity)
+            // PERFORMANCE: Execute all queries in parallel to reduce database round trips
+
+            // Get booking counts for all services
+            var countTasks = new[]
+            {
+                _transferRepository.GetAll().CountAsync(),
+                _cityTourRepository.GetAll().CountAsync(),
+                _yachtTourRepository.GetAll().CountAsync()
+            };
+
+            // Get revenue sums for all services
+            var revenueTasks = new[]
+            {
+                _paymentRepository.GetAll()
+                    .Where(p => p.TransferId.HasValue && p.Status == PaymentStatus.Completed)
+                    .SumAsync(p => (decimal?)p.Amount),
+
+                _paymentRepository.GetAll()
+                    .Where(p => p.CityTourId.HasValue && p.Status == PaymentStatus.Completed)
+                    .SumAsync(p => (decimal?)p.Amount),
+
+                _paymentRepository.GetAll()
+                    .Where(p => p.YachtTourId.HasValue && p.Status == PaymentStatus.Completed)
+                    .SumAsync(p => (decimal?)p.Amount)
+            };
+
+            // Get average prices for all services
+            var avgPriceTasks = new[]
+            {
+                _transferRepository.GetAll()
+                    .AverageAsync(t => (decimal?)t.FinalPrice),
+
+                _cityTourRepository.GetAll()
+                    .AverageAsync(ct => (decimal?)ct.FinalPrice),
+
+                _yachtTourRepository.GetAll()
+                    .AverageAsync(yt => (decimal?)yt.FinalPrice)
+            };
+
+            // Execute all queries in parallel
+            var counts = await Task.WhenAll(countTasks);
+            var revenues = await Task.WhenAll(revenueTasks);
+            var avgPrices = await Task.WhenAll(avgPriceTasks);
+
+            var services = new List<PopularServiceDto>
+            {
+                new PopularServiceDto
                 {
                     ServiceType = "Transfer",
-                    BookingCount = g.Count(),
-                    TotalRevenue = g.Sum(t => t.FinalPrice),
-                    AveragePrice = g.Average(t => t.FinalPrice)
-                })
-                .FirstOrDefaultAsync();
-
-            var cityTourStats = await _cityTourRepository.GetAll()
-                .GroupBy(ct => "CityTour")
-                .Select(g => new PopularServiceDto
+                    BookingCount = counts[0],
+                    TotalRevenue = revenues[0] ?? 0,
+                    AveragePrice = avgPrices[0] ?? 0
+                },
+                new PopularServiceDto
                 {
                     ServiceType = "CityTour",
-                    BookingCount = g.Count(),
-                    TotalRevenue = g.Sum(ct => ct.FinalPrice),
-                    AveragePrice = g.Average(ct => ct.FinalPrice)
-                })
-                .FirstOrDefaultAsync();
-
-            var yachtTourStats = await _yachtTourRepository.GetAll()
-                .GroupBy(yt => "YachtTour")
-                .Select(g => new PopularServiceDto
+                    BookingCount = counts[1],
+                    TotalRevenue = revenues[1] ?? 0,
+                    AveragePrice = avgPrices[1] ?? 0
+                },
+                new PopularServiceDto
                 {
                     ServiceType = "YachtTour",
-                    BookingCount = g.Count(),
-                    TotalRevenue = g.Sum(yt => yt.FinalPrice),
-                    AveragePrice = g.Average(yt => yt.FinalPrice)
-                })
-                .FirstOrDefaultAsync();
-
-            var services = new List<PopularServiceDto>();
-            if (transferStats != null) services.Add(transferStats);
-            if (cityTourStats != null) services.Add(cityTourStats);
-            if (yachtTourStats != null) services.Add(yachtTourStats);
+                    BookingCount = counts[2],
+                    TotalRevenue = revenues[2] ?? 0,
+                    AveragePrice = avgPrices[2] ?? 0
+                }
+            };
 
             return services.OrderByDescending(s => s.BookingCount).ToList();
         }
@@ -790,6 +902,358 @@ namespace GuestFlow.Application.Operations.Dashboard
                 .CountAsync();
 
             return cityTourCount + yachtTourCount + transferCount;
+        }
+
+        /// <summary>
+        /// Ödenmemiş servisler - PaymentEntity'den hesaplanır
+        /// Bir servis "unpaid" = toplam ödeme < servis tutarı
+        /// </summary>
+        public async Task<UnpaidServicesDto> GetUnpaidServicesAsync(DateTime? startDate = null, DateTime? endDate = null)
+        {
+            var start = startDate ?? DateTime.UtcNow.Date.AddDays(-7);
+            var end = endDate ?? DateTime.UtcNow.Date.AddDays(7);
+
+            var result = new UnpaidServicesDto();
+            var items = new List<UnpaidServiceItemDto>();
+
+            // Get all services in the date range and calculate their payment status using canonical method
+            var transfers = await _transferRepository.GetAll()
+                .Include(t => t.Guest)
+                .Include(t => t.PickupCity)
+                .Where(t => !t.IsDeleted && t.TransferDate >= start && t.TransferDate <= end)
+                .ToListAsync();
+
+            foreach (var t in transfers)
+            {
+                var status = await _paymentStatusService.GetServicePaymentStatusAsync(t.Id, "Transfer");
+                if (status.PaymentStatus != "Paid") // Only include unpaid/partially paid
+                {
+                    items.Add(new UnpaidServiceItemDto
+                    {
+                        ServiceType = "Transfer",
+                        ServiceId = t.Id,
+                        ServiceDate = t.TransferDate,
+                        GuestName = t.Guest?.FullName ?? "Bilinmiyor",
+                        GuestId = t.GuestId,
+                        RoomNumber = t.Guest?.RoomNumber,
+                        CityName = t.PickupCity?.CityName,
+                        ServiceAmount = status.ServiceAmount,
+                        PaidAmount = status.PaidAmount,
+                        RemainingAmount = status.RemainingAmount,
+                        Currency = status.Currency,
+                        Status = t.Status,
+                        PaymentStatus = status.PaymentStatus,
+                        DaysOverdue = (int)(DateTime.UtcNow.Date - t.TransferDate.Date).TotalDays
+                    });
+                }
+            }
+
+            var cityTours = await _cityTourRepository.GetAll()
+                .Include(ct => ct.OwnerGuest)
+                .Include(ct => ct.City)
+                .Where(ct => !ct.IsDeleted && ct.TourDate >= start && ct.TourDate <= end)
+                .ToListAsync();
+
+            foreach (var ct in cityTours)
+            {
+                var status = await _paymentStatusService.GetServicePaymentStatusAsync(ct.Id, "CityTour");
+                if (status.PaymentStatus != "Paid") // Only include unpaid/partially paid
+                {
+                    items.Add(new UnpaidServiceItemDto
+                    {
+                        ServiceType = "CityTour",
+                        ServiceId = ct.Id,
+                        ServiceDate = ct.TourDate,
+                        GuestName = ct.OwnerGuest?.FullName ?? "Bilinmiyor",
+                        GuestId = ct.OwnerGuestId,
+                        RoomNumber = ct.OwnerGuest?.RoomNumber,
+                        CityName = ct.City?.CityName,
+                        ServiceAmount = status.ServiceAmount,
+                        PaidAmount = status.PaidAmount,
+                        RemainingAmount = status.RemainingAmount,
+                        Currency = status.Currency,
+                        Status = null,
+                        PaymentStatus = status.PaymentStatus,
+                        DaysOverdue = (int)(DateTime.UtcNow.Date - ct.TourDate.Date).TotalDays
+                    });
+                }
+            }
+
+            var yachtTours = await _yachtTourRepository.GetAll()
+                .Include(yt => yt.OwnerGuest)
+                .Include(yt => yt.City)
+                .Where(yt => !yt.IsDeleted && yt.TourDate >= start && yt.TourDate <= end)
+                .ToListAsync();
+
+            foreach (var yt in yachtTours)
+            {
+                var status = await _paymentStatusService.GetServicePaymentStatusAsync(yt.Id, "YachtTour");
+                if (status.PaymentStatus != "Paid") // Only include unpaid/partially paid
+                {
+                    items.Add(new UnpaidServiceItemDto
+                    {
+                        ServiceType = "YachtTour",
+                        ServiceId = yt.Id,
+                        ServiceDate = yt.TourDate,
+                        GuestName = yt.OwnerGuest?.FullName ?? "Bilinmiyor",
+                        GuestId = yt.OwnerGuestId,
+                        RoomNumber = yt.OwnerGuest?.RoomNumber,
+                        CityName = yt.City?.CityName,
+                        ServiceAmount = status.ServiceAmount,
+                        PaidAmount = status.PaidAmount,
+                        RemainingAmount = status.RemainingAmount,
+                        Currency = status.Currency,
+                        Status = null,
+                        PaymentStatus = status.PaymentStatus,
+                        DaysOverdue = (int)(DateTime.UtcNow.Date - yt.TourDate.Date).TotalDays
+                    });
+                }
+            }
+
+            result.Items = items.OrderBy(i => i.ServiceDate).ToList();
+            
+            // Currency bazlı toplam kalan tutar
+            result.TotalRemainingByCurrency = items
+                .GroupBy(i => i.Currency ?? "TRY")
+                .ToDictionary(g => g.Key, g => g.Sum(i => i.RemainingAmount));
+            
+            result.TotalUnpaidCount = items.Count(i => i.PaymentStatus == "Unpaid");
+            result.PartiallyPaidCount = items.Count(i => i.PaymentStatus == "PartiallyPaid");
+
+            return result;
+        }
+
+        public async Task<UpcomingServicesDto> GetUpcomingServicesAsync(DateTime? startDate = null, DateTime? endDate = null)
+        {
+            var now = DateTime.UtcNow;
+            var start = startDate ?? now;
+            var end = endDate ?? now.AddDays(3);
+
+            var result = new UpcomingServicesDto();
+
+            var transfers = await _transferRepository.GetAll()
+                .Include(t => t.Guest)
+                .Include(t => t.PickupCity)
+                .Where(t => !t.IsDeleted && t.TransferDate >= start && t.TransferDate <= end)
+                .Select(t => new UpcomingServiceItemDto
+                {
+                    ServiceType = "Transfer",
+                    ServiceId = t.Id,
+                    ServiceDate = t.TransferDate,
+                    GuestName = t.Guest.FullName,
+                    RoomNumber = t.Guest.RoomNumber,
+                    CityName = t.PickupCity != null ? t.PickupCity.CityName : null,
+                    Status = t.Status,
+                    IsUrgent = t.TransferDate <= now.AddHours(3)
+                })
+                .ToListAsync();
+
+            var cityTours = await _cityTourRepository.GetAll()
+                .Include(ct => ct.OwnerGuest)
+                .Include(ct => ct.City)
+                .Where(ct => !ct.IsDeleted && ct.TourDate >= start && ct.TourDate <= end)
+                .Select(ct => new UpcomingServiceItemDto
+                {
+                    ServiceType = "CityTour",
+                    ServiceId = ct.Id,
+                    ServiceDate = ct.TourDate,
+                    GuestName = ct.OwnerGuest.FullName,
+                    RoomNumber = ct.OwnerGuest.RoomNumber,
+                    CityName = ct.City.CityName,
+                    Status = null,
+                    IsUrgent = ct.TourDate <= now.AddDays(1)
+                })
+                .ToListAsync();
+
+            var yachtTours = await _yachtTourRepository.GetAll()
+                .Include(yt => yt.OwnerGuest)
+                .Include(yt => yt.City)
+                .Where(yt => !yt.IsDeleted && yt.TourDate >= start && yt.TourDate <= end)
+                .Select(yt => new UpcomingServiceItemDto
+                {
+                    ServiceType = "YachtTour",
+                    ServiceId = yt.Id,
+                    ServiceDate = yt.TourDate,
+                    GuestName = yt.OwnerGuest.FullName,
+                    RoomNumber = yt.OwnerGuest.RoomNumber,
+                    CityName = yt.City.CityName,
+                    Status = null,
+                    IsUrgent = yt.TourDate <= now.AddDays(1)
+                })
+                .ToListAsync();
+
+            result.Items = transfers
+                .Concat(cityTours)
+                .Concat(yachtTours)
+                .OrderBy(i => i.ServiceDate)
+                .ToList();
+
+            return result;
+        }
+
+        public async Task<CriticalEventsDto> GetCriticalEventsAsync()
+        {
+            var now = DateTime.UtcNow;
+            var today = now.Date;
+            var result = new CriticalEventsDto();
+
+            // 1. Services starting within next 2 hours
+            var next2Hours = now.AddHours(2);
+            var urgentServices = new List<CriticalEventItemDto>();
+
+            // Transfers starting soon
+            var urgentTransfers = await _transferRepository.GetAll()
+                .Include(t => t.Guest)
+                .Where(t => !t.IsDeleted &&
+                           t.TransferDate >= now &&
+                           t.TransferDate <= next2Hours &&
+                           t.Status != "Completed" &&
+                           t.Status != "Cancelled")
+                .Select(t => new CriticalEventItemDto
+                {
+                    Type = "Transfer",
+                    Id = t.Id,
+                    Title = $"Transfer: {t.Guest.FullName}",
+                    Description = $"{t.PickupAddress} → {t.DropoffAddress}",
+                    Time = t.TransferDate,
+                    Urgency = "HIGH",
+                    ActionRequired = "Konuk hazır mı kontrol et"
+                })
+                .ToListAsync();
+
+            urgentServices.AddRange(urgentTransfers);
+
+            // City Tours starting soon
+            var urgentCityTours = await _cityTourRepository.GetAll()
+                .Include(ct => ct.OwnerGuest)
+                .Where(ct => !ct.IsDeleted &&
+                            ct.TourDate >= now &&
+                            ct.TourDate <= next2Hours)
+                .Select(ct => new CriticalEventItemDto
+                {
+                    Type = "CityTour",
+                    Id = ct.Id,
+                    Title = $"Şehir Turu: {ct.OwnerGuest.FullName}",
+                    Description = $"{ct.DurationHours} saat, {(ct.AdultCount ?? 1) + (ct.ChildCount ?? 0) + (ct.InfantCount ?? 0)} kişi",
+                    Time = ct.TourDate,
+                    Urgency = "HIGH",
+                    ActionRequired = "Rehber ve araç hazır mı?"
+                })
+                .ToListAsync();
+
+            urgentServices.AddRange(urgentCityTours);
+
+            // Yacht Tours starting soon
+            var urgentYachtTours = await _yachtTourRepository.GetAll()
+                .Include(yt => yt.OwnerGuest)
+                .Where(yt => !yt.IsDeleted &&
+                            yt.TourDate >= now &&
+                            yt.TourDate <= next2Hours)
+                .Select(yt => new CriticalEventItemDto
+                {
+                    Type = "YachtTour",
+                    Id = yt.Id,
+                    Title = $"Yat Turu: {yt.OwnerGuest.FullName}",
+                    Description = $"{yt.NumberOfPeople} kişi, {yt.YachtName}",
+                    Time = yt.TourDate,
+                    Urgency = "CRITICAL",
+                    ActionRequired = "Güvenlik brifingi ve can yelekleri hazır mı?"
+                })
+                .ToListAsync();
+
+            urgentServices.AddRange(urgentYachtTours);
+
+            result.UrgentServices = urgentServices.OrderBy(u => u.Time).ToList();
+
+            // 2. Arrivals requiring transport coordination
+            var arrivalsNeedingTransport = await _guestRepository.GetAll()
+                .Include(g => g.RoomAssignments.Where(ra => ra.StartDate <= today && (ra.EndDate == null || ra.EndDate >= today)))
+                .Where(g => !g.IsDeleted &&
+                           g.CheckInDate == today &&
+                           g.RoomAssignments.Any(ra => ra.StartDate <= today && (ra.EndDate == null || ra.EndDate >= today)))
+                .Select(g => new CriticalEventItemDto
+                {
+                    Type = "Arrival",
+                    Id = g.Id,
+                    Title = $"Varış: {g.FullName}",
+                    Description = $"Oda: {(g.RoomAssignments.Any() ? g.RoomAssignments.First().RoomNumber : "Bilinmiyor")}",
+                    Time = today.AddHours(14), // Assume 2 PM arrival
+                    Urgency = "MEDIUM",
+                    ActionRequired = "Transfer düzenlendi mi?"
+                })
+                .ToListAsync();
+
+            result.ArrivalsNeedingTransport = arrivalsNeedingTransport;
+
+            // 3. Departures requiring checkout coordination
+            var departuresToday = await _guestRepository.GetAll()
+                .Include(g => g.RoomAssignments.Where(ra => ra.StartDate <= today && (ra.EndDate == null || ra.EndDate >= today)))
+                .Where(g => !g.IsDeleted &&
+                           g.CheckOutDate == today &&
+                           g.RoomAssignments.Any(ra => ra.StartDate <= today && (ra.EndDate == null || ra.EndDate >= today)))
+                .Select(g => new CriticalEventItemDto
+                {
+                    Type = "Departure",
+                    Id = g.Id,
+                    Title = $"Ayrılış: {g.FullName}",
+                    Description = $"Oda: {(g.RoomAssignments.Any() ? g.RoomAssignments.First().RoomNumber : "Bilinmiyor")}",
+                    Time = today.AddHours(11), // Assume 11 AM checkout
+                    Urgency = "MEDIUM",
+                    ActionRequired = "Checkout tamamlandı mı?"
+                })
+                .ToListAsync();
+
+            result.DeparturesRequiringCheckout = departuresToday;
+
+            // 4. Unconfirmed services for tomorrow
+            var tomorrow = today.AddDays(1);
+            var unconfirmedServices = new List<CriticalEventItemDto>();
+
+            // Unconfirmed transfers for tomorrow
+            var unconfirmedTransfers = await _transferRepository.GetAll()
+                .Include(t => t.Guest)
+                .Where(t => !t.IsDeleted &&
+                           t.TransferDate >= tomorrow &&
+                           t.TransferDate < tomorrow.AddDays(1) &&
+                           (t.Status == null || t.Status == "Pending"))
+                .Select(t => new CriticalEventItemDto
+                {
+                    Type = "UnconfirmedTransfer",
+                    Id = t.Id,
+                    Title = $"Onaylanmamış Transfer: {t.Guest.FullName}",
+                    Description = $"{t.PickupAddress} → {t.DropoffAddress}",
+                    Time = t.TransferDate,
+                    Urgency = "MEDIUM",
+                    ActionRequired = "Konukla onay al"
+                })
+                .ToListAsync();
+
+            unconfirmedServices.AddRange(unconfirmedTransfers);
+
+            // Unconfirmed tours for tomorrow
+            var unconfirmedCityTours = await _cityTourRepository.GetAll()
+                .Include(ct => ct.OwnerGuest)
+                .Where(ct => !ct.IsDeleted &&
+                            ct.TourDate >= tomorrow &&
+                            ct.TourDate < tomorrow.AddDays(1))
+                // Assuming we add a Confirmed field later
+                .Select(ct => new CriticalEventItemDto
+                {
+                    Type = "UnconfirmedCityTour",
+                    Id = ct.Id,
+                    Title = $"Tur Onayı: {ct.OwnerGuest.FullName}",
+                    Description = $"{ct.DurationHours} saat şehir turu",
+                    Time = ct.TourDate,
+                    Urgency = "LOW",
+                    ActionRequired = "Tur detaylarını doğrula"
+                })
+                .ToListAsync();
+
+            unconfirmedServices.AddRange(unconfirmedCityTours);
+
+            result.UnconfirmedServices = unconfirmedServices.OrderBy(u => u.Time).ToList();
+
+            return result;
         }
     }
 }

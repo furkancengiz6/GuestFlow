@@ -9,7 +9,7 @@ namespace GuestFlow.Application.Operations.YachtTour
 {
     public interface IYachtTourService
     {
-        Task<ServiceMessage> AddYachtTour(AddYachtTourDto yachtTour);
+        Task<ServiceMessage<AddYachtTourResponseDto>> AddYachtTour(AddYachtTourDto yachtTour);
         Task<ServiceMessage> UpdateYachtTour(UpdateYachtTourDto yachtTour);
         Task<ServiceMessage> DeleteYachtTour(int id);
         Task<GetYachtTourDto> GetYachtTourById(int id);
@@ -24,5 +24,20 @@ namespace GuestFlow.Application.Operations.YachtTour
         /// Sayfalanmış yat turlarını getirir
         /// </summary>
         Task<PagedResult<GetYachtTourDto>> GetYachtToursPaged(int pageNumber, int pageSize, YachtTourFilterParameters? filters = null, SortingParameters? sorting = null);
+
+        /// <summary>
+        /// Yat turu için fatura oluşturur
+        /// </summary>
+        Task<ServiceMessage> CreateYachtTourInvoiceAsync(int id);
+
+        /// <summary>
+        /// Yat turu onay maili gönderir
+        /// </summary>
+        Task<ServiceMessage> SendYachtTourConfirmationAsync(int id);
+
+        /// <summary>
+        /// Yat turu durumunu günceller (tamamlandı/iptal edildi)
+        /// </summary>
+        Task<ServiceMessage> UpdateYachtTourStatusAsync(int id, string status);
     }
 }

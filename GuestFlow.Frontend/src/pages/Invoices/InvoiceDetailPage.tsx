@@ -9,24 +9,23 @@ import {
   Button,
   Divider,
   IconButton,
-  Tooltip,
 } from '@mui/material'
 import {
   ArrowBack as ArrowBackIcon,
   Person as PersonIcon,
-  Receipt as ReceiptIcon,
   AttachMoney as AttachMoneyIcon,
-  Download as DownloadIcon,
   CalendarMonth as CalendarMonthIcon,
+  Email as EmailIcon,
 } from '@mui/icons-material'
 import { useState } from 'react'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { invoiceService } from '../../services/invoiceService'
 import { formatDate, formatCurrency } from '../../utils/formatters'
 import ContentState from '../../components/Feedback/ContentState'
 import PrintButton from '../../components/Common/PrintButton'
 import PDFViewer from '../../components/Common/PDFViewer'
 import { useNotification } from '../../hooks/useNotification'
+import { useLiveUpdates } from '../../hooks/useLiveUpdates'
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'
 import api from '../../services/api'
 
@@ -34,29 +33,77 @@ const InvoiceDetailPage = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const notification = useNotification()
-  const invoiceId = id ? parseInt(id, 10) : 0
+  const queryClient = useQueryClient()
+  const parsedId = id ? parseInt(id, 10) : NaN
+  const invoiceId = !isNaN(parsedId) && parsedId > 0 ? parsedId : null
   const [pdfViewerOpen, setPdfViewerOpen] = useState(false)
+
+  // Enable real-time updates for invoice changes
+  useLiveUpdates(['invoice'])
 
   const { data: invoice, isLoading, error } = useQuery({
     queryKey: ['invoice-detail', invoiceId],
-    queryFn: () => invoiceService.getInvoiceDetail(invoiceId),
-    enabled: !!invoiceId && !isNaN(invoiceId),
+    queryFn: () => {
+      if (!invoiceId) throw new Error('Geçersiz fatura ID')
+      return invoiceService.getInvoiceDetail(invoiceId)
+    },
+    enabled: invoiceId !== null && invoiceId > 0,
   })
 
   const generatePdfMutation = useMutation({
-    mutationFn: async () => {
-      const response = await api.post(`/invoices/${invoiceId}/generate-pdf`)
-      return response.data.data.pdfUrl
+    mutationFn: () => {
+      if (!invoiceId) throw new Error('Geçersiz fatura ID')
+      return invoiceService.generateInvoicePdf(invoiceId)
     },
-    onSuccess: (pdfUrl) => {
+    onSuccess: () => {
       notification.showSuccess('PDF başarıyla oluşturuldu.')
       // Refresh invoice data to get updated pdfUrl
-      window.location.reload()
+      queryClient.refetchQueries({ queryKey: ['invoice-detail', invoiceId] })
     },
     onError: (error: any) => {
       notification.showError(error?.response?.data?.message || 'PDF oluşturulurken bir hata oluştu.')
     },
   })
+
+  const sendEmailMutation = useMutation({
+    mutationFn: () => {
+      if (!invoiceId) throw new Error('Geçersiz fatura ID')
+      return invoiceService.sendInvoiceEmail(invoiceId)
+    },
+    onSuccess: () => {
+      notification.showSuccess('Fatura e-postası gönderildi.')
+    },
+    onError: (error: any) => {
+      notification.showError(`E-posta gönderme hatası: ${error.response?.data?.message || 'Bilinmeyen hata'}`)
+    }
+  })
+
+  const cancelInvoiceMutation = useMutation({
+    mutationFn: () => {
+      if (!invoiceId) throw new Error('Geçersiz fatura ID')
+      return invoiceService.cancelInvoice(invoiceId)
+    },
+    onSuccess: () => {
+      notification.showSuccess('Fatura iptal edildi.')
+      queryClient.refetchQueries({ queryKey: ['invoice-detail', invoiceId] })
+      queryClient.invalidateQueries({ queryKey: ['invoices'] })
+    },
+    onError: (error: any) => {
+      notification.showError(`Fatura iptal hatası: ${error.response?.data?.message || 'Bilinmeyen hata'}`)
+    }
+  })
+
+  if (!invoiceId) {
+    return (
+      <ContentState
+        state="error"
+        title="Geçersiz fatura ID"
+        description="Fatura ID'si geçersiz veya eksik."
+        actionLabel="Geri dön"
+        onAction={() => navigate('/invoices')}
+      />
+    )
+  }
 
   if (isLoading) {
     return <ContentState state="loading" skeletonLines={8} />
@@ -132,6 +179,29 @@ const InvoiceDetailPage = () => {
               PDF Oluştur
             </Button>
           )}
+          <Button
+            variant="outlined"
+            color="info"
+            startIcon={<EmailIcon />}
+            onClick={() => sendEmailMutation.mutate()}
+            disabled={sendEmailMutation.isPending}
+          >
+            {sendEmailMutation.isPending ? 'Gönderiliyor...' : 'E-posta Gönder'}
+          </Button>
+          {invoice.status === 'Draft' && (
+            <Button
+              variant="outlined"
+              color="error"
+              onClick={() => {
+                if (window.confirm('Bu faturayı iptal etmek istediğinizden emin misiniz?')) {
+                  cancelInvoiceMutation.mutate()
+                }
+              }}
+              disabled={cancelInvoiceMutation.isPending}
+            >
+              {cancelInvoiceMutation.isPending ? 'İptal Ediliyor...' : 'İptal Et'}
+            </Button>
+          )}
         </Box>
       </Box>
 
@@ -183,6 +253,49 @@ const InvoiceDetailPage = () => {
                 {formatCurrency(invoice.totalAmount, invoice.currency)}
               </Typography>
             </Grid>
+            {invoice.paymentStatus && (
+              <Grid item xs={12}>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  Ödeme Durumu
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <Chip
+                    label={invoice.paymentStatus === 'Paid' ? 'Ödendi' :
+                           invoice.paymentStatus === 'PartiallyPaid' ? 'Kısmi Ödeme' : 'Ödenmedi'}
+                    color={invoice.paymentStatus === 'Paid' ? 'success' :
+                           invoice.paymentStatus === 'PartiallyPaid' ? 'warning' : 'error'}
+                    size="small"
+                  />
+                  {invoice.paidAmount !== undefined && invoice.remainingAmount !== undefined && (
+                    <Box sx={{ display: 'flex', gap: 2, ml: 2 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Ödenen: <span style={{ fontWeight: 'bold', color: '#2e7d32' }}>{formatCurrency(invoice.paidAmount, invoice.currency)}</span>
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Kalan: <span style={{ fontWeight: 'bold', color: '#d32f2f' }}>{formatCurrency(invoice.remainingAmount, invoice.currency)}</span>
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+                {invoice.paidAmountByCurrency && Object.keys(invoice.paidAmountByCurrency).length > 0 && (
+                  <Box sx={{ mt: 1 }}>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      Para Birimine Göre Ödemeler:
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                      {Object.entries(invoice.paidAmountByCurrency).map(([currency, amount]) => (
+                        <Chip
+                          key={currency}
+                          label={`${currency}: ${formatCurrency(amount)}`}
+                          variant="outlined"
+                          size="small"
+                        />
+                      ))}
+                    </Box>
+                  </Box>
+                )}
+              </Grid>
+            )}
             {invoice.service && (
               <>
                 {invoice.service.serviceDate && (

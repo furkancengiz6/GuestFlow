@@ -1,6 +1,6 @@
 # GuestFlow Proje Durumu - Roadmap Analizi
 
-**Son Güncelleme**: 2024-12-07  
+**Son Güncelleme**: 2025-01-13  
 **Toplam Madde Sayısı**: 105
 
 ---
@@ -9,10 +9,18 @@
 
 | Kategori | Sayı | Yüzde |
 |----------|------|-------|
-| ✅ **İYİ (Tamamlandı/İyi)** | 42 | %40 |
+| ✅ **İYİ (Tamamlandı/İyi)** | 48 | %46 |
 | ⚠️ **ORTA (Temel var, iyileştirme gerekli)** | 40 | %38 |
-| ❌ **KÖTÜ (Henüz implemente edilmedi)** | 23 | %22 |
+| ❌ **KÖTÜ (Henüz implemente edilmedi)** | 17 | %16 |
 | **TOPLAM** | **105** | **100%** |
+
+### 🆕 Son Eklenen Özellikler (2025-01-13)
+- ✅ **Hotel Management** - Backend ve Frontend
+- ✅ **Restaurant Management** - Backend ve Frontend
+- ✅ **Itinerary Management** - Backend ve Frontend (Timeline dahil)
+- ✅ **Restaurant Reservations** - Backend ve Frontend
+- ✅ **Service Packages** - Backend
+- ✅ **Transfer Recommendations** - Backend
 
 ### Öncelik Dağılımı
 - 🔴 **YÜKSEK ÖNCELİK**: 20 madde
@@ -33,16 +41,22 @@
 6. ✅ **Raporlar & İstatistikler Controller'ı** - Tamamlandı
 7. ✅ **Hata Yanıt Formatını Standardize Et** - Tamamlandı
 8. ✅ **Filtreleme & Arama** - Tamamlandı
+9. ✅ **Hotel Management** - Backend ve Frontend tamamlandı (2025-01-13)
+10. ✅ **Restaurant Management** - Backend ve Frontend tamamlandı (2025-01-13)
+11. ✅ **Itinerary Management** - Backend ve Frontend tamamlandı (2025-01-13)
+12. ✅ **Restaurant Reservations** - Backend ve Frontend tamamlandı (2025-01-13)
+13. ✅ **Service Packages** - Backend tamamlandı (2025-01-13)
+14. ✅ **Transfer Recommendations** - Backend tamamlandı (2025-01-13)
 
 ### 🟡 ORTA ÖNCELİK
 
-9. ✅ **Personel Yönetimi Controller'ı** - Tamamlandı
-10. ✅ **Dashboard/İstatistikler Servisi** - Tamamlandı
-11. ✅ **Kapsamlı İstek Validasyonu** - Tamamlandı
-12. ✅ **Model Validasyonu için Action Filter** - Tamamlandı
-13. ✅ **İş Kuralı Validasyonu** - Tamamlandı
-14. ✅ **Foreign Key Validasyonu** - Tamamlandı
-15. ✅ **Para Birimi Yönetimi** - Tamamlandı
+15. ✅ **Personel Yönetimi Controller'ı** - Tamamlandı
+16. ✅ **Dashboard/İstatistikler Servisi** - Tamamlandı
+17. ✅ **Kapsamlı İstek Validasyonu** - Tamamlandı
+18. ✅ **Model Validasyonu için Action Filter** - Tamamlandı
+19. ✅ **İş Kuralı Validasyonu** - Tamamlandı
+20. ✅ **Foreign Key Validasyonu** - Tamamlandı
+21. ✅ **Para Birimi Yönetimi** - Tamamlandı
 16. ✅ **AutoMapper Implementasyonu** - Tamamlandı
 17. ✅ **PDF URL Oluşturmayı Ayır** - Tamamlandı
 18. ✅ **Repository Pattern İyileştirmesi** - Tamamlandı

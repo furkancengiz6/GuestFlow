@@ -6,6 +6,9 @@ export interface Guest {
   nationality: string
   guestCode: string
   isSpecialGuest: boolean
+  roomNumber?: string
+  checkInDate?: string
+  checkOutDate?: string
   createdDate: string
 }
 
@@ -101,6 +104,9 @@ export interface GuestDetail {
   nationality: string
   guestCode: string
   isSpecialGuest: boolean
+  roomNumber?: string
+  checkInDate?: string
+  checkOutDate?: string
   createdDate: string
   statistics: GuestStatistics
   transfers: GuestTransfer[]

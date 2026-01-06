@@ -1,8 +1,60 @@
-import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios'
+import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosError } from 'axios'
 import { useAuthStore } from '../stores/authStore'
+import { env } from '../config/env'
+
+// Extend InternalAxiosRequestConfig to include _retryCount
+declare module 'axios' {
+  interface InternalAxiosRequestConfig {
+    _retryCount?: number
+  }
+}
 
 // API base URL
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5146/api/v1'
+const API_BASE_URL = env.apiBaseUrl
+
+// Retry configuration
+const MAX_RETRIES = 3
+const RETRY_DELAY = 1000 // 1 second
+
+/**
+ * Check if error should be retried
+ */
+const shouldRetry = (error: AxiosError): boolean => {
+  // Don't retry on 4xx errors (client errors)
+  if (error.response) {
+    const status = error.response.status
+    if (status >= 400 && status < 500) {
+      return false
+    }
+  }
+
+  // Retry on network errors and 5xx errors
+  return !error.response || error.response.status >= 500
+}
+
+/**
+ * Retry request with exponential backoff
+ */
+const retryRequest = async (
+  error: AxiosError,
+  retryCount: number = 0
+): Promise<unknown> => {
+  const config = error.config as InternalAxiosRequestConfig & { _retryCount?: number }
+
+  if (!config || !shouldRetry(error) || retryCount >= MAX_RETRIES) {
+    return Promise.reject(error)
+  }
+
+  config._retryCount = retryCount + 1
+
+  // Exponential backoff: 1s, 2s, 4s
+  const delay = RETRY_DELAY * Math.pow(2, retryCount)
+
+  await new Promise((resolve) => setTimeout(resolve, delay))
+
+  // Retry the request
+  return apiClient(config)
+}
 
 // Axios instance oluştur
 const apiClient: AxiosInstance = axios.create({
@@ -86,6 +138,39 @@ apiClient.interceptors.response.use(
       } catch (refreshError) {
         return Promise.reject(refreshError)
       }
+    }
+
+    // Retry logic for network errors and 5xx errors
+    if (shouldRetry(error) && (!originalRequest._retryCount || originalRequest._retryCount < MAX_RETRIES)) {
+      try {
+        return await retryRequest(error, originalRequest._retryCount || 0)
+      } catch (retryError) {
+        return Promise.reject(retryError)
+      }
+    }
+
+    // Enhanced error handling
+    if (error.response) {
+      // Backend validation errors are already formatted
+      // Network errors and timeouts are handled by the error handler utility
+      const errorMessage = error.response.data?.message || error.message
+      
+      // Log error for debugging (only in development)
+      if (import.meta.env.DEV) {
+        console.error('API Error:', {
+          url: originalRequest.url,
+          method: originalRequest.method,
+          status: error.response.status,
+          message: errorMessage,
+          data: error.response.data,
+        })
+      }
+    } else if (error.request) {
+      // Network error - no response received
+      console.error('Network Error:', error.message)
+    } else {
+      // Request setup error
+      console.error('Request Error:', error.message)
     }
 
     return Promise.reject(error)

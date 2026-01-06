@@ -301,27 +301,13 @@ namespace GuestFlow.Application.Extensions
             if (!string.IsNullOrWhiteSpace(filters.ServiceType))
             {
                 var serviceType = filters.ServiceType.ToLower();
-                if (serviceType == "transfer")
-                {
-                    query = query.Where(i => i.TransferId != null);
-                }
-                else if (serviceType == "citytour")
-                {
-                    query = query.Where(i => i.CityTourId != null);
-                }
-                else if (serviceType == "yachttour")
-                {
-                    query = query.Where(i => i.YachtTourId != null);
-                }
+                query = query.Where(i => i.InvoiceItems.Any(item => item.ServiceType.ToLower() == serviceType));
             }
 
             // Hizmet ID filtresi
             if (filters.ServiceId.HasValue)
             {
-                query = query.Where(i => 
-                    i.TransferId == filters.ServiceId.Value ||
-                    i.CityTourId == filters.ServiceId.Value ||
-                    i.YachtTourId == filters.ServiceId.Value);
+                query = query.Where(i => i.InvoiceItems.Any(item => item.ServiceId == filters.ServiceId.Value));
             }
 
             // Arama terimi (fatura numarası veya misafir adı için)

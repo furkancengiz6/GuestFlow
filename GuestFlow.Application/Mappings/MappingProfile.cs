@@ -6,10 +6,15 @@ using GuestFlow.Application.Operations.DailyNote.Dtos;
 using GuestFlow.Application.Operations.DailyRevenue.Dtos;
 using GuestFlow.Application.Operations.Email.Dtos;
 using GuestFlow.Application.Operations.Guest.Dtos;
+using GuestFlow.Application.Operations.Hotel.Dtos;
 using GuestFlow.Application.Operations.Invoice.Dtos;
 using GuestFlow.Application.Operations.Notification.Dtos;
 using GuestFlow.Application.Operations.Payment.Dtos;
 using GuestFlow.Application.Operations.Personnel.Dtos;
+using GuestFlow.Application.Operations.Restaurant.Dtos;
+using GuestFlow.Application.Operations.Itinerary.Dtos;
+using GuestFlow.Application.Operations.RestaurantReservation.Dtos;
+using GuestFlow.Application.Operations.ServicePackage.Dtos;
 using GuestFlow.Application.Operations.Sms.Dtos;
 using GuestFlow.Application.Operations.Reservation.Dtos;
 using GuestFlow.Application.Operations.Transfer.Dtos;
@@ -39,7 +44,15 @@ namespace GuestFlow.Application.Mappings
                 .ForMember(dest => dest.IsDeleted, opt => opt.Ignore());
 
             // Transfer Mappings
-            CreateMap<TransferEntity, GetTransferDto>();
+            CreateMap<TransferEntity, GetTransferDto>()
+                .ForMember(dest => dest.PickupAddress, opt => opt.MapFrom(src => src.PickupAddress ?? string.Empty))
+                .ForMember(dest => dest.DropoffAddress, opt => opt.MapFrom(src => src.DropoffAddress ?? string.Empty))
+                .ForMember(dest => dest.Note, opt => opt.MapFrom(src => src.Note ?? string.Empty))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status ?? string.Empty))
+                .ForMember(dest => dest.Priority, opt => opt.MapFrom(src => src.Priority))
+                .ForMember(dest => dest.TransportMode, opt => opt.MapFrom(src => src.TransportMode))
+                .ForMember(dest => dest.LuggageCount, opt => opt.MapFrom(src => src.LuggageCount))
+                .ForMember(dest => dest.IsVip, opt => opt.MapFrom(src => src.IsVip));
             CreateMap<AddTransferDto, TransferEntity>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
@@ -77,7 +90,11 @@ namespace GuestFlow.Application.Mappings
                     VehicleType = src.Vehicle.Type,
                     LicensePlate = src.Vehicle.PlateNumber,
                     Capacity = src.Vehicle.Capacity
-                } : null));
+                } : null))
+                .ForMember(dest => dest.Priority, opt => opt.MapFrom(src => src.Priority))
+                .ForMember(dest => dest.TransportMode, opt => opt.MapFrom(src => src.TransportMode))
+                .ForMember(dest => dest.LuggageCount, opt => opt.MapFrom(src => src.LuggageCount))
+                .ForMember(dest => dest.IsVip, opt => opt.MapFrom(src => src.IsVip));
 
             // CityTour Mappings
             CreateMap<CityTourEntity, GetCityTourDto>();
@@ -88,6 +105,8 @@ namespace GuestFlow.Application.Mappings
                 .ForMember(dest => dest.OwnerGuest, opt => opt.Ignore())
                 .ForMember(dest => dest.Personnel, opt => opt.Ignore())
                 .ForMember(dest => dest.City, opt => opt.Ignore())
+                .ForMember(dest => dest.Tour, opt => opt.Ignore())
+                .ForMember(dest => dest.Vehicle, opt => opt.Ignore())
                 .ForMember(dest => dest.GuestCityTours, opt => opt.Ignore())
                 .ForMember(dest => dest.Invoices, opt => opt.Ignore());
 
@@ -118,7 +137,9 @@ namespace GuestFlow.Application.Mappings
                 } : null));
 
             // YachtTour Mappings
-            CreateMap<YachtTourEntity, GetYachtTourDto>();
+            CreateMap<YachtTourEntity, GetYachtTourDto>()
+                .ForMember(dest => dest.YachtName, opt => opt.MapFrom(src => src.YachtName ?? string.Empty))
+                .ForMember(dest => dest.SpecialRequest, opt => opt.MapFrom(src => src.SpecialRequest ?? string.Empty));
             CreateMap<AddYachtTourDto, YachtTourEntity>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
@@ -361,6 +382,8 @@ namespace GuestFlow.Application.Mappings
                 .ForMember(dest => dest.OwnerGuest, opt => opt.Ignore())
                 .ForMember(dest => dest.Personnel, opt => opt.Ignore())
                 .ForMember(dest => dest.City, opt => opt.Ignore())
+                .ForMember(dest => dest.Tour, opt => opt.Ignore())
+                .ForMember(dest => dest.Vehicle, opt => opt.Ignore())
                 .ForMember(dest => dest.GuestCityTours, opt => opt.Ignore())
                 .ForMember(dest => dest.Invoices, opt => opt.Ignore());
 
@@ -385,6 +408,113 @@ namespace GuestFlow.Application.Mappings
                 .ForMember(dest => dest.Invoices, opt => opt.Ignore())
                 .ForMember(dest => dest.PickupCity, opt => opt.Ignore())
                 .ForMember(dest => dest.DropoffCity, opt => opt.Ignore());
+
+            // Hotel Mappings
+            CreateMap<HotelEntity, GetHotelDto>();
+            CreateMap<AddHotelDto, HotelEntity>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
+                .ForMember(dest => dest.IsDeleted, opt => opt.Ignore())
+                .ForMember(dest => dest.City, opt => opt.Ignore())
+                .ForMember(dest => dest.PickupTransfers, opt => opt.Ignore())
+                .ForMember(dest => dest.DropoffTransfers, opt => opt.Ignore())
+                .ForMember(dest => dest.PickupCityTours, opt => opt.Ignore())
+                .ForMember(dest => dest.PickupYachtTours, opt => opt.Ignore());
+            CreateMap<UpdateHotelDto, HotelEntity>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
+                .ForMember(dest => dest.IsDeleted, opt => opt.Ignore())
+                .ForMember(dest => dest.City, opt => opt.Ignore())
+                .ForMember(dest => dest.PickupTransfers, opt => opt.Ignore())
+                .ForMember(dest => dest.DropoffTransfers, opt => opt.Ignore())
+                .ForMember(dest => dest.PickupCityTours, opt => opt.Ignore())
+                .ForMember(dest => dest.PickupYachtTours, opt => opt.Ignore());
+
+            // Restaurant Mappings
+            CreateMap<RestaurantEntity, GetRestaurantDto>();
+            CreateMap<AddRestaurantDto, RestaurantEntity>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
+                .ForMember(dest => dest.IsDeleted, opt => opt.Ignore())
+                .ForMember(dest => dest.City, opt => opt.Ignore())
+                .ForMember(dest => dest.PickupTransfers, opt => opt.Ignore())
+                .ForMember(dest => dest.DropoffTransfers, opt => opt.Ignore());
+            CreateMap<UpdateRestaurantDto, RestaurantEntity>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
+                .ForMember(dest => dest.IsDeleted, opt => opt.Ignore())
+                .ForMember(dest => dest.City, opt => opt.Ignore())
+                .ForMember(dest => dest.PickupTransfers, opt => opt.Ignore())
+                .ForMember(dest => dest.DropoffTransfers, opt => opt.Ignore());
+
+            // Itinerary Mappings
+            CreateMap<ItineraryEntity, GetItineraryDto>()
+                .ForMember(dest => dest.GuestName, opt => opt.MapFrom(src => src.Guest != null ? src.Guest.FullName : string.Empty))
+                .ForMember(dest => dest.PersonnelName, opt => opt.MapFrom(src => src.Personnel != null ? src.Personnel.FullName : string.Empty))
+                .ForMember(dest => dest.Items, opt => opt.Ignore()); // Items manuel olarak doldurulacak
+            CreateMap<ItineraryItemEntity, GetItineraryItemDto>();
+            CreateMap<AddItineraryItemDto, ItineraryItemEntity>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.ItineraryId, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
+                .ForMember(dest => dest.IsDeleted, opt => opt.Ignore())
+                .ForMember(dest => dest.Itinerary, opt => opt.Ignore());
+
+            // RestaurantReservation Mappings
+            CreateMap<RestaurantReservationEntity, GetRestaurantReservationDto>()
+                .ForMember(dest => dest.RestaurantName, opt => opt.MapFrom(src => src.Restaurant != null ? src.Restaurant.RestaurantName : string.Empty))
+                .ForMember(dest => dest.GuestName, opt => opt.MapFrom(src => src.Guest != null ? src.Guest.FullName : string.Empty))
+                .ForMember(dest => dest.PersonnelName, opt => opt.MapFrom(src => src.Personnel != null ? src.Personnel.FullName : string.Empty));
+            CreateMap<AddRestaurantReservationDto, RestaurantReservationEntity>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
+                .ForMember(dest => dest.IsDeleted, opt => opt.Ignore())
+                .ForMember(dest => dest.ConfirmationNumber, opt => opt.Ignore())
+                .ForMember(dest => dest.Restaurant, opt => opt.Ignore())
+                .ForMember(dest => dest.Guest, opt => opt.Ignore())
+                .ForMember(dest => dest.Personnel, opt => opt.Ignore())
+                .ForMember(dest => dest.Transfer, opt => opt.Ignore())
+                .ForMember(dest => dest.ReturnTransfer, opt => opt.Ignore());
+            CreateMap<UpdateRestaurantReservationDto, RestaurantReservationEntity>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
+                .ForMember(dest => dest.IsDeleted, opt => opt.Ignore())
+                .ForMember(dest => dest.RestaurantId, opt => opt.Ignore())
+                .ForMember(dest => dest.GuestId, opt => opt.Ignore())
+                .ForMember(dest => dest.PersonnelId, opt => opt.Ignore())
+                .ForMember(dest => dest.ConfirmationNumber, opt => opt.Ignore())
+                .ForMember(dest => dest.Restaurant, opt => opt.Ignore())
+                .ForMember(dest => dest.Guest, opt => opt.Ignore())
+                .ForMember(dest => dest.Personnel, opt => opt.Ignore())
+                .ForMember(dest => dest.Transfer, opt => opt.Ignore())
+                .ForMember(dest => dest.ReturnTransfer, opt => opt.Ignore());
+
+            // ServicePackage Mappings
+            CreateMap<ServicePackageEntity, GetServicePackageDto>()
+                .ForMember(dest => dest.TransferIds, opt => opt.Ignore())
+                .ForMember(dest => dest.CityTourIds, opt => opt.Ignore())
+                .ForMember(dest => dest.YachtTourIds, opt => opt.Ignore())
+                .ForMember(dest => dest.RestaurantReservationIds, opt => opt.Ignore());
+            CreateMap<AddServicePackageDto, ServicePackageEntity>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
+                .ForMember(dest => dest.IsDeleted, opt => opt.Ignore())
+                .ForMember(dest => dest.TotalPrice, opt => opt.Ignore())
+                .ForMember(dest => dest.FinalPrice, opt => opt.Ignore())
+                .ForMember(dest => dest.PackageTransfers, opt => opt.Ignore())
+                .ForMember(dest => dest.PackageCityTours, opt => opt.Ignore())
+                .ForMember(dest => dest.PackageYachtTours, opt => opt.Ignore())
+                .ForMember(dest => dest.PackageRestaurantReservations, opt => opt.Ignore());
+            CreateMap<UpdateServicePackageDto, ServicePackageEntity>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
+                .ForMember(dest => dest.IsDeleted, opt => opt.Ignore())
+                .ForMember(dest => dest.TotalPrice, opt => opt.Ignore())
+                .ForMember(dest => dest.FinalPrice, opt => opt.Ignore())
+                .ForMember(dest => dest.PackageTransfers, opt => opt.Ignore())
+                .ForMember(dest => dest.PackageCityTours, opt => opt.Ignore())
+                .ForMember(dest => dest.PackageYachtTours, opt => opt.Ignore())
+                .ForMember(dest => dest.PackageRestaurantReservations, opt => opt.Ignore());
         }
     }
 }

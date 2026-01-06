@@ -8,9 +8,10 @@ namespace GuestFlow.Api.Validators
     {
         public UpdateYachtTourRequestValidator()
         {
+            // DATE REALITY: Past-dated entries are allowed for retroactive data entry
+            // Service date represents when the operation ACTUALLY occurred
             RuleFor(x => x.TourDate)
-                .NotEmpty().WithMessage("Tur tarihi gereklidir.")
-                .Must(BeFutureOrToday).WithMessage("Tur tarihi bugünden önceki bir tarih olamaz.");
+                .NotEmpty().WithMessage("Tur tarihi gereklidir.");
 
             RuleFor(x => x.NumberOfPeople)
                 .GreaterThan(0).WithMessage("Kişi sayısı 0'dan büyük olmalıdır.")
@@ -36,12 +37,46 @@ namespace GuestFlow.Api.Validators
             RuleFor(x => x.SpecialRequest)
                 .MaximumLength(500).WithMessage("Özel istek en fazla 500 karakter olabilir.")
                 .When(x => !string.IsNullOrEmpty(x.SpecialRequest));
+
+            RuleFor(x => x.PickupPier)
+                .MaximumLength(200).WithMessage("Alış iskelesi en fazla 200 karakter olabilir.")
+                .When(x => !string.IsNullOrEmpty(x.PickupPier));
+
+            RuleFor(x => x.DropoffPier)
+                .MaximumLength(200).WithMessage("Bırakış iskelesi en fazla 200 karakter olabilir.")
+                .When(x => !string.IsNullOrEmpty(x.DropoffPier));
+
+            RuleFor(x => x.PierAddress)
+                .MaximumLength(500).WithMessage("İskele adresi en fazla 500 karakter olabilir.")
+                .When(x => !string.IsNullOrEmpty(x.PierAddress));
+
+            RuleFor(x => x.CaptainPhone)
+                .MaximumLength(20).WithMessage("Kaptan telefonu en fazla 20 karakter olabilir.")
+                .When(x => !string.IsNullOrEmpty(x.CaptainPhone));
+
+            RuleFor(x => x.PaymentNote)
+                .MaximumLength(500).WithMessage("Ödeme notu en fazla 500 karakter olabilir.")
+                .When(x => !string.IsNullOrEmpty(x.PaymentNote));
+
+            RuleFor(x => x.SupplierName)
+                .MaximumLength(200).WithMessage("Tedarikçi adı en fazla 200 karakter olabilir.")
+                .When(x => !string.IsNullOrEmpty(x.SupplierName));
+
+            RuleFor(x => x.SupplierCurrency)
+                .MaximumLength(3).WithMessage("Tedarikçi para birimi 3 karakter olmalıdır.")
+                .When(x => !string.IsNullOrEmpty(x.SupplierCurrency));
+
+            RuleFor(x => x.SupplierPaymentStatus)
+                .MaximumLength(20).WithMessage("Tedarikçi ödeme durumu en fazla 20 karakter olabilir.")
+                .When(x => !string.IsNullOrEmpty(x.SupplierPaymentStatus));
+
+            RuleFor(x => x.SupplierInvoiceNumber)
+                .MaximumLength(100).WithMessage("Tedarikçi fatura numarası en fazla 100 karakter olabilir.")
+                .When(x => !string.IsNullOrEmpty(x.SupplierInvoiceNumber));
         }
 
-        private bool BeFutureOrToday(DateTime date)
-        {
-            return date.Date >= DateTime.UtcNow.Date;
-        }
+        // BeFutureOrToday REMOVED - Past-dated entries are allowed per DATE REALITY
+        // Service date represents when the operation actually occurred, not when entered
     }
 }
 

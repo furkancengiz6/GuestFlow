@@ -45,7 +45,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 import { tr } from 'date-fns/locale'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { personnelService, Personnel, PersonnelFilters, CreatePersonnelRequest, UpdatePersonnelRequest } from '../../services/personnelService'
+import { personnelService, Personnel, PersonnelFilters } from '../../services/personnelService'
 import { formatDate } from '../../utils/formatters'
 import ContentState from '../../components/Feedback/ContentState'
 import { useNotification } from '../../hooks/useNotification'
@@ -163,7 +163,7 @@ const PersonnelPage = () => {
         title="Personel yüklenemedi"
         description="Lütfen daha sonra tekrar deneyin."
         actionLabel="Tekrar dene"
-        onAction={() => window.location.reload()}
+        onAction={() => queryClient.refetchQueries({ queryKey: ['personnel'] })}
       />
     )
   }
@@ -333,7 +333,7 @@ const PersonnelPage = () => {
         <ContentState
           state="empty"
           title="Personel bulunamadı"
-          description="Kayıtlı personel olmadığında burada listelenecek."
+          description="Henüz kayıtlı personel bulunmamaktadır."
         />
       ) : (
         <TableContainer component={Paper}>

@@ -38,6 +38,9 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
 
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
@@ -49,11 +52,17 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CityId");
 
-                    b.ToTable("Airports");
+                    b.ToTable("Airports", (string)null);
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.CityEntity", b =>
@@ -74,15 +83,24 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("Id");
 
-                    b.ToTable("Cities");
+                    b.ToTable("Cities", (string)null);
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.CityTourEntity", b =>
@@ -93,7 +111,35 @@ namespace GuestFlow.Persistence.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("AccessibilityNeeds")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int?>("AdultCount")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("AssistantGuideId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("BackupGuideName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("BackupGuidePhone")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int?>("ChildCount")
+                        .HasColumnType("int");
+
                     b.Property<int>("CityId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ConciergeInternalNotes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int?>("CreatedByPersonnelId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedDate")
@@ -104,18 +150,83 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(3)
                         .HasColumnType("nvarchar(3)");
 
+                    b.Property<string>("DietaryRequirements")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<decimal?>("DiscountPercentage")
                         .HasPrecision(5, 2)
                         .HasColumnType("decimal(5,2)");
 
+                    b.Property<string>("DriverName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("DropoffLocation")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<int>("DurationHours")
                         .HasColumnType("int");
+
+                    b.Property<string>("EmergencyContactName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("EmergencyContactPhone")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("EmergencyContactRelation")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<TimeSpan?>("EndTime")
+                        .HasColumnType("time");
+
+                    b.Property<string>("ExternalDriverName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ExternalDriverPhone")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("ExternalVehiclePlate")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<decimal>("FinalPrice")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<string>("GroupLeaderName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("GroupLeaderPhone")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("GuideLanguages")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("GuideName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("GuidePhone")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int?>("InfantCount")
+                        .HasColumnType("int");
+
                     b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsVipGroup")
                         .HasColumnType("bit");
 
                     b.Property<string>("Language")
@@ -123,28 +234,127 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int?>("MaximumParticipantCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MeetingPersonName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("MeetingPointDetails")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int?>("MinimumParticipantCount")
+                        .HasColumnType("int");
+
                     b.Property<int>("OwnerGuestId")
                         .HasColumnType("int");
 
-                    b.Property<int>("PersonnelId")
+                    b.Property<int?>("PersonnelId")
                         .HasColumnType("int");
+
+                    b.Property<bool?>("PhotographyAllowed")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("PickupHotelId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PickupLocation")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<TimeSpan?>("PickupTime")
+                        .HasColumnType("time");
 
                     b.Property<decimal>("Price")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<string>("ServiceInfoPdfUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SpecialEquipment")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<TimeSpan?>("StartTime")
+                        .HasColumnType("time");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<decimal?>("SupplierCost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("SupplierCurrency")
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)");
+
+                    b.Property<string>("SupplierInvoiceNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("SupplierName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("TourConfirmationTime")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime>("TourDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("TourDifficultyLevel")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("TourGuideId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("TourId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("VehicleId")
+                        .HasColumnType("int");
+
+                    b.Property<bool?>("WeatherDependent")
+                        .HasColumnType("bit");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CityId");
 
+                    b.HasIndex("IsVipGroup");
+
                     b.HasIndex("OwnerGuestId");
 
                     b.HasIndex("PersonnelId");
 
-                    b.ToTable("CityTours");
+                    b.HasIndex("PickupHotelId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("TourDate");
+
+                    b.HasIndex("TourId");
+
+                    b.HasIndex("Status", "TourDate");
+
+                    b.HasIndex("TourGuideId", "TourDate");
+
+                    b.HasIndex("VehicleId", "TourDate");
+
+                    b.HasIndex("TourDate", "Status", "IsDeleted");
+
+                    b.ToTable("CityTours", (string)null);
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.DailyNoteEntity", b =>
@@ -154,6 +364,9 @@ namespace GuestFlow.Persistence.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
@@ -175,11 +388,17 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<int>("RoomNumber")
                         .HasColumnType("int");
 
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("Id");
 
                     b.HasIndex("PersonnelId");
 
-                    b.ToTable("DailyNotes");
+                    b.ToTable("DailyNotes", (string)null);
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.DailyRevenueEntity", b =>
@@ -190,22 +409,66 @@ namespace GuestFlow.Persistence.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<decimal>("CityTourRevenue")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)");
 
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime2");
 
+                    b.Property<decimal>("GeneralRevenue")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
+
+                    b.Property<decimal>("NetRevenue")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("PaymentCount")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("RefundedAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("TotalRevenue")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<decimal>("TransferRevenue")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("YachtTourRevenue")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.HasKey("Id");
 
-                    b.ToTable("DailyRevenues");
+                    b.HasIndex("Date", "Currency")
+                        .IsUnique();
+
+                    b.ToTable("DailyRevenues", (string)null);
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.EmailHistoryEntity", b =>
@@ -220,6 +483,9 @@ namespace GuestFlow.Persistence.Migrations
                         .HasColumnType("int");
 
                     b.Property<int>("ClickCount")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("CreatedByPersonnelId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedDate")
@@ -279,6 +545,12 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("Id");
 
                     b.HasIndex("SentDate");
@@ -291,7 +563,7 @@ namespace GuestFlow.Persistence.Migrations
 
                     b.HasIndex("RelatedEntityType", "RelatedEntityId");
 
-                    b.ToTable("EmailHistories");
+                    b.ToTable("EmailHistories", (string)null);
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.EmailQueueEntity", b =>
@@ -309,6 +581,9 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<string>("Body")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
@@ -370,6 +645,12 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ScheduledDate");
@@ -378,7 +659,7 @@ namespace GuestFlow.Persistence.Migrations
 
                     b.HasIndex("Status", "Priority");
 
-                    b.ToTable("EmailQueues");
+                    b.ToTable("EmailQueues", (string)null);
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.EmailTemplateEntity", b =>
@@ -396,6 +677,9 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<string>("Category")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
@@ -430,6 +714,12 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("VariablesDescription")
                         .HasColumnType("nvarchar(max)");
 
@@ -442,7 +732,7 @@ namespace GuestFlow.Persistence.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("EmailTemplates");
+                    b.ToTable("EmailTemplates", (string)null);
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.GuestEntity", b =>
@@ -453,12 +743,34 @@ namespace GuestFlow.Persistence.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTime?>("CheckInDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("CheckOutDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Email")
+                        .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("EmergencyContactName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("EmergencyContactPhone")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("EmergencyContactRelation")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("FullName")
                         .IsRequired()
@@ -469,6 +781,9 @@ namespace GuestFlow.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("HotelId")
+                        .HasColumnType("int");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -482,15 +797,214 @@ namespace GuestFlow.Persistence.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("PhoneNumber")
+                        .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("RoomNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
                     b.HasIndex("GuestCode")
                         .IsUnique();
 
-                    b.ToTable("Guests");
+                    b.HasIndex("HotelId");
+
+                    b.ToTable("Guests", (string)null);
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.GuestRoomHistoryEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("AssignedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("AssignedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("GuestId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsCurrent")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RoomNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssignedByPersonnelId");
+
+                    b.HasIndex("GuestId");
+
+                    b.ToTable("GuestRoomHistoryEntity", (string)null);
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.HotelEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Amenities")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<TimeSpan?>("CheckInTime")
+                        .HasColumnType("time");
+
+                    b.Property<TimeSpan?>("CheckOutTime")
+                        .HasColumnType("time");
+
+                    b.Property<int>("CityId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("HotelName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("RoomTypes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int?>("StarRating")
+                        .HasMaxLength(1)
+                        .HasColumnType("int");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CityId");
+
+                    b.HasIndex("HotelName");
+
+                    b.ToTable("Hotels", (string)null);
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.InvoiceItemEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("InvoiceId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ServiceId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ServiceType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InvoiceId");
+
+                    b.ToTable("InvoiceItems", (string)null);
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.InvoicesEntity", b =>
@@ -501,7 +1015,10 @@ namespace GuestFlow.Persistence.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("CityTourId")
+                    b.Property<int?>("CityTourEntityId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("CreatedByPersonnelId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedDate")
@@ -521,12 +1038,22 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsPdfGenerated")
+                        .HasColumnType("bit");
+
                     b.Property<DateTime>("IssueDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<int?>("LockedByPersonnelId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Notes")
+                        .IsRequired()
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime?>("PdfGeneratedDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("PdfUrl")
                         .IsRequired()
@@ -536,32 +1063,172 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<int?>("PersonnelId")
                         .HasColumnType("int");
 
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
                     b.Property<decimal>("TotalAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<int?>("TransferId")
+                    b.Property<int?>("TransferEntityId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("YachtTourId")
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("YachtTourEntityId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CityTourId");
+                    b.HasIndex("CityTourEntityId");
 
                     b.HasIndex("GuestId");
 
                     b.HasIndex("InvoiceNumber")
                         .IsUnique();
 
+                    b.HasIndex("LockedByPersonnelId");
+
                     b.HasIndex("PersonnelId");
 
-                    b.HasIndex("TransferId");
+                    b.HasIndex("TransferEntityId");
 
-                    b.HasIndex("YachtTourId");
+                    b.HasIndex("YachtTourEntityId");
 
-                    b.ToTable("Invoices");
+                    b.ToTable("Invoices", (string)null);
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.ItineraryEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("GuestId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ItineraryNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int>("PersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("TotalCost")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EndDate");
+
+                    b.HasIndex("GuestId");
+
+                    b.HasIndex("ItineraryNumber")
+                        .IsUnique();
+
+                    b.HasIndex("PersonnelId");
+
+                    b.HasIndex("StartDate");
+
+                    b.ToTable("Itineraries", (string)null);
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.ItineraryItemEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("ItemType")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ItineraryId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("ScheduledDateTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ServiceId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ItineraryId");
+
+                    b.HasIndex("ScheduledDateTime");
+
+                    b.HasIndex("ItineraryId", "Order");
+
+                    b.ToTable("ItineraryItems", (string)null);
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.PaymentEntity", b =>
@@ -580,6 +1247,15 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<int?>("CityTourId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CollectedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
@@ -595,7 +1271,7 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<int>("GuestId")
                         .HasColumnType("int");
 
-                    b.Property<int>("InvoiceId")
+                    b.Property<int?>("InvoiceId")
                         .HasColumnType("int");
 
                     b.Property<bool>("IsDeleted")
@@ -634,16 +1310,47 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<int?>("TransferEntityId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("TransferId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("YachtTourId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("CityTourId");
+
+                    b.HasIndex("CollectedByPersonnelId");
+
+                    b.HasIndex("Currency");
 
                     b.HasIndex("GuestId");
 
                     b.HasIndex("InvoiceId");
 
+                    b.HasIndex("PaymentDate");
+
                     b.HasIndex("PaymentNumber")
                         .IsUnique();
 
-                    b.ToTable("Payments");
+                    b.HasIndex("Status");
+
+                    b.HasIndex("TransferEntityId");
+
+                    b.HasIndex("TransferId");
+
+                    b.HasIndex("YachtTourId");
+
+                    b.ToTable("Payments", (string)null);
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.PersonnelEntity", b =>
@@ -653,6 +1360,9 @@ namespace GuestFlow.Persistence.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
@@ -675,6 +1385,12 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("UserType")
                         .HasColumnType("int");
 
@@ -683,7 +1399,7 @@ namespace GuestFlow.Persistence.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("Personnels");
+                    b.ToTable("Personnels", (string)null);
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.RefreshTokenEntity", b =>
@@ -697,6 +1413,9 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<string>("CreatedByIp")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
@@ -725,6 +1444,12 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("Id");
 
                     b.HasIndex("PersonnelId");
@@ -734,7 +1459,7 @@ namespace GuestFlow.Persistence.Migrations
 
                     b.HasIndex("PersonnelId", "IsRevoked");
 
-                    b.ToTable("RefreshTokens");
+                    b.ToTable("RefreshTokens", (string)null);
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.ReservationEntity", b =>
@@ -754,6 +1479,9 @@ namespace GuestFlow.Persistence.Migrations
 
                     b.Property<DateTime?>("ConfirmedDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
@@ -799,6 +1527,12 @@ namespace GuestFlow.Persistence.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("Id");
 
                     b.HasIndex("GuestId");
@@ -808,7 +1542,299 @@ namespace GuestFlow.Persistence.Migrations
                     b.HasIndex("ReservationNumber")
                         .IsUnique();
 
-                    b.ToTable("Reservations");
+                    b.ToTable("Reservations", (string)null);
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.RestaurantEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int?>("Capacity")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CityId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CuisineType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("OperatingHours")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<bool>("ReservationRequired")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("RestaurantName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CityId");
+
+                    b.HasIndex("RestaurantName");
+
+                    b.ToTable("Restaurants", (string)null);
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.RestaurantReservationEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ConfirmationNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("GuestId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("NumberOfGuests")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("ReservationDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<TimeSpan>("ReservationTime")
+                        .HasColumnType("time");
+
+                    b.Property<int>("RestaurantId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ReturnTransferId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SpecialRequests")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TableNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("TransferId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConfirmationNumber");
+
+                    b.HasIndex("GuestId");
+
+                    b.HasIndex("PersonnelId");
+
+                    b.HasIndex("ReservationDate");
+
+                    b.HasIndex("RestaurantId");
+
+                    b.HasIndex("ReturnTransferId");
+
+                    b.HasIndex("TransferId");
+
+                    b.ToTable("RestaurantReservations", (string)null);
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.RoomAssignmentEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("GuestId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("HotelId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RoomNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuestId");
+
+                    b.HasIndex("HotelId");
+
+                    b.ToTable("RoomAssignments", (string)null);
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.ServicePackageEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<decimal?>("DiscountPercentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("FinalPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("PackageContent")
+                        .HasMaxLength(5000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PackageName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("PackageType")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("TotalPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PackageName");
+
+                    b.HasIndex("PackageType");
+
+                    b.ToTable("ServicePackages", (string)null);
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.SettingEntity", b =>
@@ -819,6 +1845,9 @@ namespace GuestFlow.Persistence.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
@@ -828,15 +1857,21 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<bool>("MainteneceMode")
                         .HasColumnType("bit");
 
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("Id");
 
-                    b.ToTable("Settings");
+                    b.ToTable("Settings", (string)null);
 
                     b.HasData(
                         new
                         {
                             Id = 1,
-                            CreatedDate = new DateTime(2025, 12, 6, 14, 17, 20, 746, DateTimeKind.Local).AddTicks(7987),
+                            CreatedDate = new DateTime(2026, 1, 6, 8, 15, 15, 699, DateTimeKind.Utc).AddTicks(5917),
                             IsDeleted = false,
                             MainteneceMode = false
                         });
@@ -849,6 +1884,9 @@ namespace GuestFlow.Persistence.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
@@ -914,13 +1952,64 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("Id");
 
                     b.HasIndex("GuestId");
 
                     b.HasIndex("PersonnelId");
 
-                    b.ToTable("SmsHistories");
+                    b.ToTable("SmsHistories", (string)null);
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.TourEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CityId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CityId");
+
+                    b.ToTable("Tours", (string)null);
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.TransferEntity", b =>
@@ -931,14 +2020,31 @@ namespace GuestFlow.Persistence.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("AirportId")
+                    b.Property<string>("AccessibilityRequirements")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int?>("AirportId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ChildCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ConciergeInternalNotes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("ContactPersonName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int?>("CreatedByPersonnelId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Currency")
-                        .IsRequired()
                         .HasMaxLength(3)
                         .HasColumnType("nvarchar(3)");
 
@@ -946,19 +2052,65 @@ namespace GuestFlow.Persistence.Migrations
                         .HasPrecision(5, 2)
                         .HasColumnType("decimal(5,2)");
 
+                    b.Property<int?>("DriverId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("DriverName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
                     b.Property<string>("DropoffAddress")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<int>("DropoffCityId")
+                    b.Property<int?>("DropoffCityId")
                         .HasColumnType("int");
+
+                    b.Property<DateTime?>("DropoffConfirmationTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EmergencyContactPhone")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("ExternalDriverName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ExternalDriverPhone")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("ExternalVehiclePlate")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<decimal>("FinalPrice")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int?>("GroupSize")
+                        .HasColumnType("int");
+
                     b.Property<int>("GuestId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("GuestLanguage")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("GuestVisibleNotes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int?>("HotelEntityId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("HotelEntityId1")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("InfantCount")
                         .HasColumnType("int");
 
                     b.Property<bool>("IsDeleted")
@@ -967,11 +2119,21 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<bool>("IsFromAirport")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsVip")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("LuggageCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MeetingPointDetails")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<string>("Note")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
-                    b.Property<int>("PersonnelId")
+                    b.Property<int?>("PersonnelId")
                         .HasColumnType("int");
 
                     b.Property<string>("PickupAddress")
@@ -979,22 +2141,92 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<int>("PickupCityId")
+                    b.Property<int?>("PickupCityId")
                         .HasColumnType("int");
+
+                    b.Property<DateTime?>("PickupConfirmationTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<TimeSpan?>("PickupTime")
+                        .HasColumnType("time");
 
                     b.Property<decimal>("Price")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<string>("PrimaryContactPhone")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("RestaurantEntityId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("RestaurantEntityId1")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ReturnTransferId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SecondaryContactPhone")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("ServiceInfoPdfUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<TimeSpan?>("ServiceStartTime")
+                        .HasColumnType("time");
+
+                    b.Property<string>("SpecialHandlingNotes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
                     b.Property<string>("Status")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("SupplierContactPhone")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal?>("SupplierCost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("SupplierCurrency")
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)");
+
+                    b.Property<string>("SupplierEmergencyContact")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("SupplierInvoiceNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("SupplierName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<DateTime>("TransferDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("VehicleId")
+                    b.Property<int>("TransferType")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("TransportMode")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("VehicleId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -1005,13 +2237,41 @@ namespace GuestFlow.Persistence.Migrations
 
                     b.HasIndex("GuestId");
 
+                    b.HasIndex("HotelEntityId");
+
+                    b.HasIndex("HotelEntityId1");
+
+                    b.HasIndex("IsVip");
+
                     b.HasIndex("PersonnelId");
 
                     b.HasIndex("PickupCityId");
 
-                    b.HasIndex("VehicleId");
+                    b.HasIndex("Priority");
 
-                    b.ToTable("Transfers");
+                    b.HasIndex("RestaurantEntityId");
+
+                    b.HasIndex("RestaurantEntityId1");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("TransferDate");
+
+                    b.HasIndex("TransportMode");
+
+                    b.HasIndex("DriverId", "TransferDate");
+
+                    b.HasIndex("Status", "TransferDate");
+
+                    b.HasIndex("VehicleId", "TransferDate");
+
+                    b.HasIndex("TransferDate", "DriverId", "Status");
+
+                    b.HasIndex("TransferDate", "Status", "IsDeleted");
+
+                    b.HasIndex("TransferDate", "VehicleId", "Status");
+
+                    b.ToTable("Transfers", (string)null);
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.VehicleEntity", b =>
@@ -1023,6 +2283,9 @@ namespace GuestFlow.Persistence.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<int>("Capacity")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("CreatedByPersonnelId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedDate")
@@ -1045,9 +2308,15 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("Id");
 
-                    b.ToTable("Vehicles");
+                    b.ToTable("Vehicles", (string)null);
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.YachtTourEntity", b =>
@@ -1058,14 +2327,51 @@ namespace GuestFlow.Persistence.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("AlcoholPolicy")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("BeverageType")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("CaptainExperience")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int?>("CaptainId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CaptainPhone")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int?>("ChildCount")
+                        .HasColumnType("int");
+
                     b.Property<int>("CityId")
+                        .HasColumnType("int");
+
+                    b.Property<bool?>("CoastGuardApproved")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("CoastGuardInspectionDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ConciergeInternalNotes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int?>("CreatedByPersonnelId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<int?>("CrewSize")
+                        .HasColumnType("int");
+
                     b.Property<string>("Currency")
-                        .IsRequired()
                         .HasMaxLength(3)
                         .HasColumnType("nvarchar(3)");
 
@@ -1073,11 +2379,81 @@ namespace GuestFlow.Persistence.Migrations
                         .HasPrecision(5, 2)
                         .HasColumnType("decimal(5,2)");
 
+                    b.Property<string>("DropoffPier")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("EmergencyContactName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("EmergencyContactPhone")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("EmergencyContactRelation")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("EmergencyEquipment")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<TimeSpan?>("EndTime")
+                        .HasColumnType("time");
+
                     b.Property<decimal>("FinalPrice")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<bool?>("FoodBeverageIncluded")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("FuelLevelCheck")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("FuelRange")
+                        .HasColumnType("int");
+
+                    b.Property<string>("GroupLeaderName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("GroupLeaderPhone")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int?>("InfantCount")
+                        .HasColumnType("int");
+
                     b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool?>("LifeGuardCertified")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("LifeJacketCount")
+                        .HasColumnType("int");
+
+                    b.Property<bool?>("LifeJacketsProvided")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("MarinaContactName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("MarinaContactPhone")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<TimeSpan?>("MarinaPickupTime")
+                        .HasColumnType("time");
+
+                    b.Property<string>("MedicalConditions")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool?>("MusicSystem")
                         .HasColumnType("bit");
 
                     b.Property<int>("NumberOfPeople")
@@ -1086,24 +2462,105 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<int>("OwnerGuestId")
                         .HasColumnType("int");
 
-                    b.Property<int>("PersonnelId")
+                    b.Property<int?>("PersonnelId")
                         .HasColumnType("int");
+
+                    b.Property<int?>("PickupHotelId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PickupPier")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("PierAddress")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<decimal>("Price")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<DateTime?>("SafetyBriefingTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool?>("SafetyEquipmentCheck")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ServiceInfoPdfUrl")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("SpecialRequest")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
+                    b.Property<TimeSpan?>("StartTime")
+                        .HasColumnType("time");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<decimal?>("SupplierCost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("SupplierCurrency")
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)");
+
+                    b.Property<string>("SupplierInvoiceNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("SupplierName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("SwimmingProficiency")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int?>("TourCategory")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("TourDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("WaterSportsEquipment")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("WeatherBackupPlan")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("WeatherCheckTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("WeatherDependent")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("YachtCapacity")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("YachtId")
+                        .HasColumnType("int");
+
+                    b.Property<bool?>("YachtLicenceRequired")
+                        .HasColumnType("bit");
+
                     b.Property<string>("YachtName")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("YachtType")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.HasKey("Id");
 
@@ -1113,7 +2570,21 @@ namespace GuestFlow.Persistence.Migrations
 
                     b.HasIndex("PersonnelId");
 
-                    b.ToTable("YachtTours");
+                    b.HasIndex("PickupHotelId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("TourDate");
+
+                    b.HasIndex("WeatherDependent");
+
+                    b.HasIndex("CaptainId", "TourDate");
+
+                    b.HasIndex("Status", "TourDate");
+
+                    b.HasIndex("TourDate", "Status", "IsDeleted");
+
+                    b.ToTable("YachtTours", (string)null);
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Operations.GuestCityTour", b =>
@@ -1124,11 +2595,20 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<int>("CityTourId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("GuestId", "CityTourId");
 
                     b.HasIndex("CityTourId");
 
-                    b.ToTable("GuestCityTours");
+                    b.ToTable("GuestCityTours", (string)null);
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Operations.GuestYachtTour", b =>
@@ -1139,11 +2619,80 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<int>("YachtTourId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("GuestId", "YachtTourId");
 
                     b.HasIndex("YachtTourId");
 
-                    b.ToTable("GuestYachtTours");
+                    b.ToTable("GuestYachtTours", (string)null);
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Operations.PackageCityTourEntity", b =>
+                {
+                    b.Property<int>("PackageId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CityTourId")
+                        .HasColumnType("int");
+
+                    b.HasKey("PackageId", "CityTourId");
+
+                    b.HasIndex("CityTourId");
+
+                    b.ToTable("PackageCityTours", (string)null);
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Operations.PackageRestaurantReservationEntity", b =>
+                {
+                    b.Property<int>("PackageId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RestaurantReservationId")
+                        .HasColumnType("int");
+
+                    b.HasKey("PackageId", "RestaurantReservationId");
+
+                    b.HasIndex("RestaurantReservationId");
+
+                    b.ToTable("PackageRestaurantReservations", (string)null);
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Operations.PackageTransferEntity", b =>
+                {
+                    b.Property<int>("PackageId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TransferId")
+                        .HasColumnType("int");
+
+                    b.HasKey("PackageId", "TransferId");
+
+                    b.HasIndex("TransferId");
+
+                    b.ToTable("PackageTransfers", (string)null);
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Operations.PackageYachtTourEntity", b =>
+                {
+                    b.Property<int>("PackageId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("YachtTourId")
+                        .HasColumnType("int");
+
+                    b.HasKey("PackageId", "YachtTourId");
+
+                    b.HasIndex("YachtTourId");
+
+                    b.ToTable("PackageYachtTours", (string)null);
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.AirportEntity", b =>
@@ -1173,15 +2722,33 @@ namespace GuestFlow.Persistence.Migrations
 
                     b.HasOne("GuestFlow.Domain.Entities.Core.PersonnelEntity", "Personnel")
                         .WithMany("CityTours")
-                        .HasForeignKey("PersonnelId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("PersonnelId");
+
+                    b.HasOne("GuestFlow.Domain.Entities.Core.HotelEntity", "PickupHotel")
+                        .WithMany("PickupCityTours")
+                        .HasForeignKey("PickupHotelId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("GuestFlow.Domain.Entities.Core.TourEntity", "Tour")
+                        .WithMany("CityTours")
+                        .HasForeignKey("TourId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("GuestFlow.Domain.Entities.Core.VehicleEntity", "Vehicle")
+                        .WithMany()
+                        .HasForeignKey("VehicleId");
 
                     b.Navigation("City");
 
                     b.Navigation("OwnerGuest");
 
                     b.Navigation("Personnel");
+
+                    b.Navigation("PickupHotel");
+
+                    b.Navigation("Tour");
+
+                    b.Navigation("Vehicle");
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.DailyNoteEntity", b =>
@@ -1193,11 +2760,60 @@ namespace GuestFlow.Persistence.Migrations
                     b.Navigation("Personnel");
                 });
 
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.GuestEntity", b =>
+                {
+                    b.HasOne("GuestFlow.Domain.Entities.Core.HotelEntity", "Hotel")
+                        .WithMany()
+                        .HasForeignKey("HotelId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Hotel");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.GuestRoomHistoryEntity", b =>
+                {
+                    b.HasOne("GuestFlow.Domain.Entities.Core.PersonnelEntity", "AssignedByPersonnel")
+                        .WithMany()
+                        .HasForeignKey("AssignedByPersonnelId");
+
+                    b.HasOne("GuestFlow.Domain.Entities.Core.GuestEntity", "Guest")
+                        .WithMany("RoomHistory")
+                        .HasForeignKey("GuestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AssignedByPersonnel");
+
+                    b.Navigation("Guest");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.HotelEntity", b =>
+                {
+                    b.HasOne("GuestFlow.Domain.Entities.Core.CityEntity", "City")
+                        .WithMany()
+                        .HasForeignKey("CityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("City");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.InvoiceItemEntity", b =>
+                {
+                    b.HasOne("GuestFlow.Domain.Entities.Core.InvoicesEntity", "Invoice")
+                        .WithMany("InvoiceItems")
+                        .HasForeignKey("InvoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Invoice");
+                });
+
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.InvoicesEntity", b =>
                 {
-                    b.HasOne("GuestFlow.Domain.Entities.Core.CityTourEntity", "CityTour")
+                    b.HasOne("GuestFlow.Domain.Entities.Core.CityTourEntity", null)
                         .WithMany("Invoices")
-                        .HasForeignKey("CityTourId");
+                        .HasForeignKey("CityTourEntityId");
 
                     b.HasOne("GuestFlow.Domain.Entities.Core.GuestEntity", "Guest")
                         .WithMany("Invoices")
@@ -1205,31 +2821,73 @@ namespace GuestFlow.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("GuestFlow.Domain.Entities.Core.PersonnelEntity", "LockedByPersonnel")
+                        .WithMany()
+                        .HasForeignKey("LockedByPersonnelId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("GuestFlow.Domain.Entities.Core.PersonnelEntity", "Personnel")
                         .WithMany("Invoices")
                         .HasForeignKey("PersonnelId");
 
-                    b.HasOne("GuestFlow.Domain.Entities.Core.TransferEntity", "Transfer")
+                    b.HasOne("GuestFlow.Domain.Entities.Core.TransferEntity", null)
                         .WithMany("Invoices")
-                        .HasForeignKey("TransferId");
+                        .HasForeignKey("TransferEntityId");
 
-                    b.HasOne("GuestFlow.Domain.Entities.Core.YachtTourEntity", "YachtTour")
+                    b.HasOne("GuestFlow.Domain.Entities.Core.YachtTourEntity", null)
                         .WithMany("Invoices")
-                        .HasForeignKey("YachtTourId");
+                        .HasForeignKey("YachtTourEntityId");
 
-                    b.Navigation("CityTour");
+                    b.Navigation("Guest");
+
+                    b.Navigation("LockedByPersonnel");
+
+                    b.Navigation("Personnel");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.ItineraryEntity", b =>
+                {
+                    b.HasOne("GuestFlow.Domain.Entities.Core.GuestEntity", "Guest")
+                        .WithMany()
+                        .HasForeignKey("GuestId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GuestFlow.Domain.Entities.Core.PersonnelEntity", "Personnel")
+                        .WithMany()
+                        .HasForeignKey("PersonnelId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("Guest");
 
                     b.Navigation("Personnel");
+                });
 
-                    b.Navigation("Transfer");
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.ItineraryItemEntity", b =>
+                {
+                    b.HasOne("GuestFlow.Domain.Entities.Core.ItineraryEntity", "Itinerary")
+                        .WithMany("Items")
+                        .HasForeignKey("ItineraryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.Navigation("YachtTour");
+                    b.Navigation("Itinerary");
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.PaymentEntity", b =>
                 {
+                    b.HasOne("GuestFlow.Domain.Entities.Core.CityTourEntity", "CityTour")
+                        .WithMany()
+                        .HasForeignKey("CityTourId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("GuestFlow.Domain.Entities.Core.PersonnelEntity", "CollectedByPersonnel")
+                        .WithMany()
+                        .HasForeignKey("CollectedByPersonnelId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("GuestFlow.Domain.Entities.Core.GuestEntity", "Guest")
                         .WithMany()
                         .HasForeignKey("GuestId")
@@ -1239,12 +2897,33 @@ namespace GuestFlow.Persistence.Migrations
                     b.HasOne("GuestFlow.Domain.Entities.Core.InvoicesEntity", "Invoice")
                         .WithMany()
                         .HasForeignKey("InvoiceId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("GuestFlow.Domain.Entities.Core.TransferEntity", null)
+                        .WithMany("Payments")
+                        .HasForeignKey("TransferEntityId");
+
+                    b.HasOne("GuestFlow.Domain.Entities.Core.TransferEntity", "Transfer")
+                        .WithMany()
+                        .HasForeignKey("TransferId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("GuestFlow.Domain.Entities.Core.YachtTourEntity", "YachtTour")
+                        .WithMany()
+                        .HasForeignKey("YachtTourId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("CityTour");
+
+                    b.Navigation("CollectedByPersonnel");
 
                     b.Navigation("Guest");
 
                     b.Navigation("Invoice");
+
+                    b.Navigation("Transfer");
+
+                    b.Navigation("YachtTour");
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.RefreshTokenEntity", b =>
@@ -1277,6 +2956,75 @@ namespace GuestFlow.Persistence.Migrations
                     b.Navigation("Personnel");
                 });
 
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.RestaurantEntity", b =>
+                {
+                    b.HasOne("GuestFlow.Domain.Entities.Core.CityEntity", "City")
+                        .WithMany()
+                        .HasForeignKey("CityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("City");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.RestaurantReservationEntity", b =>
+                {
+                    b.HasOne("GuestFlow.Domain.Entities.Core.GuestEntity", "Guest")
+                        .WithMany()
+                        .HasForeignKey("GuestId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GuestFlow.Domain.Entities.Core.PersonnelEntity", "Personnel")
+                        .WithMany()
+                        .HasForeignKey("PersonnelId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GuestFlow.Domain.Entities.Core.RestaurantEntity", "Restaurant")
+                        .WithMany()
+                        .HasForeignKey("RestaurantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GuestFlow.Domain.Entities.Core.TransferEntity", "ReturnTransfer")
+                        .WithMany()
+                        .HasForeignKey("ReturnTransferId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("GuestFlow.Domain.Entities.Core.TransferEntity", "Transfer")
+                        .WithMany()
+                        .HasForeignKey("TransferId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("Guest");
+
+                    b.Navigation("Personnel");
+
+                    b.Navigation("Restaurant");
+
+                    b.Navigation("ReturnTransfer");
+
+                    b.Navigation("Transfer");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.RoomAssignmentEntity", b =>
+                {
+                    b.HasOne("GuestFlow.Domain.Entities.Core.GuestEntity", "Guest")
+                        .WithMany("RoomAssignments")
+                        .HasForeignKey("GuestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GuestFlow.Domain.Entities.Core.HotelEntity", "Hotel")
+                        .WithMany()
+                        .HasForeignKey("HotelId");
+
+                    b.Navigation("Guest");
+
+                    b.Navigation("Hotel");
+                });
+
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.SmsHistoryEntity", b =>
                 {
                     b.HasOne("GuestFlow.Domain.Entities.Core.GuestEntity", "Guest")
@@ -1294,19 +3042,27 @@ namespace GuestFlow.Persistence.Migrations
                     b.Navigation("Personnel");
                 });
 
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.TourEntity", b =>
+                {
+                    b.HasOne("GuestFlow.Domain.Entities.Core.CityEntity", "City")
+                        .WithMany("Tours")
+                        .HasForeignKey("CityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("City");
+                });
+
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.TransferEntity", b =>
                 {
                     b.HasOne("GuestFlow.Domain.Entities.Core.AirportEntity", "Airport")
                         .WithMany("Transfers")
-                        .HasForeignKey("AirportId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("AirportId");
 
                     b.HasOne("GuestFlow.Domain.Entities.Core.CityEntity", "DropoffCity")
                         .WithMany("DropoffTransfers")
                         .HasForeignKey("DropoffCityId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("GuestFlow.Domain.Entities.Core.GuestEntity", "Guest")
                         .WithMany("Transfers")
@@ -1314,23 +3070,34 @@ namespace GuestFlow.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("GuestFlow.Domain.Entities.Core.HotelEntity", null)
+                        .WithMany("DropoffTransfers")
+                        .HasForeignKey("HotelEntityId");
+
+                    b.HasOne("GuestFlow.Domain.Entities.Core.HotelEntity", null)
+                        .WithMany("PickupTransfers")
+                        .HasForeignKey("HotelEntityId1");
+
                     b.HasOne("GuestFlow.Domain.Entities.Core.PersonnelEntity", "Personnel")
                         .WithMany("Transfers")
-                        .HasForeignKey("PersonnelId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("PersonnelId");
 
                     b.HasOne("GuestFlow.Domain.Entities.Core.CityEntity", "PickupCity")
                         .WithMany("PickupTransfers")
                         .HasForeignKey("PickupCityId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("GuestFlow.Domain.Entities.Core.RestaurantEntity", null)
+                        .WithMany("DropoffTransfers")
+                        .HasForeignKey("RestaurantEntityId");
+
+                    b.HasOne("GuestFlow.Domain.Entities.Core.RestaurantEntity", null)
+                        .WithMany("PickupTransfers")
+                        .HasForeignKey("RestaurantEntityId1");
 
                     b.HasOne("GuestFlow.Domain.Entities.Core.VehicleEntity", "Vehicle")
                         .WithMany("Transfers")
-                        .HasForeignKey("VehicleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("VehicleId");
 
                     b.Navigation("Airport");
 
@@ -1361,15 +3128,20 @@ namespace GuestFlow.Persistence.Migrations
 
                     b.HasOne("GuestFlow.Domain.Entities.Core.PersonnelEntity", "Personnel")
                         .WithMany("YachtTours")
-                        .HasForeignKey("PersonnelId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("PersonnelId");
+
+                    b.HasOne("GuestFlow.Domain.Entities.Core.HotelEntity", "PickupHotel")
+                        .WithMany("PickupYachtTours")
+                        .HasForeignKey("PickupHotelId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("City");
 
                     b.Navigation("OwnerGuest");
 
                     b.Navigation("Personnel");
+
+                    b.Navigation("PickupHotel");
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Operations.GuestCityTour", b =>
@@ -1410,6 +3182,82 @@ namespace GuestFlow.Persistence.Migrations
                     b.Navigation("YachtTour");
                 });
 
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Operations.PackageCityTourEntity", b =>
+                {
+                    b.HasOne("GuestFlow.Domain.Entities.Core.CityTourEntity", "CityTour")
+                        .WithMany()
+                        .HasForeignKey("CityTourId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GuestFlow.Domain.Entities.Core.ServicePackageEntity", "Package")
+                        .WithMany("PackageCityTours")
+                        .HasForeignKey("PackageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CityTour");
+
+                    b.Navigation("Package");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Operations.PackageRestaurantReservationEntity", b =>
+                {
+                    b.HasOne("GuestFlow.Domain.Entities.Core.ServicePackageEntity", "Package")
+                        .WithMany("PackageRestaurantReservations")
+                        .HasForeignKey("PackageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GuestFlow.Domain.Entities.Core.RestaurantReservationEntity", "RestaurantReservation")
+                        .WithMany()
+                        .HasForeignKey("RestaurantReservationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Package");
+
+                    b.Navigation("RestaurantReservation");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Operations.PackageTransferEntity", b =>
+                {
+                    b.HasOne("GuestFlow.Domain.Entities.Core.ServicePackageEntity", "Package")
+                        .WithMany("PackageTransfers")
+                        .HasForeignKey("PackageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GuestFlow.Domain.Entities.Core.TransferEntity", "Transfer")
+                        .WithMany()
+                        .HasForeignKey("TransferId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Package");
+
+                    b.Navigation("Transfer");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Operations.PackageYachtTourEntity", b =>
+                {
+                    b.HasOne("GuestFlow.Domain.Entities.Core.ServicePackageEntity", "Package")
+                        .WithMany("PackageYachtTours")
+                        .HasForeignKey("PackageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GuestFlow.Domain.Entities.Core.YachtTourEntity", "YachtTour")
+                        .WithMany()
+                        .HasForeignKey("YachtTourId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Package");
+
+                    b.Navigation("YachtTour");
+                });
+
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.AirportEntity", b =>
                 {
                     b.Navigation("Transfers");
@@ -1424,6 +3272,8 @@ namespace GuestFlow.Persistence.Migrations
                     b.Navigation("DropoffTransfers");
 
                     b.Navigation("PickupTransfers");
+
+                    b.Navigation("Tours");
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.CityTourEntity", b =>
@@ -1443,9 +3293,34 @@ namespace GuestFlow.Persistence.Migrations
 
                     b.Navigation("Invoices");
 
+                    b.Navigation("RoomAssignments");
+
+                    b.Navigation("RoomHistory");
+
                     b.Navigation("Transfers");
 
                     b.Navigation("YachtTours");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.HotelEntity", b =>
+                {
+                    b.Navigation("DropoffTransfers");
+
+                    b.Navigation("PickupCityTours");
+
+                    b.Navigation("PickupTransfers");
+
+                    b.Navigation("PickupYachtTours");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.InvoicesEntity", b =>
+                {
+                    b.Navigation("InvoiceItems");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.ItineraryEntity", b =>
+                {
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.PersonnelEntity", b =>
@@ -1461,9 +3336,34 @@ namespace GuestFlow.Persistence.Migrations
                     b.Navigation("YachtTours");
                 });
 
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.RestaurantEntity", b =>
+                {
+                    b.Navigation("DropoffTransfers");
+
+                    b.Navigation("PickupTransfers");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.ServicePackageEntity", b =>
+                {
+                    b.Navigation("PackageCityTours");
+
+                    b.Navigation("PackageRestaurantReservations");
+
+                    b.Navigation("PackageTransfers");
+
+                    b.Navigation("PackageYachtTours");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.TourEntity", b =>
+                {
+                    b.Navigation("CityTours");
+                });
+
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.TransferEntity", b =>
                 {
                     b.Navigation("Invoices");
+
+                    b.Navigation("Payments");
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.VehicleEntity", b =>

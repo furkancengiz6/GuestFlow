@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.Extensions.Logging;
 
 namespace GuestFlow.Api.Controllers
 {
@@ -23,11 +24,15 @@ namespace GuestFlow.Api.Controllers
         // Burada kullanacağım değişkeni tanımlıyorum.
         // _guestService: Misafirlerle ilgili işlemleri yapmak için kullanıyorum.
         private readonly IGuestService _guestService;
+        private readonly IRoomAssignmentService _roomAssignmentService;
+        private readonly ILogger<GuestsController> _logger;
 
         // Constructor: Bu sınıf oluşturulurken bağımlılıkları buradan alıyorum.
-        public GuestsController(IGuestService guestService)
+        public GuestsController(IGuestService guestService, IRoomAssignmentService roomAssignmentService, ILogger<GuestsController> logger)
         {
             _guestService = guestService;
+            _roomAssignmentService = roomAssignmentService;
+            _logger = logger;
         }
 
         /// <summary>
@@ -277,6 +282,110 @@ namespace GuestFlow.Api.Controllers
             catch (Exception ex)
             {
                 return Error("Misafir zaman çizelgesi getirilirken bir hata oluştu.", 500, new { Error = ex.Message });
+            }
+        }
+
+        private int GetCurrentPersonnelId()
+        {
+            var personnelIdClaim = User.FindFirst("PersonnelId");
+            if (personnelIdClaim != null && int.TryParse(personnelIdClaim.Value, out var personnelId))
+            {
+                return personnelId;
+            }
+            return 1; // Default to admin if not found
+        }
+
+        // ================================
+        // ROOM ASSIGNMENT ENDPOINTS
+        // ================================
+
+        /// <summary>
+        /// Misafir için yeni oda ataması oluşturur
+        /// </summary>
+        [HttpPost("{guestId}/room-assignments")]
+        [ProducesResponseType(typeof(ApiResponse<RoomAssignmentDto>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> CreateRoomAssignment(int guestId, [FromBody] CreateRoomAssignmentRequest request)
+        {
+            try
+            {
+                if (guestId != request.GuestId)
+                    return BadRequest(new ApiResponse<object> { Success = false, Message = "URL'deki misafir ID ile istekteki misafir ID eşleşmiyor." });
+
+                var currentPersonnelId = GetCurrentPersonnelId();
+
+                var dto = new CreateRoomAssignmentDto
+                {
+                    GuestId = request.GuestId,
+                    HotelId = request.HotelId,
+                    RoomNumber = request.RoomNumber,
+                    StartDate = request.StartDate,
+                    EndDate = request.EndDate,
+                    Notes = request.Notes,
+                    PersonnelId = currentPersonnelId
+                };
+
+                var result = await _roomAssignmentService.CreateRoomAssignmentAsync(dto);
+
+                if (!result.IsSuccess)
+                {
+                    return BadRequest(new ApiResponse<object> { Success = false, Message = result.Message });
+                }
+
+                return StatusCode(StatusCodes.Status201Created, Success(result.Data, "Oda ataması başarıyla oluşturuldu."));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Oda ataması oluşturulurken hata: {ex.Message}");
+                return Error("Oda ataması oluşturulurken hata oluştu.", 500);
+            }
+        }
+
+        /// <summary>
+        /// Misafirin oda atamalarını getirir
+        /// </summary>
+        [HttpGet("{guestId}/room-assignments")]
+        [ProducesResponseType(typeof(ApiResponse<List<RoomAssignmentDto>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetGuestRoomAssignments(int guestId)
+        {
+            try
+            {
+                var result = await _roomAssignmentService.GetGuestRoomAssignmentsAsync(guestId);
+                return FromServiceMessage(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Misafir oda atamaları getirilirken hata: {ex.Message}");
+                return Error("Misafir oda atamaları getirilirken hata oluştu.", 500);
+            }
+        }
+
+        /// <summary>
+        /// Misafirin mevcut oda atamasını getirir
+        /// </summary>
+        [HttpGet("{guestId}/current-room")]
+        [ProducesResponseType(typeof(ApiResponse<RoomAssignmentDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetCurrentRoomAssignment(int guestId)
+        {
+            try
+            {
+                var result = await _roomAssignmentService.GetCurrentRoomAssignmentAsync(guestId);
+
+                if (!result.IsSuccess)
+                {
+                    return NotFound(new ApiResponse<object> { Success = false, Message = result.Message });
+                }
+
+                return Success(result.Data, "Aktif oda ataması başarıyla getirildi.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Aktif oda ataması getirilirken hata: {ex.Message}");
+                return Error("Aktif oda ataması getirilirken hata oluştu.", 500);
             }
         }
     }

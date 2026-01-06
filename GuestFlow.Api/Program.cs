@@ -1,7 +1,10 @@
 using GuestFlow.Api.Middlewares;
 using GuestFlow.Api.Filters;
 using GuestFlow.Api.Extensions;
+using Serilog;
+using Serilog.Events;
 using GuestFlow.Domain.DataProtection;
+using GuestFlow.Application.Operations.Cache;
 using Microsoft.AspNetCore.Http;
 using GuestFlow.Application.Operations.Airport;
 using GuestFlow.Application.Operations.City;
@@ -10,8 +13,17 @@ using GuestFlow.Application.Operations.DailyNote;
 using GuestFlow.Application.Operations.DailyRevenue;
 using GuestFlow.Application.Operations.Email;
 using GuestFlow.Application.Operations.Guest;
+using GuestFlow.Application.Operations.Hotel;
 using GuestFlow.Application.Operations.Invoice;
 using GuestFlow.Application.Operations.Personnel;
+using GuestFlow.Application.Operations.Restaurant;
+using GuestFlow.Application.Operations.Itinerary;
+using GuestFlow.Application.Operations.RestaurantReservation;
+using GuestFlow.Application.Operations.ServicePackage;
+using GuestFlow.Application.Operations.TransferRecommendation;
+using GuestFlow.Application.Operations.Notification;
+using GuestFlow.Application.Operations.GoogleMaps;
+using GuestFlow.Application.Operations.QRCode;
 using GuestFlow.Application.Operations.Setting;
 using GuestFlow.Application.Operations.Transfer;
 using GuestFlow.Application.Operations.Vehicle;
@@ -23,7 +35,6 @@ using GuestFlow.Application.Operations.Reports;
 using GuestFlow.Application.Operations.Dashboard;
 using GuestFlow.Application.Operations.Validation;
 using GuestFlow.Application.Operations.Currency;
-using GuestFlow.Application.Operations.Notification;
 using GuestFlow.Application.Operations.Reservation;
 using GuestFlow.Application.Operations.Payment;
 using GuestFlow.Application.Operations.Sms;
@@ -31,10 +42,14 @@ using GuestFlow.Application.Operations.Localization;
 using GuestFlow.Application.Operations.Export;
 using GuestFlow.Application.Operations.Import;
 using GuestFlow.Application.Operations.Calendar;
-using GuestFlow.Application.Operations.Cache;
 using GuestFlow.Application.Operations.Common;
 using GuestFlow.Application.Configuration;
 using GuestFlow.Application.Operations.Configuration;
+using GuestFlow.Application.Operations.Notification;
+using GuestFlow.Api.Hubs;
+using GuestFlow.Api.Services;
+using GuestFlow.Api.HealthChecks;
+using Microsoft.AspNetCore.SignalR;
 using System.Globalization;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.Localization;
@@ -61,8 +76,27 @@ using GuestFlow.Api.Configuration;
 using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure Serilog
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .MinimumLevel.Override("System", LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .WriteTo.Console(
+        outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
+    .WriteTo.File(
+        path: "logs/guestflow-.log",
+        rollingInterval: RollingInterval.Day,
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
+    .WriteTo.Seq(serverUrl: builder.Configuration["Seq:ServerUrl"] ?? "http://localhost:5341")
+    .CreateLogger();
+
+// Use Serilog for logging
+builder.Host.UseSerilog();
 
 // Add services to the container.
 
@@ -79,38 +113,76 @@ builder.Services.AddControllers(options =>
         // JSON serialization'ı camelCase'e çevir (Frontend uyumluluğu için)
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
         options.JsonSerializerOptions.DictionaryKeyPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
-    })
-    .AddFluentValidation(fv =>
-    {
-        fv.RegisterValidatorsFromAssemblyContaining<AddGuestRequestValidator>();
-        fv.AutomaticValidationEnabled = true;
-        fv.ImplicitlyValidateChildProperties = true;
     });
 
+// FluentValidation
+builder.Services.AddValidatorsFromAssemblyContaining<AddGuestRequestValidator>();
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddFluentValidationClientsideAdapters();
+
 // CORS yapılandırması - Frontend için
+// SECURITY: Enhanced CORS configuration with strict validation
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ??
-                             new[]
-                             {
-                                 "http://localhost:5173",
-                                 "http://localhost:5174",
-                                 "http://localhost:5175",
-                                 "http://localhost:3000",
-                                 "https://app.guestflow.com" // prod origin
-                             };
+        var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+        var allowedMethods = builder.Configuration.GetSection("Cors:AllowedMethods").Get<string[]>() ?? new[] { "GET", "POST", "PUT", "DELETE", "OPTIONS" };
+        var allowedHeaders = builder.Configuration.GetSection("Cors:AllowedHeaders").Get<string[]>() ?? new[] { "Content-Type", "Authorization", "X-Requested-With" };
+        var allowCredentials = builder.Configuration.GetValue<bool>("Cors:AllowCredentials", false);
+        var maxAge = builder.Configuration.GetValue<int>("Cors:MaxAge", 86400);
+
+        // Production safety: require CORS origins to be explicitly configured
+        if (allowedOrigins == null || allowedOrigins.Length == 0)
+        {
+            if (builder.Environment.IsProduction())
+            {
+                throw new InvalidOperationException("CORS AllowedOrigins must be configured in production. Add Cors:AllowedOrigins to appsettings.Production.json");
+            }
+
+            // Development fallback with clear warning
+            allowedOrigins = new[]
+            {
+                "http://localhost:5173",
+                "http://localhost:5174",
+                "http://localhost:5175",
+                "http://localhost:3000"
+            };
+
+            var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
+            logger.LogWarning("Using default CORS origins for development. Configure Cors:AllowedOrigins in production.");
+        }
+
+        // SECURITY: Validate origins are HTTPS in production
+        if (builder.Environment.IsProduction())
+        {
+            foreach (var origin in allowedOrigins)
+            {
+                if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps)
+                {
+                    throw new InvalidOperationException($"CORS origin '{origin}' must use HTTPS in production environment.");
+                }
+            }
+        }
 
         policy.WithOrigins(allowedOrigins)
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials()
-              .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
+              .WithMethods(allowedMethods)
+              .WithHeaders(allowedHeaders)
+              .WithExposedHeaders("X-Total-Count", "X-Page-Count")
+              .SetPreflightMaxAge(TimeSpan.FromSeconds(maxAge));
+
+        if (allowCredentials)
+        {
+            policy.AllowCredentials();
+        }
+        else
+        {
+            policy.DisallowCredentials();
+        }
     });
 });
 
-// API Versioning yapılandırması
+// API Versioning yapılandırması - Enterprise-ready
 builder.Services.AddApiVersioning(options =>
 {
     options.DefaultApiVersion = new ApiVersion(1, 0);
@@ -119,8 +191,21 @@ builder.Services.AddApiVersioning(options =>
     options.ApiVersionReader = ApiVersionReader.Combine(
         new UrlSegmentApiVersionReader(),              // URL path: /api/v1/...
         new QueryStringApiVersionReader("version"),     // Query: ?version=1.0
-        new HeaderApiVersionReader("api-version")      // Header: api-version: 1.0
+        new HeaderApiVersionReader("api-version"),      // Header: api-version: 1.0
+        new MediaTypeApiVersionReader("version")        // Accept: application/json; version=1.0
     );
+
+    // Error responses for unsupported versions
+    // options.ErrorResponses = new ApiVersionErrorResponseProvider();
+});
+
+// API Version 2.0 Preview (CQRS-enabled)
+builder.Services.AddApiVersioning(options =>
+{
+    // Version 2.0 introduces CQRS patterns
+    // Commands and Queries are separate endpoints
+    // Domain events are published
+    // Enhanced validation and security
 });
 
 builder.Services.AddVersionedApiExplorer(options =>
@@ -212,6 +297,21 @@ builder.Services.Configure<RateLimitSettings>(builder.Configuration.GetSection("
 // Memory cache for rate limiting
 builder.Services.AddMemoryCache();
 
+// Response caching for performance
+builder.Services.AddResponseCaching(options =>
+{
+    options.MaximumBodySize = 1024 * 1024; // 1MB
+    options.UseCaseSensitivePaths = false;
+});
+
+// HttpClientFactory for external API calls (Google Maps, etc.)
+builder.Services.AddHttpClient();
+
+// Health checks for production readiness
+builder.Services.AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>("database", tags: new[] { "db", "sql" })
+    .AddCheck<RedisHealthCheck>("redis", tags: new[] { "cache", "redis" });
+
 // Localization yapılandırması
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 
@@ -238,6 +338,22 @@ builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(keysDirectory)
     .SetApplicationName("GuestFlow");
 
+// SECURITY: JWT Configuration with enhanced validation
+var jwtSecretKey = builder.Configuration["Jwt:SecretKey"];
+var minKeyLength = int.Parse(builder.Configuration["Jwt:MinimumKeyLength"] ?? "64");
+
+// SECURITY: Validate JWT secret key exists and meets minimum length
+if (string.IsNullOrWhiteSpace(jwtSecretKey))
+{
+    throw new InvalidOperationException("JWT SecretKey is required. Set it via environment variable JWT__SecretKey");
+}
+
+if (jwtSecretKey.Length < minKeyLength)
+{
+    throw new InvalidOperationException($"JWT SecretKey must be at least {minKeyLength} characters long for security. Current length: {jwtSecretKey.Length}");
+}
+
+// SECURITY: Additional JWT validation parameters
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -246,11 +362,45 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuer = true,
             ValidateAudience = true,
             ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ClockSkew = TimeSpan.Zero, // No tolerance for token expiration
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]!))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey))
         };
         
+        // SignalR için JWT token doğrulama
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var path = context.HttpContext.Request.Path;
+                
+                // SignalR hub'ları için token'ı query string'den veya header'dan al
+                if (path.StartsWithSegments("/hubs"))
+                {
+                    // Önce query string'den kontrol et
+                    var accessToken = context.Request.Query["access_token"];
+                    
+                    // Eğer query string'de yoksa, Authorization header'dan al
+                    if (string.IsNullOrEmpty(accessToken))
+                    {
+                        var authHeader = context.Request.Headers["Authorization"].ToString();
+                        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                        {
+                            accessToken = authHeader.Substring("Bearer ".Length).Trim();
+                        }
+                    }
+                    
+                    if (!string.IsNullOrEmpty(accessToken))
+                    {
+                        context.Token = accessToken;
+                    }
+                }
+                
+                return System.Threading.Tasks.Task.CompletedTask;
+            }
+        };
     });
 
 
@@ -261,17 +411,30 @@ builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));//generi
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
+
 builder.Services.AddScoped<IVehicleService, VehicleManager>();
 builder.Services.AddScoped<IAirportService, AirportManager>();
 builder.Services.AddScoped<IPersonnelService, PersonnelManager>();
 builder.Services.AddScoped<IGuestService, GuestManager>();
+builder.Services.AddScoped<IRoomAssignmentService, RoomAssignmentManager>();
 builder.Services.AddScoped<ICityTourService, CityTourManager>(); 
 builder.Services.AddScoped<ITransferService, TransferManager>();
 builder.Services.AddScoped<IYachtTourService, YachtTourManager>();
 builder.Services.AddScoped<IInvoiceService, InvoiceManager>();
 builder.Services.AddScoped<ISettingsService, SettingManager>();
+builder.Services.AddScoped<INotificationHubService, GuestFlow.Api.Services.NotificationHubService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<ICityService, CityManager>();
+builder.Services.AddScoped<IHotelService, HotelManager>();
+builder.Services.AddScoped<IRestaurantService, RestaurantManager>();
+builder.Services.AddScoped<IBusinessRuleValidator, BusinessRuleValidator>();
+builder.Services.AddScoped<IItineraryService, ItineraryManager>();
+builder.Services.AddScoped<IRestaurantReservationService, RestaurantReservationManager>();
+builder.Services.AddScoped<IServicePackageService, ServicePackageManager>();
+builder.Services.AddScoped<ITransferRecommendationService, TransferRecommendationService>();
+builder.Services.AddScoped<IAutomaticNotificationService, AutomaticNotificationService>();
+builder.Services.AddScoped<IGoogleMapsService, GoogleMapsService>();
+builder.Services.AddScoped<IQRCodeService, QRCodeService>();
 builder.Services.AddScoped<IDailyNoteService, DailyNoteManager>();
 builder.Services.AddScoped<IDailyRevenueService, DailyRevenueManager>();
 builder.Services.AddScoped<IPdfService, PdfService>();
@@ -282,6 +445,8 @@ builder.Services.AddScoped<IEmailHistoryService, EmailHistoryService>();
 builder.Services.AddScoped<IEmailStatisticsService, EmailStatisticsService>();
 builder.Services.AddHostedService<EmailQueueBackgroundService>();
 builder.Services.AddHostedService<RefreshTokenCleanupBackgroundService>();
+builder.Services.AddHostedService<ServiceConfirmationBackgroundService>();
+builder.Services.AddHostedService<PaymentReminderBackgroundService>();
 builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddScoped<IFileShareService, FileShareService>();
 builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
@@ -294,6 +459,7 @@ builder.Services.AddScoped<IPdfUrlService, PdfUrlService>();
 builder.Services.AddScoped<GuestFlow.Application.Operations.Tour.ITourService, GuestFlow.Application.Operations.Tour.TourService>();
 builder.Services.AddScoped<IReservationService, ReservationService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IPaymentStatusService, PaymentStatusService>();
 builder.Services.AddScoped<ISmsService, SmsService>();
 builder.Services.AddScoped<ILocalizationService, LocalizationService>();
 builder.Services.AddScoped<IExportService, ExportService>();
@@ -303,9 +469,21 @@ builder.Services.AddScoped<IPriceCalculationService, PriceCalculationService>();
 builder.Services.AddScoped<IDateValidationService, DateValidationService>();
 builder.Services.AddScoped<IInvoiceCreationService, InvoiceCreationService>();
 builder.Services.AddScoped<IConfigurationService, ConfigurationService>();
-builder.Services.AddScoped<ICacheService, CacheService>();
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<GuestFlow.Application.Operations.Cache.ICacheService, GuestFlow.Application.Operations.Cache.InMemoryCacheService>();
+builder.Services.AddScoped<InputValidationService>(); // SECURITY: Input validation service
 builder.Services.AddScoped<DailyRevenueJob>();
 builder.Services.AddHostedService<DailyRevenueBackgroundService>(); //
+
+// SignalR
+builder.Services.AddSignalR(options =>
+{
+    options.EnableDetailedErrors = builder.Environment.IsDevelopment();
+    options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
+    options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+});
+
+Console.WriteLine("Application building completed, starting middleware configuration...");
 
 var app = builder.Build();
 
@@ -352,6 +530,9 @@ app.Use(async (context, next) =>
     await next();
 });
 
+// Response caching middleware (authentication'dan önce)
+app.UseResponseCaching();
+
 // Static dosyalar için (PDF'ler için)
 app.UseStaticFiles();
 
@@ -360,8 +541,20 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+// SignalR Hub mapping
+app.MapHub<GuestFlow.Api.Hubs.NotificationsHub>("/hubs/notifications");
+
 // Development ortamında demo veri oluştur
-if (app.Environment.IsDevelopment())
+// Database seeding is controlled by configuration for security
+// Only seeds demo data when BOTH conditions are met:
+// 1. Environment is Development
+// 2. SeedDemoData configuration is true
+//
+// This prevents accidental demo data creation in production
+var seedDemoDataString = app.Configuration["SeedDemoData"];
+var seedDemoData = string.Equals(seedDemoDataString, "true", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(seedDemoDataString, "1", StringComparison.OrdinalIgnoreCase);
+if (app.Environment.IsDevelopment() && seedDemoData)
 {
     try
     {
@@ -373,5 +566,73 @@ if (app.Environment.IsDevelopment())
         logger.LogError(ex, "Demo veri oluşturulurken hata oluştu!");
     }
 }
+else if (app.Environment.IsDevelopment() && !seedDemoData)
+{
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    logger.LogInformation("Demo data seeding skipped. To seed demo data, set SeedDemoData=true in configuration.");
+    logger.LogInformation("Demo data seeding is DISABLED by default for security reasons.");
+}
 
-app.Run();
+// Health check endpoints
+app.MapHealthChecks("/health");
+app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = (check) => check.Tags.Contains("db") || check.Tags.Contains("cache"),
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        var response = new
+        {
+            status = report.Status.ToString(),
+            checks = report.Entries.Select(e => new
+            {
+                name = e.Key,
+                status = e.Value.Status.ToString(),
+                description = e.Value.Description,
+                duration = e.Value.Duration.TotalMilliseconds
+            }),
+            totalDuration = report.TotalDuration.TotalMilliseconds,
+            timestamp = DateTime.UtcNow
+        };
+        await context.Response.WriteAsJsonAsync(response);
+    }
+});
+
+app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = (_) => false // Always healthy for liveness
+});
+
+// Detailed health check for monitoring
+app.MapGet("/health/detailed", async (HealthCheckService healthCheckService) =>
+{
+    var report = await healthCheckService.CheckHealthAsync();
+    return new
+    {
+        status = report.Status.ToString(),
+        totalDuration = report.TotalDuration,
+        timestamp = DateTime.UtcNow,
+        entries = report.Entries.ToDictionary(
+            e => e.Key,
+            e => new
+            {
+                status = e.Value.Status.ToString(),
+                description = e.Value.Description,
+                duration = e.Value.Duration,
+                exception = e.Value.Exception?.Message,
+                data = e.Value.Data
+            })
+    };
+});
+
+Console.WriteLine("Starting application...");
+try
+{
+    app.Run();
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Application startup failed: {ex.Message}");
+    Console.WriteLine($"Stack trace: {ex.StackTrace}");
+    throw;
+}

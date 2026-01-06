@@ -186,13 +186,11 @@ namespace GuestFlow.Application.Operations.Export
                 worksheet.Cell(1, 3).Value = "Tutar";
                 worksheet.Cell(1, 4).Value = "Para Birimi";
                 worksheet.Cell(1, 5).Value = "Tarih";
-                worksheet.Cell(1, 6).Value = "Transfer ID";
-                worksheet.Cell(1, 7).Value = "Şehir Turu ID";
-                worksheet.Cell(1, 8).Value = "Yat Turu ID";
-                worksheet.Cell(1, 9).Value = "Notlar";
+                worksheet.Cell(1, 6).Value = "Hizmetler";
+                worksheet.Cell(1, 7).Value = "Notlar";
 
                 // Başlık stilini ayarla
-                var headerRange = worksheet.Range(1, 1, 1, 9);
+                var headerRange = worksheet.Range(1, 1, 1, 7);
                 headerRange.Style.Font.Bold = true;
                 headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
                 headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
@@ -201,15 +199,17 @@ namespace GuestFlow.Application.Operations.Export
                 int row = 2;
                 foreach (var invoice in invoices)
                 {
+                    var services = invoice.InvoiceItems != null && invoice.InvoiceItems.Any()
+                        ? string.Join("; ", invoice.InvoiceItems.Select(i => $"{i.ServiceType}:{i.ServiceId}"))
+                        : "";
+
                     worksheet.Cell(row, 1).Value = invoice.InvoiceNumber;
                     worksheet.Cell(row, 2).Value = invoice.Guest?.FullName ?? "Bilinmiyor";
                     worksheet.Cell(row, 3).Value = invoice.TotalAmount;
                     worksheet.Cell(row, 4).Value = invoice.Currency;
                     worksheet.Cell(row, 5).Value = invoice.IssueDate.ToString("dd.MM.yyyy", CultureInfo.InvariantCulture);
-                    worksheet.Cell(row, 6).Value = invoice.TransferId?.ToString() ?? "";
-                    worksheet.Cell(row, 7).Value = invoice.CityTourId?.ToString() ?? "";
-                    worksheet.Cell(row, 8).Value = invoice.YachtTourId?.ToString() ?? "";
-                    worksheet.Cell(row, 9).Value = invoice.Notes ?? "";
+                    worksheet.Cell(row, 6).Value = services;
+                    worksheet.Cell(row, 7).Value = invoice.Notes ?? "";
                     row++;
                 }
 
@@ -254,18 +254,20 @@ namespace GuestFlow.Application.Operations.Export
                     .ToListAsync();
 
                 var csv = new StringBuilder();
-                csv.AppendLine("Fatura No,Misafir,Tutar,Para Birimi,Tarih,Transfer ID,Şehir Turu ID,Yat Turu ID,Notlar");
+                csv.AppendLine("Fatura No,Misafir,Tutar,Para Birimi,Tarih,Hizmetler,Notlar");
 
                 foreach (var invoice in invoices)
                 {
+                    var services = invoice.InvoiceItems != null && invoice.InvoiceItems.Any()
+                        ? string.Join("; ", invoice.InvoiceItems.Select(i => $"{i.ServiceType}:{i.ServiceId}"))
+                        : "";
+
                     csv.AppendLine($"{invoice.InvoiceNumber}," +
                         $"{EscapeCsvValue(invoice.Guest?.FullName ?? "Bilinmiyor")}," +
                         $"{invoice.TotalAmount}," +
                         $"{invoice.Currency}," +
                         $"{invoice.IssueDate:dd.MM.yyyy}," +
-                        $"{invoice.TransferId?.ToString() ?? ""}," +
-                        $"{invoice.CityTourId?.ToString() ?? ""}," +
-                        $"{invoice.YachtTourId?.ToString() ?? ""}," +
+                        $"{EscapeCsvValue(services)}," +
                         $"{EscapeCsvValue(invoice.Notes ?? "")}");
                 }
 

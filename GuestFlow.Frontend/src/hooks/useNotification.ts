@@ -1,5 +1,4 @@
 import { useNotificationStore } from '../stores/notificationStore'
-import { NotificationSeverity } from '../stores/notificationStore'
 
 export const useNotification = () => {
   const addNotification = useNotificationStore((state) => state.addNotification)
