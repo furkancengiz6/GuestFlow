@@ -361,3 +361,8 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+#
+# Ignore Playwright reports and local test artifacts
+GuestFlow.Frontend/playwright-report/
+GuestFlow.Frontend/test-results/
+tmp_guests_page.txt
