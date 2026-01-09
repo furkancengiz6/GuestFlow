@@ -349,11 +349,11 @@ const TransferDetailPage = () => {
             <Grid item xs={12} md={6}>
               <Typography variant="body2" color="text.secondary">Şoför Ataması</Typography>
               <Typography variant="body1">{(transfer as any).driverName || 'Atanmamış'}</Typography>
-              <Typography variant="body2" color="text.secondary">Şoför ID: {transfer.driverId || '-'}</Typography>
+              <Typography variant="body2" color="text.secondary">Şoför ID: {(transfer as any).driverId || '-'}</Typography>
             </Grid>
             <Grid item xs={12} md={6}>
               <Typography variant="body2" color="text.secondary">Araç Ataması</Typography>
-              <Typography variant="body1">{transfer.vehicleId ? `Araç #${transfer.vehicleId}` : 'Atanmamış'}</Typography>
+              <Typography variant="body1">{(transfer as any).vehicleId ? `Araç #${(transfer as any).vehicleId}` : 'Atanmamış'}</Typography>
             </Grid>
             <Grid item xs={12}>
               <Typography variant="body2" color="text.secondary">Koordinasyon Noktası</Typography>
@@ -400,9 +400,9 @@ const TransferDetailPage = () => {
                          transfer.paymentStatus === 'PartiallyPaid' ? 'warning' : 'error'}
                   size="small"
                 />
-                {transfer.remainingAmount > 0 && (
+                {(transfer as any).remainingAmount && (transfer as any).remainingAmount > 0 && (
                   <Typography variant="body2" color="error.main">
-                    Kalan: {formatCurrency(transfer.remainingAmount)}
+                    Kalan: {formatCurrency(Number((transfer as any).remainingAmount))}
                   </Typography>
                 )}
               </Box>
@@ -436,9 +436,9 @@ const TransferDetailPage = () => {
             </Grid>
             <Grid item xs={12} md={6}>
               <Typography variant="body2" color="text.secondary">Son Güncelleme</Typography>
-              <Typography variant="body1">{formatDateTime(transfer.updatedDate)}</Typography>
+              <Typography variant="body1">{formatDateTime((transfer as any).updatedDate)}</Typography>
               <Typography variant="body2" color="text.secondary">
-                Personel ID: {transfer.updatedByPersonnelId || transfer.createdByPersonnelId}
+                Personel ID: {(transfer as any).updatedByPersonnelId || (transfer as any).createdByPersonnelId}
               </Typography>
             </Grid>
           </Grid>

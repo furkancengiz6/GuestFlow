@@ -191,7 +191,7 @@ export const NotificationCenter = ({ anchor = 'right' }: NotificationCenterProps
                 state="empty"
                 title="Bildirim yok"
                 description="Henüz bildirim bulunmamaktadır."
-                icon={<NotificationsNoneIcon sx={{ fontSize: 64, color: 'text.secondary' }} />}
+                emptyIcon={<NotificationsNoneIcon sx={{ fontSize: 64, color: 'text.secondary' }} />}
               />
             ) : (
               <List>

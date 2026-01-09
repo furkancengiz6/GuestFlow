@@ -75,11 +75,11 @@ const RoomContext: React.FC = () => {
             </Grid>
 
             <Grid item xs={12} md={2}>
-              <DatePicker
+            <DatePicker
                 label="Start Date"
                 value={startDate}
                 onChange={setStartDate}
-                renderInput={(params) => <TextField {...params} fullWidth required />}
+                slotProps={{ textField: { fullWidth: true, required: true } as any }}
               />
             </Grid>
 
@@ -88,7 +88,7 @@ const RoomContext: React.FC = () => {
                 label="End Date"
                 value={endDate}
                 onChange={setEndDate}
-                renderInput={(params) => <TextField {...params} fullWidth required />}
+                slotProps={{ textField: { fullWidth: true, required: true } as any }}
               />
             </Grid>
 

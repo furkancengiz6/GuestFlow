@@ -35,13 +35,13 @@ export const KeyboardShortcutsDialog = ({
 }: KeyboardShortcutsDialogProps) => {
   const allShortcuts = [...commonShortcuts, ...customShortcuts]
 
-  const formatKey = (shortcut: typeof commonShortcuts[0]) => {
+  const formatKey = (shortcut: any) => {
     const parts: string[] = []
     if (shortcut.ctrl) parts.push('Ctrl')
     if (shortcut.shift) parts.push('Shift')
     if (shortcut.alt) parts.push('Alt')
     if (shortcut.meta) parts.push('Meta')
-    parts.push(shortcut.key.toUpperCase())
+    if (shortcut.key) parts.push(String(shortcut.key).toUpperCase())
     return parts.join(' + ')
   }
 
@@ -55,7 +55,7 @@ export const KeyboardShortcutsDialog = ({
       </DialogTitle>
       <DialogContent>
         <List>
-          {allShortcuts.map((shortcut, index) => (
+          {allShortcuts.map((shortcut: any, index: number) => (
             <div key={index}>
               <ListItem>
                 <ListItemText

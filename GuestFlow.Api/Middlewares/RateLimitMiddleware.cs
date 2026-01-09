@@ -1,5 +1,7 @@
 using GuestFlow.Application.Configuration;
 using Microsoft.Extensions.Caching.Memory;
+using System.Linq;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Options;
 using System.Net;
 using System.Text.Json;
@@ -16,17 +18,20 @@ namespace GuestFlow.Api.Middlewares
         private readonly ILogger<RateLimitMiddleware> _logger;
         private readonly RateLimitSettings _settings;
         private readonly IMemoryCache _cache;
+        private readonly IWebHostEnvironment _env;
 
         public RateLimitMiddleware(
             RequestDelegate next,
             ILogger<RateLimitMiddleware> logger,
             IOptions<RateLimitSettings> settings,
-            IMemoryCache cache)
+            IMemoryCache cache,
+            IWebHostEnvironment env)
         {
             _next = next;
             _logger = logger;
             _settings = settings.Value;
             _cache = cache;
+            _env = env;
         }
 
         public async Task InvokeAsync(HttpContext context)
@@ -39,6 +44,12 @@ namespace GuestFlow.Api.Middlewares
             }
 
             var clientIp = GetClientIpAddress(context);
+            // In development, allow loopback traffic to bypass rate limiting (helps local E2E/test runners)
+            if (_env.IsDevelopment() && (clientIp == "127.0.0.1" || clientIp == "::1" || clientIp.StartsWith("::ffff:127.0.0.1")))
+            {
+                await _next(context);
+                return;
+            }
             var endpoint = context.Request.Path.Value ?? string.Empty;
             var userAgent = context.Request.Headers["User-Agent"].ToString();
             var method = context.Request.Method;
@@ -144,7 +155,11 @@ namespace GuestFlow.Api.Middlewares
 
         private bool IsWhitelisted(PathString path)
         {
-            return _settings.WhitelistedPaths.Any(whitelisted => 
+            // Always whitelist internal development helper endpoint
+            if (path.StartsWithSegments("/api/dev", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            return _settings.WhitelistedPaths.Any(whitelisted =>
                 path.StartsWithSegments(whitelisted, StringComparison.OrdinalIgnoreCase));
         }
 
@@ -193,12 +208,12 @@ namespace GuestFlow.Api.Middlewares
 
         private bool IsBlockedIp(string ipAddress)
         {
-            // SECURITY: Basic IP blacklist
-            // In production, this should be configurable and loaded from database/cache
-            var blockedIps = new[] {
-                "127.0.0.1", // Loopback for testing
-                // Add known malicious IPs here
-            };
+            // In development allow loopback traffic (don't block localhost)
+            if (_env.IsDevelopment())
+                return false;
+
+            // SECURITY: Basic IP blacklist (production)
+            var blockedIps = Array.Empty<string>(); // Add known malicious IPs here
 
             return blockedIps.Contains(ipAddress);
         }
@@ -227,6 +242,13 @@ namespace GuestFlow.Api.Middlewares
 
         private bool IsCurrentlyBlocked(string clientIp)
         {
+            // In development do not treat loopback as blocked to avoid blocking local test runners
+            if (_env.IsDevelopment())
+            {
+                if (clientIp == "127.0.0.1" || clientIp == "::1" || clientIp.StartsWith("::ffff:127.0.0.1"))
+                    return false;
+            }
+
             // Check if IP is temporarily blocked
             var blockKey = $"blocked:ip:{clientIp}";
             return _cache.TryGetValue(blockKey, out _);

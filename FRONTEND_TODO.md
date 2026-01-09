@@ -1,6 +1,6 @@
 # GuestFlow Frontend - Yapılacaklar Listesi
 
-**Son Güncelleme:** 2025-01-13 (Eksik sayfalar tamamlandı)  
+**Son Güncelleme:** 2025-01-17 (Test Coverage İyileştirmeleri)  
 **Proje:** GuestFlow Frontend (React + TypeScript)
 
 ---
@@ -102,7 +102,15 @@
 - [x] **Component Tests** - Component test coverage ✅
 - [x] **Integration Tests** - Integration test senaryoları ✅
 - [x] **E2E Tests (Playwright)** - Mevcut E2E testleri genişlet ✅
-- [x] **Test Coverage** - Test coverage raporlama ✅
+- [ ] **Test Coverage İyileştirme** - Coverage %70+ hedefi (**KRİTİK**)
+  - [x] Jest konfigürasyonu optimize edildi ✅
+  - [x] i18n mock sorunu çözüldü ✅
+  - [x] formatters.test.ts: %94.11 coverage ✅
+  - [x] validation.test.ts: Tüm testler geçiyor ✅
+  - [ ] API service testleri düzeltilmeli
+  - [ ] Hook testleri düzeltilmeli
+  - [ ] Component testleri düzeltilmeli
+  - [ ] Memory leak sorunları çözülmeli
 
 ---
 

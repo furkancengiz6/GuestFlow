@@ -23,7 +23,7 @@ interface PieChartProps {
   emptyMessage?: string
   showLabel?: boolean
   labelFormatter?: (entry: PieChartData, percent: number) => string
-  tooltipFormatter?: (value: number, name: string) => [string, string]
+  tooltipFormatter?: (value?: number, name?: string) => any
   innerRadius?: number
   outerRadius?: number
 }
@@ -94,12 +94,17 @@ export const PieChart = ({
             label={
               showLabel
                 ? labelFormatter
-                  ? (entry: PieChartData) => {
-                      const percent = (entry.value / chartData.reduce((sum, d) => sum + d.value, 0)) * 100
-                      return labelFormatter(entry, percent)
+                  ? (props: any) => {
+                      const name = (props && props.name) || ''
+                      const percent = (props && props.percent ? (props.percent * 100) : 0)
+                      const entry = chartData.find((d) => d.name === name) || { name, value: Number(props?.value) || 0 }
+                      return labelFormatter(entry as PieChartData, percent)
                     }
-                  : ({ name, percent }: { name: string; percent: number }) =>
-                      `${name} ${(percent * 100).toFixed(0)}%`
+                  : (props: any) => {
+                      const name = (props && props.name) || ''
+                      const percent = props && props.percent ? (props.percent * 100) : 0
+                      return `${name} ${percent.toFixed(0)}%`
+                    }
                 : false
             }
             outerRadius={outerRadius}
@@ -111,7 +116,7 @@ export const PieChart = ({
               <Cell key={`cell-${index}`} fill={entry.color || defaultColors[index % defaultColors.length]} />
             ))}
           </Pie>
-          <Tooltip formatter={tooltipFormatter} />
+          <Tooltip formatter={(value?: number, name?: string) => (tooltipFormatter ? tooltipFormatter(value, name) : value)} />
           <Legend />
         </RechartsPieChart>
       </ResponsiveContainer>

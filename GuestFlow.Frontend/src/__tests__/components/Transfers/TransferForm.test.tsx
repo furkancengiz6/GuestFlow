@@ -1,4 +1,3 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -6,18 +5,18 @@ import TransferForm from '../../../components/Transfers/TransferForm';
 import { transferService } from '../../../services/transferService';
 
 // Mock services
-vi.mock('../../../services/transferService', () => ({
+jest.mock('../../../services/transferService', () => ({
   transferService: {
-    createTransfer: vi.fn(),
-    updateTransfer: vi.fn(),
-    getTransferDetail: vi.fn(),
+    createTransfer: jest.fn(),
+    updateTransfer: jest.fn(),
+    getTransferDetail: jest.fn(),
   },
 }));
 
-vi.mock('../../../services/dropdownService', () => ({
+jest.mock('../../../services/dropdownService', () => ({
   dropdownService: {
-    getGuests: vi.fn().mockResolvedValue([]),
-    getVehicles: vi.fn().mockResolvedValue([]),
+    getGuests: jest.fn().mockResolvedValue([]),
+    getVehicles: jest.fn().mockResolvedValue([]),
     getPersonnel: vi.fn().mockResolvedValue([]),
     getAirports: vi.fn().mockResolvedValue([]),
   },

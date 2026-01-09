@@ -282,7 +282,7 @@ const DashboardPage = () => {
                     <XAxis dataKey="label" />
                     <YAxis />
                     <Tooltip
-                      formatter={(value: number) => formatCurrency(value)}
+                      formatter={(value: number | undefined) => formatCurrency(Number(value || 0))}
                     />
                     <Legend />
                     <Line

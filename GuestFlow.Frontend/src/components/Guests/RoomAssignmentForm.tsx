@@ -30,7 +30,7 @@ const roomAssignmentSchema = z.object({
   guestId: z.number().min(1, 'Misafir seçilmelidir'),
   hotelId: z.number().optional(),
   roomNumber: z.string().min(1, 'Oda numarası gereklidir').max(20, 'Oda numarası en fazla 20 karakter olabilir'),
-  startDate: z.date({ required_error: 'Başlangıç tarihi gereklidir' }),
+  startDate: z.date({ required_error: 'Başlangıç tarihi gereklidir' } as any),
   endDate: z.date().optional(),
   notes: z.string().max(500, 'Notlar en fazla 500 karakter olabilir').optional(),
 })
@@ -40,7 +40,8 @@ type RoomAssignmentFormData = z.infer<typeof roomAssignmentSchema>
 interface RoomAssignmentFormProps {
   open: boolean
   onClose: () => void
-  onSubmit: (data: RoomAssignmentFormData) => Promise<void>
+  // Accept any to allow submitting converted date strings
+  onSubmit: (data: any) => Promise<void>
   roomAssignment?: RoomAssignment | null
   guestId?: number // Pre-select guest if provided
   isLoading?: boolean

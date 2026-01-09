@@ -37,6 +37,10 @@ export interface TourOption {
   name: string
   cityId: number
   isActive: boolean
+  // Optional fields used by some consumers
+  tourName?: string
+  tourDate?: string
+  yachtName?: string
 }
 
 export const dropdownService = {
@@ -148,6 +152,9 @@ export const dropdownService = {
           name: t.name,
           cityId: t.cityId,
           isActive: t.isActive,
+          tourName: t.tourName || t.name,
+          tourDate: t.tourDate || t.date || undefined,
+          yachtName: t.yachtName || undefined,
         }))
       }
       return []
@@ -155,6 +162,42 @@ export const dropdownService = {
       console.error('Tours dropdown fetch error:', error)
       return []
     }
+  },
+  getHotels: async (): Promise<{ id: number; hotelName: string }[]> => {
+    try {
+      const response = await apiClient.get('/Hotels', { params: { pageNumber: 1, pageSize: 1000 } })
+      if (response.data?.data?.data) {
+        return response.data.data.data.map((h: any) => ({ id: h.id, hotelName: h.hotelName }))
+      }
+      return []
+    } catch (error) {
+      console.error('Hotels dropdown fetch error:', error)
+      return []
+    }
+  },
+  getInvoices: async (): Promise<any[]> => {
+    try {
+      const response = await apiClient.get('/Invoices', { params: { pageNumber: 1, pageSize: 1000 } })
+      return response.data?.data?.data || []
+    } catch (error) {
+      console.error('Invoices dropdown fetch error:', error)
+      return []
+    }
+  },
+  getTransfers: async (): Promise<any[]> => {
+    try {
+      const response = await apiClient.get('/Transfers', { params: { pageNumber: 1, pageSize: 1000 } })
+      return response.data?.data?.data || []
+    } catch (error) {
+      console.error('Transfers dropdown fetch error:', error)
+      return []
+    }
+  },
+  getCityTours: async (cityId?: number): Promise<TourOption[]> => {
+    return await (dropdownService.getTours(cityId))
+  },
+  getYachtTours: async (cityId?: number): Promise<TourOption[]> => {
+    return await (dropdownService.getTours(cityId))
   },
 }
 

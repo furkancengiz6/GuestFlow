@@ -1,14 +1,10 @@
-// Test setup file - commented out for production builds
-// This file is only used during testing and causes build errors in production
-
-/*
+// Test setup file - Jest configuration
+// This file configures Jest for React Testing Library
 import '@testing-library/jest-dom'
 import { cleanup } from '@testing-library/react'
 import { afterEach, beforeAll, afterAll } from '@jest/globals'
 
-// Add jest types for TypeScript
-declare const jest: any
-declare const global: any
+// TypeScript types are handled by Jest automatically
 
 // Cleanup after each test
 afterEach(() => {
@@ -49,6 +45,43 @@ global.ResizeObserver = class ResizeObserver {
   unobserve() {}
 } as any
 
+// Mock URL.createObjectURL for export tests
+global.URL.createObjectURL = jest.fn(() => 'mock-url')
+global.URL.revokeObjectURL = jest.fn()
+
+// Mock axios for API calls
+jest.mock('axios', () => ({
+  __esModule: true,
+  default: {
+    create: jest.fn(() => ({
+      interceptors: {
+        request: { use: jest.fn(), eject: jest.fn() },
+        response: { use: jest.fn(), eject: jest.fn() }
+      },
+      get: jest.fn(),
+      post: jest.fn(),
+      put: jest.fn(),
+      patch: jest.fn(),
+      delete: jest.fn(),
+      defaults: { headers: { common: {} } }
+    })),
+    isAxiosError: jest.fn(() => false),
+    AxiosError: class AxiosError extends Error {
+      constructor(message: string, code?: string) {
+        super(message)
+        this.name = 'AxiosError'
+        this.code = code
+      }
+      code?: string
+      response?: any
+      request?: any
+    }
+  }
+}))
+
+// Note: Store and library mocks are handled individually in test files
+// to avoid path resolution issues in setupTests.ts
+
 // Suppress console errors in tests (optional)
 const originalError = console.error
 beforeAll(() => {
@@ -67,4 +100,3 @@ beforeAll(() => {
 afterAll(() => {
   console.error = originalError
 })
-*/

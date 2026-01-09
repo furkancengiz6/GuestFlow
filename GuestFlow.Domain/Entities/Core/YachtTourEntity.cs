@@ -133,6 +133,7 @@ namespace GuestFlow.Domain.Entities.Core
             builder.Property(yt => yt.PierAddress).HasMaxLength(500).IsRequired(false);
             builder.Property(yt => yt.CaptainPhone).HasMaxLength(20).IsRequired(false);
             builder.Property(yt => yt.SupplierName).HasMaxLength(200).IsRequired(false);
+            builder.Property(yt => yt.SupplierCost).HasPrecision(18,2).IsRequired(false);
             builder.Property(yt => yt.SupplierCurrency).HasMaxLength(3).IsRequired(false);
             builder.Property(yt => yt.SupplierInvoiceNumber).HasMaxLength(100).IsRequired(false);
 

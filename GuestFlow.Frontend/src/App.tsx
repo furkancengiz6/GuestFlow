@@ -1,48 +1,56 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { Suspense, lazy } from 'react'
-import { Box, CircularProgress } from '@mui/material'
+import { Suspense } from 'react'
+import { Box, CircularProgress } from './components/ui'
 import Layout from './components/Layout/Layout'
 import EnhancedErrorBoundary from './components/Common/EnhancedErrorBoundary'
 import ProtectedRoute from './components/Auth/ProtectedRoute'
 import { useTokenRefresh } from './hooks/useTokenRefresh'
 import { useSessionTimeout } from './hooks/useSessionTimeout'
+import { lazyLoad } from './utils/performance'
 
-// Lazy load pages for code splitting
-const LoginPage = lazy(() => import('./pages/Auth/LoginPage'))
-const DashboardPage = lazy(() => import('./pages/Dashboard/DashboardPage'))
-const GuestsPage = lazy(() => import('./pages/Guests/GuestsPage'))
-const GuestDetailPage = lazy(() => import('./pages/Guests/GuestDetailPage'))
-const TransfersPage = lazy(() => import('./pages/Transfers/TransfersPage'))
-const TransferDetailPage = lazy(() => import('./pages/Transfers/TransferDetailPage'))
-const ToursPage = lazy(() => import('./pages/Tours/ToursPage'))
-const CityTourDetailPage = lazy(() => import('./pages/Tours/CityTourDetailPage'))
-const YachtTourDetailPage = lazy(() => import('./pages/Tours/YachtTourDetailPage'))
-const InvoicesPage = lazy(() => import('./pages/Invoices/InvoicesPage'))
-const InvoiceDetailPage = lazy(() => import('./pages/Invoices/InvoiceDetailPage'))
-const PersonnelPage = lazy(() => import('./pages/Personnel/PersonnelPage'))
-const ReportsPage = lazy(() => import('./pages/Reports/ReportsPage'))
-const SettingsPage = lazy(() => import('./pages/Settings/SettingsPage'))
-const AirportsPage = lazy(() => import('./pages/Airports/AirportsPage'))
-const CitiesPage = lazy(() => import('./pages/Cities/CitiesPage'))
-const VehiclesPage = lazy(() => import('./pages/Vehicles/VehiclesPage'))
-const DailyNotesPage = lazy(() => import('./pages/DailyNotes/DailyNotesPage'))
-const DailyRevenuesPage = lazy(() => import('./pages/DailyRevenues/DailyRevenuesPage'))
-const ReservationsPage = lazy(() => import('./pages/Reservations/ReservationsPage'))
-const ReservationDetailPage = lazy(() => import('./pages/Reservations/ReservationDetailPage'))
-const SmsPage = lazy(() => import('./pages/SMS/SmsPage'))
-const EmailsPage = lazy(() => import('./pages/Emails/EmailsPage'))
-const NotificationsPage = lazy(() => import('./pages/Notifications/NotificationsPage'))
-const FilesPage = lazy(() => import('./pages/Files/FilesPage'))
-const CalendarPage = lazy(() => import('./pages/Calendar/CalendarPage'))
-const ForbiddenPage = lazy(() => import('./pages/ForbiddenPage'))
-const HotelsPage = lazy(() => import('./pages/Hotels/HotelsPage'))
-const RestaurantsPage = lazy(() => import('./pages/Restaurants/RestaurantsPage'))
-const ItinerariesPage = lazy(() => import('./pages/Itineraries/ItinerariesPage'))
-const ItineraryTimelinePage = lazy(() => import('./pages/Itineraries/ItineraryTimelinePage'))
-const CurrencyPage = lazy(() => import('./pages/Currency/CurrencyPage'))
-const ServicePackagesPage = lazy(() => import('./pages/ServicePackages/ServicePackagesPage'))
-const PaymentsPage = lazy(() => import('./pages/Payments/PaymentsPage'))
-const RoomAssignmentsPage = lazy(() => import('./pages/RoomAssignments/RoomAssignmentsPage'))
+// Lazy load pages for code splitting - grouped by priority with error handling
+// High priority pages (always loaded)
+const LoginPage = lazyLoad(() => import('./pages/Auth/LoginPage'), 'LoginPage')
+const DashboardPage = lazyLoad(() => import('./pages/Dashboard/DashboardPage'), 'DashboardPage')
+const ForbiddenPage = lazyLoad(() => import('./pages/ForbiddenPage'), 'ForbiddenPage')
+
+// Medium priority pages (common operations)
+const GuestsPage = lazyLoad(() => import('./pages/Guests/GuestsPage'), 'GuestsPage')
+const GuestDetailPage = lazyLoad(() => import('./pages/Guests/GuestDetailPage'), 'GuestDetailPage')
+const TransfersPage = lazyLoad(() => import('./pages/Transfers/TransfersPage'), 'TransfersPage')
+const TransferDetailPage = lazyLoad(() => import('./pages/Transfers/TransferDetailPage'), 'TransferDetailPage')
+const InvoicesPage = lazyLoad(() => import('./pages/Invoices/InvoicesPage'), 'InvoicesPage')
+const InvoiceDetailPage = lazyLoad(() => import('./pages/Invoices/InvoiceDetailPage'), 'InvoiceDetailPage')
+const ReservationsPage = lazyLoad(() => import('./pages/Reservations/ReservationsPage'), 'ReservationsPage')
+const ReservationDetailPage = lazyLoad(() => import('./pages/Reservations/ReservationDetailPage'), 'ReservationDetailPage')
+
+// Low priority pages (admin features) - loaded on demand
+const ToursPage = lazyLoad(() => import('./pages/Tours/ToursPage'), 'ToursPage')
+const CityTourDetailPage = lazyLoad(() => import('./pages/Tours/CityTourDetailPage'), 'CityTourDetailPage')
+const YachtTourDetailPage = lazyLoad(() => import('./pages/Tours/YachtTourDetailPage'), 'YachtTourDetailPage')
+const PersonnelPage = lazyLoad(() => import('./pages/Personnel/PersonnelPage'), 'PersonnelPage')
+const ReportsPage = lazyLoad(() => import('./pages/Reports/ReportsPage'), 'ReportsPage')
+const SettingsPage = lazyLoad(() => import('./pages/Settings/SettingsPage'), 'SettingsPage')
+const AirportsPage = lazyLoad(() => import('./pages/Airports/AirportsPage'), 'AirportsPage')
+const CitiesPage = lazyLoad(() => import('./pages/Cities/CitiesPage'), 'CitiesPage')
+const VehiclesPage = lazyLoad(() => import('./pages/Vehicles/VehiclesPage'), 'VehiclesPage')
+const DailyNotesPage = lazyLoad(() => import('./pages/DailyNotes/DailyNotesPage'), 'DailyNotesPage')
+const DailyRevenuesPage = lazyLoad(() => import('./pages/DailyRevenues/DailyRevenuesPage'), 'DailyRevenuesPage')
+const SmsPage = lazyLoad(() => import('./pages/SMS/SmsPage'), 'SmsPage')
+const EmailsPage = lazyLoad(() => import('./pages/Emails/EmailsPage'), 'EmailsPage')
+const NotificationsPage = lazyLoad(() => import('./pages/Notifications/NotificationsPage'), 'NotificationsPage')
+const FilesPage = lazyLoad(() => import('./pages/Files/FilesPage'), 'FilesPage')
+const CalendarPage = lazyLoad(() => import('./pages/Calendar/CalendarPage'), 'CalendarPage')
+const HotelsPage = lazyLoad(() => import('./pages/Hotels/HotelsPage'), 'HotelsPage')
+const RestaurantsPage = lazyLoad(() => import('./pages/Restaurants/RestaurantsPage'), 'RestaurantsPage')
+const ItinerariesPage = lazyLoad(() => import('./pages/Itineraries/ItinerariesPage'), 'ItinerariesPage')
+const ItineraryTimelinePage = lazyLoad(() => import('./pages/Itineraries/ItineraryTimelinePage'), 'ItineraryTimelinePage')
+const CurrencyPage = lazyLoad(() => import('./pages/Currency/CurrencyPage'), 'CurrencyPage')
+const ServicePackagesPage = lazyLoad(() => import('./pages/ServicePackages/ServicePackagesPage'), 'ServicePackagesPage')
+const PaymentsPage = lazyLoad(() => import('./pages/Payments/PaymentsPage'), 'PaymentsPage')
+const RoomAssignmentsPage = lazyLoad(() => import('./pages/RoomAssignments/RoomAssignmentsPage'), 'RoomAssignmentsPage')
+const SuppliersPage = lazyLoad(() => import('./pages/Suppliers/SuppliersPage'), 'SuppliersPage')
+const SupplierCostsPage = lazyLoad(() => import('./pages/Suppliers/SupplierCostsPage'), 'SupplierCostsPage')
 
 // Loading fallback component
 const PageLoader = () => (
@@ -386,6 +394,26 @@ function App() {
                         <ProtectedRoute roles={['Admin', 'Staff']} fallbackPath="/dashboard">
                           <Suspense fallback={<PageLoader />}>
                             <RoomAssignmentsPage />
+                          </Suspense>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/suppliers"
+                      element={
+                        <ProtectedRoute roles={['Admin']} fallbackPath="/dashboard">
+                          <Suspense fallback={<PageLoader />}>
+                            <SuppliersPage />
+                          </Suspense>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/suppliers/costs"
+                      element={
+                        <ProtectedRoute roles={['Admin']} fallbackPath="/dashboard">
+                          <Suspense fallback={<PageLoader />}>
+                            <SupplierCostsPage />
                           </Suspense>
                         </ProtectedRoute>
                       }

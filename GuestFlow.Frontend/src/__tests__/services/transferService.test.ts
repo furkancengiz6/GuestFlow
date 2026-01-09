@@ -1,20 +1,20 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { transferService } from '../../services/transferService';
-import { apiClient } from '../../services/api';
 
-// Mock apiClient
-vi.mock('../../services/api', () => ({
-  apiClient: {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-    delete: vi.fn(),
+// Mock the entire api module
+jest.mock('../../services/api', () => ({
+  __esModule: true,
+  default: {
+    get: jest.fn(),
+    post: jest.fn(),
+    put: jest.fn(),
+    patch: jest.fn(),
+    delete: jest.fn(),
   },
 }));
 
 describe('TransferService', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe('getTransfers', () => {
@@ -36,11 +36,13 @@ describe('TransferService', () => {
         },
       };
 
-      (apiClient.get as any).mockResolvedValue(mockResponse);
+      // Mock the api response
+      const mockApi = require('../../services/api').default;
+      mockApi.get.mockResolvedValue(mockResponse);
 
       const result = await transferService.getTransfers(1, 10);
 
-      expect(apiClient.get).toHaveBeenCalledWith('/Transfers', {
+      expect(mockApi.get).toHaveBeenCalledWith('/Transfers', {
         params: { pageNumber: 1, pageSize: 10 },
       });
       expect(result).toEqual(mockResponse.data);

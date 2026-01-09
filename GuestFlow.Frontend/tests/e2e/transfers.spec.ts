@@ -1,13 +1,17 @@
 import { test, expect } from '@playwright/test'
 
-const baseURL = process.env.E2E_BASE_URL || 'http://localhost:5173'
+/// <reference types="node" />
+/// <reference types="@playwright/test" />
+
 const userEmail = process.env.E2E_USER_EMAIL || 'ahmet@guestflow.com'
 const userPassword = process.env.E2E_USER_PASSWORD || 'Admin123!'
+const DEFAULT_BASE = (process.env.E2E_BASE_URL || 'http://localhost:5175').toString().trim().replace(/\/$/, '')
 
 test.describe('Transfers Management', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, baseURL }) => {
     // Login before each test
-    await page.goto(`${baseURL}/login`)
+      const normalizedBase = (baseURL || process.env.E2E_BASE_URL || 'http://localhost:5175').toString().trim().replace(/\/$/, '')
+    await page.goto(`${normalizedBase}/login`)
     await page.fill('input[type="email"]', userEmail)
     await page.fill('input[type="password"]', userPassword)
     await page.click('button:has-text("Giriş Yap")')
@@ -15,12 +19,14 @@ test.describe('Transfers Management', () => {
   })
 
   test('should navigate to transfers page', async ({ page }) => {
-    await page.goto(`${baseURL}/transfers`)
+    const normalizedBase = (baseURL || process.env.E2E_BASE_URL || 'http://localhost:5175').toString().trim().replace(/\/$/, '')
+    await page.goto(`${normalizedBase}/transfers`)
     await expect(page).toHaveURL(/.*transfers/)
   })
 
   test('should display transfers list', async ({ page }) => {
-    await page.goto(`${baseURL}/transfers`)
+    const normalizedBase = (baseURL || process.env.E2E_BASE_URL || 'http://localhost:5175').toString().trim().replace(/\/$/, '')
+    await page.goto(`${normalizedBase}/transfers`)
     
     // Wait for transfers to load
     await page.waitForSelector('table, [role="table"]', { timeout: 10000 })
@@ -30,7 +36,8 @@ test.describe('Transfers Management', () => {
   })
 
   test('should filter transfers', async ({ page }) => {
-    await page.goto(`${baseURL}/transfers`)
+    const normalizedBase = (baseURL || process.env.E2E_BASE_URL || 'http://localhost:5175').toString().trim().replace(/\/$/, '')
+    await page.goto(`${normalizedBase}/transfers`)
 
     // Wait for page to load
     await page.waitForSelector('table, [role="table"]', { timeout: 10000 })
@@ -44,7 +51,8 @@ test.describe('Transfers Management', () => {
   })
 
   test('should create a new transfer successfully', async ({ page }) => {
-    await page.goto(`${baseURL}/transfers`)
+    const normalizedBase = (baseURL || process.env.E2E_BASE_URL || 'http://localhost:5175').toString().trim().replace(/\/$/, '')
+    await page.goto(`${normalizedBase}/transfers`)
 
     // Click create transfer button
     const createButton = page.locator('button:has-text("Yeni Transfer"), button[aria-label*="Yeni"]').first()
@@ -105,7 +113,7 @@ test.describe('Transfers Management', () => {
   })
 
   test('should validate transfer form fields', async ({ page }) => {
-    await page.goto(`${baseURL}/transfers`)
+    await page.goto(`${DEFAULT_BASE}/transfers`)
 
     // Try to create transfer
     const createButton = page.locator('button:has-text("Yeni Transfer"), button[aria-label*="Yeni"]').first()
@@ -136,7 +144,7 @@ test.describe('Transfers Management', () => {
   })
 
   test('should perform bulk operations on transfers', async ({ page }) => {
-    await page.goto(`${baseURL}/transfers`)
+    await page.goto(`${DEFAULT_BASE}/transfers`)
 
     // Wait for table to load
     await page.waitForSelector('table, [role="table"]', { timeout: 10000 })
@@ -168,7 +176,7 @@ test.describe('Transfers Management', () => {
   })
 
   test('should navigate between transfer pages', async ({ page }) => {
-    await page.goto(`${baseURL}/transfers`)
+    await page.goto(`${DEFAULT_BASE}/transfers`)
 
     // Wait for table to load
     await page.waitForSelector('table, [role="table"]', { timeout: 10000 })
@@ -194,7 +202,7 @@ test.describe('Transfers Management', () => {
   })
 
   test('should handle transfer detail view', async ({ page }) => {
-    await page.goto(`${baseURL}/transfers`)
+    await page.goto(`${DEFAULT_BASE}/transfers`)
 
     // Wait for table to load
     await page.waitForSelector('table, [role="table"]', { timeout: 10000 })

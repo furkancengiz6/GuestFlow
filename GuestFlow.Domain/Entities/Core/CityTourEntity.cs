@@ -129,6 +129,7 @@ namespace GuestFlow.Domain.Entities.Core
             builder.Property(ct => ct.PickupLocation).HasMaxLength(500).IsRequired(false);
             builder.Property(ct => ct.DropoffLocation).HasMaxLength(500).IsRequired(false);
             builder.Property(ct => ct.SupplierName).HasMaxLength(200).IsRequired(false);
+            builder.Property(ct => ct.SupplierCost).HasPrecision(18,2).IsRequired(false);
             builder.Property(ct => ct.SupplierCurrency).HasMaxLength(3).IsRequired(false);
             builder.Property(ct => ct.SupplierInvoiceNumber).HasMaxLength(100).IsRequired(false);
 

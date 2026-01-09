@@ -5,9 +5,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import LoginPage from '../../../pages/Auth/LoginPage'
 import { useAuthStore } from '../../../stores/authStore'
 
-// Mock auth store
+// Mock auth store - authStore.ts'nin doğru import edilmesi gerekiyor
 jest.mock('../../../stores/authStore', () => ({
-  useAuthStore: jest.fn(),
+  useAuthStore: jest.fn(() => ({
+    user: null,
+    isAuthenticated: false,
+    login: jest.fn(),
+    logout: jest.fn(),
+  })),
 }))
 
 // Mock auth service

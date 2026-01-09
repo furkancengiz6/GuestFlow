@@ -1,13 +1,17 @@
 import { test, expect } from '@playwright/test'
 
-const baseURL = process.env.E2E_BASE_URL || 'http://localhost:5173'
+/// <reference types="node" />
+/// <reference types="@playwright/test" />
+
 const userEmail = process.env.E2E_USER_EMAIL || 'ahmet@guestflow.com'
 const userPassword = process.env.E2E_USER_PASSWORD || 'Admin123!'
+const DEFAULT_BASE = (process.env.E2E_BASE_URL || 'http://localhost:5175').toString().trim().replace(/\/$/, '')
 
 test.describe('Guests Management', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, baseURL }) => {
     // Login before each test
-    await page.goto(`${baseURL}/login`)
+    const normalizedBase = (baseURL || process.env.E2E_BASE_URL || 'http://localhost:5175').toString().trim().replace(/\/$/, '')
+    await page.goto(`${normalizedBase}/login`)
     await page.fill('input[type="email"]', userEmail)
     await page.fill('input[type="password"]', userPassword)
     await page.click('button:has-text("Giriş Yap")')
@@ -15,13 +19,15 @@ test.describe('Guests Management', () => {
   })
 
   test('should navigate to guests page', async ({ page }) => {
-    await page.goto(`${baseURL}/guests`)
+    const normalizedBase = (baseURL || process.env.E2E_BASE_URL || 'http://localhost:5175').toString().trim().replace(/\/$/, '')
+    await page.goto(`${normalizedBase}/guests`)
     await expect(page).toHaveURL(/.*guests/)
     await expect(page.locator('h1, h2, h3, h4, h5, h6')).toContainText(/misafir/i)
   })
 
   test('should display guests list', async ({ page }) => {
-    await page.goto(`${baseURL}/guests`)
+    const normalizedBase = (baseURL || process.env.E2E_BASE_URL || 'http://localhost:5175').toString().trim().replace(/\/$/, '')
+    await page.goto(`${normalizedBase}/guests`)
     
     // Wait for table or list to load
     await page.waitForSelector('table, [role="table"], [data-testid="guests-table"]', {
@@ -34,7 +40,8 @@ test.describe('Guests Management', () => {
   })
 
   test('should open add guest form', async ({ page }) => {
-    await page.goto(`${baseURL}/guests`)
+    const normalizedBase = (baseURL || process.env.E2E_BASE_URL || 'http://localhost:5175').toString().trim().replace(/\/$/, '')
+    await page.goto(`${normalizedBase}/guests`)
     
     // Click add button
     const addButton = page.locator('button:has-text("Ekle"), button:has-text("Yeni"), [aria-label*="Ekle"]').first()

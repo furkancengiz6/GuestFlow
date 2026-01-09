@@ -635,8 +635,8 @@ const ToursPage = () => {
                         </Button>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" fontWeight="medium">
-                          {tour.ownerGuest?.fullName || 'Misafir'}
+                          <Typography variant="body2" fontWeight="medium">
+                          {(tour as any).ownerGuest?.fullName || 'Misafir'}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
                           {((tour as any).adultCount || 0) + ((tour as any).childCount || 0) + ((tour as any).infantCount || 0)} kişi toplam
@@ -962,7 +962,7 @@ const ToursPage = () => {
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2" fontWeight="medium">
-                          {tour.ownerGuest?.fullName || 'Misafir'}
+                          {(tour as any).ownerGuest?.fullName || 'Misafir'}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
                           {tour.numberOfPeople} kişi

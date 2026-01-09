@@ -45,6 +45,22 @@ namespace GuestFlow.Persistence.Context
         public DbSet<PackageYachtTourEntity> PackageYachtTours => Set<PackageYachtTourEntity>();
         public DbSet<PackageRestaurantReservationEntity> PackageRestaurantReservations => Set<PackageRestaurantReservationEntity>();
 
+        // Audit logging
+        public DbSet<GuestFlow.Domain.Entities.Core.AuditLog> AuditLogs => Set<GuestFlow.Domain.Entities.Core.AuditLog>();
+
+        // Supplier management
+        public DbSet<GuestFlow.Domain.Entities.Core.Supplier> Suppliers => Set<GuestFlow.Domain.Entities.Core.Supplier>();
+        public DbSet<GuestFlow.Domain.Entities.Operations.SupplierCost> SupplierCosts => Set<GuestFlow.Domain.Entities.Operations.SupplierCost>();
+
+        // OTA integrations
+        public DbSet<GuestFlow.Domain.Entities.Operations.OTAIntegration> OTAIntegrations => Set<GuestFlow.Domain.Entities.Operations.OTAIntegration>();
+        public DbSet<GuestFlow.Domain.Entities.Operations.OTAHotelMapping> OTAHotelMappings => Set<GuestFlow.Domain.Entities.Operations.OTAHotelMapping>();
+        public DbSet<GuestFlow.Domain.Entities.Operations.OTAReservation> OTAReservations => Set<GuestFlow.Domain.Entities.Operations.OTAReservation>();
+        public DbSet<GuestFlow.Domain.Entities.Operations.OTAPriceUpdate> OTAPriceUpdates => Set<GuestFlow.Domain.Entities.Operations.OTAPriceUpdate>();
+        // Accounting - journal entries
+        public DbSet<GuestFlow.Domain.Entities.Core.JournalEntry> JournalEntries => Set<GuestFlow.Domain.Entities.Core.JournalEntry>();
+        public DbSet<GuestFlow.Domain.Entities.Core.JournalLine> JournalLines => Set<GuestFlow.Domain.Entities.Core.JournalLine>();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

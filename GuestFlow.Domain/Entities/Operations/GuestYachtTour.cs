@@ -17,13 +17,35 @@ namespace GuestFlow.Domain.Entities.Operations
     {
         public override void Configure(EntityTypeBuilder<GuestYachtTour> builder)
         {
-           
-
-            base.Configure(builder);
+            // Composite key tanımı - BaseEntity Id'yi kullanmıyoruz
             builder.HasKey(gyt => new { gyt.GuestId, gyt.YachtTourId });
-            builder.Ignore(gyt => gyt.Id); // BaseEntity'den gelen Id'yi yok say
-            builder.Ignore(gct => gct.CreatedDate);
-            builder.Ignore(gct => gct.IsDeleted);
+
+            // BaseEntity'den gelen property'leri override et (ignore değil)
+            builder.Property(gyt => gyt.Id).ValueGeneratedNever(); // Id'yi kullanmıyoruz
+
+            // BaseEntity'nin CreatedDate ve IsDeleted property'lerini ignore et
+            // çünkü bu junction table'da bunları kullanmıyoruz
+            builder.Ignore(gyt => gyt.CreatedDate);
+            builder.Ignore(gyt => gyt.UpdatedDate);
+            builder.Ignore(gyt => gyt.CreatedByPersonnelId);
+            builder.Ignore(gyt => gyt.UpdatedByPersonnelId);
+            builder.Ignore(gyt => gyt.IsDeleted);
+
+            // Foreign key ilişkileri
+            builder.HasOne(gyt => gyt.Guest)
+                   .WithMany(g => g.GuestYachtTours)
+                   .HasForeignKey(gyt => gyt.GuestId)
+                   .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasOne(gyt => gyt.YachtTour)
+                   .WithMany(yt => yt.GuestYachtTours)
+                   .HasForeignKey(gyt => gyt.YachtTourId)
+                   .OnDelete(DeleteBehavior.Cascade);
+
+            // Index'ler
+            builder.HasIndex(gyt => gyt.GuestId);
+            builder.HasIndex(gyt => gyt.YachtTourId);
+            builder.HasIndex(gyt => new { gyt.GuestId, gyt.YachtTourId });
         }
     }
 }

@@ -188,7 +188,7 @@ const InvoiceDetailPage = () => {
           >
             {sendEmailMutation.isPending ? 'Gönderiliyor...' : 'E-posta Gönder'}
           </Button>
-          {invoice.status === 'Draft' && (
+          {(invoice as any).status === 'Draft' && (
             <Button
               variant="outlined"
               color="error"

@@ -70,7 +70,7 @@ const ItineraryForm = ({ open, onClose, onSubmit, itinerary, isLoading = false }
     reset,
     setValue,
   } = useForm<ItineraryFormData>({
-    resolver: zodResolver(itinerarySchema),
+    resolver: zodResolver(itinerarySchema) as any,
     defaultValues: {
       guestId: 0,
       personnelId: 0,

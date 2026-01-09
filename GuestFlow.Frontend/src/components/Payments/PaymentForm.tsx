@@ -30,8 +30,8 @@ import { PaymentMethod } from '../../types/enums'
 const paymentSchema = z.object({
   amount: z.number().min(0.01, 'Ödeme tutarı 0.01\'den büyük olmalıdır'),
   currency: z.string().min(1, 'Para birimi gereklidir'),
-  paymentMethod: z.nativeEnum(PaymentMethod, { required_error: 'Ödeme yöntemi gereklidir' }),
-  paymentDate: z.date({ required_error: 'Ödeme tarihi gereklidir' }),
+  paymentMethod: z.nativeEnum(PaymentMethod, { required_error: 'Ödeme yöntemi gereklidir' } as any),
+  paymentDate: z.date({ required_error: 'Ödeme tarihi gereklidir' } as any),
   guestId: z.number().min(1, 'Misafir seçilmelidir'),
   invoiceId: z.number().optional(),
   transferId: z.number().optional(),
@@ -45,7 +45,8 @@ type PaymentFormData = z.infer<typeof paymentSchema>
 interface PaymentFormProps {
   open: boolean
   onClose: () => void
-  onSubmit: (data: PaymentFormData) => Promise<void>
+  // Accept any to allow submission with converted paymentDate string
+  onSubmit: (data: any) => Promise<void>
   preselectedService?: {
     serviceType: 'transfer' | 'citytour' | 'yachttour'
     serviceId: number
@@ -329,7 +330,7 @@ const PaymentForm = ({ open, onClose, onSubmit, preselectedService, isLoading = 
                           <MenuItem value="">Seçiniz</MenuItem>
                           {cityTours?.map((tour) => (
                             <MenuItem key={tour.id} value={tour.id}>
-                              {tour.tourName} - {new Date(tour.tourDate).toLocaleDateString()}
+                              {tour.tourName} - {tour.tourDate ? new Date(tour.tourDate).toLocaleDateString() : ''}
                             </MenuItem>
                           ))}
                         </Select>
@@ -349,7 +350,7 @@ const PaymentForm = ({ open, onClose, onSubmit, preselectedService, isLoading = 
                           <MenuItem value="">Seçiniz</MenuItem>
                           {yachtTours?.map((tour) => (
                             <MenuItem key={tour.id} value={tour.id}>
-                              {tour.yachtName || 'Yat'} - {new Date(tour.tourDate).toLocaleDateString()}
+                              {tour.yachtName || 'Yat'} - {tour.tourDate ? new Date(tour.tourDate).toLocaleDateString() : ''}
                             </MenuItem>
                           ))}
                         </Select>

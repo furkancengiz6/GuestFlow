@@ -108,6 +108,7 @@ namespace GuestFlow.Domain.Entities.Core
             builder.Property(t => t.FinalPrice).HasPrecision(18, 2);
             builder.Property(t => t.Currency).HasMaxLength(3).IsRequired(false);
             builder.Property(t => t.SupplierName).HasMaxLength(200).IsRequired(false);
+            builder.Property(t => t.SupplierCost).HasPrecision(18,2).IsRequired(false);
             builder.Property(t => t.SupplierCurrency).HasMaxLength(3).IsRequired(false);
             builder.Property(t => t.SupplierInvoiceNumber).HasMaxLength(100).IsRequired(false);
             builder.Property(t => t.DriverName).HasMaxLength(200).IsRequired(false);

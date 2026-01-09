@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -47,6 +47,10 @@ namespace GuestFlow.Persistence.Repositories
         {
             _dbSet.Update(entity);
             await Task.CompletedTask;
+        }
+        public void Update(TEntity entity)
+        {
+            _dbSet.Update(entity);
         }
 
         public async Task<TEntity> GetByIdAsync(int id, bool includeDeleted = false)

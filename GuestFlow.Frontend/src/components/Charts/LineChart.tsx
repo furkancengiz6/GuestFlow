@@ -13,7 +13,7 @@ import { SkeletonLoader } from '../Feedback/SkeletonLoader'
 
 export interface LineChartData {
   name: string
-  [key: string]: string | number
+  [key: string]: string | number | undefined
 }
 
 export interface LineChartSeries {
@@ -83,7 +83,7 @@ export const LineChart = ({
           <YAxis label={yAxisLabel ? { value: yAxisLabel, angle: -90, position: 'insideLeft' } : undefined} />
           <Tooltip formatter={tooltipFormatter} />
           <Legend />
-          {series.map((serie, index) => (
+          {series.map((serie, _index) => (
             <Line
               key={serie.dataKey}
               type="monotone"
