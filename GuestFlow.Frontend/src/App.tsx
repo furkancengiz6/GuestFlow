@@ -7,6 +7,8 @@ import ProtectedRoute from './components/Auth/ProtectedRoute'
 import { useTokenRefresh } from './hooks/useTokenRefresh'
 import { useSessionTimeout } from './hooks/useSessionTimeout'
 import { lazyLoad } from './utils/performance'
+// Statically import GuestsPage in dev/test to avoid intermittent Vite dynamic-import failures during E2E
+import GuestsPage from './pages/Guests/GuestsPage'
 
 // Lazy load pages for code splitting - grouped by priority with error handling
 // High priority pages (always loaded)
@@ -15,7 +17,7 @@ const DashboardPage = lazyLoad(() => import('./pages/Dashboard/DashboardPage'), 
 const ForbiddenPage = lazyLoad(() => import('./pages/ForbiddenPage'), 'ForbiddenPage')
 
 // Medium priority pages (common operations)
-const GuestsPage = lazyLoad(() => import('./pages/Guests/GuestsPage'), 'GuestsPage')
+// GuestsPage is statically imported above to improve E2E stability
 const GuestDetailPage = lazyLoad(() => import('./pages/Guests/GuestDetailPage'), 'GuestDetailPage')
 const TransfersPage = lazyLoad(() => import('./pages/Transfers/TransfersPage'), 'TransfersPage')
 const TransferDetailPage = lazyLoad(() => import('./pages/Transfers/TransferDetailPage'), 'TransferDetailPage')

@@ -16,6 +16,7 @@
     "test:coverage": "jest --coverage",
     "test:ci": "jest --ci --coverage --maxWarnings=0 --maxWorkers=2 --collectCoverageFrom='src/**/*.{ts,tsx}'",
     "test:e2e": "playwright test",
+    "seed:e2e": "node scripts/create-e2e-storage.cjs",
     "deploy": "bash scripts/deploy.sh",
     "deploy:azure": "bash scripts/deploy-azure.sh",
     "deploy:aws": "bash scripts/deploy-aws.sh",

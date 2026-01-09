@@ -188,7 +188,8 @@ export const transferService = {
     }
     
     const response = await apiClient.get('/Transfers', { params })
-    return response.data.data
+    // Return the paged response object (contains { data: [...], totalCount })
+    return response.data
   },
 
   getTransferById: async (id: number): Promise<Transfer> => {

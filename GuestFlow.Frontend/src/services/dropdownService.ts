@@ -49,8 +49,17 @@ export const dropdownService = {
       const response = await apiClient.get('/Guests', {
         params: { pageNumber: 1, pageSize: 1000 }, // Tüm misafirleri al
       })
-      if (response.data?.data?.data) {
-        return response.data.data.data.map((g: any) => ({
+      // Support different API response shapes:
+      // - { data: { data: [...] } } (nested)
+      // - { data: [...] } (flat)
+      // - { data: { data: { data: [...] } } } (rare double-nested)
+      const list =
+        response.data?.data?.data ||
+        response.data?.data ||
+        response.data ||
+        []
+      if (Array.isArray(list)) {
+        return list.map((g: any) => ({
           id: g.id,
           fullName: g.fullName,
           guestCode: g.guestCode,
@@ -70,8 +79,13 @@ export const dropdownService = {
         params: { pageNumber: 1, pageSize: 1000 }, // Tüm personelleri al
       })
       // Response format: { data: { data: { data: [...], totalCount, ... } } }
-      if (response.data?.data?.data) {
-        return response.data.data.data.map((p: any) => ({
+      const list =
+        response.data?.data?.data ||
+        response.data?.data ||
+        response.data ||
+        []
+      if (Array.isArray(list)) {
+        return list.map((p: any) => ({
           id: p.id,
           fullName: p.fullName,
           email: p.email || '',
@@ -89,8 +103,13 @@ export const dropdownService = {
       const response = await apiClient.get('/Airports', {
         params: { pageNumber: 1, pageSize: 1000 }, // Tüm havaalanlarını al
       })
-      if (response.data?.data?.data) {
-        return response.data.data.data.map((a: any) => ({
+      const list =
+        response.data?.data?.data ||
+        response.data?.data ||
+        response.data ||
+        []
+      if (Array.isArray(list)) {
+        return list.map((a: any) => ({
           id: a.id,
           airportName: a.airportName,
           cityName: a.cityName,
@@ -108,8 +127,13 @@ export const dropdownService = {
       const response = await apiClient.get('/Vehicles', {
         params: { pageNumber: 1, pageSize: 1000 }, // Tüm araçları al
       })
-      if (response.data?.data?.data) {
-        return response.data.data.data.map((v: any) => ({
+      const list =
+        response.data?.data?.data ||
+        response.data?.data ||
+        response.data ||
+        []
+      if (Array.isArray(list)) {
+        return list.map((v: any) => ({
           id: v.id,
           plateNumber: v.plateNumber,
           vehicleType: v.vehicleType,

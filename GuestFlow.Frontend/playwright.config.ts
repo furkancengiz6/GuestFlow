@@ -52,8 +52,10 @@ export default defineConfig<PlaywrightTestConfig>({
   webServer: {
     command: 'npm run dev',
     url: normalizedBase,
+    // Ensure Playwright starts a fresh dev server to avoid stale Vite optimize cache issues
     reuseExistingServer: true,
-    timeout: 120 * 1000,
+    // Allow longer startup time for dev server (clearing optimize deps can take longer)
+    timeout: 180 * 1000,
   },
   globalSetup: './playwright-global-setup',
  

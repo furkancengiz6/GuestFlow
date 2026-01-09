@@ -4,12 +4,21 @@ import { LoginPage } from '../page-objects/LoginPage'
 export async function ensureLoggedIn(page: Page, email: string, password: string) {
   const login = new LoginPage(page)
   await login.goto(process.env.E2E_BASE_URL)
-  // wait briefly to see if we're redirected to dashboard (already logged in)
-  try {
-    await page.waitForURL('**/dashboard', { timeout: 3000 })
-    return
-  } catch {
-    // not redirected, proceed to login flow
+  // If storageState was injected via addInitScript, it will be present after navigation.
+  const hasAuthAfter = await page.evaluate(() => {
+    try {
+      return !!localStorage.getItem('auth-storage')
+    } catch {
+      return false
+    }
+  })
+  if (hasAuthAfter) {
+    try {
+      await page.waitForURL('**/dashboard', { timeout: 3000 })
+      return
+    } catch {
+      // not redirected, continue to login flow
+    }
   }
 
   await page.waitForSelector('input[name="email"]', { timeout: 5000 })

@@ -33,6 +33,13 @@ jobs:
       - name: Wait for app
         run: npx wait-on http://localhost:5173
 
+      - name: Seed E2E storageState
+        env:
+          E2E_USER_EMAIL: ${{ secrets.E2E_USER_EMAIL }}
+          E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
+          E2E_BASE_URL: ${{ secrets.E2E_BASE_URL || 'http://localhost:5173' }}
+        run: npm run seed:e2e
+
       - name: Run Playwright tests
         run: npx playwright test --config=playwright.config.ts --reporter=list,html
 

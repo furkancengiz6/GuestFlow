@@ -1,0 +1,8 @@
+{
+  "data": [
+    { "id": 1, "guestId": 1, "pickupAddress": "Istanbul Airport", "dropoffAddress": "Hotel", "price": 200 },
+    { "id": 2, "guestId": 2, "pickupAddress": "Station", "dropoffAddress": "Port", "price": 150 }
+  ],
+  "totalCount": 2
+}
+

@@ -49,10 +49,11 @@ export default async function globalSetup(config: FullConfig) {
   // Go to login page and perform UI login so the resulting storageState reflects real app auth
   await page.goto(`${baseURL}/login`, { waitUntil: 'domcontentloaded', timeout: 10000 });
   try {
-    await page.waitForSelector('input[type="email"]', { timeout: 30000 });
-    await page.fill('input[type="email"]', email);
-    await page.fill('input[type="password"]', password);
-    await page.click('button:has-text("Giriş Yap")');
+    // Use same selectors as tests (input[name="email"]) and form submit button for consistency
+    await page.waitForSelector('input[name="email"]', { timeout: 30000 });
+    await page.fill('input[name="email"]', email);
+    await page.fill('input[name="password"]', password);
+    await page.click('button[type="submit"]');
     // Wait for a route that indicates successful login (dashboard)
     await page.waitForURL('**/dashboard', { timeout: 30000 });
     // Save storage state for authenticated sessions

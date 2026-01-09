@@ -49,7 +49,8 @@ export const guestService = {
     }
     
     const response = await apiClient.get('/Guests', { params })
-    return response.data.data
+    // Return the paged response object (contains { data: [...], totalCount })
+    return response.data
   },
 
   getGuestById: async (id: number): Promise<Guest> => {
