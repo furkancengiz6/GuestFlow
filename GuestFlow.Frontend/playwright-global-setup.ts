@@ -15,6 +15,16 @@ export default async function globalSetup(config: FullConfig) {
 
   const browser = await chromium.launch();
   const page = await browser.newPage();
+  // If a storageState file already exists (seeded by CI), skip UI login to speed up and avoid flakiness
+  try {
+    if (fs.existsSync(storagePath)) {
+      console.log(`Global setup: found existing storageState at ${storagePath}, skipping UI login.`);
+      await browser.close();
+      return;
+    }
+  } catch {
+    // ignore fs errors and proceed with UI login
+  }
   const consoleLogs: string[] = [];
   const pageErrors: string[] = [];
   page.on('console', (msg) => {
