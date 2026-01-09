@@ -6,8 +6,11 @@ using System.Threading.Tasks;
 
 namespace GuestFlow.Api.Controllers
 {
+    using Microsoft.AspNetCore.Authorization;
+
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class SupplierCostsController : ControllerBase
     {
         private readonly ISupplierCostService _supplierCostService;

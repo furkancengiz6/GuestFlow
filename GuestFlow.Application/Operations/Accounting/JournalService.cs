@@ -57,6 +57,39 @@ namespace GuestFlow.Application.Operations.Accounting
                     totalCredit += it.Amount;
                 }
 
+                // If invoice total differs from sum of items (due to discounts/adjustments/rounding),
+                // add an adjustment line so debits equal credits.
+                var sumItems = items.Sum(i => i.Amount);
+                var receivableAmount = invoice.TotalAmount > 0m ? invoice.TotalAmount : sumItems;
+                var adjustment = receivableAmount - sumItems;
+                if (adjustment != 0m)
+                {
+                    // Positive adjustment means receivable > items sum -> add credit adjustment
+                    if (adjustment > 0m)
+                    {
+                        preview.Lines.Add(new JournalLineDto
+                        {
+                            AccountCode = "9999", // Adjustment / Rounding account - configurable in GL mapping later
+                            Debit = 0,
+                            Credit = adjustment,
+                            Description = "Adjustment / Rounding"
+                        });
+                        totalCredit += adjustment;
+                    }
+                    else
+                    {
+                        // Negative adjustment -> extra debit required
+                        preview.Lines.Add(new JournalLineDto
+                        {
+                            AccountCode = "9999",
+                            Debit = Math.Abs(adjustment),
+                            Credit = 0,
+                            Description = "Adjustment / Rounding"
+                        });
+                        totalDebit += Math.Abs(adjustment);
+                    }
+                }
+
                 // VAT handling: invoice does not store VAT as a single field; VAT (if any) should
                 // be derived from invoice items. Currently InvoiceItemEntity has no VAT field,
                 // so VAT lines are not generated here.
