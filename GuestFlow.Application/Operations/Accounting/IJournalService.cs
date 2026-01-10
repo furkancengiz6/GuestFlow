@@ -6,6 +6,7 @@ namespace GuestFlow.Application.Operations.Accounting
     {
         Task<ApiResponse<JournalPreviewResponse>> GenerateJournalPreviewAsync(int invoiceId);
         Task<ApiResponse<bool>> PostJournalAsync(JournalPostRequest request);
+        Task<ApiResponse<JournalEntryResponse>> GetJournalByInvoiceAsync(int invoiceId);
     }
 }
 

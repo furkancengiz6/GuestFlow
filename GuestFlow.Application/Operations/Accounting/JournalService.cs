@@ -2,6 +2,7 @@ using GuestFlow.Application.Models.Responses.Accounting;
 using GuestFlow.Domain.UnitOfWork;
 using GuestFlow.Domain.Entities.Core;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace GuestFlow.Application.Operations.Accounting
 {
@@ -159,6 +160,47 @@ namespace GuestFlow.Application.Operations.Accounting
             catch (Exception ex)
             {
                 return ApiResponse<bool>.Fail($"Failed to post journal: {ex.Message}");
+            }
+        }
+
+        public async Task<ApiResponse<JournalEntryResponse>> GetJournalByInvoiceAsync(int invoiceId)
+        {
+            try
+            {
+                var journal = await _unitOfWork.JournalEntries
+                    .GetAll(j => j.InvoiceId == invoiceId, j => j.Lines)
+                    .OrderByDescending(j => j.PostingDate)
+                    .FirstOrDefaultAsync();
+
+                if (journal == null)
+                    return ApiResponse<JournalEntryResponse>.Fail("Journal not found for this invoice", 404);
+
+                var response = new JournalEntryResponse
+                {
+                    JournalEntryId = journal.Id,
+                    InvoiceId = journal.InvoiceId ?? invoiceId,
+                    PostingDate = journal.PostingDate.ToString("yyyy-MM-dd"),
+                    Description = journal.Description,
+                    Currency = journal.Currency,
+                    TotalDebit = journal.TotalDebit,
+                    TotalCredit = journal.TotalCredit,
+                    CreatedBy = journal.CreatedBy,
+                    Lines = journal.Lines
+                        .Select(l => new JournalLineDto
+                        {
+                            AccountCode = l.AccountCode,
+                            Debit = l.Debit,
+                            Credit = l.Credit,
+                            Description = l.Description
+                        })
+                        .ToList()
+                };
+
+                return ApiResponse<JournalEntryResponse>.SuccessResponse(response);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<JournalEntryResponse>.Fail($"Failed to load journal: {ex.Message}");
             }
         }
     }

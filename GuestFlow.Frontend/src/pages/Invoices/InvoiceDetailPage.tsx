@@ -30,7 +30,7 @@ import {
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { invoiceService } from '../../services/invoiceService'
-import { journalService, JournalPreviewResponse } from '../../services/journalService'
+import { journalService, JournalPreviewResponse, JournalEntryResponse } from '../../services/journalService'
 import { formatDate, formatCurrency } from '../../utils/formatters'
 import ContentState from '../../components/Feedback/ContentState'
 import PrintButton from '../../components/Common/PrintButton'
@@ -58,6 +58,8 @@ const InvoiceDetailPage = () => {
   const [journalPreview, setJournalPreview] = useState<JournalPreviewResponse | null>(null)
   const [journalPostingDate, setJournalPostingDate] = useState<Date | null>(new Date())
   const [journalPosted, setJournalPosted] = useState(false)
+  const [journalEntryOpen, setJournalEntryOpen] = useState(false)
+  const [journalEntry, setJournalEntry] = useState<JournalEntryResponse | null>(null)
 
   // Enable real-time updates for invoice changes
   useLiveUpdates(['invoice'])
@@ -150,6 +152,20 @@ const InvoiceDetailPage = () => {
     },
     onError: (error: any) => {
       notification.showError(error?.response?.data?.message || 'Journal post edilemedi.')
+    },
+  })
+
+  const journalEntryMutation = useMutation({
+    mutationFn: async () => {
+      if (!invoiceId) throw new Error('Geçersiz fatura ID')
+      return journalService.getByInvoice(invoiceId)
+    },
+    onSuccess: (data) => {
+      setJournalEntry(data)
+      setJournalEntryOpen(true)
+    },
+    onError: (error: any) => {
+      notification.showError(error?.response?.data?.message || 'Journal detayı yüklenemedi.')
     },
   })
 
@@ -289,6 +305,8 @@ const InvoiceDetailPage = () => {
                   }`}
                   color="success"
                   size="small"
+                  clickable
+                  onClick={() => journalEntryMutation.mutate()}
                   sx={{ mr: 1 }}
                 />
               )}
@@ -613,6 +631,65 @@ const InvoiceDetailPage = () => {
           >
             {journalPosted ? 'Posted' : journalPostMutation.isPending ? 'Posting...' : 'Post Journal'}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={journalEntryOpen}
+        onClose={() => setJournalEntryOpen(false)}
+        fullWidth
+        maxWidth="md"
+      >
+        <DialogTitle>Journal Entry</DialogTitle>
+        <DialogContent>
+          {!journalEntry && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress />
+            </Box>
+          )}
+
+          {journalEntry && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Typography variant="subtitle1">
+                JE #{journalEntry.journalEntryId} • {formatDate(journalEntry.postingDate)}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {journalEntry.description}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Toplam Borç: {formatCurrency(journalEntry.totalDebit, journalEntry.currency)} — Toplam Alacak:{' '}
+                {formatCurrency(journalEntry.totalCredit, journalEntry.currency)}
+              </Typography>
+
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Hesap</TableCell>
+                    <TableCell>Açıklama</TableCell>
+                    <TableCell align="right">Borç</TableCell>
+                    <TableCell align="right">Alacak</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {journalEntry.lines.map((l, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell>{l.accountCode}</TableCell>
+                      <TableCell>{l.description || '-'}</TableCell>
+                      <TableCell align="right">
+                        {l.debit ? formatCurrency(l.debit, journalEntry.currency) : '-'}
+                      </TableCell>
+                      <TableCell align="right">
+                        {l.credit ? formatCurrency(l.credit, journalEntry.currency) : '-'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setJournalEntryOpen(false)}>Kapat</Button>
         </DialogActions>
       </Dialog>
     </Box>
