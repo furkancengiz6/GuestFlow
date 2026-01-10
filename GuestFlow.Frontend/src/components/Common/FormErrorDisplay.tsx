@@ -15,12 +15,15 @@ export const FormErrorDisplay = ({ errors, fieldName, customMessage }: FormError
 
   if (!error) return null
 
-  const errorMessage = customMessage || error.message || 'Bu alan için bir hata var'
+  const errorMessage =
+    customMessage ||
+    (typeof error === 'string' ? error : (error as any)?.message) ||
+    'Bu alan için bir hata var'
 
   return (
     <Box sx={{ mt: 0.5, mb: 1 }}>
       <Alert severity="error" sx={{ py: 0 }}>
-        {errorMessage}
+        {String(errorMessage)}
       </Alert>
     </Box>
   )

@@ -1,23 +1,50 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { BrowserRouter } from 'react-router-dom'
+import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import LoginPage from '../../../pages/Auth/LoginPage'
-import { useAuthStore } from '../../../stores/authStore'
+import LoginPage from '../../pages/Auth/LoginPage'
+import { useAuthStore } from '../../stores/authStore'
 
-// Mock auth store
-jest.mock('../../../stores/authStore', () => ({
-  useAuthStore: jest.fn(),
-}))
+const mockNavigate = jest.fn()
+jest.mock('react-router-dom', () => {
+  const actual = jest.requireActual('react-router-dom')
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  }
+})
 
-// Mock auth service
-jest.mock('../../../services/authService', () => ({
-  authService: {
-    login: jest.fn(),
+const apiPost = jest.fn()
+const apiGet = jest.fn()
+jest.mock('../../services/api', () => ({
+  __esModule: true,
+  default: {
+    post: (...args: any[]) => apiPost(...args),
+    get: (...args: any[]) => apiGet(...args),
   },
 }))
 
-describe('Auth Integration', () => {
+const storeLoginHook = jest.fn()
+const storeLoginGetState = jest.fn()
+const storeLogout = jest.fn()
+
+jest.mock('../../stores/authStore', () => {
+  const fn = jest.fn(() => ({
+    user: null,
+    isAuthenticated: false,
+    login: storeLoginHook,
+    logout: storeLogout,
+  }))
+  ;(fn as any).getState = jest.fn(() => ({
+    login: storeLoginGetState,
+    logout: storeLogout,
+    user: null,
+    isAuthenticated: false,
+  }))
+  return { useAuthStore: fn }
+})
+
+describe('Auth Integration (LoginPage)', () => {
   let queryClient: QueryClient
 
   beforeEach(() => {
@@ -28,78 +55,100 @@ describe('Auth Integration', () => {
       },
     })
     jest.clearAllMocks()
+    window.localStorage.clear()
   })
 
-  it('should handle login flow', async () => {
+  it('handles login flow: POST /auth/login, GET /auth/me, updates store, navigates to dashboard', async () => {
     const user = userEvent.setup()
-    const mockLogin = jest.fn().mockResolvedValue({
-      accessToken: 'mock-token',
-      refreshToken: 'mock-refresh-token',
-      user: { id: 1, email: 'test@example.com' },
-    })
 
-    ;(useAuthStore as jest.Mock).mockReturnValue({
-      login: mockLogin,
-      isAuthenticated: false,
+    apiPost.mockResolvedValue({ data: { accessToken: 'mock-token' } })
+    apiGet.mockResolvedValue({
+      data: {
+        data: {
+          id: 1,
+          email: 'test@example.com',
+          fullName: 'Test User',
+          userType: 'Admin',
+          createdDate: '2026-01-01T00:00:00Z',
+        },
+      },
     })
 
     render(
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
+        <MemoryRouter>
           <LoginPage />
-        </BrowserRouter>
+        </MemoryRouter>
       </QueryClientProvider>
     )
 
-    // Find form inputs
-    const emailInput = screen.getByLabelText(/e-posta/i)
-    const passwordInput = screen.getByLabelText(/şifre/i)
-    const submitButton = screen.getByRole('button', { name: /giriş yap/i })
+    await user.type(screen.getByLabelText('E-posta'), 'test@example.com')
+    await user.type(screen.getByLabelText('Şifre'), 'password123')
+    await user.click(screen.getByRole('button', { name: 'Giriş Yap' }))
 
-    // Fill form
-    await user.type(emailInput, 'test@example.com')
-    await user.type(passwordInput, 'password123')
-
-    // Submit form
-    await user.click(submitButton)
-
-    // Wait for login to complete
     await waitFor(() => {
-      expect(mockLogin).toHaveBeenCalledWith({
+      expect(apiPost).toHaveBeenCalledWith('/auth/login', {
         email: 'test@example.com',
         password: 'password123',
       })
     })
+
+    await waitFor(() => {
+      expect(storeLoginHook).toHaveBeenCalledWith('mock-token', null)
+      expect(apiGet).toHaveBeenCalledWith('/auth/me')
+      expect(storeLoginGetState).toHaveBeenCalledWith('mock-token', {
+        id: 1,
+        email: 'test@example.com',
+        fullName: 'Test User',
+        role: 'Admin',
+        userType: 'Admin',
+        createdDate: '2026-01-01T00:00:00Z',
+      })
+      expect(mockNavigate).toHaveBeenCalledWith('/dashboard')
+    })
   })
 
-  it('should show error on invalid credentials', async () => {
+  it('shows error message when login fails', async () => {
     const user = userEvent.setup()
-    const mockLogin = jest.fn().mockRejectedValue(new Error('Invalid credentials'))
 
-    ;(useAuthStore as jest.Mock).mockReturnValue({
-      login: mockLogin,
-      isAuthenticated: false,
+    apiPost.mockRejectedValue({
+      response: { data: { message: 'Invalid credentials' } },
     })
+
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      render(
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter>
+            <LoginPage />
+          </MemoryRouter>
+        </QueryClientProvider>
+      )
+
+      await user.type(screen.getByLabelText('E-posta'), 'wrong@example.com')
+      await user.type(screen.getByLabelText('Şifre'), 'wrongpassword')
+      await user.click(screen.getByRole('button', { name: 'Giriş Yap' }))
+
+      expect(await screen.findByText('Invalid credentials')).toBeInTheDocument()
+      expect(mockNavigate).not.toHaveBeenCalledWith('/dashboard')
+    } finally {
+      consoleErrorSpy.mockRestore()
+    }
+  })
+
+  it('navigates to dashboard immediately when auth storage exists', async () => {
+    window.localStorage.setItem('auth-storage', JSON.stringify({ state: { isAuthenticated: true } }))
 
     render(
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
+        <MemoryRouter>
           <LoginPage />
-        </BrowserRouter>
+        </MemoryRouter>
       </QueryClientProvider>
     )
 
-    const emailInput = screen.getByLabelText(/e-posta/i)
-    const passwordInput = screen.getByLabelText(/şifre/i)
-    const submitButton = screen.getByRole('button', { name: /giriş yap/i })
-
-    await user.type(emailInput, 'wrong@example.com')
-    await user.type(passwordInput, 'wrongpassword')
-    await user.click(submitButton)
-
     await waitFor(() => {
-      // Should show error message
-      // Note: This would need proper error handling UI
+      expect(mockNavigate).toHaveBeenCalledWith('/dashboard')
     })
   })
 })

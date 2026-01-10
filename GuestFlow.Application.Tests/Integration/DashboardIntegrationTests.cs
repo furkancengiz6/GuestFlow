@@ -12,6 +12,8 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Moq;
+using GuestFlow.Application.Operations.Payment.Dtos;
 using Xunit;
 
 namespace GuestFlow.Application.Tests.Integration;
@@ -61,8 +63,17 @@ public class DashboardIntegrationTests : IAsyncLifetime
 
         // Mock payment status service (in real scenario, inject actual service)
         var paymentStatusServiceMock = new Moq.Mock<IPaymentStatusService>();
-        paymentStatusServiceMock.Setup(p => p.GetPaymentStatusAsync(It.IsAny<int>()))
-            .ReturnsAsync(new PaymentStatusResult { Status = "Paid", PaidAmount = 100, RemainingAmount = 0 });
+        paymentStatusServiceMock.Setup(p => p.GetServicePaymentStatusAsync(It.IsAny<int>(), It.IsAny<string>()))
+            .ReturnsAsync(new ServicePaymentStatusDto
+            {
+                ServiceId = 0,
+                ServiceType = "Transfer",
+                PaidAmount = 100m,
+                RemainingAmount = 0m,
+                PaymentStatus = "Paid",
+                Currency = "TRY",
+                ServiceDate = DateTime.UtcNow
+            });
 
         _paymentStatusService = paymentStatusServiceMock.Object;
 
@@ -78,7 +89,7 @@ public class DashboardIntegrationTests : IAsyncLifetime
             _invoiceRepository,
             _paymentRepository,
             _paymentStatusService,
-            loggerMock.Object
+            loggerMock.Objectx
         );
 
         // Seed test data
@@ -264,8 +275,7 @@ public class DashboardIntegrationTests : IAsyncLifetime
         {
             FullName = "Test Personnel",
             Email = "personnel@example.com",
-            PhoneNumber = "05551234567",
-            Role = "Concierge",
+            UserType = Domain.Entities.Enum.UserType.Concierge,
             CreatedDate = DateTime.UtcNow
         };
         await _personnelRepository.AddAsync(personnel);
@@ -284,7 +294,7 @@ public class DashboardIntegrationTests : IAsyncLifetime
         // Create test city
         var city = new CityEntity
         {
-            Name = "Istanbul",
+            CityName = "Istanbul",
             Country = "Turkey",
             CreatedDate = DateTime.UtcNow
         };
@@ -294,7 +304,7 @@ public class DashboardIntegrationTests : IAsyncLifetime
         var vehicle = new VehicleEntity
         {
             PlateNumber = "34ABC123",
-            Model = "Mercedes Vito",
+            Type = "Mercedes Vito",
             Capacity = 8,
             CreatedDate = DateTime.UtcNow
         };
@@ -350,7 +360,7 @@ public class DashboardIntegrationTests : IAsyncLifetime
             IssueDate = DateTime.UtcNow,
             TotalAmount = 1150,
             Currency = "TRY",
-            Status = Domain.Entities.Enum.InvoiceStatus.Generated,
+            Status = GuestFlow.Domain.Entities.Core.InvoiceStatus.Generated,
             CreatedDate = DateTime.UtcNow
         };
         await _invoiceRepository.AddAsync(invoice);
@@ -362,7 +372,7 @@ public class DashboardIntegrationTests : IAsyncLifetime
             TransferId = transfer.Id,
             Amount = 150,
             Currency = "TRY",
-            PaymentMethod = "CreditCard",
+            PaymentMethod = Domain.Entities.Enum.PaymentMethod.CreditCard,
             Status = Domain.Entities.Enum.PaymentStatus.Completed,
             PaymentDate = DateTime.UtcNow,
             CreatedDate = DateTime.UtcNow
@@ -374,7 +384,7 @@ public class DashboardIntegrationTests : IAsyncLifetime
             CityTourId = cityTour.Id,
             Amount = 200,
             Currency = "TRY",
-            PaymentMethod = "Cash",
+            PaymentMethod = Domain.Entities.Enum.PaymentMethod.Cash,
             Status = Domain.Entities.Enum.PaymentStatus.Completed,
             PaymentDate = DateTime.UtcNow,
             CreatedDate = DateTime.UtcNow
@@ -386,7 +396,7 @@ public class DashboardIntegrationTests : IAsyncLifetime
             YachtTourId = yachtTour.Id,
             Amount = 800,
             Currency = "TRY",
-            PaymentMethod = "BankTransfer",
+            PaymentMethod = Domain.Entities.Enum.PaymentMethod.BankTransfer,
             Status = Domain.Entities.Enum.PaymentStatus.Completed,
             PaymentDate = DateTime.UtcNow,
             CreatedDate = DateTime.UtcNow

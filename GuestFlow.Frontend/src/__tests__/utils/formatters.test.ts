@@ -1,20 +1,27 @@
 import { formatCurrency, formatDate, formatDateTime } from '../../utils/formatters'
 
+// Mock i18n
+jest.mock('../../i18n/config', () => ({
+  default: {
+    language: 'tr', // Test in Turkish locale
+  },
+}))
+
 describe('formatters', () => {
   describe('formatCurrency', () => {
     it('should format currency correctly', () => {
-      expect(formatCurrency(1000, 'TRY')).toContain('1.000')
-      expect(formatCurrency(1000, 'USD')).toContain('1,000')
+      expect(formatCurrency(1000, 'TRY')).toContain('₺')
+      expect(formatCurrency(1000, 'USD')).toContain('$')
     })
 
     it('should use TRY as default currency', () => {
       const result = formatCurrency(1000)
-      expect(result).toContain('TRY')
+      expect(result).toContain('₺')
     })
 
     it('should handle decimal values', () => {
       const result = formatCurrency(1234.56, 'TRY')
-      expect(result).toContain('1.234')
+      expect(result).toContain('1.234,56')
     })
   })
 

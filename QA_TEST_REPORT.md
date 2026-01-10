@@ -123,9 +123,9 @@ Aşağıdaki tablolar veritabanında mevcut:
 
 #### 4.1 Authentication Endpoints
 ```
-POST /api/auth/login
-POST /api/auth/register
-POST /api/auth/refresh-token
+POST /api/v1.0/auth/login
+POST /api/v1.0/auth/register
+POST /api/v1.0/auth/refresh-token
 POST /api/auth/logout
 GET  /api/auth/user-info
 ```
@@ -372,7 +372,7 @@ http://localhost:5145/swagger
 ```
 
 ### 3. Authentication Test
-1. Swagger UI'da `/api/auth/login` endpoint'ini bul
+1. Swagger UI'da `/api/v1.0/auth/login` endpoint'ini bul
 2. Test credentials ile login yap:
    ```json
    {

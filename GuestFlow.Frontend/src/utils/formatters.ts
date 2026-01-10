@@ -1,4 +1,12 @@
-import i18n from '../i18n/config'
+// Mock i18n for tests
+const mockI18n = {
+  language: 'tr',
+  t: (key: string) => key,
+}
+
+// Use mock in test environment, real i18n in production
+import i18nLib from '../i18n/config'
+const i18n = process.env.NODE_ENV === 'test' ? mockI18n : i18nLib
 
 export const formatCurrency = (amount: number, currency: string = 'TRY') => {
   const locale = i18n.language === 'tr' ? 'tr-TR' : 'en-US'

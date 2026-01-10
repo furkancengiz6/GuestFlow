@@ -97,7 +97,7 @@ export const BarChart = ({
           )}
           <Tooltip formatter={tooltipFormatter} />
           <Legend />
-          {series.map((serie, index) => (
+          {series.map((serie, _index) => (
             <Bar
               key={serie.dataKey}
               dataKey={serie.dataKey}

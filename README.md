@@ -1,6 +1,6 @@
 # GuestFlow API
 
-![.NET](https://img.shields.io/badge/.NET-8.0-blueviolet) ![C#](https://img.shields.io/badge/C%23-11.0-brightgreen) ![License](https://img.shields.io/badge/license-MIT-blue)
+![.NET](https://img.shields.io/badge/.NET-8.0-blueviolet) ![C#](https://img.shields.io/badge/C%23-11.0-brightgreen) ![License](https://img.shields.io/badge/license-MIT-blue) [![CI](https://github.com/furkancengiz6/GuestFlow/actions/workflows/ci.yml/badge.svg)](https://github.com/furkancengiz6/GuestFlow/actions/workflows/ci.yml)
 
 **GuestFlow API** is a RESTful API designed to manage guest-related operations for a hospitality and tourism business. It provides functionalities for managing guests, airports, cities, transfers, city tours, yacht tours, daily revenues, invoices, and more.
 
@@ -184,25 +184,30 @@ The project uses `appsettings.json` for configuration. Example:
 
 | Method | Endpoint | Description | Roles |
 |--------|-----------------|------------------------|--------------|
-| POST   | /api/auth/register | Register a new user | None |
-| POST   | /api/auth/login | Login and get a JWT token | None |
-| GET    | /api/auth/me | Get current user info | Staff, Admin |
+| POST   | /api/v1.0/auth/register | Register a new user | None |
+| POST   | /api/v1.0/auth/login | Login and get a JWT token | None |
+| GET    | /api/v1.0/auth/me | Get current user info | Staff, Admin |
 | POST   | /api/airports | Add a new airport | Staff, Admin |
 | GET    | /api/airports | Get all airports | Staff, Admin |
 | GET    | /api/airports/{id} | Get airport by ID | Staff, Admin |
-| PATCH  | /api/settings | Toggle maintenance mode | Admin, Staff |
-| GET    | /api/settings/maintenance | Get maintenance mode status | Admin |
+| PATCH  | /api/v1.0/settings | Toggle maintenance mode | Admin, Staff |
+| GET    | /api/v1.0/settings/maintenance | Get maintenance mode status | Admin |
 
 _For a full list of endpoints, check the Swagger documentation._
 
 ---
 
+## 🗺️ Roadmap
+
+Projenin **tek güncel yol haritası**:
+- `ROADMAP.md`
+
 ## 🔐 Authentication
 
 - **JWT-based authentication** is used.
 - To access protected endpoints:
-  1. Register via `/api/auth/register`
-  2. Login via `/api/auth/login` and obtain a JWT token.
+  1. Register via `/api/v1.0/auth/register`
+  2. Login via `/api/v1.0/auth/login` and obtain a JWT token.
   3. Include the token in requests:
      ```
      Authorization: Bearer <your-token>
@@ -212,9 +217,9 @@ _For a full list of endpoints, check the Swagger documentation._
 
 ## 🔄 Maintenance Mode
 
-- When enabled, all requests (except `/api/auth/login` and `/api/settings`) return **503 Service Unavailable**.
-- Toggle maintenance mode via `/api/settings` (Admin, Staff).
-- Check status via `/api/settings/maintenance` (Admin).
+- When enabled, all requests (except login and settings endpoints) return **503 Service Unavailable**.
+- Toggle maintenance mode via `/api/v1.0/settings` (Admin, Staff).
+- Check status via `/api/v1.0/settings/maintenance` (Admin).
 
 ---
 
@@ -239,6 +244,9 @@ _For a full list of endpoints, check the Swagger documentation._
 ## 📜 License
 
 This project is licensed under the **MIT License**.
+
+## GuestFlow Dashbord Screenshot
+
 
 ## GuestFlow API Endpoints
 

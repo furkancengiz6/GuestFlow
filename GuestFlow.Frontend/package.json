@@ -14,8 +14,9 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:ci": "jest --ci --coverage --maxWorkers=2",
+    "test:ci": "jest --ci --coverage --runInBand --maxWarnings=0",
     "test:e2e": "playwright test",
+    "seed:e2e": "node scripts/create-e2e-storage.cjs",
     "deploy": "bash scripts/deploy.sh",
     "deploy:azure": "bash scripts/deploy-azure.sh",
     "deploy:aws": "bash scripts/deploy-aws.sh",
@@ -63,12 +64,13 @@
     "eslint": "^8.55.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
+    "jest": "^30.2.0",
     "jest-environment-jsdom": "^30.2.0",
     "jsdom": "^27.4.0",
     "rollup-plugin-visualizer": "^6.0.5",
     "terser": "^5.44.1",
     "typescript": "^5.2.2",
-    "vite": "^5.0.8",
+    "vite": "^5.4.21",
     "vitest": "^4.0.16"
   }
 }

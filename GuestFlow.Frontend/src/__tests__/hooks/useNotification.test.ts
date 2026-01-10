@@ -2,13 +2,19 @@ import { renderHook, act } from '@testing-library/react'
 import { useNotification } from '../../hooks/useNotification'
 
 // Mock notification store
+const mockAddNotification = jest.fn()
 jest.mock('../../stores/notificationStore', () => ({
-  useNotificationStore: jest.fn(() => ({
-    showSuccess: jest.fn(),
-    showError: jest.fn(),
-    showWarning: jest.fn(),
-    showInfo: jest.fn(),
-  })),
+  useNotificationStore: jest.fn((selector) => {
+    if (typeof selector === 'function') {
+      return selector({
+        notifications: [],
+        addNotification: mockAddNotification,
+        removeNotification: jest.fn(),
+        clearNotifications: jest.fn()
+      })
+    }
+    return mockAddNotification
+  }),
 }))
 
 describe('useNotification', () => {

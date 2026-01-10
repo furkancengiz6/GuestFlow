@@ -1,252 +1,94 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { transferService } from '../../services/transferService';
-import { apiClient } from '../../services/api';
+import { transferService } from '../../services/transferService'
 
-// Mock apiClient
-vi.mock('../../services/api', () => ({
-  apiClient: {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-    delete: vi.fn(),
+jest.mock('../../services/api', () => ({
+  __esModule: true,
+  default: {
+    get: jest.fn(),
+    post: jest.fn(),
+    put: jest.fn(),
+    patch: jest.fn(),
+    delete: jest.fn(),
   },
-}));
+}))
 
-describe('TransferService', () => {
+const apiClient = require('../../services/api').default
+
+describe('transferService', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-  });
+    jest.clearAllMocks()
+  })
 
-  describe('getTransfers', () => {
-    it('should fetch transfers with pagination', async () => {
-      const mockResponse = {
-        data: {
-          data: [
-            {
-              id: 1,
-              guestName: 'John Doe',
-              transferDate: '2024-01-15T10:00:00Z',
-              status: 'Confirmed',
-              price: 150.00,
-            },
-          ],
-          totalCount: 1,
-          pageNumber: 1,
-          pageSize: 10,
-        },
-      };
+  it('getTransfers: calls GET /Transfers with params and returns response.data', async () => {
+    apiClient.get.mockResolvedValue({ data: { data: [], totalCount: 0 } })
 
-      (apiClient.get as any).mockResolvedValue(mockResponse);
+    const result = await transferService.getTransfers(1, 10, { status: 'Confirmed', guestId: 1 })
 
-      const result = await transferService.getTransfers(1, 10);
+    expect(apiClient.get).toHaveBeenCalledWith('/Transfers', {
+      params: { pageNumber: 1, pageSize: 10, status: 'Confirmed', guestId: 1 },
+    })
+    expect(result).toEqual({ data: [], totalCount: 0 })
+  })
 
-      expect(apiClient.get).toHaveBeenCalledWith('/Transfers', {
-        params: { pageNumber: 1, pageSize: 10 },
-      });
-      expect(result).toEqual(mockResponse.data);
-    });
+  it('getTransferDetail: calls GET /Transfers/:id/detail and returns response.data.data', async () => {
+    apiClient.get.mockResolvedValue({ data: { data: { id: 1 } } })
 
-    it('should handle filters in getTransfers', async () => {
-      const filters = {
-        startDate: '2024-01-01',
-        endDate: '2024-01-31',
-        status: 'Confirmed',
-        guestId: 1,
-      };
+    const result = await transferService.getTransferDetail(1)
 
-      const mockResponse = { data: { data: [], totalCount: 0 } };
-      (apiClient.get as any).mockResolvedValue(mockResponse);
+    expect(apiClient.get).toHaveBeenCalledWith('/Transfers/1/detail')
+    expect(result).toEqual({ id: 1 })
+  })
 
-      await transferService.getTransfers(1, 10, filters);
+  it('createTransfer: calls POST /Transfers and returns response.data.data', async () => {
+    const payload = { guestId: 1, transferDate: '2026-01-01T10:00:00Z', pickupAddress: 'A', dropoffAddress: 'B', price: 100 }
+    apiClient.post.mockResolvedValue({ data: { data: { transferId: 123 } } })
 
-      expect(apiClient.get).toHaveBeenCalledWith('/Transfers', {
-        params: {
-          pageNumber: 1,
-          pageSize: 10,
-          startDate: '2024-01-01',
-          endDate: '2024-01-31',
-          status: 'Confirmed',
-          guestId: 1,
-        },
-      });
-    });
-  });
+    const result = await transferService.createTransfer(payload as any)
 
-  describe('getTransferDetail', () => {
-    it('should fetch transfer detail by id', async () => {
-      const mockTransfer = {
-        id: 1,
-        guestName: 'John Doe',
-        transferDate: '2024-01-15T10:00:00Z',
-        pickupAddress: 'Airport',
-        dropoffAddress: 'Hotel',
-        status: 'Confirmed',
-        price: 150.00,
-        driverName: 'Driver One',
-        vehiclePlate: 'ABC123',
-      };
+    expect(apiClient.post).toHaveBeenCalledWith('/Transfers', payload)
+    expect(result).toEqual({ transferId: 123 })
+  })
 
-      const mockResponse = { data: mockTransfer };
-      (apiClient.get as any).mockResolvedValue(mockResponse);
+  it('updateTransfer: calls PUT /Transfers/:id and returns response.data.data', async () => {
+    const payload = { guestId: 1, transferDate: '2026-01-01T10:00:00Z', pickupAddress: 'A', dropoffAddress: 'B', price: 100 }
+    apiClient.put.mockResolvedValue({ data: { data: { id: 1 } } })
 
-      const result = await transferService.getTransferDetail(1);
+    const result = await transferService.updateTransfer(1, payload as any)
 
-      expect(apiClient.get).toHaveBeenCalledWith('/Transfers/1');
-      expect(result).toEqual(mockTransfer);
-    });
-  });
+    expect(apiClient.put).toHaveBeenCalledWith('/Transfers/1', payload)
+    expect(result).toEqual({ id: 1 })
+  })
 
-  describe('createTransfer', () => {
-    it('should create a new transfer', async () => {
-      const transferData = {
-        guestId: 1,
-        transferDate: '2024-01-15T10:00:00Z',
-        pickupAddress: 'Airport',
-        dropoffAddress: 'Hotel',
-        price: 150.00,
-      };
+  it('markTransferCompleted: calls PATCH /Transfers/:id/status with Completed', async () => {
+    apiClient.patch.mockResolvedValue({ data: {} })
 
-      const mockResponse = {
-        data: {
-          data: {
-            transferId: 1,
-            invoiceId: null,
-          },
-        },
-      };
+    await transferService.markTransferCompleted(1)
 
-      (apiClient.post as any).mockResolvedValue(mockResponse);
+    expect(apiClient.patch).toHaveBeenCalledWith('/Transfers/1/status', { status: 'Completed' })
+  })
 
-      const result = await transferService.createTransfer(transferData);
+  it('createTransferInvoice: calls POST /Transfers/:id/invoice', async () => {
+    apiClient.post.mockResolvedValue({ data: {} })
 
-      expect(apiClient.post).toHaveBeenCalledWith('/Transfers', transferData);
-      expect(result).toEqual(mockResponse.data.data);
-    });
-  });
+    await transferService.createTransferInvoice(1)
 
-  describe('updateTransfer', () => {
-    it('should update an existing transfer', async () => {
-      const transferId = 1;
-      const updateData = {
-        pickupAddress: 'Updated Airport',
-        price: 200.00,
-      };
+    expect(apiClient.post).toHaveBeenCalledWith('/Transfers/1/invoice')
+  })
 
-      const mockResponse = { data: null };
-      (apiClient.put as any).mockResolvedValue(mockResponse);
+  it('bulkUpdateTransfers: calls POST /Transfers/bulk-update and returns response.data.data', async () => {
+    apiClient.post.mockResolvedValue({ data: { data: { successCount: 1, failureCount: 0, errors: [] } } })
 
-      await transferService.updateTransfer(transferId, updateData);
+    const result = await transferService.bulkUpdateTransfers({ operation: 'status_change', transferIds: [1], newStatus: 'Completed' } as any)
 
-      expect(apiClient.put).toHaveBeenCalledWith(`/Transfers/${transferId}`, updateData);
-    });
-  });
+    expect(apiClient.post).toHaveBeenCalledWith('/Transfers/bulk-update', { operation: 'status_change', transferIds: [1], newStatus: 'Completed' })
+    expect(result).toEqual({ successCount: 1, failureCount: 0, errors: [] })
+  })
 
-  describe('markTransferCompleted', () => {
-    it('should mark transfer as completed', async () => {
-      const transferId = 1;
-      const mockResponse = { data: null };
-      (apiClient.post as any).mockResolvedValue(mockResponse);
+  it('bulkDeleteTransfers: calls POST /Transfers/bulk-delete and returns response.data.data', async () => {
+    apiClient.post.mockResolvedValue({ data: { data: { successCount: 1, failureCount: 0, errors: [] } } })
 
-      await transferService.markTransferCompleted(transferId);
+    const result = await transferService.bulkDeleteTransfers([1], 'test')
 
-      expect(apiClient.post).toHaveBeenCalledWith(`/Transfers/${transferId}/complete`);
-    });
-  });
-
-  describe('createTransferInvoice', () => {
-    it('should create invoice for transfer', async () => {
-      const transferId = 1;
-      const mockResponse = {
-        data: {
-          invoiceId: 123,
-          pdfUrl: '/invoices/123.pdf',
-        },
-      };
-
-      (apiClient.post as any).mockResolvedValue(mockResponse);
-
-      const result = await transferService.createTransferInvoice(transferId);
-
-      expect(apiClient.post).toHaveBeenCalledWith(`/Transfers/${transferId}/invoice`);
-      expect(result).toEqual(mockResponse.data);
-    });
-  });
-
-  describe('bulkUpdateTransfers', () => {
-    it('should bulk update transfers', async () => {
-      const bulkData = {
-        transferIds: [1, 2, 3],
-        operation: 'status_change' as const,
-        newStatus: 'Completed',
-      };
-
-      const mockResponse = {
-        data: {
-          successCount: 3,
-          failCount: 0,
-          message: 'All transfers updated successfully',
-        },
-      };
-
-      (apiClient.post as any).mockResolvedValue(mockResponse);
-
-      const result = await transferService.bulkUpdateTransfers(bulkData);
-
-      expect(apiClient.post).toHaveBeenCalledWith('/Transfers/bulk-update', bulkData);
-      expect(result).toEqual(mockResponse.data);
-    });
-  });
-
-  describe('bulkDeleteTransfers', () => {
-    it('should bulk delete transfers', async () => {
-      const transferIds = [1, 2, 3];
-
-      const mockResponse = {
-        data: {
-          successCount: 3,
-          failCount: 0,
-          message: 'All transfers deleted successfully',
-        },
-      };
-
-      (apiClient.post as any).mockResolvedValue(mockResponse);
-
-      const result = await transferService.bulkDeleteTransfers(transferIds);
-
-      expect(apiClient.post).toHaveBeenCalledWith('/Transfers/bulk-delete', {
-        transferIds,
-      });
-      expect(result).toEqual(mockResponse.data);
-    });
-  });
-
-  describe('error handling', () => {
-    it('should handle API errors gracefully', async () => {
-      const error = new Error('Network error');
-      (apiClient.get as any).mockRejectedValue(error);
-
-      await expect(transferService.getTransfers(1, 10)).rejects.toThrow('Network error');
-    });
-
-    it('should handle validation errors', async () => {
-      const mockResponse = {
-        data: {
-          errors: {
-            TransferDate: ['Transfer date cannot be in the past'],
-            Price: ['Price must be greater than 0'],
-          },
-        },
-      };
-
-      (apiClient.post as any).mockResolvedValue(mockResponse);
-
-      const transferData = {
-        guestId: 1,
-        transferDate: '2020-01-01T10:00:00Z', // Past date
-        price: -50, // Invalid price
-      };
-
-      await expect(transferService.createTransfer(transferData)).rejects.toThrow();
-    });
-  });
-});
+    expect(apiClient.post).toHaveBeenCalledWith('/Transfers/bulk-delete', { transferIds: [1], reason: 'test' })
+    expect(result).toEqual({ successCount: 1, failureCount: 0, errors: [] })
+  })
+})

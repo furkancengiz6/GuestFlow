@@ -1,7 +1,18 @@
-import { defineConfig, devices } from '@playwright/test'
+/// <reference types="node" />
+/// <reference types="@playwright/test" />
 
-export default defineConfig({
-  testDir: './tests/e2e',
+import { defineConfig, devices } from '@playwright/test';
+
+// Fix for Node.js globals in TypeScript (process)
+import type { Config as PlaywrightTestConfig } from '@playwright/test';
+
+const normalizedBase = (typeof process !== 'undefined' && process.env.E2E_BASE_URL
+  ? process.env.E2E_BASE_URL
+  : 'http://localhost:5173'
+).toString().trim().replace(/\/$/, '');
+
+export default defineConfig<PlaywrightTestConfig>({
+  testDir: './tests',
   timeout: 30 * 1000,
   expect: {
     timeout: 5000,
@@ -15,12 +26,14 @@ export default defineConfig({
     ['html', { outputFolder: 'playwright-report' }],
     ['json', { outputFile: 'playwright-report/results.json' }],
   ],
+  // common settings applied to all projects (overridden later if needed)
   use: {
-    baseURL: process.env.E2E_BASE_URL || 'http://localhost:5173',
     trace: 'on-first-retry',
     headless: true,
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
+    storageState: process.env.PLAYWRIGHT_STORAGE || 'tests/storageState.json',
+    baseURL: normalizedBase,
   },
   projects: [
     {
@@ -38,9 +51,13 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
+    url: normalizedBase,
+    // Ensure Playwright starts a fresh dev server to avoid stale Vite optimize cache issues
+    reuseExistingServer: true,
+    // Allow longer startup time for dev server (clearing optimize deps can take longer)
+    timeout: 180 * 1000,
   },
+  globalSetup: './playwright-global-setup',
+ 
 })
 

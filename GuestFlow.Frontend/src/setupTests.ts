@@ -1,19 +1,17 @@
-// Test setup file - commented out for production builds
-// This file is only used during testing and causes build errors in production
-
-/*
+// Test setup file - Jest configuration
+// This file configures Jest for React Testing Library
 import '@testing-library/jest-dom'
 import { cleanup } from '@testing-library/react'
-import { afterEach, beforeAll, afterAll } from '@jest/globals'
+import * as React from 'react'
 
-// Add jest types for TypeScript
-declare const jest: any
-declare const global: any
+// TypeScript types are handled by Jest automatically
 
-// Cleanup after each test
-afterEach(() => {
-  cleanup()
-})
+// Cleanup after each test (guarded for environments where helper may be undefined)
+if (typeof afterEach === 'function') {
+  afterEach(() => {
+    cleanup()
+  })
+}
 
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
@@ -49,22 +47,74 @@ global.ResizeObserver = class ResizeObserver {
   unobserve() {}
 } as any
 
-// Suppress console errors in tests (optional)
-const originalError = console.error
-beforeAll(() => {
-  console.error = (...args: any[]) => {
-    if (
-      typeof args[0] === 'string' &&
-      (args[0].includes('Warning: ReactDOM.render') ||
-        args[0].includes('Warning: validateDOMNesting'))
-    ) {
-      return
-    }
-    originalError.call(console, ...args)
-  }
-})
+// Mock URL.createObjectURL for export tests
+global.URL.createObjectURL = jest.fn(() => 'mock-url')
+global.URL.revokeObjectURL = jest.fn()
 
-afterAll(() => {
-  console.error = originalError
-})
-*/
+// Mock axios for API calls
+jest.mock('axios', () => ({
+  __esModule: true,
+  default: {
+    create: jest.fn(() => ({
+      interceptors: {
+        request: { use: jest.fn(), eject: jest.fn() },
+        response: { use: jest.fn(), eject: jest.fn() }
+      },
+      get: jest.fn(),
+      post: jest.fn(),
+      put: jest.fn(),
+      patch: jest.fn(),
+      delete: jest.fn(),
+      defaults: { headers: { common: {} } }
+    })),
+    isAxiosError: jest.fn(() => false),
+    AxiosError: class AxiosError extends Error {
+      constructor(message: string, code?: string) {
+        super(message)
+        this.name = 'AxiosError'
+        this.code = code
+      }
+      code?: string
+      response?: any
+      request?: any
+    }
+  }
+}))
+
+// Note: Store and library mocks are handled individually in test files
+// to avoid path resolution issues in setupTests.ts
+
+// Suppress noisy console output in tests (optional)
+const originalError = console.error
+const originalWarn = console.warn
+if (typeof beforeAll === 'function') {
+  beforeAll(() => {
+    console.error = (...args: any[]) => {
+      if (
+        typeof args[0] === 'string' &&
+        (args[0].includes('Warning: ReactDOM.render') ||
+          args[0].includes('Warning: validateDOMNesting'))
+      ) {
+        return
+      }
+      originalError.call(console, ...args)
+    }
+
+    console.warn = (...args: any[]) => {
+      if (typeof args[0] === 'string' && args[0].includes('React Router Future Flag Warning')) {
+        return
+      }
+      originalWarn.call(console, ...args)
+    }
+  })
+}
+
+if (typeof afterAll === 'function') {
+  afterAll(() => {
+    console.error = originalError
+    console.warn = originalWarn
+  })
+}
+
+// Provide `vi` global for tests authored with Vitest shorthands
+(global as any).vi = (global as any).vi || (global as any).jest

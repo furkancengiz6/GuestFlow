@@ -141,7 +141,7 @@ export const InvoiceCreator: React.FC = () => {
                     {...register('guestId', { valueAsNumber: true })}
                     error={!!errors.guestId}
                   >
-                    {guests?.map((guest: any) => (
+                    {guests?.data?.map((guest: any) => (
                       <MenuItem key={guest.id} value={guest.id}>
                         {guest.fullName} ({guest.guestCode})
                       </MenuItem>

@@ -35,7 +35,7 @@ const optionalId = z.preprocess(
 
 // Zod schema
 const yachtTourSchema = z.object({
-  tourDate: z.date({ required_error: 'Tur tarihi gereklidir' }),
+  tourDate: z.date({ required_error: 'Tur tarihi gereklidir' } as any),
   numberOfPeople: z.number().min(1, 'Kişi sayısı en az 1 olmalıdır'),
 
   // Group composition fields
@@ -162,8 +162,8 @@ const YachtTourForm = ({ open, onClose, onSubmit, yachtTour, isLoading = false }
       numberOfPeople: 1,
 
       // Group composition fields
-      childCount: null,
-      infantCount: null,
+      childCount: undefined,
+      infantCount: undefined,
 
       price: 0,
       specialRequest: '',
@@ -189,20 +189,20 @@ const YachtTourForm = ({ open, onClose, onSubmit, yachtTour, isLoading = false }
 
       // Safety & regulatory fields
       lifeJacketsProvided: false,
-      lifeJacketCount: null,
+      lifeJacketCount: undefined,
       safetyEquipmentCheck: false,
       emergencyEquipment: '',
 
       // Capacity & compliance fields
-      yachtCapacity: null,
+      yachtCapacity: undefined,
       yachtType: '',
       yachtLicenceRequired: false,
       coastGuardApproved: false,
 
       // Operational details
-      crewSize: null,
+      crewSize: undefined,
       captainExperience: '',
-      fuelRange: null,
+      fuelRange: undefined,
       weatherBackupPlan: '',
 
       captainPhone: '',
@@ -260,7 +260,7 @@ const YachtTourForm = ({ open, onClose, onSubmit, yachtTour, isLoading = false }
       setValue('numberOfPeople', yachtTour.numberOfPeople)
       setValue('price', yachtTour.price)
       setValue('specialRequest', yachtTour.specialRequest || '')
-      setValue('yachtName', yachtTour.yachtName)
+      setValue('yachtName', (yachtTour as any).yachtName || '')
       setValue('ownerGuestId', yachtTour.ownerGuestId)
       setValue('personnelId', yachtTour.personnelId || undefined)
       setValue('cityId', yachtTour.cityId)

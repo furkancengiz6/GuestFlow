@@ -13,6 +13,7 @@ namespace GuestFlow.Domain.Entities.Repositories
         Task DeleteAsync(TEntity entity);
         Task DeleteAsync(int id);
         Task UpdateAsync(TEntity entity);
+        void Update(TEntity entity);
         
         // Temel Get metodları
         Task<TEntity> GetByIdAsync(int id, bool includeDeleted = false);

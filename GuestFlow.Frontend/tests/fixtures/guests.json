@@ -1,0 +1,8 @@
+{
+  "data": [
+    { "id": 1, "fullName": "Test Guest 1", "guestCode": "G001" },
+    { "id": 2, "fullName": "Test Guest 2", "guestCode": "G002" }
+  ],
+  "totalCount": 2
+}
+

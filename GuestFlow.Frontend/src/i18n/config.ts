@@ -38,8 +38,15 @@ i18n.on('languageChanged', (lng) => {
   localStorage.setItem('language', lng)
   // Sync with user preferences store
   try {
-    const { useUserPreferencesStore } = require('../stores/userPreferencesStore')
-    useUserPreferencesStore.getState().setLanguage(lng)
+    import('../stores/userPreferencesStore').then((mod) => {
+      try {
+        mod.useUserPreferencesStore.getState().setLanguage(lng)
+      } catch {
+        // ignore
+      }
+    }).catch(() => {
+      // ignore dynamic import failure
+    })
   } catch {
     // Ignore if store not available
   }

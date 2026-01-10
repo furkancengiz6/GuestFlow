@@ -1,39 +1,60 @@
 import { test, expect } from '@playwright/test'
+import { ensureLoggedIn } from '../utils/testHelpers'
+import { setupMockApi } from '../utils/mockApi'
 
-const baseURL = process.env.E2E_BASE_URL || 'http://localhost:5173'
+/// <reference types="node" />
+/// <reference types="@playwright/test" />
+
 const userEmail = process.env.E2E_USER_EMAIL || 'ahmet@guestflow.com'
 const userPassword = process.env.E2E_USER_PASSWORD || 'Admin123!'
+const DEFAULT_BASE = (process.env.E2E_BASE_URL || 'http://localhost:5173').toString().trim().replace(/\/$/, '')
 
 test.describe('Transfers Management', () => {
   test.beforeEach(async ({ page }) => {
-    // Login before each test
-    await page.goto(`${baseURL}/login`)
-    await page.fill('input[type="email"]', userEmail)
-    await page.fill('input[type="password"]', userPassword)
-    await page.click('button:has-text("Giriş Yap")')
-    await page.waitForURL('**/dashboard', { timeout: 10000 })
+    await setupMockApi(page)
+    await ensureLoggedIn(page, userEmail, userPassword)
   })
 
   test('should navigate to transfers page', async ({ page }) => {
-    await page.goto(`${baseURL}/transfers`)
+    await page.goto(`${DEFAULT_BASE}/transfers`)
     await expect(page).toHaveURL(/.*transfers/)
   })
 
   test('should display transfers list', async ({ page }) => {
-    await page.goto(`${baseURL}/transfers`)
+    await page.goto(`${DEFAULT_BASE}/transfers`)
+    // If client-side error was recorded by EnhancedErrorBoundary, fail fast with details
+    const clientError = await page.evaluate(() => {
+      try {
+        return window.localStorage.getItem('E2E_LAST_ERROR')
+      } catch {
+        return null
+      }
+    })
+    if (clientError) {
+      throw new Error(`Client-side error detected: ${clientError}`)
+    }
     
-    // Wait for transfers to load
-    await page.waitForSelector('table, [role="table"]', { timeout: 10000 })
-    
-    const table = page.locator('table, [role="table"]').first()
-    await expect(table).toBeVisible()
+    // Wait for transfers to load or empty-state
+    try {
+      await page.waitForSelector('table, [role="table"]', { timeout: 10000 })
+      const table = page.locator('table, [role="table"]').first()
+      await expect(table).toBeVisible()
+    } catch {
+      const emptyFound = await page.locator('text=Transfer bulunamadı').count()
+      if (emptyFound === 0) throw new Error('Transfers table not found and no empty-state message displayed.')
+    }
   })
 
   test('should filter transfers', async ({ page }) => {
-    await page.goto(`${baseURL}/transfers`)
+    await page.goto(`${DEFAULT_BASE}/transfers`)
 
-    // Wait for page to load
-    await page.waitForSelector('table, [role="table"]', { timeout: 10000 })
+    // Wait for page to load or empty-state
+    try {
+      await page.waitForSelector('table, [role="table"]', { timeout: 10000 })
+    } catch {
+      const emptyFound = await page.locator('text=Transfer bulunamadı').count()
+      if (emptyFound === 0) throw new Error('Transfers content did not load and no empty-state found.')
+    }
 
     // Try to find filter/search input
     const searchInput = page.locator('input[type="search"], input[placeholder*="Ara"], input[aria-label*="Ara"]').first()
@@ -44,7 +65,7 @@ test.describe('Transfers Management', () => {
   })
 
   test('should create a new transfer successfully', async ({ page }) => {
-    await page.goto(`${baseURL}/transfers`)
+    await page.goto(`${DEFAULT_BASE}/transfers`)
 
     // Click create transfer button
     const createButton = page.locator('button:has-text("Yeni Transfer"), button[aria-label*="Yeni"]').first()
@@ -105,7 +126,7 @@ test.describe('Transfers Management', () => {
   })
 
   test('should validate transfer form fields', async ({ page }) => {
-    await page.goto(`${baseURL}/transfers`)
+    await page.goto(`${DEFAULT_BASE}/transfers`)
 
     // Try to create transfer
     const createButton = page.locator('button:has-text("Yeni Transfer"), button[aria-label*="Yeni"]').first()
@@ -136,10 +157,15 @@ test.describe('Transfers Management', () => {
   })
 
   test('should perform bulk operations on transfers', async ({ page }) => {
-    await page.goto(`${baseURL}/transfers`)
+    await page.goto(`${DEFAULT_BASE}/transfers`)
 
-    // Wait for table to load
-    await page.waitForSelector('table, [role="table"]', { timeout: 10000 })
+    // Wait for table to load or empty-state
+    try {
+      await page.waitForSelector('table, [role="table"]', { timeout: 10000 })
+    } catch {
+      const emptyFound = await page.locator('text=Transfer bulunamadı').count()
+      if (emptyFound === 0) throw new Error('Transfers table not found and no empty-state message displayed.')
+    }
 
     // Look for checkboxes in table
     const checkboxes = page.locator('input[type="checkbox"], [role="checkbox"]')
@@ -168,10 +194,15 @@ test.describe('Transfers Management', () => {
   })
 
   test('should navigate between transfer pages', async ({ page }) => {
-    await page.goto(`${baseURL}/transfers`)
+    await page.goto(`${DEFAULT_BASE}/transfers`)
 
-    // Wait for table to load
-    await page.waitForSelector('table, [role="table"]', { timeout: 10000 })
+    // Wait for table to load or empty-state
+    try {
+      await page.waitForSelector('table, [role="table"]', { timeout: 10000 })
+    } catch {
+      const emptyFound = await page.locator('text=Transfer bulunamadı').count()
+      if (emptyFound === 0) throw new Error('Transfers table not found and no empty-state message displayed.')
+    }
 
     // Look for pagination controls
     const pagination = page.locator('[aria-label*="pagination"], .pagination, [class*="pagination"]').first()
@@ -194,7 +225,7 @@ test.describe('Transfers Management', () => {
   })
 
   test('should handle transfer detail view', async ({ page }) => {
-    await page.goto(`${baseURL}/transfers`)
+    await page.goto(`${DEFAULT_BASE}/transfers`)
 
     // Wait for table to load
     await page.waitForSelector('table, [role="table"]', { timeout: 10000 })

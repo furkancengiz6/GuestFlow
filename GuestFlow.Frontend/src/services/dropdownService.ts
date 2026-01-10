@@ -37,6 +37,10 @@ export interface TourOption {
   name: string
   cityId: number
   isActive: boolean
+  // Optional fields used by some consumers
+  tourName?: string
+  tourDate?: string
+  yachtName?: string
 }
 
 export const dropdownService = {
@@ -45,8 +49,17 @@ export const dropdownService = {
       const response = await apiClient.get('/Guests', {
         params: { pageNumber: 1, pageSize: 1000 }, // Tüm misafirleri al
       })
-      if (response.data?.data?.data) {
-        return response.data.data.data.map((g: any) => ({
+      // Support different API response shapes:
+      // - { data: { data: [...] } } (nested)
+      // - { data: [...] } (flat)
+      // - { data: { data: { data: [...] } } } (rare double-nested)
+      const list =
+        response.data?.data?.data ||
+        response.data?.data ||
+        response.data ||
+        []
+      if (Array.isArray(list)) {
+        return list.map((g: any) => ({
           id: g.id,
           fullName: g.fullName,
           guestCode: g.guestCode,
@@ -66,8 +79,13 @@ export const dropdownService = {
         params: { pageNumber: 1, pageSize: 1000 }, // Tüm personelleri al
       })
       // Response format: { data: { data: { data: [...], totalCount, ... } } }
-      if (response.data?.data?.data) {
-        return response.data.data.data.map((p: any) => ({
+      const list =
+        response.data?.data?.data ||
+        response.data?.data ||
+        response.data ||
+        []
+      if (Array.isArray(list)) {
+        return list.map((p: any) => ({
           id: p.id,
           fullName: p.fullName,
           email: p.email || '',
@@ -85,8 +103,13 @@ export const dropdownService = {
       const response = await apiClient.get('/Airports', {
         params: { pageNumber: 1, pageSize: 1000 }, // Tüm havaalanlarını al
       })
-      if (response.data?.data?.data) {
-        return response.data.data.data.map((a: any) => ({
+      const list =
+        response.data?.data?.data ||
+        response.data?.data ||
+        response.data ||
+        []
+      if (Array.isArray(list)) {
+        return list.map((a: any) => ({
           id: a.id,
           airportName: a.airportName,
           cityName: a.cityName,
@@ -104,8 +127,13 @@ export const dropdownService = {
       const response = await apiClient.get('/Vehicles', {
         params: { pageNumber: 1, pageSize: 1000 }, // Tüm araçları al
       })
-      if (response.data?.data?.data) {
-        return response.data.data.data.map((v: any) => ({
+      const list =
+        response.data?.data?.data ||
+        response.data?.data ||
+        response.data ||
+        []
+      if (Array.isArray(list)) {
+        return list.map((v: any) => ({
           id: v.id,
           plateNumber: v.plateNumber,
           vehicleType: v.vehicleType,
@@ -148,6 +176,9 @@ export const dropdownService = {
           name: t.name,
           cityId: t.cityId,
           isActive: t.isActive,
+          tourName: t.tourName || t.name,
+          tourDate: t.tourDate || t.date || undefined,
+          yachtName: t.yachtName || undefined,
         }))
       }
       return []
@@ -155,6 +186,42 @@ export const dropdownService = {
       console.error('Tours dropdown fetch error:', error)
       return []
     }
+  },
+  getHotels: async (): Promise<{ id: number; hotelName: string }[]> => {
+    try {
+      const response = await apiClient.get('/Hotels', { params: { pageNumber: 1, pageSize: 1000 } })
+      if (response.data?.data?.data) {
+        return response.data.data.data.map((h: any) => ({ id: h.id, hotelName: h.hotelName }))
+      }
+      return []
+    } catch (error) {
+      console.error('Hotels dropdown fetch error:', error)
+      return []
+    }
+  },
+  getInvoices: async (): Promise<any[]> => {
+    try {
+      const response = await apiClient.get('/Invoices', { params: { pageNumber: 1, pageSize: 1000 } })
+      return response.data?.data?.data || []
+    } catch (error) {
+      console.error('Invoices dropdown fetch error:', error)
+      return []
+    }
+  },
+  getTransfers: async (): Promise<any[]> => {
+    try {
+      const response = await apiClient.get('/Transfers', { params: { pageNumber: 1, pageSize: 1000 } })
+      return response.data?.data?.data || []
+    } catch (error) {
+      console.error('Transfers dropdown fetch error:', error)
+      return []
+    }
+  },
+  getCityTours: async (cityId?: number): Promise<TourOption[]> => {
+    return await (dropdownService.getTours(cityId))
+  },
+  getYachtTours: async (cityId?: number): Promise<TourOption[]> => {
+    return await (dropdownService.getTours(cityId))
   },
 }
 

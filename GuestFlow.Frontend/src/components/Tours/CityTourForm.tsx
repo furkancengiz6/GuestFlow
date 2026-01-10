@@ -34,7 +34,7 @@ const optionalId = z.preprocess(
 
 // Zod schema
 const cityTourSchema = z.object({
-  tourDate: z.date({ required_error: 'Tur tarihi gereklidir' }),
+  tourDate: z.date({ required_error: 'Tur tarihi gereklidir' } as any),
   language: z.string().min(1, 'Dil gereklidir').max(50, 'Dil en fazla 50 karakter olabilir'),
   durationHours: z.number().min(1, 'Süre en az 1 saat olmalıdır').max(24, 'Süre en fazla 24 saat olabilir'),
   price: z.number().min(0.01, 'Fiyat 0.01\'den büyük olmalıdır'),
@@ -150,9 +150,9 @@ const CityTourForm = ({ open, onClose, onSubmit, cityTour, isLoading = false }: 
       price: 0,
 
       // Group composition fields
-      adultCount: null,
-      childCount: null,
-      infantCount: null,
+      adultCount: undefined,
+      childCount: undefined,
+      infantCount: undefined,
 
       ownerGuestId: 0,
       personnelId: undefined,
@@ -189,8 +189,8 @@ const CityTourForm = ({ open, onClose, onSubmit, cityTour, isLoading = false }: 
       // Operational details
       tourDifficultyLevel: '',
       weatherDependent: false,
-      minimumParticipantCount: null,
-      maximumParticipantCount: null,
+      minimumParticipantCount: undefined,
+      maximumParticipantCount: undefined,
 
       // Guest experience fields
       dietaryRequirements: '',

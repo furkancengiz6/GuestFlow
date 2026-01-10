@@ -89,7 +89,7 @@
 - README.md güncellendi
 - BACKEND_TODO.md güncellendi
 - FRONTEND_TODO.md güncellendi
-- GUESTFLOW_ROADMAP.md güncellendi
+- `ROADMAP.md` oluşturuldu; roadmap tek dosyada toplandı.
 - PROJECT_STATUS.md güncellendi
 - CHANGELOG.md oluşturuldu
 

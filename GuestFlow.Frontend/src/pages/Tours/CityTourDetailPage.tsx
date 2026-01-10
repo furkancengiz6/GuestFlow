@@ -129,12 +129,12 @@ const CityTourDetailPage = () => {
         >
           Düzenle
         </Button>
-        <Button
+          <Button
           variant="outlined"
           color="success"
           startIcon={<PersonIcon />}
           onClick={() => markCompletedMutation.mutate()}
-          disabled={tour.status === 'Completed' || markCompletedMutation.isPending}
+          disabled={(tour as any).status === 'Completed' || markCompletedMutation.isPending}
         >
           {markCompletedMutation.isPending ? 'İşleniyor...' : 'Tamamlandı İşaretle'}
         </Button>
@@ -156,7 +156,7 @@ const CityTourDetailPage = () => {
         >
           {sendCityTourConfirmationMutation.isPending ? 'Gönderiliyor...' : 'Onay Gönder'}
         </Button>
-        <Button
+          <Button
           variant="outlined"
           color="error"
           onClick={() => {
@@ -164,7 +164,7 @@ const CityTourDetailPage = () => {
               cancelTourMutation.mutate()
             }
           }}
-          disabled={tour.status === 'Cancelled' || cancelTourMutation.isPending}
+          disabled={(tour as any).status === 'Cancelled' || cancelTourMutation.isPending}
         >
           {cancelTourMutation.isPending ? 'İptal Ediliyor...' : 'İptal Et'}
         </Button>

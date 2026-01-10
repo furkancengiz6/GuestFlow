@@ -33,16 +33,36 @@ class EnhancedErrorBoundary extends Component<Props, State> {
     // Example: logErrorToService(error, errorInfo)
     
     this.setState({ errorInfo })
+    try {
+      // Persist last error details to localStorage for E2E diagnostics (development only)
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const payload = {
+          message: error?.message,
+          stack: errorInfo?.componentStack,
+          time: new Date().toISOString(),
+        }
+        window.localStorage.setItem('E2E_LAST_ERROR', JSON.stringify(payload))
+      }
+    } catch {
+      // ignore storage errors
+    }
   }
 
   reset = () => {
     this.props.onReset?.()
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.removeItem('E2E_LAST_ERROR')
+      }
+    } catch {}
     this.setState({ error: null, errorInfo: null })
   }
 
   render() {
     const { error, errorInfo } = this.state
-    const { children, fallback, showDetails = false } = this.props
+    const { children, fallback } = this.props
+    // In dev/test environments, show error details by default unless explicitly overridden
+    const showDetails = (this.props.showDetails ?? (import.meta.env.DEV ?? false)) as boolean
 
     if (error) {
       if (fallback) {

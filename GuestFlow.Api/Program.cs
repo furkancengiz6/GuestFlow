@@ -1,3 +1,4 @@
+using GuestFlow.Api.Middleware;
 using GuestFlow.Api.Middlewares;
 using GuestFlow.Api.Filters;
 using GuestFlow.Api.Extensions;
@@ -35,6 +36,9 @@ using GuestFlow.Application.Operations.Reports;
 using GuestFlow.Application.Operations.Dashboard;
 using GuestFlow.Application.Operations.Validation;
 using GuestFlow.Application.Operations.Currency;
+using GuestFlow.Application.Operations.Supplier;
+using GuestFlow.Application.Operations.Profitability;
+using GuestFlow.Application.Operations.OTA;
 using GuestFlow.Application.Operations.Reservation;
 using GuestFlow.Application.Operations.Payment;
 using GuestFlow.Application.Operations.Sms;
@@ -45,7 +49,6 @@ using GuestFlow.Application.Operations.Calendar;
 using GuestFlow.Application.Operations.Common;
 using GuestFlow.Application.Configuration;
 using GuestFlow.Application.Operations.Configuration;
-using GuestFlow.Application.Operations.Notification;
 using GuestFlow.Api.Hubs;
 using GuestFlow.Api.Services;
 using GuestFlow.Api.HealthChecks;
@@ -149,8 +152,7 @@ builder.Services.AddCors(options =>
                 "http://localhost:3000"
             };
 
-            var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
-            logger.LogWarning("Using default CORS origins for development. Configure Cors:AllowedOrigins in production.");
+            Log.Warning("Using default CORS origins for development. Configure Cors:AllowedOrigins in production.");
         }
 
         // SECURITY: Validate origins are HTTPS in production
@@ -293,9 +295,16 @@ builder.Services.Configure<SmsSettings>(builder.Configuration.GetSection("SmsSet
 builder.Services.Configure<LocalizationSettings>(builder.Configuration.GetSection("LocalizationSettings"));
 builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
 builder.Services.Configure<RateLimitSettings>(builder.Configuration.GetSection("RateLimitSettings"));
+builder.Services.Configure<SecurityHeadersSettings>(builder.Configuration.GetSection("SecurityHeaders"));
 
 // Memory cache for rate limiting
 builder.Services.AddMemoryCache();
+
+// HttpContext accessor for audit logging
+builder.Services.AddHttpContextAccessor();
+
+// Audit interceptor for security logging - register as singleton
+builder.Services.AddSingleton<GuestFlow.Persistence.Interceptors.AuditInterceptor>();
 
 // Response caching for performance
 builder.Services.AddResponseCaching(options =>
@@ -345,12 +354,30 @@ var minKeyLength = int.Parse(builder.Configuration["Jwt:MinimumKeyLength"] ?? "6
 // SECURITY: Validate JWT secret key exists and meets minimum length
 if (string.IsNullOrWhiteSpace(jwtSecretKey))
 {
-    throw new InvalidOperationException("JWT SecretKey is required. Set it via environment variable JWT__SecretKey");
+    if (builder.Environment.IsDevelopment())
+    {
+        // Development fallback: use a default long secret to allow local runs/tests.
+        jwtSecretKey = new string('x', Math.Max(minKeyLength, 128));
+            Log.Warning("JWT SecretKey was not set; using development fallback secret. Do NOT use this in production.");
+    }
+    else
+    {
+        throw new InvalidOperationException("JWT SecretKey is required. Set it via environment variable JWT__SecretKey");
+    }
 }
 
 if (jwtSecretKey.Length < minKeyLength)
 {
-    throw new InvalidOperationException($"JWT SecretKey must be at least {minKeyLength} characters long for security. Current length: {jwtSecretKey.Length}");
+    if (builder.Environment.IsDevelopment())
+    {
+        // Extend secret to meet minimum length in development
+        jwtSecretKey = jwtSecretKey.PadRight(minKeyLength, 'x');
+        Log.Warning("JWT SecretKey was shorter than minimum; padded in development.");
+    }
+    else
+    {
+        throw new InvalidOperationException($"JWT SecretKey must be at least {minKeyLength} characters long for security. Current length: {jwtSecretKey.Length}");
+    }
 }
 
 // SECURITY: Additional JWT validation parameters
@@ -404,8 +431,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 
-builder.Services.AddDbContext<GuestFlowDbContext>(options =>
-    options.UseSqlServer(cs, x => x.MigrationsAssembly("GuestFlow.Persistence")));
+builder.Services.AddDbContext<GuestFlowDbContext>((serviceProvider, options) =>
+{
+    options.UseSqlServer(cs, x => x.MigrationsAssembly("GuestFlow.Persistence"));
+    // Add audit interceptor for security logging (resolve from DI)
+    var auditInterceptor = serviceProvider.GetRequiredService<GuestFlow.Persistence.Interceptors.AuditInterceptor>();
+    options.AddInterceptors(auditInterceptor);
+});
 // Services
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));//generic typeof
 
@@ -417,6 +449,18 @@ builder.Services.AddScoped<IAirportService, AirportManager>();
 builder.Services.AddScoped<IPersonnelService, PersonnelManager>();
 builder.Services.AddScoped<IGuestService, GuestManager>();
 builder.Services.AddScoped<IRoomAssignmentService, RoomAssignmentManager>();
+
+// Supplier and Profitability services
+builder.Services.AddScoped<ISupplierService, SupplierManager>();
+builder.Services.AddScoped<IProfitabilityService, ProfitabilityService>();
+
+// OTA Integration services
+builder.Services.AddScoped<IOTAIntegrationService, OTAIntegrationService>();
+// Accounting / Journal service
+builder.Services.AddScoped<GuestFlow.Application.Operations.Accounting.IJournalService, GuestFlow.Application.Operations.Accounting.JournalService>();
+#region Supplier cost service
+builder.Services.AddScoped<GuestFlow.Application.Operations.Supplier.ISupplierCostService, GuestFlow.Application.Operations.Supplier.SupplierCostService>();
+#endregion
 builder.Services.AddScoped<ICityTourService, CityTourManager>(); 
 builder.Services.AddScoped<ITransferService, TransferManager>();
 builder.Services.AddScoped<IYachtTourService, YachtTourManager>();
@@ -516,19 +560,12 @@ app.UseCors("AllowFrontend");
 // Rate limiting middleware (authentication'dan önce)
 app.UseMiddleware<RateLimitMiddleware>();
 
+// Security middleware - order matters!
+app.UseSecurityHeaders();
+app.UseHtmlSanitization();
+
 app.UseMantenanceMode();
 app.UseHttpsRedirection();
-
-// Security headers (basic hardening)
-app.Use(async (context, next) =>
-{
-    context.Response.Headers["X-Frame-Options"] = "DENY";
-    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
-    context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
-    context.Response.Headers["X-Permitted-Cross-Domain-Policies"] = "none";
-    context.Response.Headers["X-XSS-Protection"] = "0";
-    await next();
-});
 
 // Response caching middleware (authentication'dan önce)
 app.UseResponseCaching();
@@ -636,3 +673,6 @@ catch (Exception ex)
     Console.WriteLine($"Stack trace: {ex.StackTrace}");
     throw;
 }
+
+// Expose Program class for integration tests (WebApplicationFactory)
+public partial class Program { }

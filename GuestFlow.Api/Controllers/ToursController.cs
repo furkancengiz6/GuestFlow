@@ -1,5 +1,4 @@
 using GuestFlow.Application.Operations.Tour;
-using GuestFlow.Application.Operations.Tour;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;

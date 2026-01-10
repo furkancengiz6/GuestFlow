@@ -14,12 +14,12 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  DatePicker,
   Switch,
   FormControlLabel,
   IconButton,
   Tooltip,
 } from '@mui/material'
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import {
   ExpandMore as ExpandMoreIcon,
   FilterList as FilterIcon,
@@ -112,7 +112,7 @@ export const AdvancedFilter = ({
             <DatePicker
               label={field.label}
               value={filters[field.key] || null}
-              onChange={(date) => handleFilterChange(field.key, date)}
+              onChange={(date: Date | null) => handleFilterChange(field.key, date)}
               slotProps={{ textField: { size: 'small', fullWidth: true } }}
             />
           </LocalizationProvider>

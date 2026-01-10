@@ -1,5 +1,7 @@
 using GuestFlow.Application.Configuration;
 using Microsoft.Extensions.Caching.Memory;
+using System.Linq;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Options;
 using System.Net;
 using System.Text.Json;
@@ -16,17 +18,20 @@ namespace GuestFlow.Api.Middlewares
         private readonly ILogger<RateLimitMiddleware> _logger;
         private readonly RateLimitSettings _settings;
         private readonly IMemoryCache _cache;
+        private readonly IWebHostEnvironment _env;
 
         public RateLimitMiddleware(
             RequestDelegate next,
             ILogger<RateLimitMiddleware> logger,
             IOptions<RateLimitSettings> settings,
-            IMemoryCache cache)
+            IMemoryCache cache,
+            IWebHostEnvironment env)
         {
             _next = next;
             _logger = logger;
             _settings = settings.Value;
             _cache = cache;
+            _env = env;
         }
 
         public async Task InvokeAsync(HttpContext context)
@@ -39,6 +44,12 @@ namespace GuestFlow.Api.Middlewares
             }
 
             var clientIp = GetClientIpAddress(context);
+            // In development, allow loopback traffic to bypass rate limiting (helps local E2E/test runners)
+            if (_env.IsDevelopment() && (clientIp == "127.0.0.1" || clientIp == "::1" || clientIp.StartsWith("::ffff:127.0.0.1")))
+            {
+                await _next(context);
+                return;
+            }
             var endpoint = context.Request.Path.Value ?? string.Empty;
             var userAgent = context.Request.Headers["User-Agent"].ToString();
             var method = context.Request.Method;
@@ -54,7 +65,9 @@ namespace GuestFlow.Api.Middlewares
             }
 
             // SECURITY: User-Agent validation (configurable bot detection)
-            if (string.IsNullOrEmpty(userAgent) || IsBlockedUserAgent(userAgent))
+            // Dev/QA ergonomics: only enforce User-Agent blocking in Production (optional).
+            // NOTE: Rate limiting already mitigates abuse; UA blocking should be reserved for clearly malicious scanners.
+            if (_env.IsProduction() && IsBlockedUserAgent(userAgent))
             {
                 _logger.LogWarning($"Blocked request from IP: {clientIp}, User-Agent: {userAgent}");
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
@@ -144,20 +157,42 @@ namespace GuestFlow.Api.Middlewares
 
         private bool IsWhitelisted(PathString path)
         {
-            return _settings.WhitelistedPaths.Any(whitelisted => 
+            // Always whitelist internal development helper endpoint
+            if (path.StartsWithSegments("/api/dev", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            return _settings.WhitelistedPaths.Any(whitelisted =>
                 path.StartsWithSegments(whitelisted, StringComparison.OrdinalIgnoreCase));
         }
 
         private EndpointRateLimit GetEndpointLimit(string endpoint)
         {
-            // Endpoint bazlı özel limit var mı kontrol et
-            foreach (var kvp in _settings.EndpointLimits)
+            // Endpoint bazlı özel limit var mı kontrol et.
+            // Supports both versioned and unversioned routes by trying a normalized variant:
+            // - /api/v1.0/auth/login -> /api/auth/login
+            // We also pick the *most specific* match (longest key) to avoid config ordering issues.
+            var candidates = new[] { endpoint, NormalizeEndpointPath(endpoint) }
+                .Where(e => !string.IsNullOrWhiteSpace(e))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            EndpointRateLimit? best = null;
+            var bestLen = -1;
+
+            foreach (var candidate in candidates)
             {
-                if (endpoint.StartsWith(kvp.Key, StringComparison.OrdinalIgnoreCase))
+                foreach (var kvp in _settings.EndpointLimits)
                 {
-                    return kvp.Value;
+                    if (candidate.StartsWith(kvp.Key, StringComparison.OrdinalIgnoreCase) && kvp.Key.Length > bestLen)
+                    {
+                        best = kvp.Value;
+                        bestLen = kvp.Key.Length;
+                    }
                 }
             }
+
+            if (best != null)
+                return best;
 
             // Varsayılan limit
             return new EndpointRateLimit
@@ -165,6 +200,25 @@ namespace GuestFlow.Api.Middlewares
                 RequestsPerMinute = _settings.DefaultRequestsPerMinute,
                 RequestsPerHour = _settings.DefaultRequestsPerHour
             };
+        }
+
+        private static string NormalizeEndpointPath(string endpoint)
+        {
+            if (string.IsNullOrWhiteSpace(endpoint))
+                return endpoint;
+
+            // /api/v1.0/...  => /api/...
+            var segments = endpoint.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Length >= 3 &&
+                segments[0].Equals("api", StringComparison.OrdinalIgnoreCase) &&
+                segments[1].StartsWith("v", StringComparison.OrdinalIgnoreCase))
+            {
+                // Remove version segment ("v1", "v1.0", "v2.0", etc.)
+                var normalized = new[] { segments[0] }.Concat(segments.Skip(2));
+                return "/" + string.Join('/', normalized);
+            }
+
+            return endpoint;
         }
 
         private string GetClientIpAddress(HttpContext context)
@@ -193,12 +247,12 @@ namespace GuestFlow.Api.Middlewares
 
         private bool IsBlockedIp(string ipAddress)
         {
-            // SECURITY: Basic IP blacklist
-            // In production, this should be configurable and loaded from database/cache
-            var blockedIps = new[] {
-                "127.0.0.1", // Loopback for testing
-                // Add known malicious IPs here
-            };
+            // In development allow loopback traffic (don't block localhost)
+            if (_env.IsDevelopment())
+                return false;
+
+            // SECURITY: Basic IP blacklist (production)
+            var blockedIps = Array.Empty<string>(); // Add known malicious IPs here
 
             return blockedIps.Contains(ipAddress);
         }
@@ -206,7 +260,7 @@ namespace GuestFlow.Api.Middlewares
         private bool IsBlockedUserAgent(string userAgent)
         {
             if (string.IsNullOrWhiteSpace(userAgent))
-                return true;
+                return false; // don't hard-fail missing UA; rely on rate limiting instead
 
             // SECURITY: Configurable blocked User-Agent patterns
             if (_settings.BlockedUserAgents == null || !_settings.BlockedUserAgents.Any())
@@ -227,6 +281,13 @@ namespace GuestFlow.Api.Middlewares
 
         private bool IsCurrentlyBlocked(string clientIp)
         {
+            // In development do not treat loopback as blocked to avoid blocking local test runners
+            if (_env.IsDevelopment())
+            {
+                if (clientIp == "127.0.0.1" || clientIp == "::1" || clientIp.StartsWith("::ffff:127.0.0.1"))
+                    return false;
+            }
+
             // Check if IP is temporarily blocked
             var blockKey = $"blocked:ip:{clientIp}";
             return _cache.TryGetValue(blockKey, out _);
