@@ -93,6 +93,50 @@ Mevcut `Journal` ve `SupplierCost/Profitability` altyapısını gerçek operasyo
   - ✅ `InvoiceDetailPage` üzerinde “Journal Preview” butonu + satır/total gösteren dialog
   - ✅ Invoice detail’da “Journal Posted” durumu artık **JE #id + posting date** ile görünür (post sonrası otomatik refresh)
 
+### Sıradaki Yapılması Gerekenler (Önerilen Sıra)
+- **S3.1 — API sözleşmesini sabitle**
+  - Journal endpoint’leri tüm API’ler gibi **tek response şekline** sahip olsun (frontend’in `data.data` beklentisi ile uyumlu).
+  - Swagger dokümantasyonunda örnek response’lar net olsun.
+- **S3.2 — Journal Post idempotency (gerçek “muhasebe güvenliği”)**
+  - Aynı invoice için ikinci post’u engelleme mevcut; bunu **DB düzeyinde garantiye** al:
+    - Öneri A (temiz): `JournalEntry` içine `InvoiceId` alanı ekle + unique index.
+    - Öneri B (minimal): `JournalLine.ReferenceId` üzerinden unique constraint / unique index (riskli: satır sayısı çok).
+  - UI’da “already posted” durumunda Post butonu görünmesin/disabled + mesaj.
+- **S3.3 — Journal Entry detay görüntüleme**
+  - `GET /api/v1.0/Journal/by-invoice/{invoiceId}` (veya benzeri) ile:
+    - `JournalEntryId`, `PostingDate`, `Currency`, `Lines[]` döndür.
+  - Invoice detail’da “Journal Posted” chip’i tıklanınca JE detay dialog aç.
+- **S3.4 — GL mapping (hardcode’dan çık)**
+  - Şu an `AccountCode` default (`1100`, `4000`, `9999`) — bunu konfig/DB’ye taşı:
+    - `ServiceType → RevenueAccountCode`
+    - `ReceivableAccountCode`
+    - `Rounding/AdjustmentAccountCode`
+  - Admin UI: mapping ekranı + validation (boş/invalid code yok).
+- **S3.5 — Vergi/KDV modeli**
+  - `InvoiceItemEntity` üzerinde KDV oranı/tutarı yok → VAT satırları üretilemiyor.
+  - Karar: (a) invoice item’a `VatRate`, `VatAmount` ekle veya (b) servis tablolarından derive et (transfer/tour/restaurant…).
+- **S3.6 — Export (muhasebe çıktı)**
+  - En küçük deliverable: “Journal Export by Date Range” (CSV/Excel).
+  - Sonraki: Guest Ledger / Room Ledger / Supplier Cost export.
+- **S3.7 — Test kapsamı**
+  - Backend integration test:
+    - Preview OK
+    - Post OK
+    - İkinci post 400 + mesaj
+    - Unbalanced post 400
+  - Frontend E2E: invoice detail → preview → post → “Journal Posted” görünür.
+
+### Sprint 3 Kabul Kriterleri (Done Definition)
+- Invoice detail’da **Preview → Post** akışı üretimde kullanılabilir ve tekrar post edilemez.
+- Post sonrası JE id/tarih UI’da görünür; JE detayı API’dan okunabilir.
+- GL mapping hardcode’dan çıkmış; en az 3 servis tipi için mapping yapılabilir.
+- Muhasebe export’larından en az 1 tanesi (Journal by date range) çalışır ve test edilmiştir.
+
+### Notlar / Riskler
+- **Çoklu para birimi**: Post edilen JE’nin currency’si ve satır currency’si politikası netleşmeli (tek currency mi, multi-line currency mi?).
+- **Rounding/discount**: invoice total ile item sum farkı için adjustment satırı var; muhasebe kuralı netleşmeli.
+- **Audit**: “kim post etti” alanı şu an `system`; gerçek kullanıcı (personnel) claim’inden doldurulmalı.
+
 ## Sprint 4 (8+ hafta) — Operasyon, Entegrasyonlar, Ürünleşme
 
 ### Hedef
