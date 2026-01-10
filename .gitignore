@@ -146,6 +146,15 @@ _TeamCity*
 coverage*.json
 coverage*.xml
 coverage*.info
+coverage/
+
+# Frontend test artifacts
+GuestFlow.Frontend/coverage/
+GuestFlow.Frontend/playwright-report/
+GuestFlow.Frontend/test-results/
+GuestFlow.Frontend/GuestFlow.Frontend/test-results/
+GuestFlow.Frontend/dev_server.log
+GuestFlow.Frontend/dev_server.err
 
 # Visual Studio code coverage results
 *.coverage
