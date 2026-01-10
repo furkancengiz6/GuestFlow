@@ -65,6 +65,12 @@ namespace GuestFlow.Persistence.Context
         {
             base.OnModelCreating(modelBuilder);
 
+            // Accounting - DB idempotency: 1 invoice -> max 1 journal entry
+            // (InvoiceId is nullable for backward compatibility; multiple NULLs allowed.)
+            modelBuilder.Entity<JournalEntry>()
+                .HasIndex(e => e.InvoiceId)
+                .IsUnique();
+
             // Fluent API ile yapılandırmaları uyguluyoruz
             modelBuilder.ApplyConfiguration(new AirportConfiguration());
             modelBuilder.ApplyConfiguration(new CityConfiguration());

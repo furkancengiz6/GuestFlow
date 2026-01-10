@@ -122,6 +122,7 @@ namespace GuestFlow.Application.Operations.Accounting
 
                 var journal = new JournalEntry
                 {
+                    InvoiceId = request.InvoiceId,
                     PostingDate = DateTime.Parse(request.PostingDate),
                     Description = $"Posted for Invoice {invoice.InvoiceNumber}",
                     Currency = invoice.Currency ?? "USD",
