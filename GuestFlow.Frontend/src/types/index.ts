@@ -1,9 +1,11 @@
 // API Response Types
 export interface ApiResponse<T = any> {
-  isSuccess: boolean
+  success: boolean
   message: string
   data?: T
   errors?: any
+  statusCode?: number
+  timestamp?: string
 }
 
 export interface PagedResult<T> {
