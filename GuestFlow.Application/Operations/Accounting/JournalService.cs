@@ -2,6 +2,7 @@ using GuestFlow.Application.Models.Responses.Accounting;
 using GuestFlow.Domain.UnitOfWork;
 using GuestFlow.Domain.Entities.Core;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using System.Linq;
 
 namespace GuestFlow.Application.Operations.Accounting
@@ -9,10 +10,33 @@ namespace GuestFlow.Application.Operations.Accounting
     public class JournalService : IJournalService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IConfiguration _configuration;
 
-        public JournalService(IUnitOfWork unitOfWork)
+        public JournalService(IUnitOfWork unitOfWork, IConfiguration configuration)
         {
             _unitOfWork = unitOfWork;
+            _configuration = configuration;
+        }
+
+        private string GetReceivableAccountCode()
+            => _configuration["Accounting:Journal:ReceivableAccountCode"] ?? "1100";
+
+        private string GetAdjustmentAccountCode()
+            => _configuration["Accounting:Journal:AdjustmentAccountCode"] ?? "9999";
+
+        private string GetDefaultRevenueAccountCode()
+            => _configuration["Accounting:Journal:DefaultRevenueAccountCode"] ?? "4000";
+
+        private string GetRevenueAccountCodeForServiceType(string? serviceType)
+        {
+            var key = (serviceType ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(key)) return GetDefaultRevenueAccountCode();
+
+            // Try as-is and lowercased key for config JSON flexibility.
+            var byType = _configuration[$"Accounting:Journal:RevenueAccountByServiceType:{key}"]
+                         ?? _configuration[$"Accounting:Journal:RevenueAccountByServiceType:{key.ToLowerInvariant()}"];
+
+            return string.IsNullOrWhiteSpace(byType) ? GetDefaultRevenueAccountCode() : byType;
         }
 
         public async Task<ApiResponse<JournalPreviewResponse>> GenerateJournalPreviewAsync(int invoiceId)
@@ -40,7 +64,7 @@ namespace GuestFlow.Application.Operations.Accounting
                 var receivableAmount = invoice.TotalAmount > 0m ? invoice.TotalAmount : sumItems;
                 preview.Lines.Add(new JournalLineDto
                 {
-                    AccountCode = "1100", // Receivables default - editable in GL mapping later
+                    AccountCode = GetReceivableAccountCode(),
                     Debit = receivableAmount,
                     Credit = 0,
                     Description = "Accounts Receivable"
@@ -52,7 +76,7 @@ namespace GuestFlow.Application.Operations.Accounting
                 {
                     preview.Lines.Add(new JournalLineDto
                     {
-                        AccountCode = "4000", // Revenue default
+                        AccountCode = GetRevenueAccountCodeForServiceType(it.ServiceType),
                         Debit = 0,
                         Credit = it.Amount,
                         Description = $"{it.ServiceType} #{it.ServiceId}"
@@ -70,7 +94,7 @@ namespace GuestFlow.Application.Operations.Accounting
                     {
                         preview.Lines.Add(new JournalLineDto
                         {
-                            AccountCode = "9999", // Adjustment / Rounding account - configurable in GL mapping later
+                            AccountCode = GetAdjustmentAccountCode(),
                             Debit = 0,
                             Credit = adjustment,
                             Description = "Adjustment / Rounding"
@@ -82,7 +106,7 @@ namespace GuestFlow.Application.Operations.Accounting
                         // Negative adjustment -> extra debit required
                         preview.Lines.Add(new JournalLineDto
                         {
-                            AccountCode = "9999",
+                            AccountCode = GetAdjustmentAccountCode(),
                             Debit = Math.Abs(adjustment),
                             Credit = 0,
                             Description = "Adjustment / Rounding"
