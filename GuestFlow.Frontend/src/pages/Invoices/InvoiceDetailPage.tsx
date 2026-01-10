@@ -12,6 +12,7 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogActions,
   Table,
   TableHead,
   TableRow,
@@ -39,6 +40,10 @@ import { useLiveUpdates } from '../../hooks/useLiveUpdates'
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'
 import api from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
+import { tr } from 'date-fns/locale'
 
 const InvoiceDetailPage = () => {
   const { id } = useParams<{ id: string }>()
@@ -51,6 +56,8 @@ const InvoiceDetailPage = () => {
   const [pdfViewerOpen, setPdfViewerOpen] = useState(false)
   const [journalPreviewOpen, setJournalPreviewOpen] = useState(false)
   const [journalPreview, setJournalPreview] = useState<JournalPreviewResponse | null>(null)
+  const [journalPostingDate, setJournalPostingDate] = useState<Date | null>(new Date())
+  const [journalPosted, setJournalPosted] = useState(false)
 
   // Enable real-time updates for invoice changes
   useLiveUpdates(['invoice'])
@@ -114,10 +121,34 @@ const InvoiceDetailPage = () => {
     },
     onSuccess: (data) => {
       setJournalPreview(data)
+      setJournalPosted(false)
+      setJournalPostingDate(new Date())
       setJournalPreviewOpen(true)
     },
     onError: (error: any) => {
       notification.showError(error?.response?.data?.message || 'Muhasebe önizlemesi alınamadı.')
+    },
+  })
+
+  const journalPostMutation = useMutation({
+    mutationFn: async () => {
+      if (!invoiceId) throw new Error('Geçersiz fatura ID')
+      if (!journalPreview) throw new Error('Önizleme bulunamadı')
+      if (!journalPostingDate) throw new Error('Posting date seçiniz')
+
+      const postingDate = journalPostingDate.toISOString().split('T')[0]
+      return journalService.post({
+        invoiceId,
+        postingDate,
+        lines: journalPreview.lines,
+      })
+    },
+    onSuccess: () => {
+      setJournalPosted(true)
+      notification.showSuccess('Journal başarıyla post edildi.')
+    },
+    onError: (error: any) => {
+      notification.showError(error?.response?.data?.message || 'Journal post edilemedi.')
     },
   })
 
@@ -514,6 +545,17 @@ const InvoiceDetailPage = () => {
                 {formatCurrency(journalPreview.totalCredit, journalPreview.currency)}
               </Typography>
 
+              <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={tr}>
+                <DatePicker
+                  label="Posting Date"
+                  value={journalPostingDate}
+                  onChange={(newValue) => setJournalPostingDate(newValue)}
+                  slotProps={{
+                    textField: { size: 'small', fullWidth: true },
+                  }}
+                />
+              </LocalizationProvider>
+
               <Table size="small">
                 <TableHead>
                   <TableRow>
@@ -541,6 +583,21 @@ const InvoiceDetailPage = () => {
             </Box>
           )}
         </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setJournalPreviewOpen(false)}>Kapat</Button>
+          <Button
+            variant="contained"
+            onClick={() => journalPostMutation.mutate()}
+            disabled={
+              journalPostMutation.isPending ||
+              journalPosted ||
+              !journalPreview ||
+              journalPreview.totalDebit !== journalPreview.totalCredit
+            }
+          >
+            {journalPosted ? 'Posted' : journalPostMutation.isPending ? 'Posting...' : 'Post Journal'}
+          </Button>
+        </DialogActions>
       </Dialog>
     </Box>
   )

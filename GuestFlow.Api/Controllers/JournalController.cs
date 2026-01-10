@@ -22,14 +22,18 @@ namespace GuestFlow.Api.Controllers
         public async Task<IActionResult> Preview([FromQuery] int invoiceId)
         {
             var result = await _journalService.GenerateJournalPreviewAsync(invoiceId);
-            return result.Success ? Ok(result) : BadRequest(result);
+            return result.Success
+                ? Success(result.Data, result.Message)
+                : Error(result.Message, result.StatusCode == 0 ? 400 : result.StatusCode, result.Errors);
         }
 
         [HttpPost("post")]
         public async Task<IActionResult> Post([FromBody] JournalPostRequest request)
         {
             var result = await _journalService.PostJournalAsync(request);
-            return result.Success ? Ok(result) : BadRequest(result);
+            return result.Success
+                ? Success(result.Data, result.Message)
+                : Error(result.Message, result.StatusCode == 0 ? 400 : result.StatusCode, result.Errors);
         }
     }
 }
