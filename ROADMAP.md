@@ -91,6 +91,7 @@ Mevcut `Journal` ve `SupplierCost/Profitability` altyapısını gerçek operasyo
   - ✅ `IUnitOfWork` artık `JournalLines` repository’sini expose ediyor
 - **Frontend (Invoices)**:
   - ✅ `InvoiceDetailPage` üzerinde “Journal Preview” butonu + satır/total gösteren dialog
+  - ✅ Invoice detail’da “Journal Posted” durumu artık **JE #id + posting date** ile görünür (post sonrası otomatik refresh)
 
 ## Sprint 4 (8+ hafta) — Operasyon, Entegrasyonlar, Ürünleşme
 
