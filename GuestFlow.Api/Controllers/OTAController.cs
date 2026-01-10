@@ -73,7 +73,10 @@ namespace GuestFlow.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<bool>), 200)]
         public async Task<IActionResult> ProcessWebhook(string providerCode, [FromBody] object payload)
         {
-            var result = await _otaService.ProcessWebhookAsync(providerCode, payload.ToString());
+            if (payload is null)
+                return BadRequest(new ApiResponse<bool> { Success = false, Message = "Webhook payload is required." });
+
+            var result = await _otaService.ProcessWebhookAsync(providerCode, payload.ToString() ?? string.Empty);
             return result.Success ? Ok(result) : BadRequest(result);
         }
     }

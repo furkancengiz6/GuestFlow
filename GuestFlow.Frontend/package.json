@@ -14,7 +14,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:ci": "jest --ci --coverage --maxWarnings=0 --maxWorkers=2 --collectCoverageFrom='src/**/*.{ts,tsx}'",
+    "test:ci": "jest --ci --coverage --runInBand --maxWarnings=0",
     "test:e2e": "playwright test",
     "seed:e2e": "node scripts/create-e2e-storage.cjs",
     "deploy": "bash scripts/deploy.sh",

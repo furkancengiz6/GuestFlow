@@ -125,8 +125,11 @@ namespace GuestFlow.Api.Validators
         // BeFutureOrToday REMOVED - Past-dated entries are allowed per DATE REALITY
         // Service date represents when the operation actually occurred, not when entered
 
-        private bool BeValidStatus(string status)
+        private bool BeValidStatus(string? status)
         {
+            if (string.IsNullOrWhiteSpace(status))
+                return false;
+
             var validStatuses = new[] { "Pending", "Confirmed", "InProgress", "Completed", "Cancelled" };
             return validStatuses.Contains(status);
         }

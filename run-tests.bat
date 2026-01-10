@@ -63,7 +63,7 @@ if %ERRORLEVEL% EQU 0 (
 )
 
 echo Testing auth endpoint...
-curl -X POST http://localhost:5146/api/auth/login -H "Content-Type: application/json" -d "{\"email\":\"test@example.com\",\"password\":\"wrong\"}" > nul 2>&1
+curl -X POST http://localhost:5146/api/v1.0/auth/login -H "Content-Type: application/json" -d "{\"email\":\"test@example.com\",\"password\":\"wrong\"}" > nul 2>&1
 echo ℹ️ Auth endpoint tested (rate limiting should trigger)
 
 taskkill /f /im dotnet.exe > nul 2>&1

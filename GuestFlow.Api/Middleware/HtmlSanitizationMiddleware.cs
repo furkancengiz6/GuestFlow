@@ -1,6 +1,9 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Net;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Linq;
 
 namespace GuestFlow.Api.Middleware
 {
@@ -32,7 +35,7 @@ namespace GuestFlow.Api.Middleware
 
                     if (!string.IsNullOrEmpty(body))
                     {
-                        var sanitizedBody = SanitizeHtml(body);
+                        var sanitizedBody = SanitizeRequestBody(context, body);
 
                         // Reset stream position and replace body
                         var buffer = Encoding.UTF8.GetBytes(sanitizedBody);
@@ -56,6 +59,78 @@ namespace GuestFlow.Api.Middleware
             await _next(context);
         }
 
+        private string SanitizeRequestBody(HttpContext context, string body)
+        {
+            // JSON-safe sanitization: parse JSON and sanitize only string values so we keep valid JSON
+            var contentType = context.Request.ContentType ?? string.Empty;
+            if (contentType.Contains("application/json", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    var node = JsonNode.Parse(body);
+                    if (node is null)
+                        return body;
+
+                    SanitizeJsonNodeStrings(node);
+                    return node.ToJsonString(new JsonSerializerOptions
+                    {
+                        WriteIndented = false
+                    });
+                }
+                catch (JsonException)
+                {
+                    // Not valid JSON; fall back to HTML sanitization to avoid breaking the request pipeline.
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "JSON sanitization failed - falling back to HTML sanitization");
+                }
+            }
+
+            return SanitizeHtml(body);
+        }
+
+        private void SanitizeJsonNodeStrings(JsonNode node)
+        {
+            switch (node)
+            {
+                case JsonObject obj:
+                    foreach (var kvp in obj.ToList())
+                    {
+                        var key = kvp.Key;
+                        var child = kvp.Value;
+                        if (child is null) continue;
+
+                        if (child is JsonValue value && value.TryGetValue<string>(out var s))
+                        {
+                            obj[key] = SanitizeHtml(s);
+                        }
+                        else
+                        {
+                            SanitizeJsonNodeStrings(child);
+                        }
+                    }
+                    break;
+
+                case JsonArray arr:
+                    for (var i = 0; i < arr.Count; i++)
+                    {
+                        var child = arr[i];
+                        if (child is null) continue;
+
+                        if (child is JsonValue value && value.TryGetValue<string>(out var s))
+                        {
+                            arr[i] = SanitizeHtml(s);
+                        }
+                        else
+                        {
+                            SanitizeJsonNodeStrings(child);
+                        }
+                    }
+                    break;
+            }
+        }
+
         private string SanitizeHtml(string html)
         {
             if (string.IsNullOrEmpty(html))
@@ -63,8 +138,8 @@ namespace GuestFlow.Api.Middleware
 
             try
             {
-                // Use Ganss.XSS HtmlSanitizer for robust sanitization
-                var sanitizer = new Ganss.XSS.HtmlSanitizer();
+                // Use HtmlSanitizer for robust sanitization
+                var sanitizer = new Ganss.Xss.HtmlSanitizer();
 
                 // Configure allowed tags conservatively
                 sanitizer.AllowedTags.Clear();

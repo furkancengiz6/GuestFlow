@@ -6,7 +6,7 @@
       "localStorage": [
         {
           "name": "auth-storage",
-          "value": "{\"user\":{\"id\":1,\"email\":\"test@guestflow.local\",\"fullName\":\"Test User\",\"role\":\"Admin\"},\"isAuthenticated\":true}"
+          "value": "{\"user\":{\"id\":1,\"email\":\"smoke@guestflow.local\",\"fullName\":\"E2E Test User\",\"role\":\"Admin\"},\"isAuthenticated\":true}"
         },
         {
           "name": "VITE_E2E_BYPASS",

@@ -248,7 +248,7 @@
   ```bash
   # Test all endpoints
   curl -X GET "https://api.guestflow.com/api/health" -H "accept: application/json"
-  curl -X POST "https://api.guestflow.com/api/auth/login" -H "Content-Type: application/json" -d '{"email":"admin@guestflow.com","password":"password"}'
+  curl -X POST "https://api.guestflow.com/api/v1.0/auth/login" -H "Content-Type: application/json" -d '{"email":"admin@guestflow.com","password":"password"}'
   ```
 
 - [ ] **Frontend Application**

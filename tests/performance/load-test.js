@@ -58,7 +58,7 @@ export function setup() {
 
   // Login and get auth tokens
   for (const user of testUsers) {
-    const loginResponse = http.post(`${BASE_URL}/api/auth/login`, {
+    const loginResponse = http.post(`${BASE_URL}/api/v1.0/auth/login`, {
       email: user.email,
       password: user.password
     });

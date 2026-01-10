@@ -54,7 +54,13 @@ namespace GuestFlow.Api.Controllers
         public async Task<IActionResult> Create([FromBody] CreateSupplierRequest request)
         {
             var result = await _supplierService.CreateSupplierAsync(request);
-            return result.Success ? CreatedAtAction(nameof(GetById), new { id = result.Data.Id }, result) : BadRequest(result);
+            if (!result.Success)
+                return BadRequest(result);
+
+            if (result.Data is null)
+                return StatusCode(StatusCodes.Status500InternalServerError, result);
+
+            return CreatedAtAction(nameof(GetById), new { id = result.Data.Id }, result);
         }
 
         [HttpPut("{id}")]

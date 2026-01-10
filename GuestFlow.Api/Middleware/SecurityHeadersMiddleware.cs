@@ -1,18 +1,69 @@
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
 namespace GuestFlow.Api.Middleware
 {
     public class SecurityHeadersMiddleware
     {
         private readonly RequestDelegate _next;
         private readonly ILogger<SecurityHeadersMiddleware> _logger;
+        private readonly IWebHostEnvironment _env;
+        private readonly GuestFlow.Api.Configuration.SecurityHeadersSettings _settings;
 
-        public SecurityHeadersMiddleware(RequestDelegate next, ILogger<SecurityHeadersMiddleware> logger)
+        public SecurityHeadersMiddleware(
+            RequestDelegate next,
+            ILogger<SecurityHeadersMiddleware> logger,
+            IWebHostEnvironment env,
+            IOptions<GuestFlow.Api.Configuration.SecurityHeadersSettings> settings)
         {
             _next = next;
             _logger = logger;
+            _env = env;
+            _settings = settings.Value ?? new GuestFlow.Api.Configuration.SecurityHeadersSettings();
         }
 
         public async Task InvokeAsync(HttpContext context)
         {
+            // Build a CSP that doesn't break websocket connections (SignalR) and is dev-friendly.
+            var connectSrc = new List<string>
+            {
+                "'self'",
+                "https://cdn.jsdelivr.net",
+                "ws:",
+                "wss:",
+            };
+
+            // Production: allow the public API host explicitly (in addition to 'self').
+            connectSrc.Add("https://api.guestflow.com");
+            connectSrc.Add("wss://api.guestflow.com");
+
+            // Development: allow local frontend/API ports (Vite + local API + websocket).
+            if (_env.IsDevelopment())
+            {
+                connectSrc.Add("http://localhost:*");
+                connectSrc.Add("https://localhost:*");
+                connectSrc.Add("ws://localhost:*");
+                connectSrc.Add("wss://localhost:*");
+                connectSrc.Add("http://127.0.0.1:*");
+                connectSrc.Add("https://127.0.0.1:*");
+                connectSrc.Add("ws://127.0.0.1:*");
+                connectSrc.Add("wss://127.0.0.1:*");
+            }
+
+            // Config-driven additions (per-environment via appsettings.*.json or env vars)
+            if (_settings.ConnectSrc != null && _settings.ConnectSrc.Count > 0)
+            {
+                foreach (var entry in _settings.ConnectSrc.Where(x => !string.IsNullOrWhiteSpace(x)))
+                    connectSrc.Add(entry.Trim());
+            }
+
             // Content Security Policy - Enhanced for GuestFlow
             context.Response.Headers["Content-Security-Policy"] =
                 "default-src 'self'; " +
@@ -20,7 +71,7 @@ namespace GuestFlow.Api.Middleware
                 "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; " +
                 "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; " +
                 "img-src 'self' data: blob: https://cdn.jsdelivr.net https://*.guestflow.com; " +
-                "connect-src 'self' https://api.guestflow.com wss://api.guestflow.com https://cdn.jsdelivr.net; " +
+                $"connect-src {string.Join(' ', connectSrc.Distinct())}; " +
                 "frame-src 'none'; " +
                 "object-src 'none'; " +
                 "base-uri 'self'; " +

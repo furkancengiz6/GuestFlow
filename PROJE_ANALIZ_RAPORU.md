@@ -427,24 +427,3 @@ docker-compose exec sqlserver /opt/mssql-tools/bin/sqlcmd \
 
 ---
 
-## 🟢 Son Güncellemeler (Otomatik)
-- Tarih: 2026-01-08
-- Yapılan önemli işlemler:
-  - Frontend: Lazy-loading, JSX düzeltmeleri ve Playwright E2E yapılandırması tamamlandı.
-  - Güvenlik & Performans: HTML sanitizasyon ve security headers iyileştirildi; audit logging interceptor eklendi.
-  - Testler: `SupplierCosts` e2e testi başarıyla geçti (3/3 passed). Test projesi derleme hataları düzeltildi ve kritik entegrasyon testleri aktifleştirildi.
-  - Veri tabanı: Supplier yönetimi ve SupplierCost migration'ları oluşturuldu; hedef DB'ye uygulandı / senkronize edildi.
-
-Bu dosya otomatik güncelleme ile notlandırıldı — ayrıntılar için `PROJECT_WIDE_RECOMMENDATIONS.md` ve `TEST_FIXES_AND_ACTIONS.md` dosyalarına bakınız.
-
-### 2026-01-08 - E2E & API Durum Notu
-- API Durumu: Backend başarıyla başlatıldı ve demo veriler ile seed edildi; dinleme `http://localhost:5146` üzerinde aktif. Ancak local test koşucuları tarafından yapılan birçok istek, geliştirme ortamında rate-limit tarafından engellendi; bu durum test akışını etkiledi ve dev bypass mekanizmaları eklendi.
-- Demo kullanıcı bilgileri (seed ile oluşturuldu, loglarda gösterildi):  
-  - Email: `test@guestflow.local`  
-  - Password: `Uw2bNU9*rMFF`
-- Yapılan düzeltmeler:
-  - RateLimit middleware: geliştirme sırasında loopback IP'leri için bypass ve ek güvenlik kontrolleri eklendi.
-  - Playwright: `playwright.config.ts` ve `playwright-global-setup.ts` güncellendi; local storage üzerinden E2E bypass sağlandı.
-  - Frontend: `LoginPage`'e local-bypass yönlendirmesi eklendi, SupplierCosts sayfa rotası eklendi.
-
-Not: E2E çalıştırması sonucunda 3 test geçti, 36 test hâlâ hatalı (çoğunluğu login/navigation ve rate-limit kaynaklı). Bir sonraki adım tüm rate-limit etkilerini ortadan kaldırıp E2E tekrar çalıştırmak olacaktır.

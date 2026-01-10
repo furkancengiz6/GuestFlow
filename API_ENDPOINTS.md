@@ -2,8 +2,8 @@
 
 ## GET Endpoints
 
-### AuthController (`/api/auth`)
-- `GET /api/auth/me` - Giriş yapmış kullanıcının bilgilerini getirir
+### AuthController (`/api/v1.0/auth`)
+- `GET /api/v1.0/auth/me` - Giriş yapmış kullanıcının bilgilerini getirir
 
 ### AirportsController (`/api/airports`)
 - `GET /api/airports` - Tüm havalimanlarını getirir (sayfalanmış, sıralanmış)
@@ -139,13 +139,13 @@
 - `GET /api/reservations/by-date-range` - Tarih aralığına göre rezervasyonları getirir
 - `GET /api/reservations/by-status/{status}` - Duruma göre rezervasyonları getirir
 
-### SettingsController (`/api/settings`)
-- `GET /api/settings/maintenance` - Bakım modunun durumunu sorgular
-- `GET /api/settings` - Tüm ayarları getirir
-- `GET /api/settings/category/{category}` - Kategoriye göre ayarları getirir
-- `GET /api/settings/key/{key}` - Ayarı anahtara göre getirir
-- `GET /api/settings/categories` - Ayar kategorilerini getirir
-- `GET /api/settings/summary` - Sistem ayarları özetini getirir
+### SettingsController (`/api/v1.0/settings`)
+- `GET /api/v1.0/settings/maintenance` - Bakım modunun durumunu sorgular
+- `GET /api/v1.0/settings` - Tüm ayarları getirir
+- `GET /api/v1.0/settings/category/{category}` - Kategoriye göre ayarları getirir
+- `GET /api/v1.0/settings/key/{key}` - Ayarı anahtara göre getirir
+- `GET /api/v1.0/settings/categories` - Ayar kategorilerini getirir
+- `GET /api/v1.0/settings/summary` - Sistem ayarları özetini getirir
 
 ### SmsController (`/api/sms`)
 - `GET /api/sms` - Tüm SMS geçmişini getirir (sayfalanmış, filtrelenmiş, sıralanmış)
@@ -196,14 +196,14 @@
 ## POST Endpoints
 
 ### AuthController (`/api/auth`)
-- `POST /api/auth/register` - Yeni kullanıcı kaydı yapar
-- `POST /api/auth/login` - Kullanıcı girişi yapar ve JWT token üretir
-- `POST /api/auth/forgot-password` - Şifre sıfırlama talebi
-- `POST /api/auth/reset-password` - Şifre sıfırlama
-- `POST /api/auth/refresh-token` - Refresh token ile yeni access token alır
-- `POST /api/auth/revoke-token` - Refresh token'ı iptal eder (logout)
-- `POST /api/auth/change-password` - Şifre değiştirir (giriş yapmış kullanıcı için)
-- `POST /api/auth/validate-password` - Şifre güçlülüğünü kontrol eder
+- `POST /api/v1.0/auth/register` - Yeni kullanıcı kaydı yapar
+- `POST /api/v1.0/auth/login` - Kullanıcı girişi yapar ve JWT token üretir
+- `POST /api/v1.0/auth/forgot-password` - Şifre sıfırlama talebi
+- `POST /api/v1.0/auth/reset-password` - Şifre sıfırlama
+- `POST /api/v1.0/auth/refresh-token` - Refresh token ile yeni access token alır
+- `POST /api/v1.0/auth/revoke-token` - Refresh token'ı iptal eder (logout)
+- `POST /api/v1.0/auth/change-password` - Şifre değiştirir (giriş yapmış kullanıcı için)
+- `POST /api/v1.0/auth/validate-password` - Şifre güçlülüğünü kontrol eder
 
 ### AirportsController (`/api/airports`)
 - `POST /api/airports` - Yeni havalimanı ekler
@@ -327,9 +327,9 @@
 ### ReservationsController (`/api/reservations`)
 - `PUT /api/reservations/{id}` - Rezervasyonu günceller
 
-### SettingsController (`/api/settings`)
-- `PUT /api/settings/key/{key}` - Ayarı günceller
-- `PUT /api/settings/bulk` - Birden fazla ayarı günceller
+### SettingsController (`/api/v1.0/settings`)
+- `PUT /api/v1.0/settings/key/{key}` - Ayarı günceller
+- `PUT /api/v1.0/settings/bulk` - Birden fazla ayarı günceller
 
 ### SmsController (`/api/sms`)
 - `PUT /api/sms/{id}/status` - SMS durumunu günceller (gateway callback için)
@@ -353,8 +353,8 @@
 ### PersonnelController (`/api/personnel`)
 - `PATCH /api/personnel/{id}/role` - Personel rolünü değiştirir
 
-### SettingsController (`/api/settings`)
-- `PATCH /api/settings/maintenance/toggle` - Bakım modunu açıp kapatır
+### SettingsController (`/api/v1.0/settings`)
+- `PATCH /api/v1.0/settings/maintenance/toggle` - Bakım modunu açıp kapatır
 
 ### TransfersController (`/api/transfers`)
 - `PATCH /api/transfers/{id}/status` - Transfer durumunu günceller

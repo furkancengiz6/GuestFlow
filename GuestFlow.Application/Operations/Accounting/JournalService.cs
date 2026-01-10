@@ -34,7 +34,8 @@ namespace GuestFlow.Application.Operations.Accounting
                 decimal totalCredit = 0;
 
                 // Receivable line
-                var receivableAmount = invoice.TotalAmount > 0m ? invoice.TotalAmount : items.Sum(i => i.Amount);
+                var sumItems = items.Sum(i => i.Amount);
+                var receivableAmount = invoice.TotalAmount > 0m ? invoice.TotalAmount : sumItems;
                 preview.Lines.Add(new JournalLineDto
                 {
                     AccountCode = "1100", // Receivables default - editable in GL mapping later
@@ -59,8 +60,6 @@ namespace GuestFlow.Application.Operations.Accounting
 
                 // If invoice total differs from sum of items (due to discounts/adjustments/rounding),
                 // add an adjustment line so debits equal credits.
-                var sumItems = items.Sum(i => i.Amount);
-                var receivableAmount = invoice.TotalAmount > 0m ? invoice.TotalAmount : sumItems;
                 var adjustment = receivableAmount - sumItems;
                 if (adjustment != 0m)
                 {

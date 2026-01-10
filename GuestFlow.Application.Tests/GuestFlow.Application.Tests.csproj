@@ -39,6 +39,8 @@
     <Compile Remove="**\*.cs" />
     <Compile Include="PlaceholderTests\PlaceholderTest.cs" />
     <!-- Re-enable selected migrated tests (batch 1) -->
+    <Compile Include="Integration\TestWebApplicationFactory.cs" />
+    <Compile Include="Integration\Smoke\ApiSmokeTests.cs" />
     <Compile Include="Integration\SupplierCostIntegrationTests.cs" />
     <Compile Include="Integration\ApiSecurityIntegrationTests.cs" />
   </ItemGroup>

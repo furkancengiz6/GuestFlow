@@ -65,7 +65,9 @@ namespace GuestFlow.Api.Middlewares
             }
 
             // SECURITY: User-Agent validation (configurable bot detection)
-            if (string.IsNullOrEmpty(userAgent) || IsBlockedUserAgent(userAgent))
+            // Dev/QA ergonomics: only enforce User-Agent blocking in Production (optional).
+            // NOTE: Rate limiting already mitigates abuse; UA blocking should be reserved for clearly malicious scanners.
+            if (_env.IsProduction() && IsBlockedUserAgent(userAgent))
             {
                 _logger.LogWarning($"Blocked request from IP: {clientIp}, User-Agent: {userAgent}");
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
@@ -165,14 +167,32 @@ namespace GuestFlow.Api.Middlewares
 
         private EndpointRateLimit GetEndpointLimit(string endpoint)
         {
-            // Endpoint bazlı özel limit var mı kontrol et
-            foreach (var kvp in _settings.EndpointLimits)
+            // Endpoint bazlı özel limit var mı kontrol et.
+            // Supports both versioned and unversioned routes by trying a normalized variant:
+            // - /api/v1.0/auth/login -> /api/auth/login
+            // We also pick the *most specific* match (longest key) to avoid config ordering issues.
+            var candidates = new[] { endpoint, NormalizeEndpointPath(endpoint) }
+                .Where(e => !string.IsNullOrWhiteSpace(e))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            EndpointRateLimit? best = null;
+            var bestLen = -1;
+
+            foreach (var candidate in candidates)
             {
-                if (endpoint.StartsWith(kvp.Key, StringComparison.OrdinalIgnoreCase))
+                foreach (var kvp in _settings.EndpointLimits)
                 {
-                    return kvp.Value;
+                    if (candidate.StartsWith(kvp.Key, StringComparison.OrdinalIgnoreCase) && kvp.Key.Length > bestLen)
+                    {
+                        best = kvp.Value;
+                        bestLen = kvp.Key.Length;
+                    }
                 }
             }
+
+            if (best != null)
+                return best;
 
             // Varsayılan limit
             return new EndpointRateLimit
@@ -180,6 +200,25 @@ namespace GuestFlow.Api.Middlewares
                 RequestsPerMinute = _settings.DefaultRequestsPerMinute,
                 RequestsPerHour = _settings.DefaultRequestsPerHour
             };
+        }
+
+        private static string NormalizeEndpointPath(string endpoint)
+        {
+            if (string.IsNullOrWhiteSpace(endpoint))
+                return endpoint;
+
+            // /api/v1.0/...  => /api/...
+            var segments = endpoint.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Length >= 3 &&
+                segments[0].Equals("api", StringComparison.OrdinalIgnoreCase) &&
+                segments[1].StartsWith("v", StringComparison.OrdinalIgnoreCase))
+            {
+                // Remove version segment ("v1", "v1.0", "v2.0", etc.)
+                var normalized = new[] { segments[0] }.Concat(segments.Skip(2));
+                return "/" + string.Join('/', normalized);
+            }
+
+            return endpoint;
         }
 
         private string GetClientIpAddress(HttpContext context)
@@ -221,7 +260,7 @@ namespace GuestFlow.Api.Middlewares
         private bool IsBlockedUserAgent(string userAgent)
         {
             if (string.IsNullOrWhiteSpace(userAgent))
-                return true;
+                return false; // don't hard-fail missing UA; rely on rate limiting instead
 
             // SECURITY: Configurable blocked User-Agent patterns
             if (_settings.BlockedUserAgents == null || !_settings.BlockedUserAgents.Any())

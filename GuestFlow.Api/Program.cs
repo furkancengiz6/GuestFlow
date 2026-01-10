@@ -152,8 +152,7 @@ builder.Services.AddCors(options =>
                 "http://localhost:3000"
             };
 
-            var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
-            logger.LogWarning("Using default CORS origins for development. Configure Cors:AllowedOrigins in production.");
+            Log.Warning("Using default CORS origins for development. Configure Cors:AllowedOrigins in production.");
         }
 
         // SECURITY: Validate origins are HTTPS in production
@@ -296,6 +295,7 @@ builder.Services.Configure<SmsSettings>(builder.Configuration.GetSection("SmsSet
 builder.Services.Configure<LocalizationSettings>(builder.Configuration.GetSection("LocalizationSettings"));
 builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
 builder.Services.Configure<RateLimitSettings>(builder.Configuration.GetSection("RateLimitSettings"));
+builder.Services.Configure<SecurityHeadersSettings>(builder.Configuration.GetSection("SecurityHeaders"));
 
 // Memory cache for rate limiting
 builder.Services.AddMemoryCache();
@@ -358,8 +358,7 @@ if (string.IsNullOrWhiteSpace(jwtSecretKey))
     {
         // Development fallback: use a default long secret to allow local runs/tests.
         jwtSecretKey = new string('x', Math.Max(minKeyLength, 128));
-        var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
-        logger.LogWarning("JWT SecretKey was not set; using development fallback secret. Do NOT use this in production.");
+            Log.Warning("JWT SecretKey was not set; using development fallback secret. Do NOT use this in production.");
     }
     else
     {
@@ -373,8 +372,7 @@ if (jwtSecretKey.Length < minKeyLength)
     {
         // Extend secret to meet minimum length in development
         jwtSecretKey = jwtSecretKey.PadRight(minKeyLength, 'x');
-        var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
-        logger.LogWarning("JWT SecretKey was shorter than minimum; padded in development.");
+        Log.Warning("JWT SecretKey was shorter than minimum; padded in development.");
     }
     else
     {
@@ -568,53 +566,6 @@ app.UseHtmlSanitization();
 
 app.UseMantenanceMode();
 app.UseHttpsRedirection();
-
-// Security headers (comprehensive hardening)
-app.Use(async (context, next) =>
-{
-    // Clickjacking protection
-    context.Response.Headers["X-Frame-Options"] = "DENY";
-
-    // MIME sniffing protection
-    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
-
-    // XSS protection (legacy, CSP is preferred)
-    context.Response.Headers["X-XSS-Protection"] = "1; mode=block";
-
-    // Referrer policy
-    context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
-
-    // Prevent Flash/PDF exploits
-    context.Response.Headers["X-Permitted-Cross-Domain-Policies"] = "none";
-
-    // HSTS (HTTP Strict Transport Security) - Production only
-    if (!context.Request.Host.Host.Contains("localhost"))
-    {
-        context.Response.Headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload";
-    }
-
-    // Content Security Policy (CSP)
-    context.Response.Headers["Content-Security-Policy"] = "default-src 'self'; " +
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
-        "style-src 'self' 'unsafe-inline'; " +
-        "img-src 'self' data: https:; " +
-        "font-src 'self' data:; " +
-        "connect-src 'self'; " +
-        "media-src 'self'; " +
-        "object-src 'none'; " +
-        "frame-src 'none'; " +
-        "base-uri 'self'; " +
-        "form-action 'self';";
-
-    // Permissions Policy (Feature Policy)
-    context.Response.Headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()";
-
-    // Remove server information
-    context.Response.Headers.Remove("X-Powered-By");
-    context.Response.Headers.Remove("Server");
-
-    await next();
-});
 
 // Response caching middleware (authentication'dan önce)
 app.UseResponseCaching();

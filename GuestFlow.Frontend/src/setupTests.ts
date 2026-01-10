@@ -2,14 +2,16 @@
 // This file configures Jest for React Testing Library
 import '@testing-library/jest-dom'
 import { cleanup } from '@testing-library/react'
-import { afterEach, beforeAll, afterAll } from '@jest/globals'
+import * as React from 'react'
 
 // TypeScript types are handled by Jest automatically
 
-// Cleanup after each test
-afterEach(() => {
-  cleanup()
-})
+// Cleanup after each test (guarded for environments where helper may be undefined)
+if (typeof afterEach === 'function') {
+  afterEach(() => {
+    cleanup()
+  })
+}
 
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
@@ -82,21 +84,37 @@ jest.mock('axios', () => ({
 // Note: Store and library mocks are handled individually in test files
 // to avoid path resolution issues in setupTests.ts
 
-// Suppress console errors in tests (optional)
+// Suppress noisy console output in tests (optional)
 const originalError = console.error
-beforeAll(() => {
-  console.error = (...args: any[]) => {
-    if (
-      typeof args[0] === 'string' &&
-      (args[0].includes('Warning: ReactDOM.render') ||
-        args[0].includes('Warning: validateDOMNesting'))
-    ) {
-      return
+const originalWarn = console.warn
+if (typeof beforeAll === 'function') {
+  beforeAll(() => {
+    console.error = (...args: any[]) => {
+      if (
+        typeof args[0] === 'string' &&
+        (args[0].includes('Warning: ReactDOM.render') ||
+          args[0].includes('Warning: validateDOMNesting'))
+      ) {
+        return
+      }
+      originalError.call(console, ...args)
     }
-    originalError.call(console, ...args)
-  }
-})
 
-afterAll(() => {
-  console.error = originalError
-})
+    console.warn = (...args: any[]) => {
+      if (typeof args[0] === 'string' && args[0].includes('React Router Future Flag Warning')) {
+        return
+      }
+      originalWarn.call(console, ...args)
+    }
+  })
+}
+
+if (typeof afterAll === 'function') {
+  afterAll(() => {
+    console.error = originalError
+    console.warn = originalWarn
+  })
+}
+
+// Provide `vi` global for tests authored with Vitest shorthands
+(global as any).vi = (global as any).vi || (global as any).jest

@@ -13,7 +13,7 @@ GuestFlow API, otel ve seyahat operasyonlarını yönetmek için geliştirilmiş
 
 ### Login
 ```http
-POST /api/auth/login
+POST /api/v1.0/auth/login
 Content-Type: application/json
 
 {
@@ -43,7 +43,7 @@ Content-Type: application/json
 
 ### Token Refresh
 ```http
-POST /api/auth/refresh
+POST /api/v1.0/auth/refresh-token
 Authorization: Bearer <your-token>
 Content-Type: application/json
 
@@ -303,7 +303,7 @@ Authorization: Bearer <token>
 
 ### Bakım Modu
 ```http
-PATCH /api/settings/maintenance
+PATCH /api/v1.0/settings/maintenance
 Authorization: Bearer <token> (Admin only)
 Content-Type: application/json
 

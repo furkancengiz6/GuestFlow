@@ -113,7 +113,7 @@ dotnet run --project GuestFlow.Api --configuration Release --urls "http://localh
 curl http://localhost:5146/health
 
 # Auth endpoint testi
-curl -X POST http://localhost:5146/api/auth/login \
+curl -X POST http://localhost:5146/api/v1.0/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"wrong"}'
 
@@ -180,7 +180,7 @@ tests/performance/
 ```bash
 # Rate limiting testi
 for i in {1..15}; do
-  curl -X POST http://localhost:5146/api/auth/login \
+  curl -X POST http://localhost:5146/api/v1.0/auth/login \
     -H "Content-Type: application/json" \
     -d '{"email":"test@example.com","password":"wrong"}'
 done
@@ -195,7 +195,7 @@ curl http://localhost:5146/api/dashboard/quick-stats \
 # Expected: 401 Unauthorized
 
 # SQL injection testi
-curl -X POST http://localhost:5146/api/auth/login \
+curl -X POST http://localhost:5146/api/v1.0/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin'; DROP TABLE users;--","password":"pass"}'
 # Expected: Sanitized input, no injection

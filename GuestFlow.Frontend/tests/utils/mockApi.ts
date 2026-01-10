@@ -36,7 +36,17 @@ export async function setupMockApi(page: Page) {
     } catch { /* ignore */ }
   })
 
-  await page.route('**/api/Guests**', (route: Route) => {
+  // IMPORTANT: Keep these routes narrowly scoped to API calls.
+  // Do NOT use broad patterns like "**/Guests**" because they can match Vite module URLs such as:
+  // /src/pages/Guests/GuestsPage.tsx  -> which would break the app with MIME type errors.
+
+  const guestsApi = /\/api\/(v[\d.]+\/)?guests(\b|\/|\?|$)/i
+  const transfersApi = /\/api\/(v[\d.]+\/)?transfers(\b|\/|\?|$)/i
+  const notificationsMyApi = /\/api\/(v[\d.]+\/)?notifications\/my(\b|\/|\?|$)/i
+  const notificationsStatsApi = /\/api\/(v[\d.]+\/)?notifications\/statistics(\b|\/|\?|$)/i
+  const anyApi = /\/api\/.*/i
+
+  await page.route(guestsApi, (route: Route) => {
     route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -44,41 +54,7 @@ export async function setupMockApi(page: Page) {
     })
   })
 
-  await page.route('**/api/Transfers**', (route: Route) => {
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(transfers),
-    })
-  })
-
-  // Also handle unversioned endpoints (e.g. /Guests, /Transfers) to support different API_BASE_URL formats
-  await page.route('**/Guests**', (route: Route) => {
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(guests),
-    })
-  })
-
-  await page.route('**/Transfers**', (route: Route) => {
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(transfers),
-    })
-  })
-
-  // Versioned API routes (some services call /api/v1.0/...)
-  await page.route('**/api/v1.0/Guests**', (route: Route) => {
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(guests),
-    })
-  })
-
-  await page.route('**/api/v1.0/Transfers**', (route: Route) => {
+  await page.route(transfersApi, (route: Route) => {
     route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -87,7 +63,7 @@ export async function setupMockApi(page: Page) {
   })
 
   // Notifications endpoints used in the layout
-  await page.route('**/api/v1.0/Notifications/my**', (route: Route) => {
+  await page.route(notificationsMyApi, (route: Route) => {
     route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -95,7 +71,7 @@ export async function setupMockApi(page: Page) {
     })
   })
 
-  await page.route('**/api/v1.0/Notifications/statistics**', (route: Route) => {
+  await page.route(notificationsStatsApi, (route: Route) => {
     route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -104,7 +80,7 @@ export async function setupMockApi(page: Page) {
   })
 
   // Generic fallback for other API calls to avoid proxy errors
-  await page.route('**/api/**', (route: Route) => {
+  await page.route(anyApi, (route: Route) => {
     route.fulfill({
       status: 200,
       contentType: 'application/json',

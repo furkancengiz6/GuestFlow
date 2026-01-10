@@ -14,8 +14,17 @@ const ProtectedRoute = ({ children, roles, fallbackPath = '/forbidden' }: Props)
   const location = useLocation()
   const { isAuthenticated, setAuthenticated, logout, user } = useAuthStore()
   const [checking, setChecking] = useState(true)
-  // E2E bypass toggle (set VITE_E2E_BYPASS=true in dev/test to bypass auth)
-  const e2eBypass = typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_E2E_BYPASS === 'true'
+  // E2E bypass toggle (set localStorage VITE_E2E_BYPASS=true in dev/test to bypass auth).
+  // NOTE: We intentionally avoid `import.meta` here because Jest (CJS transform) can't parse it.
+  const e2eBypass =
+    typeof window !== 'undefined' &&
+    (() => {
+      try {
+        return window.localStorage.getItem('VITE_E2E_BYPASS') === 'true'
+      } catch {
+        return false
+      }
+    })()
 
   useEffect(() => {
     let cancelled = false

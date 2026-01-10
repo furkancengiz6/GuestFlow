@@ -1,26 +1,32 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import TransferForm from '../../../components/Transfers/TransferForm';
-import { transferService } from '../../../services/transferService';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import TransferForm from '../../../components/Transfers/TransferForm'
 
-// Mock services
-jest.mock('../../../services/transferService', () => ({
-  transferService: {
-    createTransfer: jest.fn(),
-    updateTransfer: jest.fn(),
-    getTransferDetail: jest.fn(),
-  },
-}));
+jest.mock('@tanstack/react-query', () => {
+  const actual = jest.requireActual('@tanstack/react-query')
+  return {
+    ...actual,
+    useQuery: ({ queryKey }: any) => {
+      const key = Array.isArray(queryKey) ? queryKey[0] : queryKey
+      if (key === 'guests-dropdown') {
+        return { data: [{ id: 1, fullName: 'John Doe', guestCode: 'G001' }] }
+      }
+      if (key === 'airports-dropdown') return { data: [] }
+      if (key === 'vehicles-dropdown') return { data: [] }
+      if (key === 'cities-dropdown') return { data: [] }
+      return { data: undefined }
+    },
+  }
+})
 
 jest.mock('../../../services/dropdownService', () => ({
   dropdownService: {
-    getGuests: jest.fn().mockResolvedValue([]),
+    getGuests: jest.fn().mockResolvedValue([{ id: 1, fullName: 'John Doe', guestCode: 'G001' }]),
     getVehicles: jest.fn().mockResolvedValue([]),
-    getPersonnel: vi.fn().mockResolvedValue([]),
-    getAirports: vi.fn().mockResolvedValue([]),
+    getAirports: jest.fn().mockResolvedValue([]),
+    getCities: jest.fn().mockResolvedValue([]),
   },
-}));
+}))
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -28,272 +34,66 @@ const createWrapper = () => {
       queries: { retry: false },
       mutations: { retry: false },
     },
-  });
+  })
 
   return ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        {children}
-      </BrowserRouter>
-    </QueryClientProvider>
-  );
-};
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  )
+}
 
 describe('TransferForm', () => {
-  const mockOnSuccess = vi.fn();
-  const mockOnCancel = vi.fn();
-
   beforeEach(() => {
-    vi.clearAllMocks();
-  });
+    jest.clearAllMocks()
+  })
 
-  describe('Create Mode', () => {
-    it('should render create form with all required fields', () => {
-      render(
-        <TransferForm
-          mode="create"
-          onSuccess={mockOnSuccess}
-          onCancel={mockOnCancel}
-        />,
-        { wrapper: createWrapper() }
-      );
+  it('renders create dialog title and actions', () => {
+    render(
+      <TransferForm open onClose={jest.fn()} onSubmit={jest.fn() as any} transfer={null} />,
+      { wrapper: createWrapper() }
+    )
 
-      expect(screen.getByText('Yeni Transfer')).toBeInTheDocument();
-      expect(screen.getByLabelText(/misafir seçin/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/transfer tarihi/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/alınma adresi/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/bırakma adresi/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/fiyat/i)).toBeInTheDocument();
-    });
+    expect(screen.getByText('Yeni Transfer Ekle')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'İptal' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ekle' })).toBeInTheDocument()
+  })
 
-    it('should validate required fields on submit', async () => {
-      render(
-        <TransferForm
-          mode="create"
-          onSuccess={mockOnSuccess}
-          onCancel={mockOnCancel}
-        />,
-        { wrapper: createWrapper() }
-      );
+  it('submits in edit mode, transforms transferDate to ISO, and closes dialog', async () => {
+    const onClose = jest.fn()
+    const onSubmit = jest.fn().mockResolvedValue(undefined)
 
-      const submitButton = screen.getByRole('button', { name: /kaydet/i });
-      fireEvent.click(submitButton);
-
-      await waitFor(() => {
-        expect(screen.getByText(/misafir seçimi zorunludur/i)).toBeInTheDocument();
-      });
-    });
-
-    it('should submit form with valid data', async () => {
-      const mockCreateResponse = { transferId: 1 };
-      (transferService.createTransfer as any).mockResolvedValue(mockCreateResponse);
-
-      render(
-        <TransferForm
-          mode="create"
-          onSuccess={mockOnSuccess}
-          onCancel={mockOnCancel}
-        />,
-        { wrapper: createWrapper() }
-      );
-
-      // Fill required fields
-      const guestSelect = screen.getByLabelText(/misafir seçin/i);
-      const dateInput = screen.getByLabelText(/transfer tarihi/i);
-      const pickupInput = screen.getByLabelText(/alınma adresi/i);
-      const dropoffInput = screen.getByLabelText(/bırakma adresi/i);
-      const priceInput = screen.getByLabelText(/fiyat/i);
-
-      // Note: In a real test, you'd need to properly fill these fields
-      // For now, we'll mock the form validation
-
-      expect(guestSelect).toBeInTheDocument();
-      expect(dateInput).toBeInTheDocument();
-      expect(pickupInput).toBeInTheDocument();
-      expect(dropoffInput).toBeInTheDocument();
-      expect(priceInput).toBeInTheDocument();
-    });
-  });
-
-  describe('Edit Mode', () => {
-    const mockTransfer = {
-      id: 1,
+    const transfer = {
+      id: 99,
       guestId: 1,
-      transferDate: '2024-01-15T10:00:00Z',
-      pickupAddress: 'Airport Terminal 1',
-      dropoffAddress: 'Grand Hotel',
-      price: 150.00,
-      currency: 'TRY',
-      driverId: 1,
-      vehicleId: 1,
-      status: 'Confirmed',
-    };
+      transferDate: '2026-01-02T10:00:00Z',
+      pickupAddress: 'Airport',
+      dropoffAddress: 'Hotel',
+      price: 123.45,
+      status: 'Pending',
+    }
 
-    it('should load and display transfer data in edit mode', async () => {
-      (transferService.getTransferDetail as any).mockResolvedValue(mockTransfer);
+    render(<TransferForm open onClose={onClose} onSubmit={onSubmit} transfer={transfer as any} />, {
+      wrapper: createWrapper(),
+    })
 
-      render(
-        <TransferForm
-          mode="edit"
-          transferId={1}
-          onSuccess={mockOnSuccess}
-          onCancel={mockOnCancel}
-        />,
-        { wrapper: createWrapper() }
-      );
+    fireEvent.click(screen.getByRole('button', { name: 'Güncelle' }))
 
-      await waitFor(() => {
-        expect(transferService.getTransferDetail).toHaveBeenCalledWith(1);
-      });
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalled()
+    })
 
-      expect(screen.getByText('Transfer Düzenle')).toBeInTheDocument();
-    });
+    const submitted = (onSubmit as jest.Mock).mock.calls[0][0]
+    expect(submitted).toMatchObject({
+      pickupAddress: 'Airport',
+      dropoffAddress: 'Hotel',
+      price: 123.45,
+      guestId: 1,
+      status: 'Pending',
+    })
+    expect(typeof submitted.transferDate).toBe('string')
+    expect(submitted.transferDate).toContain('T')
 
-    it('should update transfer successfully', async () => {
-      (transferService.getTransferDetail as any).mockResolvedValue(mockTransfer);
-      (transferService.updateTransfer as any).mockResolvedValue(undefined);
-
-      render(
-        <TransferForm
-          mode="edit"
-          transferId={1}
-          onSuccess={mockOnSuccess}
-          onCancel={mockOnCancel}
-        />,
-        { wrapper: createWrapper() }
-      );
-
-      await waitFor(() => {
-        expect(transferService.getTransferDetail).toHaveBeenCalledWith(1);
-      });
-
-      // Wait for form to be populated, then submit
-      const submitButton = screen.getByRole('button', { name: /güncelle/i });
-      fireEvent.click(submitButton);
-
-      await waitFor(() => {
-        expect(transferService.updateTransfer).toHaveBeenCalled();
-        expect(mockOnSuccess).toHaveBeenCalled();
-      });
-    });
-  });
-
-  describe('Form Validation', () => {
-    it('should show error for past transfer date', async () => {
-      render(
-        <TransferForm
-          mode="create"
-          onSuccess={mockOnSuccess}
-          onCancel={mockOnCancel}
-        />,
-        { wrapper: createWrapper() }
-      );
-
-      const dateInput = screen.getByLabelText(/transfer tarihi/i);
-      const pastDate = '2020-01-01T10:00';
-
-      fireEvent.change(dateInput, { target: { value: pastDate } });
-
-      const submitButton = screen.getByRole('button', { name: /kaydet/i });
-      fireEvent.click(submitButton);
-
-      await waitFor(() => {
-        expect(screen.getByText(/transfer tarihi geçmiş bir tarih olamaz/i)).toBeInTheDocument();
-      });
-    });
-
-    it('should validate price is positive', async () => {
-      render(
-        <TransferForm
-          mode="create"
-          onSuccess={mockOnSuccess}
-          onCancel={mockOnCancel}
-        />,
-        { wrapper: createWrapper() }
-      );
-
-      const priceInput = screen.getByLabelText(/fiyat/i);
-      fireEvent.change(priceInput, { target: { value: '-50' } });
-
-      const submitButton = screen.getByRole('button', { name: /kaydet/i });
-      fireEvent.click(submitButton);
-
-      await waitFor(() => {
-        expect(screen.getByText(/fiyat 0'dan büyük olmalıdır/i)).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('UI Interactions', () => {
-    it('should call onCancel when cancel button is clicked', () => {
-      render(
-        <TransferForm
-          mode="create"
-          onSuccess={mockOnSuccess}
-          onCancel={mockOnCancel}
-        />,
-        { wrapper: createWrapper() }
-      );
-
-      const cancelButton = screen.getByRole('button', { name: /iptal/i });
-      fireEvent.click(cancelButton);
-
-      expect(mockOnCancel).toHaveBeenCalled();
-    });
-
-    it('should show loading state during submission', async () => {
-      (transferService.createTransfer as any).mockImplementation(
-        () => new Promise(resolve => setTimeout(() => resolve({ transferId: 1 }), 100))
-      );
-
-      render(
-        <TransferForm
-          mode="create"
-          onSuccess={mockOnSuccess}
-          onCancel={mockOnCancel}
-        />,
-        { wrapper: createWrapper() }
-      );
-
-      // Mock filling the form minimally
-      const submitButton = screen.getByRole('button', { name: /kaydet/i });
-      fireEvent.click(submitButton);
-
-      expect(screen.getByText(/kaydediliyor/i)).toBeInTheDocument();
-    });
-  });
-
-  describe('Advanced Fields', () => {
-    it('should show VIP fields when VIP is selected', () => {
-      render(
-        <TransferForm
-          mode="create"
-          onSuccess={mockOnSuccess}
-          onCancel={mockOnCancel}
-        />,
-        { wrapper: createWrapper() }
-      );
-
-      const vipCheckbox = screen.getByLabelText(/vip misafir/i);
-      fireEvent.click(vipCheckbox);
-
-      expect(screen.getByLabelText(/özel işlem notları/i)).toBeInTheDocument();
-    });
-
-    it('should show emergency fields when emergency priority is selected', () => {
-      render(
-        <TransferForm
-          mode="create"
-          onSuccess={mockOnSuccess}
-          onCancel={mockOnCancel}
-        />,
-        { wrapper: createWrapper() }
-      );
-
-      const prioritySelect = screen.getByLabelText(/öncelik/i);
-      fireEvent.change(prioritySelect, { target: { value: 'Emergency' } });
-
-      expect(screen.getByLabelText(/özel işlem notları/i)).toBeInTheDocument();
-    });
-  });
-});
+    await waitFor(() => {
+      expect(onClose).toHaveBeenCalled()
+    })
+  })
+})

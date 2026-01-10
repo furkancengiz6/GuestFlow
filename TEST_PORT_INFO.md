@@ -51,7 +51,7 @@ Swagger JSON: http://localhost:5145/swagger/v1/swagger.json
 curl http://localhost:5145/api/health
 
 # Login
-curl -X POST http://localhost:5145/api/auth/login \
+curl -X POST http://localhost:5145/api/v1.0/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com","password":"password123"}'
 ```
@@ -86,9 +86,9 @@ start http://localhost:5145/swagger
 
 ```
 # Authentication
-POST http://localhost:5145/api/auth/login
-POST http://localhost:5145/api/auth/register
-POST http://localhost:5145/api/auth/refresh-token
+POST http://localhost:5145/api/v1.0/auth/login
+POST http://localhost:5145/api/v1.0/auth/register
+POST http://localhost:5145/api/v1.0/auth/refresh-token
 POST http://localhost:5145/api/auth/revoke-token
 
 # Personnel
