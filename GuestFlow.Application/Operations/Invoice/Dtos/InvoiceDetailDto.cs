@@ -28,6 +28,8 @@ namespace GuestFlow.Application.Operations.Invoice.Dtos
 
         // Accounting status (calculated from JournalLines.ReferenceId)
         public bool IsJournalPosted { get; set; }
+        public int? JournalEntryId { get; set; }
+        public DateTime? JournalPostingDate { get; set; }
 
         // İlişkili Veriler
         public InvoiceGuestDto? Guest { get; set; }

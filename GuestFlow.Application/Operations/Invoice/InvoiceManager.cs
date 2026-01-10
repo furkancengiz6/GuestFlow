@@ -281,10 +281,15 @@ namespace GuestFlow.Application.Operations.Invoice
 
                 var detail = _mapper.Map<InvoiceDetailDto>(invoice);
 
-                // Accounting: is there any posted journal line referencing this invoice?
-                detail.IsJournalPosted = await _unitOfWork.JournalLines
-                    .GetAll(jl => jl.ReferenceId == id)
-                    .AnyAsync();
+                // Accounting: find latest posted journal entry referencing this invoice (via JournalLine.ReferenceId).
+                var latestJournalLine = await _unitOfWork.JournalLines
+                    .GetAll(jl => jl.ReferenceId == id, jl => jl.JournalEntry)
+                    .OrderByDescending(jl => jl.JournalEntry.PostingDate)
+                    .FirstOrDefaultAsync();
+
+                detail.IsJournalPosted = latestJournalLine != null;
+                detail.JournalEntryId = latestJournalLine?.JournalEntryId;
+                detail.JournalPostingDate = latestJournalLine?.JournalEntry?.PostingDate;
 
                 // Calculate payment status using PaymentStatusService
                 var paymentStatus = await _paymentStatusService.GetInvoicePaymentStatusAsync(id);

@@ -77,6 +77,8 @@ export interface InvoiceDetail {
   hasPdf: boolean
   createdDate: string
   isJournalPosted?: boolean
+  journalEntryId?: number
+  journalPostingDate?: string
   paymentStatus?: 'Unpaid' | 'PartiallyPaid' | 'Paid'
   paidAmount?: number
   remainingAmount?: number

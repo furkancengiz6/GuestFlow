@@ -282,9 +282,11 @@ const InvoiceDetailPage = () => {
               <Typography variant="h5" gutterBottom>
                 Fatura #{invoice.invoiceNumber}
               </Typography>
-              {(invoice as any).isJournalPosted && (
+              {invoice.isJournalPosted && (
                 <Chip
-                  label="Journal Posted"
+                  label={`Journal Posted${invoice.journalEntryId ? ` (JE #${invoice.journalEntryId})` : ''}${
+                    invoice.journalPostingDate ? ` • ${formatDate(invoice.journalPostingDate)}` : ''
+                  }`}
                   color="success"
                   size="small"
                   sx={{ mr: 1 }}
@@ -553,6 +555,11 @@ const InvoiceDetailPage = () => {
                 Toplam Borç: {formatCurrency(journalPreview.totalDebit, journalPreview.currency)} — Toplam Alacak:{' '}
                 {formatCurrency(journalPreview.totalCredit, journalPreview.currency)}
               </Typography>
+              {invoice.isJournalPosted && (
+                <Typography variant="body2" color="success.main">
+                  Posted as JE #{invoice.journalEntryId ?? '-'} {invoice.journalPostingDate ? `(${formatDate(invoice.journalPostingDate)})` : ''}
+                </Typography>
+              )}
 
               <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={tr}>
                 <DatePicker
