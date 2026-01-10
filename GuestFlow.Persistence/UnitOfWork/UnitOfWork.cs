@@ -27,6 +27,7 @@ namespace GuestFlow.Persistence.UnitOfWork
         private readonly IRepository<InvoicesEntity> _invoices;
         private readonly IRepository<InvoiceItemEntity> _invoiceItems;
         private readonly IRepository<JournalEntry> _journalEntries;
+        private readonly IRepository<JournalLine> _journalLines;
         private readonly IRepository<SupplierCost> _supplierCosts;
 
         public UnitOfWork(GuestFlowDbContext context)
@@ -44,6 +45,7 @@ namespace GuestFlow.Persistence.UnitOfWork
             _invoices = new Repository<InvoicesEntity>(_context);
             _invoiceItems = new Repository<InvoiceItemEntity>(_context);
             _journalEntries = new Repository<JournalEntry>(_context);
+            _journalLines = new Repository<JournalLine>(_context);
             _supplierCosts = new Repository<SupplierCost>(_context);
         }
 
@@ -133,6 +135,7 @@ namespace GuestFlow.Persistence.UnitOfWork
         public IRepository<InvoicesEntity> Invoices => _invoices;
         public IRepository<InvoiceItemEntity> InvoiceItems => _invoiceItems;
         public IRepository<JournalEntry> JournalEntries => _journalEntries;
+        public IRepository<JournalLine> JournalLines => _journalLines;
         public IRepository<SupplierCost> SupplierCosts => _supplierCosts;
     }
 }

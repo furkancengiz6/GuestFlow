@@ -30,6 +30,7 @@ namespace GuestFlow.Domain.UnitOfWork
         GuestFlow.Domain.Entities.Repositories.IRepository<GuestFlow.Domain.Entities.Core.InvoicesEntity> Invoices { get; }
         GuestFlow.Domain.Entities.Repositories.IRepository<GuestFlow.Domain.Entities.Core.InvoiceItemEntity> InvoiceItems { get; }
         GuestFlow.Domain.Entities.Repositories.IRepository<GuestFlow.Domain.Entities.Core.JournalEntry> JournalEntries { get; }
+        GuestFlow.Domain.Entities.Repositories.IRepository<GuestFlow.Domain.Entities.Core.JournalLine> JournalLines { get; }
         GuestFlow.Domain.Entities.Repositories.IRepository<GuestFlow.Domain.Entities.Operations.SupplierCost> SupplierCosts { get; }
         // Convenience commit used throughout app
         Task CommitAsync();

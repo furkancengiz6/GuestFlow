@@ -9,6 +9,15 @@ import {
   Button,
   Divider,
   IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  CircularProgress,
 } from '@mui/material'
 import {
   ArrowBack as ArrowBackIcon,
@@ -20,6 +29,7 @@ import {
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { invoiceService } from '../../services/invoiceService'
+import { journalService, JournalPreviewResponse } from '../../services/journalService'
 import { formatDate, formatCurrency } from '../../utils/formatters'
 import ContentState from '../../components/Feedback/ContentState'
 import PrintButton from '../../components/Common/PrintButton'
@@ -28,15 +38,19 @@ import { useNotification } from '../../hooks/useNotification'
 import { useLiveUpdates } from '../../hooks/useLiveUpdates'
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'
 import api from '../../services/api'
+import { useAuthStore } from '../../stores/authStore'
 
 const InvoiceDetailPage = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const notification = useNotification()
   const queryClient = useQueryClient()
+  const user = useAuthStore((s) => s.user)
   const parsedId = id ? parseInt(id, 10) : NaN
   const invoiceId = !isNaN(parsedId) && parsedId > 0 ? parsedId : null
   const [pdfViewerOpen, setPdfViewerOpen] = useState(false)
+  const [journalPreviewOpen, setJournalPreviewOpen] = useState(false)
+  const [journalPreview, setJournalPreview] = useState<JournalPreviewResponse | null>(null)
 
   // Enable real-time updates for invoice changes
   useLiveUpdates(['invoice'])
@@ -91,6 +105,20 @@ const InvoiceDetailPage = () => {
     onError: (error: any) => {
       notification.showError(`Fatura iptal hatası: ${error.response?.data?.message || 'Bilinmeyen hata'}`)
     }
+  })
+
+  const journalPreviewMutation = useMutation({
+    mutationFn: async () => {
+      if (!invoiceId) throw new Error('Geçersiz fatura ID')
+      return journalService.preview(invoiceId)
+    },
+    onSuccess: (data) => {
+      setJournalPreview(data)
+      setJournalPreviewOpen(true)
+    },
+    onError: (error: any) => {
+      notification.showError(error?.response?.data?.message || 'Muhasebe önizlemesi alınamadı.')
+    },
   })
 
   if (!invoiceId) {
@@ -188,6 +216,15 @@ const InvoiceDetailPage = () => {
           >
             {sendEmailMutation.isPending ? 'Gönderiliyor...' : 'E-posta Gönder'}
           </Button>
+          {(user?.role === 'Admin' || user?.role === 'Staff') && (
+            <Button
+              variant="outlined"
+              onClick={() => journalPreviewMutation.mutate()}
+              disabled={journalPreviewMutation.isPending}
+            >
+              {journalPreviewMutation.isPending ? 'Önizleniyor...' : 'Journal Preview'}
+            </Button>
+          )}
           {(invoice as any).status === 'Draft' && (
             <Button
               variant="outlined"
@@ -454,6 +491,57 @@ const InvoiceDetailPage = () => {
           fullScreen={true}
         />
       )}
+
+      <Dialog
+        open={journalPreviewOpen}
+        onClose={() => setJournalPreviewOpen(false)}
+        fullWidth
+        maxWidth="md"
+      >
+        <DialogTitle>Journal Preview</DialogTitle>
+        <DialogContent>
+          {!journalPreview && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress />
+            </Box>
+          )}
+
+          {journalPreview && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Typography variant="subtitle1">{journalPreview.description}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                Toplam Borç: {formatCurrency(journalPreview.totalDebit, journalPreview.currency)} — Toplam Alacak:{' '}
+                {formatCurrency(journalPreview.totalCredit, journalPreview.currency)}
+              </Typography>
+
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Hesap</TableCell>
+                    <TableCell>Açıklama</TableCell>
+                    <TableCell align="right">Borç</TableCell>
+                    <TableCell align="right">Alacak</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {journalPreview.lines.map((l, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell>{l.accountCode}</TableCell>
+                      <TableCell>{l.description || '-'}</TableCell>
+                      <TableCell align="right">
+                        {l.debit ? formatCurrency(l.debit, journalPreview.currency) : '-'}
+                      </TableCell>
+                      <TableCell align="right">
+                        {l.credit ? formatCurrency(l.credit, journalPreview.currency) : '-'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Box>
+          )}
+        </DialogContent>
+      </Dialog>
     </Box>
   )
 }

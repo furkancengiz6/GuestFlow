@@ -6,8 +6,9 @@ using Microsoft.AspNetCore.Mvc;
 namespace GuestFlow.Api.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
-    [Authorize]
+    [ApiVersion("1.0")]
+    [Route("api/v{version:apiVersion}/[controller]")]
+    [Authorize(Roles = "Staff,Admin")]
     public class JournalController : BaseController
     {
         private readonly IJournalService _journalService;

@@ -83,6 +83,15 @@ Mevcut `Journal` ve `SupplierCost/Profitability` altyapısını gerçek operasyo
 - **Export**:
   - Muhasebe için CSV/Excel export (Room Ledger / Guest Ledger gibi çıktılar).
 
+### Tamamlananlar (Mevcut Durum)
+- **API (Journal)**:
+  - ✅ Versioned route: `GET /api/v1.0/Journal/preview?invoiceId=...`, `POST /api/v1.0/Journal/post` (roles: Staff/Admin)
+  - ✅ Post guard’ları: aynı invoice için tekrar post engeli + debit/credit balance kontrolü
+- **Backend altyapı**:
+  - ✅ `IUnitOfWork` artık `JournalLines` repository’sini expose ediyor
+- **Frontend (Invoices)**:
+  - ✅ `InvoiceDetailPage` üzerinde “Journal Preview” butonu + satır/total gösteren dialog
+
 ## Sprint 4 (8+ hafta) — Operasyon, Entegrasyonlar, Ürünleşme
 
 ### Hedef

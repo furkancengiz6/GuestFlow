@@ -1,6 +1,7 @@
 using GuestFlow.Application.Models.Responses.Accounting;
 using GuestFlow.Domain.UnitOfWork;
 using GuestFlow.Domain.Entities.Core;
+using Microsoft.EntityFrameworkCore;
 
 namespace GuestFlow.Application.Operations.Accounting
 {
@@ -108,6 +109,14 @@ namespace GuestFlow.Application.Operations.Accounting
         {
             try
             {
+                // Idempotency guard: don't post twice for the same invoice.
+                var alreadyPosted = await _unitOfWork.JournalLines
+                    .GetAll(jl => jl.ReferenceId == request.InvoiceId)
+                    .AnyAsync();
+
+                if (alreadyPosted)
+                    return ApiResponse<bool>.Fail("Journal already posted for this invoice");
+
                 var invoice = await _unitOfWork.Invoices.GetByIdAsync(request.InvoiceId);
                 if (invoice == null) return ApiResponse<bool>.Fail("Invoice not found");
 
@@ -134,6 +143,9 @@ namespace GuestFlow.Application.Operations.Accounting
                     totalDebit += line.Debit;
                     totalCredit += line.Credit;
                 }
+
+                if (totalDebit != totalCredit)
+                    return ApiResponse<bool>.Fail($"Journal is not balanced (debit={totalDebit}, credit={totalCredit})");
 
                 journal.TotalDebit = totalDebit;
                 journal.TotalCredit = totalCredit;
