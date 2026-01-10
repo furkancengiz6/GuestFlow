@@ -146,6 +146,7 @@ const InvoiceDetailPage = () => {
     onSuccess: () => {
       setJournalPosted(true)
       notification.showSuccess('Journal başarıyla post edildi.')
+      queryClient.refetchQueries({ queryKey: ['invoice-detail', invoiceId] })
     },
     onError: (error: any) => {
       notification.showError(error?.response?.data?.message || 'Journal post edilemedi.')
@@ -281,6 +282,14 @@ const InvoiceDetailPage = () => {
               <Typography variant="h5" gutterBottom>
                 Fatura #{invoice.invoiceNumber}
               </Typography>
+              {(invoice as any).isJournalPosted && (
+                <Chip
+                  label="Journal Posted"
+                  color="success"
+                  size="small"
+                  sx={{ mr: 1 }}
+                />
+              )}
               {invoice.service && (
                 <Chip
                   label={getServiceTypeLabel(invoice.service.serviceType)}

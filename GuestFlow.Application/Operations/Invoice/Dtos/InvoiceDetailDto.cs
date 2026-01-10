@@ -26,6 +26,9 @@ namespace GuestFlow.Application.Operations.Invoice.Dtos
         public Dictionary<string, decimal>? PaidAmountByCurrency { get; set; }
         public Dictionary<string, decimal>? RemainingAmountByCurrency { get; set; }
 
+        // Accounting status (calculated from JournalLines.ReferenceId)
+        public bool IsJournalPosted { get; set; }
+
         // İlişkili Veriler
         public InvoiceGuestDto? Guest { get; set; }
         public InvoicePersonnelDto? Personnel { get; set; }
