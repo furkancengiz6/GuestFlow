@@ -40,6 +40,8 @@
   # Production migration
   dotnet ef database update --project GuestFlow.Persistence --environment Production
   ```
+  - [ ] **Migration drift check (recommended)**
+    - [ ] Deploy öncesi: `dotnet ef migrations has-pending-model-changes` ile “migration eksik mi?” kontrol edildi (CI gate mevcut).
 
 - [ ] **Initial Data Seeding**
   - [ ] Admin user created
@@ -243,7 +245,38 @@
   0 3 * * 0 /path/to/weekly-cleanup.sh  # Weekly cleanup
   ```
 
-### ✅ 8. Testing & Verification
+### ✅ 8. CI / Build Gates (Pre-Deployment)
+- [ ] **Dependency Vulnerability Checks**
+  - [ ] Backend: `dotnet list GuestFlow.sln package --vulnerable` (CI'da otomatik, PR'da fail eder)
+  - [ ] Frontend: `npm audit --audit-level=moderate` (CI'da otomatik, moderate+ bulursa fail eder)
+  - [ ] Yerel kontrol (opsiyonel):
+    ```bash
+    # Backend
+    dotnet list GuestFlow.sln package --vulnerable
+    
+    # Frontend
+    cd GuestFlow.Frontend
+    npm audit --audit-level=moderate
+    ```
+- [ ] **Migration Drift Check**
+  - [ ] CI'da otomatik: `dotnet ef migrations has-pending-model-changes` (migration eksikse fail eder)
+  - [ ] Deploy öncesi manuel kontrol (opsiyonel):
+    ```bash
+    dotnet ef migrations has-pending-model-changes --project GuestFlow.Persistence --startup-project GuestFlow.Api
+    ```
+
+### ✅ 9. Testing & Verification
+- [ ] **Staging E2E (Real Backend) — Smoke (Manual/Dispatch)**
+  - [ ] GitHub Actions: `Staging E2E (Playwright real backend)` workflow çalıştırıldı
+  - [ ] Gerekli secrets set edildi:
+    - [ ] `STAGING_FRONTEND_URL`
+    - [ ] `STAGING_API_BASE_URL`
+    - [ ] `STAGING_E2E_USER_EMAIL`
+    - [ ] `STAGING_E2E_USER_PASSWORD`
+  - [ ] Akışlar geçti:
+    - [ ] login → invoice detail → journal preview/post → export
+    - [ ] CRUD smoke (API): Guest create/update/delete
+
 - [ ] **API Endpoints**
   ```bash
   # Test all endpoints
@@ -272,7 +305,7 @@
   done
   ```
 
-### ✅ 9. Performance Optimization
+### ✅ 10. Performance Optimization
 - [ ] **Bundle Analysis**
   ```bash
   cd GuestFlow.Frontend
@@ -293,7 +326,7 @@
   ORDER BY qs.total_elapsed_time DESC;
   ```
 
-### ✅ 10. Go-Live Checklist
+### ✅ 11. Go-Live Checklist
 - [ ] **DNS Propagation**
   - [ ] DNS changes propagated globally
   - [ ] SSL certificates valid

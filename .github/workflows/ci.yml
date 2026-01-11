@@ -24,14 +24,24 @@ jobs:
       - name: Fail on vulnerable NuGet packages
         run: |
           set -euo pipefail
-          dotnet list GuestFlow.Api/GuestFlow.Api.csproj package --vulnerable | tee vulnerable.txt
+          # Check all projects in solution for vulnerable packages
+          dotnet list GuestFlow.sln package --vulnerable | tee vulnerable.txt
           if grep -q ">" vulnerable.txt; then
-            echo "Vulnerable packages detected. Please upgrade them before merging."
+            echo "❌ Vulnerable packages detected. Please upgrade them before merging."
+            cat vulnerable.txt
             exit 1
           fi
+          echo "✅ No vulnerable NuGet packages found."
+
+      - name: Fail if EF Core has pending model changes (missing migration)
+        env:
+          # Test-only secret (NOT a production secret); the app requires a minimum length.
+          JWT__SecretKey: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          RateLimitSettings__Enabled: "false"
+        run: dotnet ef migrations has-pending-model-changes --project GuestFlow.Persistence/GuestFlow.Persistence.csproj --startup-project GuestFlow.Api/GuestFlow.Api.csproj
 
       - name: Build
-        run: dotnet build GuestFlow.sln -c Release --no-restore
+        run: dotnet build GuestFlow.sln -c Release --no-restore /warnaserror
 
       - name: Test
         env:
@@ -113,3 +123,73 @@ jobs:
         env:
           CI: "true"
         run: npm run test:ci
+
+  frontend-build-production:
+    name: Frontend (Vite) production build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: GuestFlow.Frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: GuestFlow.Frontend/package-lock.json
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build (production)
+        env:
+          CI: "true"
+        run: npm run build:production
+
+      - name: Upload dist
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: GuestFlow.Frontend/dist
+
+  frontend-lint:
+    name: Frontend (ESLint) lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: GuestFlow.Frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: GuestFlow.Frontend/package-lock.json
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Lint
+        env:
+          CI: "true"
+        run: npm run lint
+
+      - name: Fail on vulnerable npm packages (moderate+)
+        env:
+          CI: "true"
+        run: |
+          set -euo pipefail
+          # npm audit --audit-level=moderate fails if moderate+ vulnerabilities found
+          if npm audit --audit-level=moderate; then
+            echo "✅ No moderate+ vulnerabilities found in npm packages."
+          else
+            echo "❌ Moderate+ vulnerabilities detected. Please run 'npm audit fix' or update packages."
+            exit 1
+          fi

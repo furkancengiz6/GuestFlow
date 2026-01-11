@@ -69,7 +69,8 @@ namespace GuestFlow.Persistence.Context
             // (InvoiceId is nullable for backward compatibility; multiple NULLs allowed.)
             modelBuilder.Entity<JournalEntry>()
                 .HasIndex(e => e.InvoiceId)
-                .IsUnique();
+                .IsUnique()
+                .HasFilter("[InvoiceId] IS NOT NULL");
 
             // Fluent API ile yapılandırmaları uyguluyoruz
             modelBuilder.ApplyConfiguration(new AirportConfiguration());
@@ -80,6 +81,7 @@ namespace GuestFlow.Persistence.Context
             modelBuilder.ApplyConfiguration(new DailyRevenueConfiguration());
             modelBuilder.ApplyConfiguration(new GuestConfiguration());
             modelBuilder.ApplyConfiguration(new InvoicesConfiguration());
+            modelBuilder.ApplyConfiguration(new InvoiceItemConfiguration());
             modelBuilder.ApplyConfiguration(new PersonnelConfiguration());
             modelBuilder.ApplyConfiguration(new TransferConfiguration());
             modelBuilder.ApplyConfiguration(new VehicleConfiguration());
@@ -106,7 +108,13 @@ namespace GuestFlow.Persistence.Context
             modelBuilder.Entity<SettingEntity>().HasData(new SettingEntity
             {
                 Id = 1,
-                MainteneceMode = false
+                MainteneceMode = false,
+                // IMPORTANT: keep seed deterministic; BaseEntity constructor sets CreatedDate=UtcNow.
+                CreatedDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                IsDeleted = false,
+                CreatedByPersonnelId = null,
+                UpdatedByPersonnelId = null,
+                UpdatedDate = null
             }
 
 
