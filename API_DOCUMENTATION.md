@@ -4,9 +4,11 @@
 
 GuestFlow API, otel ve seyahat operasyonlarını yönetmek için geliştirilmiş kapsamlı bir REST API'dir.
 
-- **Base URL**: `https://api.guestflow.com/api/v1.0`
+- **Base URL (Production örnek)**: `https://api.guestflow.com/api/v1.0`
+- **Base URL (Local örnek)**: `http://localhost:5146/api/v1.0`
 - **Authentication**: JWT Bearer Token
-- **Rate Limit**: 100 requests/minute (authenticated), 10 requests/minute (unauthenticated)
+- **Token Refresh**: Refresh token **HttpOnly cookie** üzerinden; frontend `withCredentials=true` kullanır.
+- **Rate Limit**: Ortama göre değişebilir (dev/test bypass olabilir)
 - **Version**: API Versioning with URL versioning
 
 ## 🔐 Authentication
@@ -27,16 +29,7 @@ Content-Type: application/json
 {
   "success": true,
   "data": {
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "refreshToken": "refresh-token-here",
-    "expiresIn": 2700,
-    "user": {
-      "id": 1,
-      "email": "admin@guestflow.com",
-      "firstName": "Admin",
-      "lastName": "User",
-      "role": "Admin"
-    }
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   }
 }
 ```
@@ -44,19 +37,20 @@ Content-Type: application/json
 ### Token Refresh
 ```http
 POST /api/v1.0/auth/refresh-token
-Authorization: Bearer <your-token>
 Content-Type: application/json
 
 {
-  "refreshToken": "your-refresh-token"
+  "refreshToken": "optional-if-not-using-cookie"
 }
 ```
+
+> Not: Uygulama akışında refresh token çoğunlukla **cookie** ile taşınır. Bu yüzden bazı istemcilerde body boş olabilir.
 
 ## 👥 Misafir Yönetimi (Guests)
 
 ### Misafir Listesi
 ```http
-GET /api/guests?page=1&pageSize=10&search=john&sortBy=firstName&sortOrder=asc
+GET /api/v1.0/guests?pageNumber=1&pageSize=10&searchTerm=john&sortOrder=asc
 Authorization: Bearer <token>
 ```
 

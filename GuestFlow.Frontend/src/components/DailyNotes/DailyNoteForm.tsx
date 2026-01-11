@@ -11,10 +11,6 @@ import {
   Button,
   Box,
 } from '@mui/material'
-import { DatePicker } from '@mui/x-date-pickers/DatePicker'
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
-import { tr } from 'date-fns/locale'
 import { DailyNote, CreateDailyNoteRequest, UpdateDailyNoteRequest } from '../../services/dailyNoteService'
 import { dropdownService } from '../../services/dropdownService'
 import { useQuery } from '@tanstack/react-query'

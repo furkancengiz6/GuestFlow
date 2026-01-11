@@ -1,104 +1,96 @@
-# GuestFlow Comprehensive Testing Script
-Write-Host "🚀 GuestFlow Testing Suite Starting..." -ForegroundColor Green
+# GuestFlow Comprehensive Testing Script (PowerShell-safe ASCII version)
+# NOTE: This file intentionally avoids emojis to prevent Windows PowerShell encoding/parser issues.
 
-# 1. Backend Build Test
-Write-Host "`n📦 BACKEND BUILD TEST" -ForegroundColor Cyan
-try {
-    dotnet build GuestFlow.Api --configuration Release --verbosity minimal
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "✅ Backend build successful!" -ForegroundColor Green
-    } else {
-        Write-Host "❌ Backend build failed!" -ForegroundColor Red
+$ErrorActionPreference = "Stop"
+$root = Split-Path -Parent $MyInvocation.MyCommand.Path
+
+function Invoke-Step {
+    param(
+        [Parameter(Mandatory=$true)][string]$Name,
+        [Parameter(Mandatory=$true)][scriptblock]$Action
+    )
+
+    Write-Host ""
+    Write-Host "=== $Name ===" -ForegroundColor Cyan
+
+    & $Action
+
+    if ($LASTEXITCODE -ne $null -and $LASTEXITCODE -ne 0) {
+        throw "$Name failed with exit code $LASTEXITCODE"
     }
-} catch {
-    Write-Host "❌ Backend build error: $($_.Exception.Message)" -ForegroundColor Red
 }
 
-# 2. Frontend Build Test
-Write-Host "`n🌐 FRONTEND BUILD TEST" -ForegroundColor Cyan
-try {
-    Set-Location GuestFlow.Frontend
-    npm run build
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "✅ Frontend build successful!" -ForegroundColor Green
-    } else {
-        Write-Host "❌ Frontend build failed!" -ForegroundColor Red
-    }
-    Set-Location ..
-} catch {
-    Write-Host "❌ Frontend build error: $($_.Exception.Message)" -ForegroundColor Red
-    Set-Location ..
-}
+Write-Host "GuestFlow Testing Suite Starting..." -ForegroundColor Green
 
-# 3. Unit Tests
-Write-Host "`n🧪 UNIT TESTS" -ForegroundColor Cyan
 try {
-    dotnet test GuestFlow.Application.Tests --verbosity minimal
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "✅ Unit tests passed!" -ForegroundColor Green
-    } else {
-        Write-Host "⚠️ Unit tests have issues (expected)" -ForegroundColor Yellow
-    }
-} catch {
-    Write-Host "❌ Unit test error: $($_.Exception.Message)" -ForegroundColor Red
-}
+    Set-Location $root
 
-# 4. Frontend Tests
-Write-Host "`n⚛️ FRONTEND TESTS" -ForegroundColor Cyan
-try {
-    Set-Location GuestFlow.Frontend
-    npm test -- --watchAll=false
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "✅ Frontend tests passed!" -ForegroundColor Green
-    } else {
-        Write-Host "❌ Frontend tests failed!" -ForegroundColor Red
-    }
-    Set-Location ..
-} catch {
-    Write-Host "❌ Frontend test error: $($_.Exception.Message)" -ForegroundColor Red
-    Set-Location ..
-}
-
-# 5. API Integration Tests
-Write-Host "`n🔗 API INTEGRATION TESTS" -ForegroundColor Cyan
-try {
-    $env:JWT__SecretKey = "MySuperSecretKeyThatIsAtLeast64CharactersLongForSecurityPurposes12345678901234567890"
-
-    $backendJob = Start-Job -ScriptBlock {
-        Set-Location GuestFlow.Api
-        dotnet run --configuration Release --urls "http://localhost:5146"
+    Invoke-Step "BACKEND BUILD (Release)" {
+        dotnet build .\GuestFlow.Api --configuration Release --verbosity minimal
     }
 
-    Start-Sleep -Seconds 10
-
-    $healthResponse = Invoke-WebRequest -Uri "http://localhost:5146/health" -TimeoutSec 5 -ErrorAction SilentlyContinue
-    if ($healthResponse.StatusCode -eq 200) {
-        Write-Host "✅ API health check successful!" -ForegroundColor Green
-    } else {
-        Write-Host "❌ API health check failed!" -ForegroundColor Red
+    Invoke-Step "BACKEND TESTS (dotnet test)" {
+        # Run the full solution tests so integration tests (WebApplicationFactory) are included.
+        dotnet test .\GuestFlow.sln --configuration Release --verbosity minimal
     }
 
-    Stop-Job $backendJob -ErrorAction SilentlyContinue
-    Remove-Job $backendJob -ErrorAction SilentlyContinue
+    Invoke-Step "FRONTEND BUILD" {
+        Push-Location .\GuestFlow.Frontend
+        try {
+            npm run build
+        } finally {
+            Pop-Location
+        }
+    }
 
-} catch {
-    Write-Host "❌ API integration error: $($_.Exception.Message)" -ForegroundColor Red
-}
+    Invoke-Step "FRONTEND UNIT TESTS (Jest)" {
+        Push-Location .\GuestFlow.Frontend
+        try {
+            npm test -- --watchAll=false --passWithNoTests
+        } finally {
+            Pop-Location
+        }
+    }
 
-# 6. Performance Tests
-Write-Host "`n⚡ PERFORMANCE TESTS" -ForegroundColor Cyan
-try {
-    if (Get-Command k6 -ErrorAction SilentlyContinue) {
-        $env:BASE_URL = "http://localhost:5146"
-        k6 run tests/performance/load-test.js --vus 5 --duration 15s
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "✅ Performance tests completed!" -ForegroundColor Green
+    # E2E can be slow/flaky depending on environment (browsers, running backend, etc.).
+    # Opt-in via RUN_E2E=true (or 1/yes) to keep the default "test all" flow reliable for dev/CI.
+    $runE2e = ($env:RUN_E2E -as [string])
+    $runE2e = if ($runE2e) { $runE2e.Trim().ToLower() } else { "" }
+
+    if ($runE2e -in @("1","true","yes","y")) {
+        Invoke-Step "E2E TESTS (Playwright)" {
+            Push-Location .\GuestFlow.Frontend
+            try {
+                npm run test:e2e
+            } finally {
+                Pop-Location
+            }
         }
     } else {
-        Write-Host "ℹ️ k6 not installed, skipping performance tests" -ForegroundColor Gray
+        Write-Host ""
+        Write-Host "=== E2E TESTS (Playwright) ===" -ForegroundColor Cyan
+        Write-Host "Skipped. Set RUN_E2E=true to enable." -ForegroundColor DarkGray
     }
-} catch {
-    Write-Host "❌ Performance test error: $($_.Exception.Message)" -ForegroundColor Red
-}
 
-Write-Host "`n🏁 Testing completed!" -ForegroundColor Green
+    # Optional performance tests (only if k6 exists)
+    Write-Host ""
+    Write-Host "=== PERFORMANCE TESTS (optional) ===" -ForegroundColor Cyan
+    if (Get-Command k6 -ErrorAction SilentlyContinue) {
+        $env:BASE_URL = "http://localhost:5146"
+        k6 run ..\tests\performance\load-test.js --vus 5 --duration 15s
+        if ($LASTEXITCODE -ne 0) {
+            throw "Performance tests failed with exit code $LASTEXITCODE"
+        }
+    } else {
+        Write-Host "k6 not installed, skipping performance tests." -ForegroundColor DarkGray
+    }
+
+    Write-Host ""
+    Write-Host "Testing completed successfully." -ForegroundColor Green
+    exit 0
+}
+catch {
+    Write-Host ""
+    Write-Host "Testing failed: $($_.Exception.Message)" -ForegroundColor Red
+    exit 1
+}

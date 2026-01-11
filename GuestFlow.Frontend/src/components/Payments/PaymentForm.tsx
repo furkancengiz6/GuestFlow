@@ -65,7 +65,6 @@ const PaymentForm = ({ open, onClose, onSubmit, preselectedService, isLoading = 
     formState: { errors, isSubmitting },
     reset,
     setValue,
-    watch,
   } = useForm<PaymentFormData>({
     resolver: zodResolver(paymentSchema),
     defaultValues: {

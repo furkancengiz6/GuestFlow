@@ -54,7 +54,9 @@ class EnhancedErrorBoundary extends Component<Props, State> {
       if (typeof window !== 'undefined' && window.localStorage) {
         window.localStorage.removeItem('E2E_LAST_ERROR')
       }
-    } catch {}
+    } catch {
+      // ignore storage errors
+    }
     this.setState({ error: null, errorInfo: null })
   }
 

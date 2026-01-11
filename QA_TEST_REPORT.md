@@ -1,6 +1,6 @@
 # GuestFlow API - QA Test Raporu
 
-**Test Tarihi**: 2024-12-06  
+**Test Tarihi**: 2026-01-11  
 **Test Versiyonu**: 1.0  
 **Test Ortamı**: Development (Local)
 
@@ -8,14 +8,29 @@
 
 ## 📋 Test Özeti
 
+### Hızlı Çalıştırma (Reproduce)
+
+```powershell
+cd C:\GuestFlow
+.\run-tests.bat
+```
+
+E2E dahil:
+
+```powershell
+cd C:\GuestFlow
+$env:RUN_E2E="true"
+.\test-all.ps1
+```
+
 | Kategori | Durum | Açıklama |
 |----------|-------|----------|
-| **Build** | ✅ | Proje başarıyla derleniyor (sadece warning'ler var) |
+| **Build** | ✅ | Backend + Frontend başarıyla derleniyor (warning’ler var) |
 | **Veritabanı** | ✅ | Migration'lar başarıyla uygulandı |
 | **Configuration** | ✅ | Tüm yapılandırmalar doğru |
-| **API Endpoints** | ⚠️ | Manuel test gerekiyor |
-| **Authentication** | ⚠️ | Manuel test gerekiyor |
-| **Integration** | ⚠️ | Manuel test gerekiyor |
+| **API Endpoints** | ⚠️ | Kritik akışlar otomasyon ile smoke edildi; geri kalanlar için manuel/ek otomasyon önerilir |
+| **Authentication** | ✅ | Auth + role enforcement entegrasyon testleri mevcut |
+| **Integration** | ✅ | .NET integration test suite + Playwright smoke mevcut |
 
 ---
 
@@ -112,7 +127,7 @@ Aşağıdaki tablolar veritabanında mevcut:
 
 ---
 
-## ⚠️ 4. API Endpoint Test (Manuel Test Gerekiyor)
+## ⚠️ 4. API Endpoint Test (Manuel + Otomasyon Hibrit)
 
 ### Test Portları
 - **HTTP**: `http://localhost:5145`
@@ -126,8 +141,8 @@ Aşağıdaki tablolar veritabanında mevcut:
 POST /api/v1.0/auth/login
 POST /api/v1.0/auth/register
 POST /api/v1.0/auth/refresh-token
-POST /api/auth/logout
-GET  /api/auth/user-info
+POST /api/v1.0/auth/revoke-token
+GET  /api/v1.0/auth/me
 ```
 
 **Test Adımları**:
@@ -139,11 +154,11 @@ GET  /api/auth/user-info
 
 #### 4.2 Guest Management
 ```
-GET    /api/guests
-GET    /api/guests/{id}
-POST   /api/guests
-PUT    /api/guests/{id}
-DELETE /api/guests/{id}
+GET    /api/v1.0/guests
+GET    /api/v1.0/guests/{id}
+POST   /api/v1.0/guests
+PUT    /api/v1.0/guests/{id}
+DELETE /api/v1.0/guests/{id}
 ```
 
 **Test Adımları**:
@@ -154,11 +169,11 @@ DELETE /api/guests/{id}
 
 #### 4.3 Transfer Management
 ```
-GET    /api/transfers
-GET    /api/transfers/{id}
-POST   /api/transfers
-PUT    /api/transfers/{id}
-DELETE /api/transfers/{id}
+GET    /api/v1.0/transfers
+GET    /api/v1.0/transfers/{id}
+POST   /api/v1.0/transfers
+PUT    /api/v1.0/transfers/{id}
+DELETE /api/v1.0/transfers/{id}
 ```
 
 **Test Adımları**:
@@ -169,10 +184,11 @@ DELETE /api/transfers/{id}
 
 #### 4.4 Invoice Management
 ```
-GET    /api/invoices
-GET    /api/invoices/{id}
-POST   /api/invoices
-GET    /api/invoices/{id}/pdf
+GET    /api/v1.0/invoices
+GET    /api/v1.0/invoices/{id}
+POST   /api/v1.0/invoices
+GET    /api/v1.0/invoices/{id}/detail
+POST   /api/v1.0/invoices/{id}/generate-pdf
 ```
 
 **Test Adımları**:
@@ -182,11 +198,11 @@ GET    /api/invoices/{id}/pdf
 
 #### 4.5 Reservation Management
 ```
-GET    /api/reservations
-GET    /api/reservations/{id}
-POST   /api/reservations
-PUT    /api/reservations/{id}
-DELETE /api/reservations/{id}
+GET    /api/v1.0/reservations
+GET    /api/v1.0/reservations/{id}
+POST   /api/v1.0/reservations
+PUT    /api/v1.0/reservations/{id}
+DELETE /api/v1.0/reservations/{id}
 ```
 
 **Test Adımları**:
@@ -197,10 +213,10 @@ DELETE /api/reservations/{id}
 
 #### 4.6 Payment Management
 ```
-GET    /api/payments
-GET    /api/payments/{id}
-POST   /api/payments
-PUT    /api/payments/{id}
+GET    /api/v1.0/payments
+GET    /api/v1.0/payments/{id}
+POST   /api/v1.0/payments
+PUT    /api/v1.0/payments/{id}
 ```
 
 **Test Adımları**:
@@ -210,10 +226,10 @@ PUT    /api/payments/{id}
 
 #### 4.7 Email Management
 ```
-GET    /api/emails/queue
-GET    /api/emails/history
-POST   /api/emails/send
-GET    /api/emails/templates
+GET    /api/v1.0/emails/queue
+GET    /api/v1.0/emails/history
+POST   /api/v1.0/emails/send
+GET    /api/v1.0/emails/templates
 ```
 
 **Test Adımları**:
@@ -224,8 +240,8 @@ GET    /api/emails/templates
 
 #### 4.8 SMS Management
 ```
-GET    /api/sms/history
-POST   /api/sms/send
+GET    /api/v1.0/sms/history
+POST   /api/v1.0/sms/send
 ```
 
 **Test Adımları**:

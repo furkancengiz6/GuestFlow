@@ -30,7 +30,6 @@ export const LazyImage = ({
   const [imageSrc, setImageSrc] = useState<string>(placeholder || '')
   const [isLoaded, setIsLoaded] = useState(false)
   const [isInView, setIsInView] = useState(false)
-  const [hasError, setHasError] = useState(false)
   const imgRef = useRef<HTMLImageElement>(null)
 
   useEffect(() => {
@@ -66,7 +65,6 @@ export const LazyImage = ({
         setIsLoaded(true)
       }
       img.onerror = () => {
-        setHasError(true)
         setImageSrc(errorPlaceholder)
         setIsLoaded(true)
       }

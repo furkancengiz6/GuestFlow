@@ -13,6 +13,16 @@ namespace GuestFlow.Application.Operations.Invoice.Dtos
         public int InvoiceNumber { get; set; }
         public DateTime IssueDate { get; set; }
         public decimal TotalAmount { get; set; }
+
+        /// <summary>
+        /// VAT total snapshot derived from invoice items (VAT-inclusive pricing).
+        /// </summary>
+        public decimal VatTotal { get; set; }
+
+        /// <summary>
+        /// Net amount derived from TotalAmount - VatTotal (VAT-inclusive pricing).
+        /// </summary>
+        public decimal NetTotal { get; set; }
         public string Currency { get; set; } = string.Empty;
         public string? Notes { get; set; }
         public string PdfUrl { get; set; } = string.Empty;

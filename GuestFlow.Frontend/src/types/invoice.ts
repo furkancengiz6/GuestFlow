@@ -71,6 +71,8 @@ export interface InvoiceDetail {
   invoiceNumber: number
   issueDate: string
   totalAmount: number
+  vatTotal?: number
+  netTotal?: number
   currency: string
   notes?: string
   pdfUrl: string

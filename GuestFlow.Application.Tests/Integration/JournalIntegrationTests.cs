@@ -73,6 +73,8 @@ public sealed class JournalIntegrationTests : IClassFixture<TestWebApplicationFa
                     ServiceType = "Transfer",
                     ServiceId = 1,
                     Amount = 100m,
+                    VatRate = 0.20m,
+                    VatAmount = 16.67m,
                     Currency = "TRY",
                     Notes = "t1"
                 },
@@ -82,6 +84,8 @@ public sealed class JournalIntegrationTests : IClassFixture<TestWebApplicationFa
                     ServiceType = "CityTour",
                     ServiceId = 2,
                     Amount = 200m,
+                    VatRate = 0.20m,
+                    VatAmount = 33.33m,
                     Currency = "TRY",
                     Notes = "c2"
                 }
@@ -102,6 +106,14 @@ public sealed class JournalIntegrationTests : IClassFixture<TestWebApplicationFa
         previewData.GetProperty("invoiceId").GetInt32().Should().Be(invoiceId);
         previewData.GetProperty("totalDebit").GetDecimal().Should().Be(previewData.GetProperty("totalCredit").GetDecimal());
         previewData.GetProperty("lines").GetArrayLength().Should().BeGreaterThan(0);
+
+        // Assert: VAT line exists and matches seeded VAT total
+        previewData.GetProperty("lines")
+            .EnumerateArray()
+            .Any(l =>
+                l.GetProperty("accountCode").GetString() == "3910" &&
+                l.GetProperty("credit").GetDecimal() == 50.00m)
+            .Should().BeTrue("VAT payable line (3910) should be generated from invoice item VAT amounts");
 
         // Build post payload from preview lines
         var postingDate = DateTime.UtcNow.ToString("yyyy-MM-dd");

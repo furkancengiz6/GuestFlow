@@ -7,7 +7,6 @@ import {
   Box,
   Typography,
   CircularProgress,
-  Paper,
   Tooltip,
 } from '@mui/material'
 import {

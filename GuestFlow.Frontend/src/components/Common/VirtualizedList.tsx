@@ -1,4 +1,4 @@
-import { useMemo, useRef, useEffect, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Box, List, ListItem, ListItemProps } from '@mui/material'
 
 interface VirtualizedListProps<T> {

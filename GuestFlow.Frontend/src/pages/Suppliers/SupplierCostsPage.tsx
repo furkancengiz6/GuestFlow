@@ -17,7 +17,7 @@ import {
   Checkbox,
   FormControlLabel
 } from '@mui/material';
-import supplierCostService, {
+import {
   getAllSupplierCosts,
   createSupplierCost,
   updateSupplierCost,

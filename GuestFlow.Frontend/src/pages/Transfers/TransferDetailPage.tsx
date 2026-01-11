@@ -15,8 +15,6 @@ import {
   ArrowBack as ArrowBackIcon,
   Person as PersonIcon,
   DirectionsCar as DirectionsCarIcon,
-  FlightTakeoff as FlightTakeoffIcon,
-  LocationOn as LocationOnIcon,
   Edit as EditIcon,
   Receipt as ReceiptIcon,
   Email as EmailIcon,

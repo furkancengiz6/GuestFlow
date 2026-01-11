@@ -10,12 +10,15 @@
 - Image optimizasyonu eksik
 - Caching stratejisi temel seviyede
 
-**Güvenlik Açıkları:**
-- ❌ Input sanitization (XSS koruması) - YOK
-- ❌ Audit logging (detaylı işlem kayıtları) - YOK
-- ⚠️ Security headers - Temel CSP var ama yetersiz
-- ⚠️ Rate limiting - Var ama gelişmiş değil
-- ❌ SQL injection koruması - Sadece EF Core parametreli sorgular
+**Güvenlik Notu (Güncel Durum)**
+
+Bu dokümanın bazı kısımları tarihsel analiz niteliğindedir. Kod tabanında artık:
+- ✅ Input sanitization (XSS koruması) mevcut (`HtmlSanitization` middleware)
+- ✅ Audit logging mevcut (EF interceptor)
+- ✅ Security headers mevcut (CSP dahil)
+- ✅ Rate limiting mevcut (dev/test bypass olabilir)
+
+Güncel “source of truth” için: `ROADMAP.md`, `QA_TEST_REPORT.md` ve `IMPLEMENTATION_SUMMARY.md`.
 
 ---
 

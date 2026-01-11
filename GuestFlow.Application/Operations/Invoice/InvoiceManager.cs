@@ -13,6 +13,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -195,6 +196,38 @@ namespace GuestFlow.Application.Operations.Invoice
             }
         }
 
+        private decimal GetVatRateForServiceType(string? serviceType)
+        {
+            var key = (serviceType ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(key)) key = "default";
+
+            var byType = _configuration[$"Accounting:Journal:VatRateByServiceType:{key}"]
+                         ?? _configuration[$"Accounting:Journal:VatRateByServiceType:{key.ToLowerInvariant()}"];
+
+            if (!string.IsNullOrWhiteSpace(byType) &&
+                decimal.TryParse(byType, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsedByType) &&
+                parsedByType >= 0m)
+                return parsedByType;
+
+            var def = _configuration["Accounting:Journal:DefaultVatRate"];
+            if (!string.IsNullOrWhiteSpace(def) &&
+                decimal.TryParse(def, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsedDef) &&
+                parsedDef >= 0m)
+                return parsedDef;
+
+            return 0m;
+        }
+
+        private static decimal CalculateVatAmountFromVatInclusiveGross(decimal gross, decimal vatRate)
+        {
+            if (gross <= 0m) return 0m;
+            if (vatRate <= 0m) return 0m;
+
+            // For VAT-inclusive pricing: VAT portion = gross * rate / (1 + rate)
+            var vat = gross * vatRate / (1m + vatRate);
+            return Math.Round(vat, 2, MidpointRounding.AwayFromZero);
+        }
+
         public async Task<string> GeneratePdfForInvoiceAsync(int invoiceId)
         {
             try
@@ -280,6 +313,15 @@ namespace GuestFlow.Application.Operations.Invoice
                     throw new Exception("Fatura bulunamadı.");
 
                 var detail = _mapper.Map<InvoiceDetailDto>(invoice);
+
+                // VAT totals (VAT-inclusive amounts on items)
+                var vatTotal = invoice.InvoiceItems?.Sum(ii => ii.VatAmount) ?? 0m;
+                if (vatTotal < 0m) vatTotal = 0m;
+
+                detail.VatTotal = vatTotal;
+
+                var net = detail.TotalAmount - vatTotal;
+                detail.NetTotal = net < 0m ? 0m : net;
 
                 // Accounting: find latest posted journal entry referencing this invoice (via JournalLine.ReferenceId).
                 var latestJournalLine = await _unitOfWork.JournalLines
@@ -658,12 +700,17 @@ GuestFlow Ekibi";
                 // Create invoice items
                 foreach (var service in eligibleServices)
                 {
+                    var vatRate = GetVatRateForServiceType(service.ServiceType);
+                    var vatAmount = CalculateVatAmountFromVatInclusiveGross(service.Amount, vatRate);
+
                     var invoiceItem = new InvoiceItemEntity
                     {
                         InvoiceId = invoice.Id,
                         ServiceType = service.ServiceType,
                         ServiceId = service.ServiceId,
                         Amount = service.Amount,
+                        VatRate = vatRate,
+                        VatAmount = vatAmount,
                         Currency = service.Currency,
                         Notes = $"Service: {service.ServiceDescription}",
                         CreatedDate = DateTime.UtcNow

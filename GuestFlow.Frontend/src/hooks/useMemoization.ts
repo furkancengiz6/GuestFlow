@@ -1,48 +1,15 @@
-import { useMemo, useCallback, DependencyList } from 'react'
-
-/**
- * Custom hook for memoization utilities
- */
-export const useMemoization = () => {
-  /**
-   * Memoize a callback function
-   */
-  const memoizeCallback = useCallback(
-    <T extends (...args: any[]) => any>(callback: T, deps: DependencyList): T => {
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      return useCallback(callback, deps) as T
-    },
-    []
-  )
-
-  /**
-   * Memoize a computed value
-   */
-  const memoizeValue = useCallback(
-    <T>(factory: () => T, deps: DependencyList): T => {
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      return useMemo(factory, deps)
-    },
-    []
-  )
-
-  return {
-    memoizeCallback,
-    memoizeValue,
-  }
-}
+import { useMemo } from 'react'
 
 /**
  * Hook for memoizing expensive array operations
  */
 export const useMemoizedArray = <T>(
   array: T[],
-  transformFn?: (arr: T[]) => T[],
-  deps: DependencyList = [array]
+  transformFn?: (arr: T[]) => T[]
 ): T[] => {
   return useMemo(() => {
     return transformFn ? transformFn(array) : array
-  }, deps)
+  }, [array, transformFn])
 }
 
 /**
@@ -50,12 +17,11 @@ export const useMemoizedArray = <T>(
  */
 export const useMemoizedFilter = <T>(
   items: T[],
-  filterFn: (item: T) => boolean,
-  deps: DependencyList = [items]
+  filterFn: (item: T) => boolean
 ): T[] => {
   return useMemo(() => {
     return items.filter(filterFn)
-  }, deps)
+  }, [items, filterFn])
 }
 
 /**
@@ -63,13 +29,12 @@ export const useMemoizedFilter = <T>(
  */
 export const useMemoizedSort = <T>(
   items: T[],
-  sortFn?: (a: T, b: T) => number,
-  deps: DependencyList = [items]
+  sortFn?: (a: T, b: T) => number
 ): T[] => {
   return useMemo(() => {
     if (!sortFn) return items
     return [...items].sort(sortFn)
-  }, deps)
+  }, [items, sortFn])
 }
 
 /**
@@ -78,8 +43,7 @@ export const useMemoizedSort = <T>(
 export const useMemoizedPagination = <T>(
   items: T[],
   page: number,
-  pageSize: number,
-  deps: DependencyList = [items, page, pageSize]
+  pageSize: number
 ) => {
   return useMemo(() => {
     const startIndex = (page - 1) * pageSize
@@ -89,6 +53,6 @@ export const useMemoizedPagination = <T>(
       totalPages: Math.ceil(items.length / pageSize),
       totalCount: items.length,
     }
-  }, deps)
+  }, [items, page, pageSize])
 }
 

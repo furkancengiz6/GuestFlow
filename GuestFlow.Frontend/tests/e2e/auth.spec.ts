@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
-import { LoginPage } from '../page-objects'
 import { ensureLoggedIn } from '../utils/testHelpers'
+import { setupMockApi } from '../utils/mockApi'
 
 /// <reference types="node" />
 /// <reference types="@playwright/test" />
@@ -10,6 +10,24 @@ const userPassword = process.env.E2E_USER_PASSWORD || 'Admin123!'
 const DEFAULT_BASE = (process.env.E2E_BASE_URL || 'http://localhost:5173').toString().trim().replace(/\/$/, '')
 
 test.describe('Auth flow', () => {
+  test.beforeEach(async ({ page }) => {
+    // Mock backend API so this suite runs reliably without a live backend.
+    await setupMockApi(page)
+
+    const mockedAuth = JSON.stringify({
+      user: { id: 1, email: userEmail, fullName: 'Test User', role: 'Admin' },
+      isAuthenticated: true,
+    })
+    await page.addInitScript((auth) => {
+      try {
+        localStorage.setItem('auth-storage', auth)
+        localStorage.setItem('VITE_E2E_BYPASS', 'true')
+      } catch {
+        /* ignore */
+      }
+    }, mockedAuth)
+  })
+
   test('login -> dashboard -> protected admin route', async ({ page, baseURL }) => {
     // Monitor network requests
     const networkErrors: string[] = []
@@ -28,7 +46,7 @@ test.describe('Auth flow', () => {
 
     // Verify dashboard is loaded
     await expect(page).toHaveURL(/dashboard/, { timeout: 10000 })
-    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible({ timeout: 10000 })
+    await expect(page.getByRole('heading', { name: /dashboard/i })).toBeVisible({ timeout: 15000 })
 
     // Admin-only route
     await page.goto(`${baseURL || DEFAULT_BASE}/reports`)

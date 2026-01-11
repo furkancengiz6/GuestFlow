@@ -25,6 +25,7 @@ namespace GuestFlow.Application.Operations.Export
         private readonly IRepository<InvoicesEntity> _invoiceRepository;
         private readonly IRepository<TransferEntity> _transferRepository;
         private readonly IRepository<DailyRevenueEntity> _dailyRevenueRepository;
+        private readonly IRepository<JournalEntry> _journalEntryRepository;
         private readonly IReportsService _reportsService;
         private readonly ILogger<ExportService> _logger;
 
@@ -33,6 +34,7 @@ namespace GuestFlow.Application.Operations.Export
             IRepository<InvoicesEntity> invoiceRepository,
             IRepository<TransferEntity> transferRepository,
             IRepository<DailyRevenueEntity> dailyRevenueRepository,
+            IRepository<JournalEntry> journalEntryRepository,
             IReportsService reportsService,
             ILogger<ExportService> logger)
         {
@@ -40,6 +42,7 @@ namespace GuestFlow.Application.Operations.Export
             _invoiceRepository = invoiceRepository;
             _transferRepository = transferRepository;
             _dailyRevenueRepository = dailyRevenueRepository;
+            _journalEntryRepository = journalEntryRepository;
             _reportsService = reportsService;
             _logger = logger;
         }
@@ -528,6 +531,180 @@ namespace GuestFlow.Application.Operations.Export
                 {
                     IsSuccess = false,
                     ErrorMessage = $"CSV'ye aktarılırken hata: {ex.Message}"
+                };
+            }
+        }
+
+        public async Task<ExportResult> ExportJournalToCsvAsync(DateTime? startDate = null, DateTime? endDate = null)
+        {
+            try
+            {
+                var query = _journalEntryRepository.GetAll(x => !x.IsDeleted)
+                    .Include(j => j.Lines)
+                    .AsQueryable();
+
+                if (startDate.HasValue)
+                {
+                    var start = startDate.Value.Date;
+                    query = query.Where(j => j.PostingDate >= start);
+                }
+
+                if (endDate.HasValue)
+                {
+                    // inclusive end-of-day by using < next day
+                    var endExclusive = endDate.Value.Date.AddDays(1);
+                    query = query.Where(j => j.PostingDate < endExclusive);
+                }
+
+                var journals = await query
+                    .OrderByDescending(j => j.PostingDate)
+                    .ThenByDescending(j => j.Id)
+                    .ToListAsync();
+
+                var csv = new StringBuilder();
+                csv.AppendLine("JournalEntryId,InvoiceId,PostingDate,Currency,Description,TotalDebit,TotalCredit,CreatedBy,LineAccountCode,LineDebit,LineCredit,LineDescription");
+
+                foreach (var je in journals)
+                {
+                    var lines = je.Lines?.Any() == true ? je.Lines : new List<JournalLine> { new JournalLine() };
+
+                    foreach (var line in lines)
+                    {
+                        csv.AppendLine(
+                            $"{je.Id}," +
+                            $"{(je.InvoiceId?.ToString() ?? string.Empty)}," +
+                            $"{je.PostingDate:yyyy-MM-dd}," +
+                            $"{EscapeCsvValue(je.Currency)}," +
+                            $"{EscapeCsvValue(je.Description)}," +
+                            $"{je.TotalDebit}," +
+                            $"{je.TotalCredit}," +
+                            $"{EscapeCsvValue(je.CreatedBy)}," +
+                            $"{EscapeCsvValue(line.AccountCode)}," +
+                            $"{line.Debit}," +
+                            $"{line.Credit}," +
+                            $"{EscapeCsvValue(line.Description)}"
+                        );
+                    }
+                }
+
+                var stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture);
+                var range = $"{startDate?.ToString("yyyyMMdd") ?? "ALL"}_{endDate?.ToString("yyyyMMdd") ?? "ALL"}";
+                var fileName = $"Journal_{range}_{stamp}.csv";
+                var content = Encoding.UTF8.GetBytes(csv.ToString());
+
+                return new ExportResult
+                {
+                    FileContent = content,
+                    FileName = fileName,
+                    ContentType = "text/csv; charset=utf-8",
+                    IsSuccess = true
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Journal CSV'ye aktarılırken hata: {ex.Message}");
+                return new ExportResult
+                {
+                    IsSuccess = false,
+                    ErrorMessage = $"CSV'ye aktarılırken hata: {ex.Message}"
+                };
+            }
+        }
+
+        public async Task<ExportResult> ExportJournalToExcelAsync(DateTime? startDate = null, DateTime? endDate = null)
+        {
+            try
+            {
+                var query = _journalEntryRepository.GetAll(x => !x.IsDeleted)
+                    .Include(j => j.Lines)
+                    .AsQueryable();
+
+                if (startDate.HasValue)
+                {
+                    var start = startDate.Value.Date;
+                    query = query.Where(j => j.PostingDate >= start);
+                }
+
+                if (endDate.HasValue)
+                {
+                    var endExclusive = endDate.Value.Date.AddDays(1);
+                    query = query.Where(j => j.PostingDate < endExclusive);
+                }
+
+                var journals = await query
+                    .OrderByDescending(j => j.PostingDate)
+                    .ThenByDescending(j => j.Id)
+                    .ToListAsync();
+
+                using var workbook = new XLWorkbook();
+                var worksheet = workbook.Worksheets.Add("Journal");
+
+                worksheet.Cell(1, 1).Value = "JournalEntryId";
+                worksheet.Cell(1, 2).Value = "InvoiceId";
+                worksheet.Cell(1, 3).Value = "PostingDate";
+                worksheet.Cell(1, 4).Value = "Currency";
+                worksheet.Cell(1, 5).Value = "Description";
+                worksheet.Cell(1, 6).Value = "TotalDebit";
+                worksheet.Cell(1, 7).Value = "TotalCredit";
+                worksheet.Cell(1, 8).Value = "CreatedBy";
+                worksheet.Cell(1, 9).Value = "LineAccountCode";
+                worksheet.Cell(1, 10).Value = "LineDebit";
+                worksheet.Cell(1, 11).Value = "LineCredit";
+                worksheet.Cell(1, 12).Value = "LineDescription";
+
+                var headerRange = worksheet.Range(1, 1, 1, 12);
+                headerRange.Style.Font.Bold = true;
+                headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
+                headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+                int row = 2;
+                foreach (var je in journals)
+                {
+                    var lines = je.Lines?.Any() == true ? je.Lines : new List<JournalLine> { new JournalLine() };
+
+                    foreach (var line in lines)
+                    {
+                        worksheet.Cell(row, 1).Value = je.Id;
+                        worksheet.Cell(row, 2).Value = je.InvoiceId?.ToString() ?? "";
+                        worksheet.Cell(row, 3).Value = je.PostingDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+                        worksheet.Cell(row, 4).Value = je.Currency;
+                        worksheet.Cell(row, 5).Value = je.Description;
+                        worksheet.Cell(row, 6).Value = je.TotalDebit;
+                        worksheet.Cell(row, 7).Value = je.TotalCredit;
+                        worksheet.Cell(row, 8).Value = je.CreatedBy ?? "";
+                        worksheet.Cell(row, 9).Value = line.AccountCode;
+                        worksheet.Cell(row, 10).Value = line.Debit;
+                        worksheet.Cell(row, 11).Value = line.Credit;
+                        worksheet.Cell(row, 12).Value = line.Description ?? "";
+                        row++;
+                    }
+                }
+
+                worksheet.Columns().AdjustToContents();
+
+                using var stream = new MemoryStream();
+                workbook.SaveAs(stream);
+                stream.Position = 0;
+
+                var stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture);
+                var range = $"{startDate?.ToString("yyyyMMdd") ?? "ALL"}_{endDate?.ToString("yyyyMMdd") ?? "ALL"}";
+                var fileName = $"Journal_{range}_{stamp}.xlsx";
+
+                return new ExportResult
+                {
+                    FileContent = stream.ToArray(),
+                    FileName = fileName,
+                    ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    IsSuccess = true
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Journal Excel'e aktarılırken hata: {ex.Message}");
+                return new ExportResult
+                {
+                    IsSuccess = false,
+                    ErrorMessage = $"Excel'e aktarılırken hata: {ex.Message}"
                 };
             }
         }

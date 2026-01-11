@@ -26,7 +26,7 @@ import { useKeyboardShortcuts, commonShortcuts } from '../../hooks/useKeyboardSh
 const Header = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
-  const { user, logout } = useAuthStore()
+  const { user } = useAuthStore()
   const { mode, toggleMode } = useTheme()
   const { open, openSearch, closeSearch } = useGlobalSearch()
 

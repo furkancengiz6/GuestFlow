@@ -3,6 +3,7 @@ using GuestFlow.Domain.UnitOfWork;
 using GuestFlow.Domain.Entities.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using System.Globalization;
 using System.Linq;
 
 namespace GuestFlow.Application.Operations.Accounting
@@ -26,6 +27,15 @@ namespace GuestFlow.Application.Operations.Accounting
 
         private string GetDefaultRevenueAccountCode()
             => _configuration["Accounting:Journal:DefaultRevenueAccountCode"] ?? "4000";
+
+        private string GetVatPayableAccountCode()
+            => _configuration["Accounting:Journal:VatPayableAccountCode"] ?? "3910";
+
+        private static decimal SafeNetFromGrossAndVat(decimal gross, decimal vatAmount)
+        {
+            var net = gross - vatAmount;
+            return net < 0m ? 0m : net;
+        }
 
         private string GetRevenueAccountCodeForServiceType(string? serviceType)
         {
@@ -55,13 +65,16 @@ namespace GuestFlow.Application.Operations.Accounting
                     Currency = invoice.Currency ?? "USD"
                 };
 
-                // Simple mapping: debit receivable, credit revenue and VAT
+                // Simple mapping (VAT-inclusive item amounts):
+                // - Debit receivable (gross)
+                // - Credit revenue (net)
+                // - Credit VAT payable (VAT portion)
                 decimal totalDebit = 0;
                 decimal totalCredit = 0;
 
                 // Receivable line
-                var sumItems = items.Sum(i => i.Amount);
-                var receivableAmount = invoice.TotalAmount > 0m ? invoice.TotalAmount : sumItems;
+                var sumGross = items.Sum(i => i.Amount);
+                var receivableAmount = invoice.TotalAmount > 0m ? invoice.TotalAmount : sumGross;
                 preview.Lines.Add(new JournalLineDto
                 {
                     AccountCode = GetReceivableAccountCode(),
@@ -72,21 +85,38 @@ namespace GuestFlow.Application.Operations.Accounting
                 totalDebit += receivableAmount;
 
                 // Revenue lines per item
+                decimal totalVat = 0m;
                 foreach (var it in items)
                 {
+                    var net = SafeNetFromGrossAndVat(it.Amount, it.VatAmount);
+                    if (it.VatAmount > 0m) totalVat += it.VatAmount;
+
                     preview.Lines.Add(new JournalLineDto
                     {
                         AccountCode = GetRevenueAccountCodeForServiceType(it.ServiceType),
                         Debit = 0,
-                        Credit = it.Amount,
+                        Credit = net,
                         Description = $"{it.ServiceType} #{it.ServiceId}"
                     });
-                    totalCredit += it.Amount;
+                    totalCredit += net;
+                }
+
+                // VAT payable (single summary line)
+                if (totalVat > 0m)
+                {
+                    preview.Lines.Add(new JournalLineDto
+                    {
+                        AccountCode = GetVatPayableAccountCode(),
+                        Debit = 0,
+                        Credit = totalVat,
+                        Description = "VAT Payable"
+                    });
+                    totalCredit += totalVat;
                 }
 
                 // If invoice total differs from sum of items (due to discounts/adjustments/rounding),
                 // add an adjustment line so debits equal credits.
-                var adjustment = receivableAmount - sumItems;
+                var adjustment = receivableAmount - sumGross;
                 if (adjustment != 0m)
                 {
                     // Positive adjustment means receivable > items sum -> add credit adjustment
@@ -115,10 +145,6 @@ namespace GuestFlow.Application.Operations.Accounting
                     }
                 }
 
-                // VAT handling: invoice does not store VAT as a single field; VAT (if any) should
-                // be derived from invoice items. Currently InvoiceItemEntity has no VAT field,
-                // so VAT lines are not generated here.
-
                 preview.TotalDebit = totalDebit;
                 preview.TotalCredit = totalCredit;
 
@@ -134,9 +160,16 @@ namespace GuestFlow.Application.Operations.Accounting
         {
             try
             {
+                if (request == null)
+                    return ApiResponse<bool>.Fail("Request is required");
+
+                if (request.Lines == null || request.Lines.Count == 0)
+                    return ApiResponse<bool>.Fail("Journal lines are required");
+
                 // Idempotency guard: don't post twice for the same invoice.
-                var alreadyPosted = await _unitOfWork.JournalLines
-                    .GetAll(jl => jl.ReferenceId == request.InvoiceId)
+                // (DB also enforces this via JournalEntry.InvoiceId unique index when not null.)
+                var alreadyPosted = await _unitOfWork.JournalEntries
+                    .GetAll(j => j.InvoiceId == request.InvoiceId)
                     .AnyAsync();
 
                 if (alreadyPosted)
@@ -145,10 +178,18 @@ namespace GuestFlow.Application.Operations.Accounting
                 var invoice = await _unitOfWork.Invoices.GetByIdAsync(request.InvoiceId);
                 if (invoice == null) return ApiResponse<bool>.Fail("Invoice not found");
 
+                if (!DateTime.TryParseExact(
+                        request.PostingDate,
+                        "yyyy-MM-dd",
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                        out var postingDate))
+                    return ApiResponse<bool>.Fail("Invalid posting date. Expected format: yyyy-MM-dd");
+
                 var journal = new JournalEntry
                 {
                     InvoiceId = request.InvoiceId,
-                    PostingDate = DateTime.Parse(request.PostingDate),
+                    PostingDate = postingDate,
                     Description = $"Posted for Invoice {invoice.InvoiceNumber}",
                     Currency = invoice.Currency ?? "USD",
                     CreatedBy = "system"

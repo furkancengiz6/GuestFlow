@@ -1,5 +1,5 @@
 import { Button, Box, Typography } from '@mui/material'
-import { Upload as UploadIcon, CloudUpload as CloudUploadIcon } from '@mui/icons-material'
+import { Upload as UploadIcon } from '@mui/icons-material'
 import { useRef, useState } from 'react'
 import { useNotification } from '../../hooks/useNotification'
 

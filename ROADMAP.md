@@ -54,7 +54,7 @@ Regresyon riskini düşürmek ve release sürecini otomatikleştirmek.
 
 ### Yapılacaklar
 - **Backend**:
-  - Integration test’ler: auth + temel CRUD smoke (en az 5-10 senaryo).
+  - Integration test’ler: auth + temel CRUD smoke (en az 30-40 senaryo).
   - Migration’lar için CI “smoke” (DB migrate + basic request) akışı.
 - **Frontend**:
   - Jest + RTL smoke: auth store, critical pages (Dashboard/Guests/Transfers) en azından render + basic happy-path.
@@ -94,37 +94,46 @@ Mevcut `Journal` ve `SupplierCost/Profitability` altyapısını gerçek operasyo
   - ✅ Invoice detail’da “Journal Posted” durumu artık **JE #id + posting date** ile görünür (post sonrası otomatik refresh)
 
 ### Sıradaki Yapılması Gerekenler (Önerilen Sıra)
-- **S3.1 — API sözleşmesini sabitle**
-  - Journal endpoint’leri tüm API’ler gibi **tek response şekline** sahip olsun (frontend’in `data.data` beklentisi ile uyumlu).
-  - Swagger dokümantasyonunda örnek response’lar net olsun.
-- **S3.2 — Journal Post idempotency (gerçek “muhasebe güvenliği”)**
-  - Aynı invoice için ikinci post’u engelleme mevcut; bunu **DB düzeyinde garantiye** al:
-    - Öneri A (temiz): `JournalEntry` içine `InvoiceId` alanı ekle + unique index.
-    - Öneri B (minimal): `JournalLine.ReferenceId` üzerinden unique constraint / unique index (riskli: satır sayısı çok).
-  - UI’da “already posted” durumunda Post butonu görünmesin/disabled + mesaj.
-- **S3.3 — Journal Entry detay görüntüleme**
-  - `GET /api/v1.0/Journal/by-invoice/{invoiceId}` (veya benzeri) ile:
-    - `JournalEntryId`, `PostingDate`, `Currency`, `Lines[]` döndür.
-  - Invoice detail’da “Journal Posted” chip’i tıklanınca JE detay dialog aç.
-- **S3.4 — GL mapping (hardcode’dan çık)**
-  - Şu an `AccountCode` default (`1100`, `4000`, `9999`) — bunu konfig/DB’ye taşı:
-    - `ServiceType → RevenueAccountCode`
-    - `ReceivableAccountCode`
-    - `Rounding/AdjustmentAccountCode`
-  - Admin UI: mapping ekranı + validation (boş/invalid code yok).
-- **S3.5 — Vergi/KDV modeli**
-  - `InvoiceItemEntity` üzerinde KDV oranı/tutarı yok → VAT satırları üretilemiyor.
-  - Karar: (a) invoice item’a `VatRate`, `VatAmount` ekle veya (b) servis tablolarından derive et (transfer/tour/restaurant…).
-- **S3.6 — Export (muhasebe çıktı)**
-  - En küçük deliverable: “Journal Export by Date Range” (CSV/Excel).
+- ✅ **S3.1 — API sözleşmesini sabitle (DONE)**
+  - Journal endpoint’leri tüm API’ler gibi **tek response şekline** sahip (frontend’in `data.data` beklentisi ile uyumlu).
+  - Swagger’da örnek response’lar netleştirildi.
+- ✅ **S3.2 — Journal Post idempotency (DONE)**
+  - DB düzeyi garanti: `JournalEntry.InvoiceId` + unique index (InvoiceId null değilken).
+  - UI’da “already posted” durumunda Post butonu disabled + mesaj.
+- ✅ **S3.3 — Journal Entry detay görüntüleme (DONE)**
+  - `GET /api/v1.0/Journal/by-invoice/{invoiceId}` ile `JournalEntryId`, `PostingDate`, `Currency`, `Lines[]` döner.
+  - Invoice detail’da “Journal Posted” chip’i tıklanınca JE detay dialog açılır.
+- ✅ **S3.4 — GL mapping (hardcode’dan çık) (DONE)**
+  - `Accounting:Journal` config’i ile `ReceivableAccountCode`, `DefaultRevenueAccountCode`, `AdjustmentAccountCode`, `RevenueAccountByServiceType` hardcode’dan çıktı.
+  - (Opsiyonel sonraki) Admin UI mapping ekranı + validation.
+- ✅ **S3.5 — Vergi/KDV modeli (DONE)**
+  - Problem: `InvoiceItemEntity` üzerinde KDV oranı/tutarı yok → VAT satırları üretilemiyor.
+  - Karar (öneri): **(a)** invoice item’a snapshot alanları ekle:
+    - `VatRate` (örn: 0.20), `VatAmount` ve (gerekiyorsa) `NetAmount`/`GrossAmount` netliği.
+  - Journal tasarımı:
+    - Preview/Post sırasında **KDV satır(lar)ı** üret (örn: `191/391` mantığına uygun hesaplar).
+    - KDV hesabı ve hesap kodu config’ten gelsin (örn: `Accounting:Journal:VatPayableAccountCode` + opsiyonel `VatRateByServiceType`).
+  - Kabul kriteri:
+    - Preview’da KDV satırları görünür ve toplamlar (debit/credit) dengelidir.
+    - Post sonrası KDV satırları JE içinde kalıcıdır; aynı invoice tekrar post edilemez.
+- ✅ **S3.6 — Export (muhasebe çıktı) (DONE)**
+  - ✅ “Journal Export by Date Range” (CSV + Excel) eklendi (API + test).
   - Sonraki: Guest Ledger / Room Ledger / Supplier Cost export.
-- **S3.7 — Test kapsamı**
+- **S3.7 — Test kapsamı (NEXT)**
   - Backend integration test:
-    - Preview OK
-    - Post OK
-    - İkinci post 400 + mesaj
-    - Unbalanced post 400
-  - Frontend E2E: invoice detail → preview → post → “Journal Posted” görünür.
+    - ✅ Preview OK
+    - ✅ Post OK
+    - ✅ İkinci post 400 + mesaj
+    - ✅ Unbalanced post 400
+    - ✅ Auth required (401) + role enforcement (403) (Journal + Export)
+    - ✅ Post: invalid posting date → 400
+    - ✅ Post: empty lines → 400
+  - ✅ Frontend Playwright smoke: invoice detail → preview → post → "Journal Posted" görünür.
+    - Not: Smoke test mocked auth + mocked API ile çalışır (CI stabilitesi için). Opsiyonel: staging ortamına karşı “real backend” E2E suite.
+
+- **S3.8 — Muhasebe Export’ları (Opsiyonel)**
+  - Hedef: Guest Ledger / Room Ledger / Supplier Cost export.
+  - En az 1 export: Journal by date range (API + test).
 
 ### Sprint 3 Kabul Kriterleri (Done Definition)
 - Invoice detail’da **Preview → Post** akışı üretimde kullanılabilir ve tekrar post edilemez.
@@ -137,15 +146,70 @@ Mevcut `Journal` ve `SupplierCost/Profitability` altyapısını gerçek operasyo
 - **Rounding/discount**: invoice total ile item sum farkı için adjustment satırı var; muhasebe kuralı netleşmeli.
 - **Audit**: “kim post etti” alanı şu an `system`; gerçek kullanıcı (personnel) claim’inden doldurulmalı.
 
-## Sprint 4 (8+ hafta) — Operasyon, Entegrasyonlar, Ürünleşme
+## Sprint 4 (8+ hafta) — Productionization / Go-Live (Operasyon + Ürünleşme)
 
 ### Hedef
-Gerçek saha kullanımında operasyonel değer yaratacak adımlar (opt-in).
+Projeyi **üretime güvenli şekilde çıkarma** (security + ops + QA gate) ve saha kullanımında operasyonel değeri artırma.
+
+### Go-Live Gate (Çıkış için zorunlu)
+- **Build/Test Gate (CI)**:
+  - Backend: `dotnet build` + `dotnet test` ✅
+    - `dotnet build` **warnings-as-errors** (PR’da yeni warning oluşamaz)
+  - Frontend: `npm run build` + `npm run test:ci` ✅
+  - Playwright smoke: login + invoice preview/post + export download (min 2–3 kritik akış)
+  - **Staging E2E (real backend)**: login → invoice detail → journal preview/post → export + temel CRUD smoke (manual/dispatch veya nightly)
+  - Dependency gate: `dotnet list package --vulnerable` + `npm audit` (moderate+ fail)
+- **Secrets & Config**:
+  - `JWT__SecretKey` zorunlu (prod’da boş olamaz), CORS origins prod domain ile sınırlı
+  - `SecurityHeaders:ConnectSrc` prod ortamına göre ayarlı
+  - `SeedDemoData=false` prod’da kilitli
+- **DB / Migration**:
+  - Prod deploy’da migration otomasyonu (release sırasında `dotnet ef database update`)
+  - Kritik index’ler doğrulandı (özellikle invoice/journal idempotency index’leri)
+- **Logging/Monitoring**:
+  - Health endpoints (liveness/readiness) reverse proxy üzerinden doğrulanır
+  - Merkezi log hedefi (Seq/ELK) + temel alert (5xx, latency, disk)
+- **Backup & DR**:
+  - DB backup stratejisi + restore drill (en az 1 kez)
+
+### Kalite & Teknik Borç (yüksek ROI)
+- **Build warning cleanup**:
+  - Nullability uyarılarını kademeli azalt (hedef: < 20, sonra < 10)
+  - EF “shadow FK” / relationship warning’larını temizle (özellikle `TransferEntity` tarafı)
+  - Deprecated DTO alanları (`RevenueSummaryDto.TotalRevenue` vb.) refactor
+- **Test coverage planı (kademeli)**:
+  - Frontend coverage bugün düşük (CI barı var): hedefi sprint sprint artır (örn: 5% → 15% → 30%)
+  - Backend: coverlet/coverage raporu + minimum threshold (modül bazlı)
+- **Docs hygiene**:
+  - `QA_TEST_REPORT.md` içindeki endpoint örnekleri `/api/v1.0/...` ile uyumlu hale getir
+  - Deployment dokümanlarını tek bir “source of truth”e bağla (`DEPLOYMENT_CHECKLIST.md`)
 
 ### Yapılacaklar (seçmeli)
 - OTA entegrasyonlarının gerçek provider API’leri ile hardening’i (retry, idempotency, monitoring).
 - Mobil-first operasyon ekranları (özellikle “bugünkü hizmetler”, “yaklaşanlar”, “ödemesi alınmayanlar”).
 - Observability: OpenTelemetry trace/metric + dashboard.
+
+### Gelecek Özellikler / Backlog (öncelikli)
+- **P0 — Finans/Muhasebe (yüksek ROI)**
+  - Multi-currency muhasebe politikası: JE currency & satır currency standardı + rounding kuralları.
+  - “Posted by” audit: JE’de `CreatedBy/PostedBy` gerçek kullanıcı claim’inden doldurulsun.
+  - VAT raporlama: KDV tahakkuk (391) ve dönem bazlı KDV raporu + export.
+  - Journal “unpost/reversal”: üretim politikası netleşsin (reversal entry mi, unpost yasak mı).
+- **P0 — Operasyon**
+  - Günlük operasyon ekranı: bugün/yaklaşan servisler + risk bayrakları + hızlı aksiyonlar.
+  - Bildirim (Notification) kuralları: geciken ödeme, yaklaşan servis, atanmayan şoför vb.
+- **P1 — Raporlama**
+  - Dashboard’lar: filtrelenebilir rapor ekranları (tarih aralığı, servis tipi, personel).
+  - Export paketleri: Guest Ledger, Supplier Ledger, Room Ledger (CSV/Excel).
+- **P1 — Entegrasyonlar**
+  - OTA webhook idempotency key + retry/backoff + dead-letter kuyruğu.
+  - Provider bazlı rate limit ve circuit breaker.
+- **P1 — Güvenlik/Compliance**
+  - 2FA (Admin/Owner) + brute-force koruması + login audit ekranı.
+  - PII yönetimi: veri maskeleme, silme/anonymize (KVKK/GDPR uyumu için).
+- **P2 — UX / Platform**
+  - Feature flags (staging’de deneme, prod rollout).
+  - Role/permission matrisi: UI + API aynı kaynaktan üretilebilir hale gelsin.
 
 ## Kabul Kriterleri (Roadmap’in “bitti” sayılması)
 - Bu dosya dışında repo kökünde “roadmap/todo/phase” amaçlı **ikinci bir yol haritası dokümanı kalmaması**.

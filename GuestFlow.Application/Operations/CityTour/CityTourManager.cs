@@ -22,6 +22,7 @@ using GuestFlow.Domain.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System.Globalization;
 
 namespace GuestFlow.Application.Operations.CityTour
 {
@@ -103,6 +104,36 @@ namespace GuestFlow.Application.Operations.CityTour
             _invoiceCreationService = invoiceCreationService;
             _paymentStatusService = paymentStatusService;
             _hubService = hubService;
+        }
+
+        private decimal GetVatRateForServiceType(string? serviceType)
+        {
+            var key = (serviceType ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(key)) key = "default";
+
+            var byType = _configuration[$"Accounting:Journal:VatRateByServiceType:{key}"]
+                         ?? _configuration[$"Accounting:Journal:VatRateByServiceType:{key.ToLowerInvariant()}"];
+
+            if (!string.IsNullOrWhiteSpace(byType) &&
+                decimal.TryParse(byType, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsedByType) &&
+                parsedByType >= 0m)
+                return parsedByType;
+
+            var def = _configuration["Accounting:Journal:DefaultVatRate"];
+            if (!string.IsNullOrWhiteSpace(def) &&
+                decimal.TryParse(def, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsedDef) &&
+                parsedDef >= 0m)
+                return parsedDef;
+
+            return 0m;
+        }
+
+        private static decimal CalculateVatAmountFromVatInclusiveGross(decimal gross, decimal vatRate)
+        {
+            if (gross <= 0m) return 0m;
+            if (vatRate <= 0m) return 0m;
+            var vat = gross * vatRate / (1m + vatRate);
+            return Math.Round(vat, 2, MidpointRounding.AwayFromZero);
         }
 
         // Bu metodumla yeni bir şehir turu ekliyorum.
@@ -623,12 +654,16 @@ namespace GuestFlow.Application.Operations.CityTour
                 await _unitOfWork.SaveChangesAsync(); // Save to get invoice.Id
 
                 // Add invoice item for this city tour
+                var vatRate = GetVatRateForServiceType("CityTour");
+                var vatAmount = CalculateVatAmountFromVatInclusiveGross(cityTour.FinalPrice, vatRate);
                 var invoiceItem = new InvoiceItemEntity
                 {
                     InvoiceId = invoice.Id,
                     ServiceType = "CityTour",
                     ServiceId = id,
                     Amount = cityTour.FinalPrice,
+                    VatRate = vatRate,
+                    VatAmount = vatAmount,
                     Currency = cityTour.Currency ?? "TRY",
                     Notes = $"Şehir Turu: {cityTour.Tour?.Name ?? "Tur"}"
                 };

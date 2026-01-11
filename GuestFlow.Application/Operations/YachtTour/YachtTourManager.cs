@@ -23,6 +23,7 @@ using GuestFlow.Domain.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System.Globalization;
 
 namespace GuestFlow.Application.Operations.YachtTour
 {
@@ -94,6 +95,36 @@ namespace GuestFlow.Application.Operations.YachtTour
             _invoiceCreationService = invoiceCreationService;
             _paymentStatusService = paymentStatusService;
             _hubService = hubService;
+        }
+
+        private decimal GetVatRateForServiceType(string? serviceType)
+        {
+            var key = (serviceType ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(key)) key = "default";
+
+            var byType = _configuration[$"Accounting:Journal:VatRateByServiceType:{key}"]
+                         ?? _configuration[$"Accounting:Journal:VatRateByServiceType:{key.ToLowerInvariant()}"];
+
+            if (!string.IsNullOrWhiteSpace(byType) &&
+                decimal.TryParse(byType, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsedByType) &&
+                parsedByType >= 0m)
+                return parsedByType;
+
+            var def = _configuration["Accounting:Journal:DefaultVatRate"];
+            if (!string.IsNullOrWhiteSpace(def) &&
+                decimal.TryParse(def, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsedDef) &&
+                parsedDef >= 0m)
+                return parsedDef;
+
+            return 0m;
+        }
+
+        private static decimal CalculateVatAmountFromVatInclusiveGross(decimal gross, decimal vatRate)
+        {
+            if (gross <= 0m) return 0m;
+            if (vatRate <= 0m) return 0m;
+            var vat = gross * vatRate / (1m + vatRate);
+            return Math.Round(vat, 2, MidpointRounding.AwayFromZero);
         }
 
         public async Task<ServiceMessage<AddYachtTourResponseDto>> AddYachtTour(AddYachtTourDto yachtTour)
@@ -619,12 +650,16 @@ namespace GuestFlow.Application.Operations.YachtTour
                 await _unitOfWork.SaveChangesAsync(); // Save to get invoice.Id
 
                 // Add invoice item for this yacht tour
+                var vatRate = GetVatRateForServiceType("YachtTour");
+                var vatAmount = CalculateVatAmountFromVatInclusiveGross(yachtTour.FinalPrice, vatRate);
                 var invoiceItem = new InvoiceItemEntity
                 {
                     InvoiceId = invoice.Id,
                     ServiceType = "YachtTour",
                     ServiceId = id,
                     Amount = yachtTour.FinalPrice,
+                    VatRate = vatRate,
+                    VatAmount = vatAmount,
                     Currency = yachtTour.Currency ?? "TRY",
                     Notes = $"Yat Turu: {yachtTour.YachtName ?? "Yat"}"
                 };

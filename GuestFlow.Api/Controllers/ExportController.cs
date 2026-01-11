@@ -311,6 +311,52 @@ namespace GuestFlow.Api.Controllers
                 return Error($"Dışa aktarma sırasında hata oluştu: {ex.Message}", 500);
             }
         }
+
+        /// <summary>
+        /// Journal kayıtlarını (posting date aralığına göre) CSV formatında dışa aktarır
+        /// </summary>
+        [HttpGet("journal/csv")]
+        public async Task<IActionResult> ExportJournalToCsv(
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null)
+        {
+            try
+            {
+                var result = await _exportService.ExportJournalToCsvAsync(startDate, endDate);
+
+                if (!result.IsSuccess)
+                    return Error(result.ErrorMessage ?? "Dışa aktarma başarısız oldu.", 500);
+
+                return File(result.FileContent, result.ContentType, result.FileName);
+            }
+            catch (Exception ex)
+            {
+                return Error($"Dışa aktarma sırasında hata oluştu: {ex.Message}", 500);
+            }
+        }
+
+        /// <summary>
+        /// Journal kayıtlarını (posting date aralığına göre) Excel formatında dışa aktarır
+        /// </summary>
+        [HttpGet("journal/excel")]
+        public async Task<IActionResult> ExportJournalToExcel(
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null)
+        {
+            try
+            {
+                var result = await _exportService.ExportJournalToExcelAsync(startDate, endDate);
+
+                if (!result.IsSuccess)
+                    return Error(result.ErrorMessage ?? "Dışa aktarma başarısız oldu.", 500);
+
+                return File(result.FileContent, result.ContentType, result.FileName);
+            }
+            catch (Exception ex)
+            {
+                return Error($"Dışa aktarma sırasında hata oluştu: {ex.Message}", 500);
+            }
+        }
     }
 }
 

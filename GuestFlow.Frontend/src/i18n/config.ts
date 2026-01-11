@@ -2,6 +2,7 @@ import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import trTranslations from './locales/tr.json'
 import enTranslations from './locales/en.json'
+import { useUserPreferencesStore } from '../stores/userPreferencesStore'
 
 // Language detection from localStorage or browser
 const getInitialLanguage = (): string => {
@@ -38,15 +39,7 @@ i18n.on('languageChanged', (lng) => {
   localStorage.setItem('language', lng)
   // Sync with user preferences store
   try {
-    import('../stores/userPreferencesStore').then((mod) => {
-      try {
-        mod.useUserPreferencesStore.getState().setLanguage(lng)
-      } catch {
-        // ignore
-      }
-    }).catch(() => {
-      // ignore dynamic import failure
-    })
+    useUserPreferencesStore.getState().setLanguage(lng)
   } catch {
     // Ignore if store not available
   }

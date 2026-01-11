@@ -11,6 +11,10 @@ const normalizedBase = (typeof process !== 'undefined' && process.env.E2E_BASE_U
   : 'http://localhost:5173'
 ).toString().trim().replace(/\/$/, '');
 
+const useWebServer =
+  (process.env.E2E_USE_WEB_SERVER || '').toLowerCase() === 'true' ||
+  (!(process.env.E2E_USE_WEB_SERVER) && normalizedBase.startsWith('http://localhost'));
+
 export default defineConfig<PlaywrightTestConfig>({
   testDir: './tests',
   timeout: 30 * 1000,
@@ -35,28 +39,27 @@ export default defineConfig<PlaywrightTestConfig>({
     storageState: process.env.PLAYWRIGHT_STORAGE || 'tests/storageState.json',
     baseURL: normalizedBase,
   },
-  projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
-  ],
-  webServer: {
-    command: 'npm run dev',
-    url: normalizedBase,
-    // Ensure Playwright starts a fresh dev server to avoid stale Vite optimize cache issues
-    reuseExistingServer: true,
-    // Allow longer startup time for dev server (clearing optimize deps can take longer)
-    timeout: 180 * 1000,
-  },
+  // Default to Chromium-only for stability and speed.
+  // Opt-in to full cross-browser runs with PLAYWRIGHT_ALL_BROWSERS=true.
+  projects: (process.env.PLAYWRIGHT_ALL_BROWSERS || '').toLowerCase() === 'true'
+    ? [
+        { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+        { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+        { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+      ]
+    : [
+        { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+      ],
+  webServer: useWebServer
+    ? {
+        command: 'npm run dev',
+        url: normalizedBase,
+        // Ensure Playwright starts a fresh dev server to avoid stale Vite optimize cache issues
+        reuseExistingServer: true,
+        // Allow longer startup time for dev server (clearing optimize deps can take longer)
+        timeout: 180 * 1000,
+      }
+    : undefined,
   globalSetup: './playwright-global-setup',
  
 })

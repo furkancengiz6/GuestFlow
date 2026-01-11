@@ -21,6 +21,18 @@ namespace GuestFlow.Domain.Entities.Core
         public string Currency { get; set; } = "TRY";
         public string? Notes { get; set; }
 
+        /// <summary>
+        /// VAT rate snapshot at invoicing time (e.g. 0.20 for 20%).
+        /// IMPORTANT: Stored as a snapshot to preserve invoice immutability.
+        /// </summary>
+        public decimal VatRate { get; set; } = 0m;
+
+        /// <summary>
+        /// VAT amount snapshot for this item (in invoice currency).
+        /// For VAT-inclusive prices, this is the VAT portion inside <see cref="Amount"/>.
+        /// </summary>
+        public decimal VatAmount { get; set; } = 0m;
+
         // Relational Properties
         public virtual InvoicesEntity Invoice { get; set; } = null!;
     }
@@ -39,6 +51,14 @@ namespace GuestFlow.Domain.Entities.Core
                 .IsRequired();
 
             builder.Property(ii => ii.Amount)
+                .HasPrecision(18, 2)
+                .IsRequired();
+
+            builder.Property(ii => ii.VatRate)
+                .HasPrecision(9, 6)
+                .IsRequired();
+
+            builder.Property(ii => ii.VatAmount)
                 .HasPrecision(18, 2)
                 .IsRequired();
 

@@ -13,19 +13,6 @@ using GuestFlow.Application.Operations.Invoice;
 using GuestFlow.Application.Operations.Invoice.Dtos;
 using GuestFlow.Application.Operations.Payment;
 using GuestFlow.Application.Operations.Cache;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using GuestFlow.Application.Extensions;
-using GuestFlow.Application.Models;
-using GuestFlow.Application.Operations.DailyRevenue;
-using GuestFlow.Application.Operations.Email;
-using GuestFlow.Application.Operations.Notification;
-using GuestFlow.Application.Operations.Invoice;
-using GuestFlow.Application.Operations.Invoice.Dtos;
-using GuestFlow.Application.Operations.Payment;
 using GuestFlow.Application.Operations.Transfer.Dtos;
 using GuestFlow.Application.Operations.Validation;
 using GuestFlow.Application.Operations.Currency;
@@ -38,6 +25,7 @@ using GuestFlow.Domain.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System.Globalization;
 
 namespace GuestFlow.Application.Operations.Transfer
 {
@@ -127,6 +115,36 @@ namespace GuestFlow.Application.Operations.Transfer
             _cacheService = cacheService;
         }
 
+        private decimal GetVatRateForServiceType(string? serviceType)
+        {
+            var key = (serviceType ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(key)) key = "default";
+
+            var byType = _configuration[$"Accounting:Journal:VatRateByServiceType:{key}"]
+                         ?? _configuration[$"Accounting:Journal:VatRateByServiceType:{key.ToLowerInvariant()}"];
+
+            if (!string.IsNullOrWhiteSpace(byType) &&
+                decimal.TryParse(byType, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsedByType) &&
+                parsedByType >= 0m)
+                return parsedByType;
+
+            var def = _configuration["Accounting:Journal:DefaultVatRate"];
+            if (!string.IsNullOrWhiteSpace(def) &&
+                decimal.TryParse(def, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsedDef) &&
+                parsedDef >= 0m)
+                return parsedDef;
+
+            return 0m;
+        }
+
+        private static decimal CalculateVatAmountFromVatInclusiveGross(decimal gross, decimal vatRate)
+        {
+            if (gross <= 0m) return 0m;
+            if (vatRate <= 0m) return 0m;
+            var vat = gross * vatRate / (1m + vatRate);
+            return Math.Round(vat, 2, MidpointRounding.AwayFromZero);
+        }
+
         /// <summary>
         /// Clear transfer-related cache
         /// Transfer ile ilgili cache'i temizle
@@ -166,6 +184,20 @@ namespace GuestFlow.Application.Operations.Transfer
                 if (!fkValidation.IsValid)
                 {
                     return new ServiceMessage<AddTransferResponseDto> { IsSuccess = false, Message = fkValidation.ErrorMessage };
+                }
+
+                // Ensure guest exists early (also needed for some derived fields)
+                var guestForValidation = await _guestRepository.GetByIdAsync(transfer.GuestId);
+                if (guestForValidation == null)
+                {
+                    return new ServiceMessage<AddTransferResponseDto> { IsSuccess = false, Message = "Misafir bulunamadı." };
+                }
+
+                // Backward-compatible defaulting:
+                // UI/API may not send PrimaryContactPhone yet. If it's missing, use the guest's phone number.
+                if (string.IsNullOrWhiteSpace(transfer.PrimaryContactPhone) && !string.IsNullOrWhiteSpace(guestForValidation.PhoneNumber))
+                {
+                    transfer.PrimaryContactPhone = guestForValidation.PhoneNumber;
                 }
 
                 // BUSINESS VALIDATION RULES
@@ -253,9 +285,7 @@ namespace GuestFlow.Application.Operations.Transfer
                 await _unitOfWork.SaveChangesAsync();
 
                 // Misafir bilgisini al (rezervasyon onay e-postası için)
-                var guest = await _guestRepository.GetByIdAsync(transfer.GuestId);
-                if (guest == null)
-                    throw new Exception("Misafir bulunamadı.");
+                var guest = guestForValidation;
 
                 InvoicesEntity? invoice = null;
                 string? pdfUrl = null;
@@ -1048,12 +1078,16 @@ namespace GuestFlow.Application.Operations.Transfer
                 await _unitOfWork.SaveChangesAsync(); // Save to get invoice.Id
 
                 // Add invoice item for this transfer
+                var vatRate = GetVatRateForServiceType("Transfer");
+                var vatAmount = CalculateVatAmountFromVatInclusiveGross(transfer.FinalPrice, vatRate);
                 var invoiceItem = new InvoiceItemEntity
                 {
                     InvoiceId = invoice.Id,
                     ServiceType = "Transfer",
                     ServiceId = id,
                     Amount = transfer.FinalPrice,
+                    VatRate = vatRate,
+                    VatAmount = vatAmount,
                     Currency = transfer.Currency ?? "TRY",
                     Notes = $"Transfer: {transfer.PickupAddress} → {transfer.DropoffAddress}"
                 };

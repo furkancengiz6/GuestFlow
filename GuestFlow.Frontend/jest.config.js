@@ -29,6 +29,7 @@ export default {
     '**/*.(test|spec).(ts|tsx|js)',
   ],
   testPathIgnorePatterns: [
+    '<rootDir>/tests/', // Playwright/Smoke/Staging specs live here; Jest should only run unit/integration tests under src/__tests__
     '<rootDir>/tests/e2e/', // E2E testleri hariç tut
     '<rootDir>/tests/playwright/', // Playwright testlerini Jest'ten hariç tut
     '<rootDir>/tests/smoke/', // Playwright smoke testlerini Jest'ten hariç tut

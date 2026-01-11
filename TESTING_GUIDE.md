@@ -2,6 +2,30 @@
 
 Bu rehber, GuestFlow projesini kapsamlı şekilde test etmek için gerekli tüm yaklaşımları ve komutları içerir.
 
+## ⚡ Hızlı Başlangıç (Önerilen)
+
+### Tek komut (Windows)
+
+```powershell
+cd C:\GuestFlow
+.\run-tests.bat
+```
+
+Bu komut şunları çalıştırır:
+- Backend build + backend test (`dotnet test`)
+- Frontend build
+- Frontend Jest testleri
+
+### E2E (Playwright) dahil etmek
+
+```powershell
+cd C:\GuestFlow
+$env:RUN_E2E="true"
+.\test-all.ps1
+```
+
+> Not: Staging/real-backend smoke testleri **opt-in**’dir (bkz. `GuestFlow.Frontend/tests/staging/`).
+
 ## 🎯 Test Stratejisi
 
 GuestFlow projesi aşağıdaki test katmanlarını destekler:
@@ -146,6 +170,34 @@ npx playwright show-report
 - **Base URL**: http://localhost:5173
 - **Video Recording**: Başarısız testlerde
 - **Screenshot**: Başarısız testlerde
+
+### Staging E2E (Real Backend) — Smoke Suite (Önerilen Go-Live Gate)
+
+Bu suite **mock API kullanmaz** ve staging ortamına karşı çalışır:
+- login → invoice detail → journal preview/post → export
+- temel CRUD smoke (API seviyesinde) (örn. Guest create/update/delete)
+
+Çalıştırma (Windows örnek):
+
+```bash
+cd GuestFlow.Frontend
+
+set E2E_BASE_URL=https://<staging-frontend>
+set E2E_API_BASE_URL=https://<staging-api>/api/v1.0
+set E2E_USER_EMAIL=<staging-e2e-user>
+set E2E_USER_PASSWORD=<staging-e2e-pass>
+set E2E_INVOICE_ID=123
+
+npm run test:e2e:staging
+```
+
+GitHub Actions (manual run):
+- Workflow: `.github/workflows/staging-e2e.yml`
+- Required repo secrets:
+  - `STAGING_FRONTEND_URL`
+  - `STAGING_API_BASE_URL`
+  - `STAGING_E2E_USER_EMAIL`
+  - `STAGING_E2E_USER_PASSWORD`
 
 ## ⚡ 7. Performance Testleri
 

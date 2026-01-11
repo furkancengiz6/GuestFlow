@@ -43,6 +43,28 @@ npx playwright install --with-deps
 npm run test:e2e
 ```
 
+## Staging E2E (Real Backend) — Smoke Suite
+
+Bu suite **mock kullanmaz**; staging frontend + staging API ile gerçek login + kritik akışları test eder.
+
+Gerekli env’ler:
+- `E2E_BASE_URL`: staging frontend URL (örn. `https://staging-app.guestflow.com`)
+- `E2E_API_BASE_URL`: staging API base (örn. `https://staging-api.guestflow.com/api/v1.0`)
+- `E2E_USER_EMAIL`, `E2E_USER_PASSWORD`: staging E2E user
+- Opsiyonel: `E2E_INVOICE_ID` (otomatik invoice seçimi bulunamazsa)
+
+Çalıştırma:
+
+```bash
+# set E2E_BASE_URL=...
+# set E2E_API_BASE_URL=...
+# set E2E_USER_EMAIL=...
+# set E2E_USER_PASSWORD=...
+# set E2E_INVOICE_ID=123
+
+npm run test:e2e:staging
+```
+
 ## Proje Yapısı
 
 ```
@@ -60,7 +82,7 @@ src/
 
 ## API Endpoint
 
-Backend API: `http://localhost:5145/api/v1`
+Backend API: `http://localhost:5146/api/v1.0`
 
 Vite proxy yapılandırması sayesinde `/api` istekleri otomatik olarak backend'e yönlendirilir.
 

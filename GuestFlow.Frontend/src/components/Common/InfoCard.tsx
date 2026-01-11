@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardActions, Typography, Box, IconButton } from '@mui/material'
+import { Card, CardContent, CardHeader, CardActions, Typography } from '@mui/material'
 import { ReactNode } from 'react'
 
 interface InfoCardProps {

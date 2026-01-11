@@ -12,7 +12,6 @@ import {
   Typography,
   Chip,
   InputAdornment,
-  Paper,
 } from '@mui/material'
 import {
   Search as SearchIcon,

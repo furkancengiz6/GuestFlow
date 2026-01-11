@@ -3,7 +3,19 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
-export async function setupMockApi(page: Page) {
+export async function setupMockApi(
+  page: Page,
+  options: { includeGenericFallback?: boolean } = {}
+) {
+  const includeGenericFallback = options.includeGenericFallback ?? true
+  const allowOrigin = (process.env.E2E_BASE_URL || 'http://localhost:5173').toString().trim().replace(/\/$/, '')
+  const corsHeaders = {
+    // NOTE: axios uses withCredentials=true; so we must NOT use "*" for allow-origin.
+    'access-control-allow-origin': allowOrigin,
+    'access-control-allow-credentials': 'true',
+    'access-control-allow-methods': 'GET,POST,PUT,DELETE,PATCH,OPTIONS',
+    'access-control-allow-headers': 'authorization,content-type,x-requested-with',
+  } as const
   const __filename = fileURLToPath(import.meta.url)
   const __dirname = path.dirname(__filename)
   const fixturesDir = path.resolve(__dirname, '..', 'fixtures')
@@ -19,14 +31,12 @@ export async function setupMockApi(page: Page) {
       // serialize args (msg.args is a function returning JSHandle[])
       const argsHandles = msg.args ? msg.args() : []
       const args = argsHandles.length ? argsHandles.map((a: any) => a.toString()).join(' ') : msg.text()
-      // eslint-disable-next-line no-console
       console.log(`[page.console] ${msg.type()} ${location} ${args}`)
     } catch {
       // ignore
     }
   })
   page.on('pageerror', (err) => {
-    // eslint-disable-next-line no-console
     console.error('[page.error]', String(err))
   })
   // Log all network requests from the page for debugging
@@ -47,45 +57,67 @@ export async function setupMockApi(page: Page) {
   const anyApi = /\/api\/.*/i
 
   await page.route(guestsApi, (route: Route) => {
+    if (route.request().method().toUpperCase() === 'OPTIONS') {
+      return route.fulfill({ status: 204, headers: corsHeaders })
+    }
     route.fulfill({
       status: 200,
       contentType: 'application/json',
+      headers: corsHeaders,
       body: JSON.stringify(guests),
     })
   })
 
   await page.route(transfersApi, (route: Route) => {
+    if (route.request().method().toUpperCase() === 'OPTIONS') {
+      return route.fulfill({ status: 204, headers: corsHeaders })
+    }
     route.fulfill({
       status: 200,
       contentType: 'application/json',
+      headers: corsHeaders,
       body: JSON.stringify(transfers),
     })
   })
 
   // Notifications endpoints used in the layout
   await page.route(notificationsMyApi, (route: Route) => {
+    if (route.request().method().toUpperCase() === 'OPTIONS') {
+      return route.fulfill({ status: 204, headers: corsHeaders })
+    }
     route.fulfill({
       status: 200,
       contentType: 'application/json',
+      headers: corsHeaders,
       body: JSON.stringify({ data: [] }),
     })
   })
 
   await page.route(notificationsStatsApi, (route: Route) => {
+    if (route.request().method().toUpperCase() === 'OPTIONS') {
+      return route.fulfill({ status: 204, headers: corsHeaders })
+    }
     route.fulfill({
       status: 200,
       contentType: 'application/json',
+      headers: corsHeaders,
       body: JSON.stringify({ data: {} }),
     })
   })
 
   // Generic fallback for other API calls to avoid proxy errors
-  await page.route(anyApi, (route: Route) => {
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ data: [], totalCount: 0 }),
+  if (includeGenericFallback) {
+    await page.route(anyApi, (route: Route) => {
+      if (route.request().method().toUpperCase() === 'OPTIONS') {
+        return route.fulfill({ status: 204, headers: corsHeaders })
+      }
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: corsHeaders,
+        body: JSON.stringify({ data: [], totalCount: 0 }),
+      })
     })
-  })
+  }
 }
 

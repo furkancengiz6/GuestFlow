@@ -1,5 +1,7 @@
 # Veritabanı Kontrol Raporu
 
+> ⚠️ Not (Güncellik): Bu rapor tarihsel analiz içerebilir. Güncel QA durumu için `QA_TEST_REPORT.md` ve mevcut migration’lar için `GuestFlow.Persistence/Migrations/` referans alın.
+
 ## ✅ Bağlantı Yapılandırması
 
 ### Connection String

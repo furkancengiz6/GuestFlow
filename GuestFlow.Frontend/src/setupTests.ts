@@ -2,7 +2,6 @@
 // This file configures Jest for React Testing Library
 import '@testing-library/jest-dom'
 import { cleanup } from '@testing-library/react'
-import * as React from 'react'
 
 // TypeScript types are handled by Jest automatically
 
@@ -84,35 +83,66 @@ jest.mock('axios', () => ({
 // Note: Store and library mocks are handled individually in test files
 // to avoid path resolution issues in setupTests.ts
 
-// Suppress noisy console output in tests (optional)
-const originalError = console.error
-const originalWarn = console.warn
-if (typeof beforeAll === 'function') {
-  beforeAll(() => {
-    console.error = (...args: any[]) => {
-      if (
-        typeof args[0] === 'string' &&
-        (args[0].includes('Warning: ReactDOM.render') ||
-          args[0].includes('Warning: validateDOMNesting'))
-      ) {
-        return
-      }
-      originalError.call(console, ...args)
-    }
+/**
+ * CI strict console policy:
+ * - Fail tests on unexpected console.error / console.warn
+ * - Allowlist a few known noisy framework messages (kept minimal)
+ *
+ * Override locally with: JEST_STRICT_CONSOLE=false
+ */
+const STRICT_CONSOLE =
+  typeof process !== 'undefined' &&
+  process.env &&
+  process.env.CI === 'true' &&
+  process.env.JEST_STRICT_CONSOLE !== 'false'
 
-    console.warn = (...args: any[]) => {
-      if (typeof args[0] === 'string' && args[0].includes('React Router Future Flag Warning')) {
-        return
-      }
-      originalWarn.call(console, ...args)
-    }
-  })
+const isAllowedConsoleMessage = (level: 'error' | 'warn', args: any[]): boolean => {
+  const first = args?.[0]
+  if (typeof first !== 'string') return false
+
+  // React legacy warnings (shouldn't happen often, but keep tests stable for now)
+  if (first.includes('Warning: ReactDOM.render')) return true
+  if (first.includes('Warning: validateDOMNesting')) return true
+
+  // React Router internal warning (known noisy in some setups)
+  if (level === 'warn' && first.includes('React Router Future Flag Warning')) return true
+
+  return false
 }
 
-if (typeof afterAll === 'function') {
-  afterAll(() => {
-    console.error = originalError
-    console.warn = originalWarn
+const formatConsoleArgs = (args: any[]) =>
+  args
+    .map((a) => {
+      if (typeof a === 'string') return a
+      if (a instanceof Error) return `${a.name}: ${a.message}\n${a.stack || ''}`
+      try {
+        return JSON.stringify(a)
+      } catch {
+        return String(a)
+      }
+    })
+    .join(' ')
+
+if (STRICT_CONSOLE && typeof beforeEach === 'function' && typeof afterEach === 'function') {
+  let errorSpy: jest.SpyInstance | null = null
+  let warnSpy: jest.SpyInstance | null = null
+
+  beforeEach(() => {
+    errorSpy = jest.spyOn(console, 'error').mockImplementation((...args: any[]) => {
+      if (isAllowedConsoleMessage('error', args)) return
+      throw new Error(`Unexpected console.error in test: ${formatConsoleArgs(args)}`)
+    })
+    warnSpy = jest.spyOn(console, 'warn').mockImplementation((...args: any[]) => {
+      if (isAllowedConsoleMessage('warn', args)) return
+      throw new Error(`Unexpected console.warn in test: ${formatConsoleArgs(args)}`)
+    })
+  })
+
+  afterEach(() => {
+    errorSpy?.mockRestore()
+    warnSpy?.mockRestore()
+    errorSpy = null
+    warnSpy = null
   })
 }
 

@@ -39,6 +39,11 @@ export interface RevenueExportFilters {
   endDate?: string
 }
 
+export interface JournalExportFilters {
+  startDate?: string
+  endDate?: string
+}
+
 const downloadFile = (blob: Blob, filename: string) => {
   const url = window.URL.createObjectURL(blob)
   const link = document.createElement('a')
@@ -180,6 +185,41 @@ export const exportService = {
       responseType: 'blob',
     })
     const filename = `gelir_raporu_${new Date().toISOString().split('T')[0]}.csv`
+    downloadFile(response.data, filename)
+  },
+
+  // Journal
+  exportJournalToCsv: async (filters?: JournalExportFilters) => {
+    const params = new URLSearchParams()
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          params.append(key, value.toString())
+        }
+      })
+    }
+
+    const response = await api.get(`/export/journal/csv?${params.toString()}`, {
+      responseType: 'blob',
+    })
+    const filename = `journal_${new Date().toISOString().split('T')[0]}.csv`
+    downloadFile(response.data, filename)
+  },
+
+  exportJournalToExcel: async (filters?: JournalExportFilters) => {
+    const params = new URLSearchParams()
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          params.append(key, value.toString())
+        }
+      })
+    }
+
+    const response = await api.get(`/export/journal/excel?${params.toString()}`, {
+      responseType: 'blob',
+    })
+    const filename = `journal_${new Date().toISOString().split('T')[0]}.xlsx`
     downloadFile(response.data, filename)
   },
 }

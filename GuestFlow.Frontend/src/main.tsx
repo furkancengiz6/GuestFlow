@@ -4,7 +4,7 @@ import { QueryClientProvider, QueryErrorResetBoundary } from '@tanstack/react-qu
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import CssBaseline from '@mui/material/CssBaseline'
 import App from './App'
-import { ThemeProviderWithToggle } from './theme/useTheme'
+import { ThemeProviderWithToggle } from './theme/ThemeProviderWithToggle'
 import NotificationProvider from './components/Common/NotificationProvider'
 import AppErrorBoundary from './components/Common/AppErrorBoundary'
 import QueryErrorFallback from './components/Common/QueryErrorFallback'

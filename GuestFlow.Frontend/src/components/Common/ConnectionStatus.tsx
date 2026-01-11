@@ -1,4 +1,4 @@
-import { Box, Chip, Tooltip } from '@mui/material'
+import { Chip, Tooltip } from '@mui/material'
 import { Wifi, WifiOff } from '@mui/icons-material'
 import { useSignalR } from '../../hooks/useSignalR'
 

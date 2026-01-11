@@ -6,18 +6,20 @@ import { chromium, FullConfig } from '@playwright/test';
 
  
 
-export default async function globalSetup(config: FullConfig) {
+export default async function globalSetup(_config: FullConfig) {
   const rawBase = process.env.E2E_BASE_URL || 'http://localhost:5173';
   const baseURL = String(rawBase).trim().replace(/\/$/, '');
   const email = process.env.E2E_USER_EMAIL || 'test@guestflow.local';
   const password = process.env.E2E_USER_PASSWORD || 'Password123!';
   const storagePath = process.env.PLAYWRIGHT_STORAGE || 'tests/storageState.json';
+  const forceUiLogin = (process.env.E2E_FORCE_UI_LOGIN || '').toLowerCase() === 'true';
+  const realBackend = (process.env.E2E_REAL_BACKEND || '').toLowerCase() === 'true';
 
   const browser = await chromium.launch();
   const page = await browser.newPage();
   // If a storageState file already exists (seeded by CI), skip UI login to speed up and avoid flakiness
   try {
-    if (fs.existsSync(storagePath)) {
+    if (!forceUiLogin && fs.existsSync(storagePath)) {
       console.log(`Global setup: found existing storageState at ${storagePath}, skipping UI login.`);
       await browser.close();
       return;
@@ -69,7 +71,7 @@ export default async function globalSetup(config: FullConfig) {
     // Save storage state for authenticated sessions
     await page.context().storageState({ path: storagePath });
     } catch (err) {
-    console.warn('Global setup login failed — falling back to writing storageState with mocked auth:', err);
+    console.warn('Global setup login failed.', err);
     // write console logs for debugging
     try {
       fs.mkdirSync('tests/playwright-debug', { recursive: true });
@@ -86,6 +88,12 @@ export default async function globalSetup(config: FullConfig) {
     } catch (captureErr) {
       console.warn('Failed to capture page content for debugging:', captureErr);
     }
+
+    // If we're running against a real backend (staging), do NOT fallback to mocked auth.
+    if (realBackend) {
+      throw err;
+    }
+
     // Fallback: write a storageState file that sets the persisted auth key used by zustand persist
     const mockedUser = {
       id: 1,

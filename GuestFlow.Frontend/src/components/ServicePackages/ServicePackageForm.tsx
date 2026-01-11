@@ -59,7 +59,6 @@ const ServicePackageForm = ({ open, onClose, onSubmit, servicePackage, isLoading
     reset,
     setValue,
     setError,
-    watch,
   } = useForm<ServicePackageFormData>({
     resolver: zodResolver(servicePackageSchema),
     defaultValues: {

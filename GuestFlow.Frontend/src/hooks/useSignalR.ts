@@ -115,13 +115,14 @@ export const useSignalR = (options: UseSignalROptions = {}) => {
       setConnectionState(signalRService.getState()?.toString() || 'Disconnected')
     }, 5000)
 
+    const handlers = handlersRef.current
     return () => {
       clearInterval(interval)
       // Remove handlers
-      handlersRef.current.forEach((handler, eventName) => {
+      handlers.forEach((handler, eventName) => {
         signalRService.off(eventName, handler)
       })
-      handlersRef.current.clear()
+      handlers.clear()
     }
   }, [authStore.isAuthenticated, authStore.accessToken, autoConnect, onNotificationReceived, onLiveUpdate, onDashboardUpdate, queryClient])
 

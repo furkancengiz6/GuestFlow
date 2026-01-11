@@ -49,6 +49,16 @@ namespace GuestFlow.Application.Operations.Export
         /// Transfer listesini CSV formatında dışa aktarır
         /// </summary>
         Task<ExportResult> ExportTransfersToCsvAsync(TransferFilterParameters? filters = null);
+
+        /// <summary>
+        /// Journal kayıtlarını (posting date aralığına göre) CSV formatında dışa aktarır
+        /// </summary>
+        Task<ExportResult> ExportJournalToCsvAsync(DateTime? startDate = null, DateTime? endDate = null);
+
+        /// <summary>
+        /// Journal kayıtlarını (posting date aralığına göre) Excel formatında dışa aktarır
+        /// </summary>
+        Task<ExportResult> ExportJournalToExcelAsync(DateTime? startDate = null, DateTime? endDate = null);
     }
 
     /// <summary>

@@ -88,7 +88,7 @@ const ProtectedRoute = ({ children, roles, fallbackPath = '/forbidden' }: Props)
     return () => {
       cancelled = true
     }
-  }, [isAuthenticated, logout, setAuthenticated])
+  }, [e2eBypass, isAuthenticated, logout, setAuthenticated])
 
   if (checking) {
     return (

@@ -202,6 +202,29 @@ _For a full list of endpoints, check the Swagger documentation._
 Projenin **tek güncel yol haritası**:
 - `ROADMAP.md`
 
+## 📚 Documentation (Source of Truth)
+
+- **Roadmap**: `ROADMAP.md` (tek güncel yol haritası)
+- **Testing**: `TESTING_GUIDE.md` (tek komutla test + E2E çalışma şekli)
+- **Deployment checklist**: `DEPLOYMENT_CHECKLIST.md`
+- **API endpoints (list)**: `API_ENDPOINTS.md`
+- **API documentation (examples)**: `API_DOCUMENTATION.md`
+- **Security policy**: `SECURITY.md`
+
+## 🧪 Staging E2E (Real Backend) — Smoke Suite
+
+Prod riskini en hızlı düşüren gate: staging ortamına karşı **mock’suz** Playwright smoke.
+
+- **Workflow (manual run)**: `.github/workflows/staging-e2e.yml`
+- **Repo secrets**:
+  - `STAGING_FRONTEND_URL`
+  - `STAGING_API_BASE_URL`
+  - `STAGING_E2E_USER_EMAIL`
+  - `STAGING_E2E_USER_PASSWORD`
+- **Local run** (Frontend):
+  - `GuestFlow.Frontend` içinde: `npm run test:e2e:staging`
+  - Gerekli env’ler: `E2E_BASE_URL`, `E2E_API_BASE_URL`, `E2E_USER_EMAIL`, `E2E_USER_PASSWORD`, opsiyonel `E2E_INVOICE_ID`
+
 ## 🔐 Authentication
 
 - **JWT-based authentication** is used.

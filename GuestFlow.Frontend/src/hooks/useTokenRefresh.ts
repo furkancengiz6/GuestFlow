@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useAuthStore } from '../stores/authStore'
 import axios from 'axios'
 import { env } from '../config/env'
@@ -18,7 +18,7 @@ export const useTokenRefresh = () => {
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const isRefreshingRef = useRef(false)
 
-  const refreshToken = async () => {
+  const refreshToken = useCallback(async () => {
     if (isRefreshingRef.current) return
 
     try {
@@ -43,7 +43,7 @@ export const useTokenRefresh = () => {
     } finally {
       isRefreshingRef.current = false
     }
-  }
+  }, [login, logout])
 
   useEffect(() => {
     if (!accessToken) {
@@ -100,7 +100,7 @@ export const useTokenRefresh = () => {
         refreshIntervalRef.current = null
       }
     }
-  }, [accessToken, login, logout])
+  }, [accessToken, refreshToken])
 
   return { refreshToken }
 }

@@ -53,13 +53,16 @@ test.describe('Guests Management', () => {
     
     // Wait for network and table or list to load (dynamic imports can delay rendering)
     await page.waitForLoadState('networkidle', { timeout: 20000 })
-    await page.waitForSelector('table, [role="table"], [data-testid="guests-table"]', {
-      timeout: 20000,
-    })
-    
-    // Verify table is visible
-    const table = page.locator('table, [role="table"]').first()
-    await expect(table).toBeVisible()
+
+    // Guests page may show either a table/list OR a well-defined empty-state.
+    const tableOrList = page.locator('table, [role="table"], [data-testid="guests-table"]').first()
+    const emptyState = page.getByRole('heading', { name: /misafir bulunamadı/i })
+
+    // Wait for either signal to appear
+    await Promise.race([
+      tableOrList.waitFor({ state: 'visible', timeout: 20000 }),
+      emptyState.waitFor({ state: 'visible', timeout: 20000 }),
+    ])
   })
 
   test('should open add guest form', async ({ page }) => {

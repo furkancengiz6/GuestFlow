@@ -6,7 +6,6 @@ import {
   CardContent,
   Checkbox,
   FormControl,
-  FormControlLabel,
   Grid,
   InputLabel,
   MenuItem,

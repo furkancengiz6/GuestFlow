@@ -119,13 +119,10 @@ const DashboardPage = () => {
       {dashboardMode === 'operations' ? (
         // OPERATIONS DASHBOARD - CONCIERGE MODE
         <OperationsDashboard
-          quickStats={quickStats}
-          isLoadingStats={isLoadingStats}
           unpaidServices={unpaidServices}
           isLoadingUnpaid={isLoadingUnpaid}
           upcomingServices={upcomingServices}
           isLoadingUpcoming={isLoadingUpcoming}
-          onRetry={() => queryClient.refetchQueries({ queryKey: ['dashboard'] })}
         />
       ) : (
         // ADMIN DASHBOARD - MANAGEMENT MODE
@@ -637,25 +634,17 @@ const DashboardPage = () => {
 }
 
 // OPERATIONS DASHBOARD COMPONENT - CONCIERGE MODE
-interface OperationsDashboardProps {
-  quickStats: any
-  isLoadingStats: boolean
-  unpaidServices: any
-  isLoadingUnpaid: boolean
-  upcomingServices: any
-  isLoadingUpcoming: boolean
-  onRetry: () => void
-}
-
 const OperationsDashboard = ({
-  quickStats,
-  isLoadingStats,
   unpaidServices,
   isLoadingUnpaid,
   upcomingServices,
   isLoadingUpcoming,
-  onRetry
-}: OperationsDashboardProps) => {
+}: {
+  unpaidServices: any
+  isLoadingUnpaid: boolean
+  upcomingServices: any
+  isLoadingUpcoming: boolean
+}) => {
   return (
     <Box>
       {/* URGENT ACTIONS ALERT */}

@@ -9,8 +9,6 @@ import {
   Paper,
   Box,
   Checkbox,
-  IconButton,
-  Tooltip,
   Typography,
 } from '@mui/material'
 import { useState, ReactNode } from 'react'

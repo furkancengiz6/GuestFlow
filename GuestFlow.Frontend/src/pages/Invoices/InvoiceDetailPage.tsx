@@ -38,7 +38,6 @@ import PDFViewer from '../../components/Common/PDFViewer'
 import { useNotification } from '../../hooks/useNotification'
 import { useLiveUpdates } from '../../hooks/useLiveUpdates'
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'
-import api from '../../services/api'
 import { useAuthStore } from '../../stores/authStore'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
@@ -223,6 +222,9 @@ const InvoiceDetailPage = () => {
     }
   }
 
+  const vatTotal = invoice.vatTotal ?? 0
+  const netTotal = invoice.netTotal ?? Math.max(0, invoice.totalAmount - vatTotal)
+
   return (
     <Box p={3}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -349,6 +351,19 @@ const InvoiceDetailPage = () => {
               <Typography variant="h6" fontWeight="medium" color="primary">
                 {formatCurrency(invoice.totalAmount, invoice.currency)}
               </Typography>
+              <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
+                <Chip
+                  size="small"
+                  variant="outlined"
+                  label={`Net: ${formatCurrency(netTotal, invoice.currency)}`}
+                />
+                <Chip
+                  size="small"
+                  variant="outlined"
+                  color={vatTotal > 0 ? 'warning' : 'default'}
+                  label={`KDV: ${formatCurrency(vatTotal, invoice.currency)}`}
+                />
+              </Box>
             </Grid>
             {invoice.paymentStatus && (
               <Grid item xs={12}>
@@ -600,8 +615,20 @@ const InvoiceDetailPage = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {journalPreview.lines.map((l, idx) => (
-                    <TableRow key={idx}>
+                  {journalPreview.lines.map((l, idx) => {
+                    const isVatLine =
+                      (l.accountCode || '').toString().trim() === '3910' ||
+                      (l.description || '').toLowerCase().includes('vat')
+
+                    return (
+                      <TableRow
+                        key={idx}
+                        sx={
+                          isVatLine
+                            ? { backgroundColor: 'rgba(255, 193, 7, 0.10)' }
+                            : undefined
+                        }
+                      >
                       <TableCell>{l.accountCode}</TableCell>
                       <TableCell>{l.description || '-'}</TableCell>
                       <TableCell align="right">
@@ -610,8 +637,9 @@ const InvoiceDetailPage = () => {
                       <TableCell align="right">
                         {l.credit ? formatCurrency(l.credit, journalPreview.currency) : '-'}
                       </TableCell>
-                    </TableRow>
-                  ))}
+                      </TableRow>
+                    )
+                  })}
                 </TableBody>
               </Table>
             </Box>

@@ -35,7 +35,8 @@ export { FileUploadButton, ImportPreviewDialog, BulkOperationsDialog } from '../
 // Performance components
 export { LazyImage } from './LazyImage'
 export { VirtualizedList } from './VirtualizedList'
-export { MemoizedComponent, withMemo } from './MemoizedComponent'
+export { MemoizedComponent } from './MemoizedComponent'
+export { withMemo } from './withMemo'
 
 // UX components
 export { default as GlobalSearch } from './GlobalSearch'

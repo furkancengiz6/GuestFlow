@@ -24,7 +24,6 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { useQuery } from '@tanstack/react-query';
 import { roomService } from '../../services/roomService';
-import { RoomContext as RoomContextType } from '../../types/room';
 
 const RoomContext: React.FC = () => {
   const [roomNumber, setRoomNumber] = useState('');
