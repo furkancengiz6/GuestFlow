@@ -21,15 +21,16 @@ interface EnvConfig {
   defaultPageSize: number
   sessionTimeout: number
   isDev: boolean
+  googleMapsApiKey?: string
 }
 
 /**
  * Get required environment variable (throws in production if missing)
  */
 const getRequiredEnv = (key: string): string => {
-  const value = import.meta.env[key]
+  const value = process.env[key]
   if (!value) {
-    const isProduction = import.meta.env.PROD || import.meta.env.NODE_ENV === 'production'
+    const isProduction = process.env.PROD || process.env.NODE_ENV === 'production'
     if (isProduction) {
       throw new Error(`Required environment variable '${key}' is missing. Production builds cannot use default values.`)
     }
@@ -42,9 +43,9 @@ const getRequiredEnv = (key: string): string => {
  * Get environment variable with fallback (development only)
  */
 const getEnv = (key: string, defaultValue: string = ''): string => {
-  const value = import.meta.env[key]
+  const value = process.env[key]
   if (!value) {
-    const isProduction = import.meta.env.PROD || import.meta.env.NODE_ENV === 'production'
+    const isProduction = process.env.PROD || process.env.NODE_ENV === 'production'
     if (isProduction && defaultValue.includes('localhost')) {
       throw new Error(`Cannot use localhost default '${defaultValue}' for '${key}' in production. Set proper production URL.`)
     }
@@ -56,7 +57,7 @@ const getEnv = (key: string, defaultValue: string = ''): string => {
  * Get boolean environment variable
  */
 const getEnvBool = (key: string, defaultValue: boolean = false): boolean => {
-  const value = import.meta.env[key]
+  const value = process.env[key]
   if (value === undefined) return defaultValue
   return value === 'true' || value === '1'
 }
@@ -65,7 +66,7 @@ const getEnvBool = (key: string, defaultValue: boolean = false): boolean => {
  * Get number environment variable
  */
 const getEnvNumber = (key: string, defaultValue: number = 0): number => {
-  const value = import.meta.env[key]
+  const value = process.env[key]
   if (value === undefined) return defaultValue
   const parsed = Number(value)
   return isNaN(parsed) ? defaultValue : parsed
@@ -75,7 +76,8 @@ const getEnvNumber = (key: string, defaultValue: number = 0): number => {
  * Environment configuration object
  */
 export const env: EnvConfig = {
-  apiBaseUrl: getRequiredEnv('VITE_API_BASE_URL') || 'http://localhost:5146/api/v1.0',
+  apiBaseUrl: getEnv('VITE_API_BASE_URL', 'http://localhost:5146/api/v1.0'),
+  googleMapsApiKey: getEnv('VITE_GOOGLE_MAPS_API_KEY', ''),
   env: getEnv('VITE_ENV', 'development'),
   appName: getEnv('VITE_APP_NAME', 'GuestFlow'),
   appVersion: getEnv('VITE_APP_VERSION', '1.0.0'),
@@ -96,10 +98,10 @@ export const env: EnvConfig = {
 export const validateEnv = (): void => {
   const required = ['VITE_API_BASE_URL']
   const missing: string[] = []
-  const isProduction = import.meta.env.PROD || import.meta.env.NODE_ENV === 'production'
+  const isProduction = process.env.PROD || process.env.NODE_ENV === 'production'
 
   required.forEach((key) => {
-    if (!import.meta.env[key]) {
+    if (!process.env[key]) {
       missing.push(key)
     }
   })

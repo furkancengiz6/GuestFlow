@@ -34,19 +34,77 @@ import {
 } from '@mui/icons-material'
 import { useQuery } from '@tanstack/react-query'
 import { guestService } from '../../services/guestService'
+import { privacyService } from '../../services/privacyService'
 import { formatDate, formatCurrency } from '../../utils/formatters'
 import ContentState from '../../components/Feedback/ContentState'
+import UnifiedGuestProfile from '../../components/Guests/UnifiedGuestProfile'
+import { Tabs, Tab } from '@mui/material'
+import { useState } from 'react'
 
 const GuestDetailPage = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const guestId = id ? parseInt(id, 10) : 0
+  const [viewMode, setViewMode] = useState<'standard' | 'unified'>('unified')
 
   const { data: guest, isLoading, error } = useQuery({
     queryKey: ['guest-detail', guestId],
     queryFn: () => guestService.getGuestDetail(guestId),
     enabled: !!guestId && !isNaN(guestId),
   })
+
+  // Check if guest is anonymized
+  const { data: isAnonymized = false } = useQuery({
+    queryKey: ['guest-anonymized', guestId],
+    queryFn: () => privacyService.checkAnonymized(guestId),
+    enabled: !!guestId && !isNaN(guestId),
+  })
+
+  // Get masked email (async)
+  const { data: maskedEmail } = useQuery({
+    queryKey: ['masked-email', guest?.email, isAnonymized || guest?.isAnonymized],
+    queryFn: () => {
+      if (!guest?.email) return ''
+      if (isAnonymized || guest.isAnonymized) {
+        return privacyService.maskEmail(guest.email)
+      }
+      return guest.email
+    },
+    enabled: !!guest?.email && (isAnonymized || guest?.isAnonymized || false),
+    initialData: guest?.email || '',
+  })
+
+  // Get masked phone (async)
+  const { data: maskedPhone } = useQuery({
+    queryKey: ['masked-phone', guest?.phoneNumber, isAnonymized || guest?.isAnonymized],
+    queryFn: () => {
+      if (!guest?.phoneNumber) return ''
+      if (isAnonymized || guest.isAnonymized) {
+        return privacyService.maskPhone(guest.phoneNumber)
+      }
+      return guest.phoneNumber
+    },
+    enabled: !!guest?.phoneNumber && (isAnonymized || guest?.isAnonymized || false),
+    initialData: guest?.phoneNumber || '',
+  })
+
+  // Helper function to get display email
+  const getDisplayEmail = () => {
+    if (!guest?.email) return ''
+    if (isAnonymized || guest.isAnonymized) {
+      return maskedEmail || guest.email
+    }
+    return guest.email
+  }
+
+  // Helper function to get display phone
+  const getDisplayPhone = () => {
+    if (!guest?.phoneNumber) return ''
+    if (isAnonymized || guest.isAnonymized) {
+      return maskedPhone || guest.phoneNumber
+    }
+    return guest.phoneNumber
+  }
 
   if (isLoading) {
     return <ContentState state="loading" skeletonLines={8} />
@@ -104,33 +162,53 @@ const GuestDetailPage = () => {
         </Typography>
       </Box>
 
-      {/* ACTION BUTTONS */}
-      <Box sx={{ mb: 3, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<EditIcon />}
-          onClick={() => navigate(`/guests/${guestId}/edit`)}
+      {/* View Mode Toggle */}
+      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Tabs
+          value={viewMode}
+          onChange={(_, newValue) => setViewMode(newValue)}
+          sx={{ minHeight: 'auto' }}
         >
-          Düzenle
-        </Button>
-        <Button
-          variant="outlined"
-          color="secondary"
-          startIcon={<AddIcon />}
-          onClick={() => navigate('/transfers', { state: { preselectedGuestId: guestId } })}
-        >
-          Transfer Oluştur
-        </Button>
-        <Button
-          variant="outlined"
-          color="info"
-          startIcon={<TourIcon />}
-          onClick={() => navigate('/tours', { state: { preselectedGuestId: guestId } })}
-        >
-          Tur Oluştur
-        </Button>
+          <Tab label="Unified Profile (PMS + GuestFlow)" value="unified" />
+          <Tab label="Standart Görünüm" value="standard" />
+        </Tabs>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            variant="contained"
+            color="primary"
+            size="small"
+            startIcon={<EditIcon />}
+            onClick={() => navigate(`/guests/${guestId}/edit`)}
+          >
+            Düzenle
+          </Button>
+          <Button
+            variant="outlined"
+            color="secondary"
+            size="small"
+            startIcon={<AddIcon />}
+            onClick={() => navigate('/transfers', { state: { preselectedGuestId: guestId } })}
+          >
+            Transfer
+          </Button>
+          <Button
+            variant="outlined"
+            color="info"
+            size="small"
+            startIcon={<TourIcon />}
+            onClick={() => navigate('/tours', { state: { preselectedGuestId: guestId } })}
+          >
+            Tur
+          </Button>
+        </Box>
       </Box>
+
+      {/* Unified Guest Profile View */}
+      {viewMode === 'unified' && <UnifiedGuestProfile guestId={guestId} />}
+
+      {/* Standard View */}
+      {viewMode === 'standard' && (
+        <>
 
       {/* Misafir Bilgileri */}
       <Card sx={{ mb: 3 }}>
@@ -147,6 +225,13 @@ const GuestDetailPage = () => {
                     icon={<StarIcon />}
                     label="Özel Misafir"
                     color="primary"
+                    variant="filled"
+                  />
+                )}
+                {(isAnonymized || guest.isAnonymized) && (
+                  <Chip
+                    label="Anonymize Edilmiş"
+                    color="warning"
                     variant="filled"
                   />
                 )}
@@ -173,7 +258,7 @@ const GuestDetailPage = () => {
                   <Typography variant="body2" color="text.secondary">
                     E-posta:
                   </Typography>
-                  <Typography variant="body1">{guest.email}</Typography>
+                  <Typography variant="body1">{getDisplayEmail()}</Typography>
                 </Box>
               </Grid>
             )}
@@ -184,7 +269,7 @@ const GuestDetailPage = () => {
                   <Typography variant="body2" color="text.secondary">
                     Telefon:
                   </Typography>
-                  <Typography variant="body1">{guest.phoneNumber}</Typography>
+                  <Typography variant="body1">{getDisplayPhone()}</Typography>
                 </Box>
               </Grid>
             )}
@@ -423,6 +508,8 @@ const GuestDetailPage = () => {
           </Paper>
         </Grid>
       </Grid>
+        </>
+      )}
     </Box>
   )
 }

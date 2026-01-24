@@ -54,6 +54,10 @@ export async function setupMockApi(
   const transfersApi = /\/api\/(v[\d.]+\/)?transfers(\b|\/|\?|$)/i
   const notificationsMyApi = /\/api\/(v[\d.]+\/)?notifications\/my(\b|\/|\?|$)/i
   const notificationsStatsApi = /\/api\/(v[\d.]+\/)?notifications\/statistics(\b|\/|\?|$)/i
+  // Analytics routes - MUST be before generic anyApi fallback
+  const analyticsKpisApi = /\/api\/(v[\d.]+\/)?analytics\/kpis\/realtime(\b|\/|\?|$)/i
+  const analyticsTrendApi = /\/api\/(v[\d.]+\/)?analytics\/revenue\/trend(\b|\/|\?|$)/i
+  const dashboardApi = /\/api\/(v[\d.]+\/)?dashboard\/(quick-stats|overview|recent-activities|revenue-chart|upcoming-bookings|guest-statistics|unpaid-services|upcoming-services)(\b|\/|\?|$)/i
   const anyApi = /\/api\/.*/i
 
   await page.route(guestsApi, (route: Route) => {
@@ -105,7 +109,125 @@ export async function setupMockApi(
     })
   })
 
+  // Analytics KPI mock
+  await page.route(analyticsKpisApi, (route: Route) => {
+    if (route.request().method().toUpperCase() === 'OPTIONS') {
+      return route.fulfill({ status: 204, headers: corsHeaders })
+    }
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: corsHeaders,
+      body: JSON.stringify({
+        success: true,
+        data: {
+          todayRevenue: 15000.50,
+          thisMonthRevenue: 450000.75,
+          thisMonthNetProfit: 135000.25,
+          averageRevenuePerService: 2500.00,
+          todayServiceCount: 6,
+          thisMonthServiceCount: 180,
+          mostProfitableServices: [
+            {
+              serviceType: 'Transfer',
+              totalRevenue: 200000,
+              totalCost: 120000,
+              netProfit: 80000,
+              profitMargin: 40.0,
+              serviceCount: 100,
+            },
+            {
+              serviceType: 'CityTour',
+              totalRevenue: 150000,
+              totalCost: 90000,
+              netProfit: 60000,
+              profitMargin: 40.0,
+              serviceCount: 50,
+            },
+          ],
+          revenueGrowthRate: 15.5,
+          profitMargin: 30.0,
+        },
+      }),
+    })
+  })
+
+  // Analytics Revenue Trend mock
+  await page.route(analyticsTrendApi, (route: Route) => {
+    if (route.request().method().toUpperCase() === 'OPTIONS') {
+      return route.fulfill({ status: 204, headers: corsHeaders })
+    }
+    const url = new URL(route.request().url())
+    const period = url.searchParams.get('period') || 'daily'
+    
+    // Generate mock data points based on period
+    const dataPoints = []
+    const count = period === 'daily' ? 30 : period === 'weekly' ? 12 : 12
+    
+    for (let i = 0; i < count; i++) {
+      dataPoints.push({
+        label: period === 'daily' ? `${i + 1}.01` : period === 'weekly' ? `Week ${i + 1}` : `Month ${i + 1}`,
+        date: new Date(2025, 0, i + 1).toISOString(),
+        revenue: 10000 + Math.random() * 5000,
+        cost: 6000 + Math.random() * 3000,
+        netProfit: 4000 + Math.random() * 2000,
+        serviceCount: 5 + Math.floor(Math.random() * 10),
+      })
+    }
+    
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: corsHeaders,
+      body: JSON.stringify({
+        success: true,
+        data: {
+          period,
+          dataPoints,
+          totalRevenue: dataPoints.reduce((sum, p) => sum + p.revenue, 0),
+          averageRevenue: dataPoints.reduce((sum, p) => sum + p.revenue, 0) / dataPoints.length,
+          growthRate: 12.5,
+        },
+      }),
+    })
+  })
+
+  // Dashboard API mock (for existing dashboard functionality)
+  await page.route(dashboardApi, (route: Route) => {
+    if (route.request().method().toUpperCase() === 'OPTIONS') {
+      return route.fulfill({ status: 204, headers: corsHeaders })
+    }
+    const url = route.request().url()
+    
+    // Mock different dashboard endpoints
+    if (url.includes('quick-stats')) {
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: corsHeaders,
+        body: JSON.stringify({
+          success: true,
+          data: {
+            totalGuests: 100,
+            totalTransfers: 50,
+            totalCityTours: 30,
+            totalYachtTours: 20,
+            totalInvoices: 75,
+          },
+        }),
+      })
+    } else {
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: corsHeaders,
+        body: JSON.stringify({ success: true, data: {} }),
+      })
+    }
+  })
+
   // Generic fallback for other API calls to avoid proxy errors
+  // IMPORTANT: This must be LAST to avoid overriding specific routes above
   if (includeGenericFallback) {
     await page.route(anyApi, (route: Route) => {
       if (route.request().method().toUpperCase() === 'OPTIONS') {

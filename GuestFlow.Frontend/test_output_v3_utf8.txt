@@ -1,0 +1,1253 @@
+﻿
+> guestflow-frontend@1.0.0 test:coverage
+> jest --coverage
+
+npm : PASS src/__test
+s__/hooks/useNotifica
+tion.test.ts
+At line:1 char:1
++ npm run test:covera
+ge > test_output_v3.t
+xt 2>&1
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (PASS sr   
+ c/__test...icati    
+on.test.ts:Strin    g
+) [], RemoteExc    ep
+tion
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
+PASS src/__tests__/se
+rvices/transferServic
+e.test.ts
+PASS src/__tests__/ut
+ils/formatters.test.t
+s
+PASS src/__tests__/ut
+ils/validation.test.t
+s
+FAIL src/__tests__/ho
+oks/useAnalytics.test
+.tsx
+  ● Test suite failed
+ to run
+
+    Jest encountered 
+an unexpected token
+
+    Jest failed to pa
+rse a file. This happ
+ens e.g. when your co
+de or its dependencie
+s use non-standard Ja
+vaScript syntax, or w
+hen Jest is not confi
+gured to support such
+ syntax.
+
+    Out of the box Je
+st supports Babel, wh
+ich will be used to t
+ransform your files i
+nto valid JS based on
+ your Babel configura
+tion.
+
+    By default "node_
+modules" folder is ig
+nored by transformers
+.
+
+    Here's what you c
+an do:
+     • If you are try
+ing to use ECMAScript
+ Modules, see https:/
+/jestjs.io/docs/ecmas
+cript-modules for how
+ to enable it.
+     • If you are try
+ing to use TypeScript
+, see https://jestjs.
+io/docs/getting-start
+ed#using-typescript
+     • To have some o
+f your "node_modules"
+ files transformed, y
+ou can specify a cust
+om "transformIgnorePa
+tterns" in your confi
+g.
+     • If you need a 
+custom transformation
+, specify a "transfor
+m" option in your con
+fig.
+     • If you simply 
+want to mock your non
+-JS modules (e.g. bin
+ary assets) you can s
+tub them out with the
+ "moduleNameMapper" c
+onfig option.
+
+    You'll find more 
+details and examples 
+of these config optio
+ns in the docs:
+    https://jestjs.io
+/docs/configuration
+    For information a
+bout custom transform
+ations, see:
+    https://jestjs.io
+/docs/code-transforma
+tion
+
+    Details:
+
+    C:\GuestFlow\Gues
+tFlow.Frontend\src\co
+nfig\env.ts:33
+        const value =
+ import.meta.env[key]
+;
+                     
+        ^^^^
+
+    SyntaxError: Cann
+ot use 'import.meta' 
+outside a module
+
+    [0m [90m 11 |[
+39m
+     [90m 12 |[39m 
+[90m// API base URL
+[39m
+    [31m[1m>[22m[
+39m[90m 13 |[39m [
+36mconst[39m [33mAP
+I_BASE_URL[39m [33m
+=[39m env[33m.[39m
+apiBaseUrl
+     [90m    |[39m 
+             [31m[1
+m^[22m[39m
+     [90m 14 |[39m
+     [90m 15 |[39m 
+[90m// Retry configu
+ration[39m
+     [90m 16 |[39m 
+[36mconst[39m [33m
+MAX_RETRIES[39m [33
+m=[39m [35m3[39m[
+0m
+
+      at Runtime.crea
+teScriptFromCode (nod
+e_modules/jest-runtim
+e/build/index.js:1318
+:40)
+      at Object.<anon
+ymous> (src/services/
+api.ts:13:14)
+      at Object.<anon
+ymous> (src/services/
+analyticsService.ts:1
+3:53)
+      at Object.<anon
+ymous> (src/hooks/use
+Analytics.ts:49:27)
+      at Object.<anon
+ymous> (src/__tests__
+/hooks/useAnalytics.t
+est.tsx:12:23)
+
+PASS src/__tests__/co
+mponents/Auth/Protect
+edRoute.test.tsx (8.2
+18 s)
+  ● Console
+
+    console.warn
+      ⚠️ React Router
+ Future Flag Warning:
+ React Router will be
+gin wrapping state up
+dates in `React.start
+Transition` in v7. Yo
+u can use the `v7_sta
+rtTransition` future 
+flag to opt-in early.
+ For more information
+, see https://reactro
+uter.com/v6/upgrading
+/future#v7_starttrans
+ition.
+
+    [0m [90m 16 |[
+39m
+     [90m 17 |[39m 
+[36mconst[39m rende
+rWithRoutes [33m=[3
+9m (ui[33m:[39m [3
+3mReact[39m[33m.[3
+9m[33mReactNode[39m
+[33m,[39m initialPa
+th[33m:[39m string 
+[33m=[39m [32m'/pr
+ivate'[39m) [33m=>
+[39m {
+    [31m[1m>[22m[
+39m[90m 18 |[39m   
+[36mreturn[39m rend
+er(
+     [90m    |[39m 
+               [31m
+[1m^[22m[39m
+     [90m 19 |[39m 
+    [33m<[39m[33mM
+emoryRouter[39m init
+ialEntries[33m=[39m
+{[initialPath]}[33m>
+[39m
+     [90m 20 |[39m 
+      [33m<[39m[33
+mRoutes[39m[33m>[3
+9m
+     [90m 21 |[39m 
+        [33m<[39m[
+33mRoute[39m path[3
+3m=[39m[32m"/login"
+[39m element[33m=[
+39m{[33m<[39m[33md
+iv[39m[33m>[39m[3
+3mLogin[39m [33mPag
+e[39m[33m<[39m[35
+m/div>} /[39m[33m>
+[39m[0m
+
+      at warn (node_m
+odules/react-router/l
+ib/deprecations.ts:9:
+13)
+      at warnOnce (no
+de_modules/react-rout
+er/lib/deprecations.t
+s:14:3)
+      at logDeprecati
+on (node_modules/reac
+t-router/lib/deprecat
+ions.ts:26:5)
+      at logV6Depreca
+tionWarnings (node_mo
+dules/react-router/li
+b/components.tsx:257:
+25)
+      at commitHookEf
+fectListMount (node_m
+odules/react-dom/cjs/
+react-dom.development
+.js:23189:26)
+      at commitPassiv
+eMountOnFiber (node_m
+odules/react-dom/cjs/
+react-dom.development
+.js:24970:11)
+      at commitPassiv
+eMountEffects_complet
+e (node_modules/react
+-dom/cjs/react-dom.de
+velopment.js:24930:9)
+      at commitPassiv
+eMountEffects_begin (
+node_modules/react-do
+m/cjs/react-dom.devel
+opment.js:24917:7)
+      at commitPassiv
+eMountEffects (node_m
+odules/react-dom/cjs/
+react-dom.development
+.js:24905:3)
+      at flushPassive
+EffectsImpl (node_mod
+ules/react-dom/cjs/re
+act-dom.development.j
+s:27078:3)
+      at flushPassive
+Effects (node_modules
+/react-dom/cjs/react-
+dom.development.js:27
+023:14)
+      at node_modules
+/react-dom/cjs/react-
+dom.development.js:26
+808:9
+      at flushActQueu
+e (node_modules/react
+/cjs/react.developmen
+t.js:2667:24)
+      at act (node_mo
+dules/react/cjs/react
+.development.js:2582:
+11)
+      at node_modules
+/@testing-library/rea
+ct/dist/act-compat.js
+:46:25
+      at renderRoot (
+node_modules/@testing
+-library/react/dist/p
+ure.js:189:26)
+      at render (node
+_modules/@testing-lib
+rary/react/dist/pure.
+js:291:10)
+      at renderWithRo
+utes (src/__tests__/c
+omponents/Auth/Protec
+tedRoute.test.tsx:18:
+16)
+      at Object.rende
+rWithRoutes (src/__te
+sts__/components/Auth
+/ProtectedRoute.test.
+tsx:47:5)
+
+    console.warn
+      ⚠️ React Router
+ Future Flag Warning:
+ Relative route resol
+ution within Splat ro
+utes is changing in v
+7. You can use the `v
+7_relativeSplatPath` 
+future flag to opt-in
+ early. For more info
+rmation, see https://
+reactrouter.com/v6/up
+grading/future#v7_rel
+ativesplatpath.
+
+    [0m [90m 16 |[
+39m
+     [90m 17 |[39m 
+[36mconst[39m rende
+rWithRoutes [33m=[3
+9m (ui[33m:[39m [3
+3mReact[39m[33m.[3
+9m[33mReactNode[39m
+[33m,[39m initialPa
+th[33m:[39m string 
+[33m=[39m [32m'/pr
+ivate'[39m) [33m=>
+[39m {
+    [31m[1m>[22m[
+39m[90m 18 |[39m   
+[36mreturn[39m rend
+er(
+     [90m    |[39m 
+               [31m
+[1m^[22m[39m
+     [90m 19 |[39m 
+    [33m<[39m[33mM
+emoryRouter[39m init
+ialEntries[33m=[39m
+{[initialPath]}[33m>
+[39m
+     [90m 20 |[39m 
+      [33m<[39m[33
+mRoutes[39m[33m>[3
+9m
+     [90m 21 |[39m 
+        [33m<[39m[
+33mRoute[39m path[3
+3m=[39m[32m"/login"
+[39m element[33m=[
+39m{[33m<[39m[33md
+iv[39m[33m>[39m[3
+3mLogin[39m [33mPag
+e[39m[33m<[39m[35
+m/div>} /[39m[33m>
+[39m[0m
+
+      at warn (node_m
+odules/react-router/l
+ib/deprecations.ts:9:
+13)
+      at warnOnce (no
+de_modules/react-rout
+er/lib/deprecations.t
+s:14:3)
+      at logDeprecati
+on (node_modules/reac
+t-router/lib/deprecat
+ions.ts:37:5)
+      at logV6Depreca
+tionWarnings (node_mo
+dules/react-router/li
+b/components.tsx:257:
+25)
+      at commitHookEf
+fectListMount (node_m
+odules/react-dom/cjs/
+react-dom.development
+.js:23189:26)
+      at commitPassiv
+eMountOnFiber (node_m
+odules/react-dom/cjs/
+react-dom.development
+.js:24970:11)
+      at commitPassiv
+eMountEffects_complet
+e (node_modules/react
+-dom/cjs/react-dom.de
+velopment.js:24930:9)
+      at commitPassiv
+eMountEffects_begin (
+node_modules/react-do
+m/cjs/react-dom.devel
+opment.js:24917:7)
+      at commitPassiv
+eMountEffects (node_m
+odules/react-dom/cjs/
+react-dom.development
+.js:24905:3)
+      at flushPassive
+EffectsImpl (node_mod
+ules/react-dom/cjs/re
+act-dom.development.j
+s:27078:3)
+      at flushPassive
+Effects (node_modules
+/react-dom/cjs/react-
+dom.development.js:27
+023:14)
+      at node_modules
+/react-dom/cjs/react-
+dom.development.js:26
+808:9
+      at flushActQueu
+e (node_modules/react
+/cjs/react.developmen
+t.js:2667:24)
+      at act (node_mo
+dules/react/cjs/react
+.development.js:2582:
+11)
+      at node_modules
+/@testing-library/rea
+ct/dist/act-compat.js
+:46:25
+      at renderRoot (
+node_modules/@testing
+-library/react/dist/p
+ure.js:189:26)
+      at render (node
+_modules/@testing-lib
+rary/react/dist/pure.
+js:291:10)
+      at renderWithRo
+utes (src/__tests__/c
+omponents/Auth/Protec
+tedRoute.test.tsx:18:
+16)
+      at Object.rende
+rWithRoutes (src/__te
+sts__/components/Auth
+/ProtectedRoute.test.
+tsx:47:5)
+
+PASS src/__tests__/co
+mponents/Common/Expor
+tButton.test.tsx (9.0
+85 s)
+PASS src/__tests__/in
+tegration/auth.integr
+ation.test.tsx (10.68
+2 s)
+  ● Console
+
+    console.warn
+      ⚠️ React Router
+ Future Flag Warning:
+ React Router will be
+gin wrapping state up
+dates in `React.start
+Transition` in v7. Yo
+u can use the `v7_sta
+rtTransition` future 
+flag to opt-in early.
+ For more information
+, see https://reactro
+uter.com/v6/upgrading
+/future#v7_starttrans
+ition.
+
+    [0m [90m 75 |[
+39m     })
+     [90m 76 |[39m
+    [31m[1m>[22m[
+39m[90m 77 |[39m   
+  render(
+     [90m    |[39m 
+          [31m[1m^
+[22m[39m
+     [90m 78 |[39m 
+      [33m<[39m[33
+mQueryClientProvider
+[39m client[33m=[39
+m{queryClient}[33m>
+[39m
+     [90m 79 |[39m 
+        [33m<[39m[
+33mMemoryRouter[39m
+[33m>[39m
+     [90m 80 |[39m 
+          [33m<[39m
+[33mLoginPage[39m 
+[33m/[39m[33m>[39m
+[0m
+
+      at warn (node_m
+odules/react-router/l
+ib/deprecations.ts:9:
+13)
+      at warnOnce (no
+de_modules/react-rout
+er/lib/deprecations.t
+s:14:3)
+      at logDeprecati
+on (node_modules/reac
+t-router/lib/deprecat
+ions.ts:26:5)
+      at logV6Depreca
+tionWarnings (node_mo
+dules/react-router/li
+b/components.tsx:257:
+25)
+      at commitHookEf
+fectListMount (node_m
+odules/react-dom/cjs/
+react-dom.development
+.js:23189:26)
+      at commitPassiv
+eMountOnFiber (node_m
+odules/react-dom/cjs/
+react-dom.development
+.js:24970:11)
+      at commitPassiv
+eMountEffects_complet
+e (node_modules/react
+-dom/cjs/react-dom.de
+velopment.js:24930:9)
+      at commitPassiv
+eMountEffects_begin (
+node_modules/react-do
+m/cjs/react-dom.devel
+opment.js:24917:7)
+      at commitPassiv
+eMountEffects (node_m
+odules/react-dom/cjs/
+react-dom.development
+.js:24905:3)
+      at flushPassive
+EffectsImpl (node_mod
+ules/react-dom/cjs/re
+act-dom.development.j
+s:27078:3)
+      at flushPassive
+Effects (node_modules
+/react-dom/cjs/react-
+dom.development.js:27
+023:14)
+      at performSyncW
+orkOnRoot (node_modul
+es/react-dom/cjs/reac
+t-dom.development.js:
+26115:3)
+      at flushSyncCal
+lbacks (node_modules/
+react-dom/cjs/react-d
+om.development.js:120
+42:22)
+      at commitRootIm
+pl (node_modules/reac
+t-dom/cjs/react-dom.d
+evelopment.js:26998:3
+)
+      at commitRoot (
+node_modules/react-do
+m/cjs/react-dom.devel
+opment.js:26721:5)
+      at finishConcur
+rentRender (node_modu
+les/react-dom/cjs/rea
+ct-dom.development.js
+:26020:9)
+      at performConcu
+rrentWorkOnRoot (node
+_modules/react-dom/cj
+s/react-dom.developme
+nt.js:25848:7)
+      at flushActQueu
+e (node_modules/react
+/cjs/react.developmen
+t.js:2667:24)
+      at act (node_mo
+dules/react/cjs/react
+.development.js:2582:
+11)
+      at node_modules
+/@testing-library/rea
+ct/dist/act-compat.js
+:46:25
+      at renderRoot (
+node_modules/@testing
+-library/react/dist/p
+ure.js:189:26)
+      at render (node
+_modules/@testing-lib
+rary/react/dist/pure.
+js:291:10)
+      at Object.<anon
+ymous> (src/__tests__
+/integration/auth.int
+egration.test.tsx:77:
+11)
+
+    console.warn
+      ⚠️ React Router
+ Future Flag Warning:
+ Relative route resol
+ution within Splat ro
+utes is changing in v
+7. You can use the `v
+7_relativeSplatPath` 
+future flag to opt-in
+ early. For more info
+rmation, see https://
+reactrouter.com/v6/up
+grading/future#v7_rel
+ativesplatpath.
+
+    [0m [90m 75 |[
+39m     })
+     [90m 76 |[39m
+    [31m[1m>[22m[
+39m[90m 77 |[39m   
+  render(
+     [90m    |[39m 
+          [31m[1m^
+[22m[39m
+     [90m 78 |[39m 
+      [33m<[39m[33
+mQueryClientProvider
+[39m client[33m=[39
+m{queryClient}[33m>
+[39m
+     [90m 79 |[39m 
+        [33m<[39m[
+33mMemoryRouter[39m
+[33m>[39m
+     [90m 80 |[39m 
+          [33m<[39m
+[33mLoginPage[39m 
+[33m/[39m[33m>[39m
+[0m
+
+      at warn (node_m
+odules/react-router/l
+ib/deprecations.ts:9:
+13)
+      at warnOnce (no
+de_modules/react-rout
+er/lib/deprecations.t
+s:14:3)
+      at logDeprecati
+on (node_modules/reac
+t-router/lib/deprecat
+ions.ts:37:5)
+      at logV6Depreca
+tionWarnings (node_mo
+dules/react-router/li
+b/components.tsx:257:
+25)
+      at commitHookEf
+fectListMount (node_m
+odules/react-dom/cjs/
+react-dom.development
+.js:23189:26)
+      at commitPassiv
+eMountOnFiber (node_m
+odules/react-dom/cjs/
+react-dom.development
+.js:24970:11)
+      at commitPassiv
+eMountEffects_complet
+e (node_modules/react
+-dom/cjs/react-dom.de
+velopment.js:24930:9)
+      at commitPassiv
+eMountEffects_begin (
+node_modules/react-do
+m/cjs/react-dom.devel
+opment.js:24917:7)
+      at commitPassiv
+eMountEffects (node_m
+odules/react-dom/cjs/
+react-dom.development
+.js:24905:3)
+      at flushPassive
+EffectsImpl (node_mod
+ules/react-dom/cjs/re
+act-dom.development.j
+s:27078:3)
+      at flushPassive
+Effects (node_modules
+/react-dom/cjs/react-
+dom.development.js:27
+023:14)
+      at performSyncW
+orkOnRoot (node_modul
+es/react-dom/cjs/reac
+t-dom.development.js:
+26115:3)
+      at flushSyncCal
+lbacks (node_modules/
+react-dom/cjs/react-d
+om.development.js:120
+42:22)
+      at commitRootIm
+pl (node_modules/reac
+t-dom/cjs/react-dom.d
+evelopment.js:26998:3
+)
+      at commitRoot (
+node_modules/react-do
+m/cjs/react-dom.devel
+opment.js:26721:5)
+      at finishConcur
+rentRender (node_modu
+les/react-dom/cjs/rea
+ct-dom.development.js
+:26020:9)
+      at performConcu
+rrentWorkOnRoot (node
+_modules/react-dom/cj
+s/react-dom.developme
+nt.js:25848:7)
+      at flushActQueu
+e (node_modules/react
+/cjs/react.developmen
+t.js:2667:24)
+      at act (node_mo
+dules/react/cjs/react
+.development.js:2582:
+11)
+      at node_modules
+/@testing-library/rea
+ct/dist/act-compat.js
+:46:25
+      at renderRoot (
+node_modules/@testing
+-library/react/dist/p
+ure.js:189:26)
+      at render (node
+_modules/@testing-lib
+rary/react/dist/pure.
+js:291:10)
+      at Object.<anon
+ymous> (src/__tests__
+/integration/auth.int
+egration.test.tsx:77:
+11)
+
+PASS src/__tests__/co
+mponents/Transfers/Tr
+ansferForm.test.tsx (
+16.146 s)
+FAIL src/__tests__/co
+mponents/Analytics/Re
+alTimeKpiCards.test.t
+sx
+  ● Test suite failed
+ to run
+
+    Jest encountered 
+an unexpected token
+
+    Jest failed to pa
+rse a file. This happ
+ens e.g. when your co
+de or its dependencie
+s use non-standard Ja
+vaScript syntax, or w
+hen Jest is not confi
+gured to support such
+ syntax.
+
+    Out of the box Je
+st supports Babel, wh
+ich will be used to t
+ransform your files i
+nto valid JS based on
+ your Babel configura
+tion.
+
+    By default "node_
+modules" folder is ig
+nored by transformers
+.
+
+    Here's what you c
+an do:
+     • If you are try
+ing to use ECMAScript
+ Modules, see https:/
+/jestjs.io/docs/ecmas
+cript-modules for how
+ to enable it.
+     • If you are try
+ing to use TypeScript
+, see https://jestjs.
+io/docs/getting-start
+ed#using-typescript
+     • To have some o
+f your "node_modules"
+ files transformed, y
+ou can specify a cust
+om "transformIgnorePa
+tterns" in your confi
+g.
+     • If you need a 
+custom transformation
+, specify a "transfor
+m" option in your con
+fig.
+     • If you simply 
+want to mock your non
+-JS modules (e.g. bin
+ary assets) you can s
+tub them out with the
+ "moduleNameMapper" c
+onfig option.
+
+    You'll find more 
+details and examples 
+of these config optio
+ns in the docs:
+    https://jestjs.io
+/docs/configuration
+    For information a
+bout custom transform
+ations, see:
+    https://jestjs.io
+/docs/code-transforma
+tion
+
+    Details:
+
+    C:\GuestFlow\Gues
+tFlow.Frontend\src\co
+nfig\env.ts:33
+        const value =
+ import.meta.env[key]
+;
+                     
+        ^^^^
+
+    SyntaxError: Cann
+ot use 'import.meta' 
+outside a module
+
+    [0m [90m 11 |[
+39m
+     [90m 12 |[39m 
+[90m// API base URL
+[39m
+    [31m[1m>[22m[
+39m[90m 13 |[39m [
+36mconst[39m [33mAP
+I_BASE_URL[39m [33m
+=[39m env[33m.[39m
+apiBaseUrl
+     [90m    |[39m 
+             [31m[1
+m^[22m[39m
+     [90m 14 |[39m
+     [90m 15 |[39m 
+[90m// Retry configu
+ration[39m
+     [90m 16 |[39m 
+[36mconst[39m [33m
+MAX_RETRIES[39m [33
+m=[39m [35m3[39m[
+0m
+
+      at Runtime.crea
+teScriptFromCode (nod
+e_modules/jest-runtim
+e/build/index.js:1318
+:40)
+      at Object.<anon
+ymous> (src/services/
+api.ts:13:14)
+      at Object.<anon
+ymous> (src/services/
+analyticsService.ts:1
+3:53)
+      at Object.<anon
+ymous> (src/hooks/use
+Analytics.ts:49:27)
+      at Object.<anon
+ymous> (src/component
+s/Analytics/RealTimeK
+piCards.tsx:16:23)
+      at Object.<anon
+ymous> (src/__tests__
+/components/Analytics
+/RealTimeKpiCards.tes
+t.tsx:12:66)
+
+-----------------------------------|---------|----------|---------|---------|-----------------------------------------
+File                               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s                       
+-----------------------------------|---------|----------|---------|---------|-----------------------------------------
+All files                          |    3.79 |    25.41 |    9.12 |    3.79 |                                         
+ src                               |       0 |        0 |       0 |       0 |                                         
+  App.tsx                          |       0 |        0 |       0 |       0 | 1-523                                   
+ src/components/Airports           |       0 |        0 |       0 |       0 |                                         
+  AirportForm.tsx                  |       0 |        0 |       0 |       0 | 1-123                                   
+ src/components/Analytics          |       0 |        0 |       0 |       0 |                                         
+  RealTimeKpiCards.tsx             |       0 |        0 |       0 |       0 | 1-216                                   
+ src/components/Auth               |   48.86 |    58.33 |      50 |   48.86 |                                         
+  PermissionGuard.tsx              |       0 |        0 |       0 |       0 | 1-39                                    
+  ProtectedRoute.tsx               |   74.78 |    63.63 |     100 |   74.78 | 25-26,33-38,44-59,61-62,67,77-78        
+  RoleGuard.tsx                    |       0 |        0 |       0 |       0 | 1-22                                    
+ src/components/Charts             |       0 |        0 |       0 |       0 |                                         
+  BarChart.tsx                     |       0 |        0 |       0 |       0 | 1-115                                   
+  LineChart.tsx                    |       0 |        0 |       0 |       0 | 1-104                                   
+  PieChart.tsx                     |       0 |        0 |       0 |       0 | 1-127                                   
+  RevenueChart.tsx                 |       0 |        0 |       0 |       0 | 1-136                                   
+ src/components/Cities             |       0 |        0 |       0 |       0 |                                         
+  CityForm.tsx                     |       0 |        0 |       0 |       0 | 1-88                                    
+ src/components/Common             |    3.03 |    16.66 |   16.66 |    3.03 |                                         
+  AdvancedFilter.tsx               |       0 |        0 |       0 |       0 | 1-260                                   
+  AppErrorBoundary.tsx             |       0 |        0 |       0 |       0 | 1-42                                    
+  BreadcrumbsBar.tsx               |       0 |        0 |       0 |       0 | 1-80                                    
+  ConfirmationDialog.tsx           |       0 |        0 |       0 |       0 | 1-106                                   
+  ConnectionStatus.tsx             |       0 |        0 |       0 |       0 | 1-38                                    
+  DataTable.tsx                    |       0 |        0 |       0 |       0 | 1-221                                   
+  EnhancedErrorBoundary.tsx        |       0 |        0 |       0 |       0 | 1-128                                   
+  ExportButton.tsx                 |     100 |      100 |     100 |     100 |                                         
+  FilePreview.tsx                  |       0 |        0 |       0 |       0 | 1-275                                   
+  FilterPanel.tsx                  |       0 |        0 |       0 |       0 | 1-169                                   
+  FormErrorDisplay.tsx             |       0 |        0 |       0 |       0 | 1-44                                    
+  GlobalLoadingIndicator.tsx       |       0 |        0 |       0 |       0 | 1-19                                    
+  GlobalSearch.tsx                 |       0 |        0 |       0 |       0 | 1-213                                   
+  InfoCard.tsx                     |       0 |        0 |       0 |       0 | 1-65                                    
+  KeyboardShortcutsDialog.tsx      |       0 |        0 |       0 |       0 | 1-86                                    
+  LazyImage.tsx                    |       0 |        0 |       0 |       0 | 1-119                                   
+  MemoizedComponent.tsx            |       0 |        0 |       0 |       0 | 1-16                                    
+  NotificationProvider.tsx         |       0 |        0 |       0 |       0 | 1-36                                    
+  PDFViewer.tsx                    |       0 |        0 |       0 |       0 | 1-145                                   
+  PrintButton.tsx                  |       0 |        0 |       0 |       0 | 1-36                                    
+  PrintView.tsx                    |       0 |        0 |       0 |       0 | 1-80                                    
+  QueryErrorFallback.tsx           |       0 |        0 |       0 |       0 | 1-41                                    
+  StandardDialog.tsx               |       0 |        0 |       0 |       0 | 1-76                                    
+  StatCard.tsx                     |       0 |        0 |       0 |       0 | 1-95                                    
+  VirtualizedList.tsx              |       0 |        0 |       0 |       0 | 1-91                                    
+  withMemo.ts                      |       0 |        0 |       0 |       0 | 1-11                                    
+ src/components/ConciergeDashboard |       0 |        0 |       0 |       0 |                                         
+  ConciergeDashboard.tsx           |       0 |        0 |       0 |       0 | 1-536                                   
+ src/components/DailyNotes         |       0 |        0 |       0 |       0 |                                         
+  DailyNoteForm.tsx                |       0 |        0 |       0 |       0 | 1-142                                   
+ src/components/DailyRevenues      |       0 |        0 |       0 |       0 |                                         
+  DailyRevenueForm.tsx             |       0 |        0 |       0 |       0 | 1-129                                   
+ src/components/Feedback           |       0 |        0 |       0 |       0 |                                         
+  ContentState.tsx                 |       0 |        0 |       0 |       0 | 1-59                                    
+  EnhancedContentState.tsx         |       0 |        0 |       0 |       0 | 1-98                                    
+  SkeletonLoader.tsx               |       0 |        0 |       0 |       0 | 1-107                                   
+  ToastNotification.tsx            |       0 |        0 |       0 |       0 | 1-66                                    
+ src/components/Forms              |       0 |        0 |       0 |       0 |                                         
+  FormField.tsx                    |       0 |        0 |       0 |       0 | 1-184                                   
+ src/components/Guests             |       0 |        0 |       0 |       0 |                                         
+  CommunicationHistory.tsx         |       0 |        0 |       0 |       0 | 1-365                                   
+  GuestForm.tsx                    |       0 |        0 |       0 |       0 | 1-205                                   
+  GuestPreferences.tsx             |       0 |        0 |       0 |       0 | 1-658                                   
+  RoomAssignmentForm.tsx           |       0 |        0 |       0 |       0 | 1-284                                   
+  UnifiedGuestProfile.tsx          |       0 |        0 |       0 |       0 | 1-604                                   
+ src/components/Hotels             |       0 |        0 |       0 |       0 |                                         
+  HotelForm.tsx                    |       0 |        0 |       0 |       0 | 1-251                                   
+ src/components/Import             |       0 |        0 |       0 |       0 |                                         
+  BulkOperationsDialog.tsx         |       0 |        0 |       0 |       0 | 1-200                                   
+  FileUploadButton.tsx             |       0 |        0 |       0 |       0 | 1-138                                   
+  ImportPreviewDialog.tsx          |       0 |        0 |       0 |       0 | 1-262                                   
+ src/components/Invoices           |       0 |        0 |       0 |       0 |                                         
+  InvoiceCreator.tsx               |       0 |        0 |       0 |       0 | 1-276                                   
+ src/components/Itineraries        |       0 |        0 |       0 |       0 |                                         
+  ItineraryForm.tsx                |       0 |        0 |       0 |       0 | 1-338                                   
+  TimelineComponent.tsx            |       0 |        0 |       0 |       0 | 1-137                                   
+ src/components/Language           |       0 |        0 |       0 |       0 |                                         
+  LanguageSwitcher.tsx             |       0 |        0 |       0 |       0 | 1-56                                    
+ src/components/Layout             |       0 |        0 |       0 |       0 |                                         
+  Header.tsx                       |       0 |        0 |       0 |       0 | 1-140                                   
+  Layout.tsx                       |       0 |        0 |       0 |       0 | 1-35                                    
+  Sidebar.tsx                      |       0 |        0 |       0 |       0 | 1-138                                   
+ src/components/Localization       |       0 |        0 |       0 |       0 |                                         
+  LocalizedDatePicker.tsx          |       0 |        0 |       0 |       0 | 1-26                                    
+ src/components/Map                |       0 |        0 |       0 |       0 |                                         
+  OperationalMap.tsx               |       0 |        0 |       0 |       0 | 1-466                                   
+ src/components/NotificationRules  |       0 |        0 |       0 |       0 |                                         
+  NotificationRules.tsx            |       0 |        0 |       0 |       0 | 1-591                                   
+ src/components/Notifications      |       0 |        0 |       0 |       0 |                                         
+  NotificationCenter.tsx           |       0 |        0 |       0 |       0 | 1-300                                   
+ src/components/Payments           |       0 |        0 |       0 |       0 |                                         
+  PaymentForm.tsx                  |       0 |        0 |       0 |       0 | 1-390                                   
+ src/components/Personnel          |       0 |        0 |       0 |       0 |                                         
+  PersonnelForm.tsx                |       0 |        0 |       0 |       0 | 1-199                                   
+ src/components/Profitability      |       0 |        0 |       0 |       0 |                                         
+  ProfitabilityDashboard.tsx       |       0 |        0 |       0 |       0 | 1-361                                   
+ src/components/Reservations       |       0 |        0 |       0 |       0 |                                         
+  ReservationForm.tsx              |       0 |        0 |       0 |       0 | 1-201                                   
+ src/components/Restaurants        |       0 |        0 |       0 |       0 |                                         
+  RestaurantForm.tsx               |       0 |        0 |       0 |       0 | 1-227                                   
+ src/components/RoomContext        |       0 |        0 |       0 |       0 |                                         
+  RoomContext.tsx                  |       0 |        0 |       0 |       0 | 1-352                                   
+ src/components/ServicePackages    |       0 |        0 |       0 |       0 |                                         
+  ServicePackageForm.tsx           |       0 |        0 |       0 |       0 | 1-287                                   
+ src/components/Tours              |       0 |        0 |       0 |       0 |                                         
+  CityTourForm.tsx                 |       0 |        0 |       0 |       0 | 1-875                                   
+  YachtTourForm.tsx                |       0 |        0 |       0 |       0 | 1-827                                   
+ src/components/Transfers          |   98.91 |    48.21 |    6.66 |   98.91 |                                         
+  TransferForm.tsx                 |   98.91 |    48.21 |    6.66 |   98.91 | 315-319,325-326,330-332                 
+ src/components/Vehicles           |       0 |        0 |       0 |       0 |                                         
+  VehicleForm.tsx                  |       0 |        0 |       0 |       0 | 1-109                                   
+ src/config                        |       0 |        0 |       0 |       0 |                                         
+  env.ts                           |       0 |        0 |       0 |       0 | 1-126                                   
+  queryClient.ts                   |       0 |        0 |       0 |       0 | 1-93                                    
+ src/hooks                         |    0.67 |    10.34 |    6.45 |    0.67 |                                         
+  useAnalytics.ts                  |       0 |        0 |       0 |       0 | 1-129                                   
+  useBulkEdit.ts                   |       0 |        0 |       0 |       0 | 1-84                                    
+  useCommunication.ts              |       0 |        0 |       0 |       0 | 1-65                                    
+  useConciergeDashboard.ts         |       0 |        0 |       0 |       0 | 1-57                                    
+  useConfirmation.ts               |       0 |        0 |       0 |       0 | 1-48                                    
+  useDailyOperations.ts            |       0 |        0 |       0 |       0 | 1-15                                    
+  useDashboard.ts                  |       0 |        0 |       0 |       0 | 1-82                                    
+  useExport.ts                     |       0 |        0 |       0 |       0 | 1-59                                    
+  useFormErrorHandler.ts           |       0 |        0 |       0 |       0 | 1-34                                    
+  useGlobalSearch.ts               |       0 |        0 |       0 |       0 | 1-27                                    
+  useImport.ts                     |       0 |        0 |       0 |       0 | 1-134                                   
+  useKeyboardShortcuts.ts          |       0 |        0 |       0 |       0 | 1-98                                    
+  useLiveUpdates.ts                |       0 |        0 |       0 |       0 | 1-77                                    
+  useLoginAudit.ts                 |       0 |        0 |       0 |       0 | 1-42                                    
+  useMap.ts                        |       0 |        0 |       0 |       0 | 1-14                                    
+  useMemoization.ts                |       0 |        0 |       0 |       0 | 1-57                                    
+  useNotification.ts               |      70 |      100 |      40 |      70 | 11-12,14-15,17-18                       
+  useNotificationRules.ts          |       0 |        0 |       0 |       0 | 1-95                                    
+  useOperations.ts                 |       0 |        0 |       0 |       0 | 1-85                                    
+  useOptimisticMutation.ts         |       0 |        0 |       0 |       0 | 1-85                                    
+  usePermissions.ts                |       0 |        0 |       0 |       0 | 1-34                                    
+  useRealtimeNotifications.ts      |       0 |        0 |       0 |       0 | 1-100                                   
+  useSessionTimeout.ts             |       0 |        0 |       0 |       0 | 1-143                                   
+  useSignalR.ts                    |       0 |        0 |       0 |       0 | 1-195                                   
+  useTokenRefresh.ts               |       0 |        0 |       0 |       0 | 1-106                                   
+  useTranslation.ts                |       0 |        0 |       0 |       0 | 1-24                                    
+  useWhatsApp.ts                   |       0 |        0 |       0 |       0 | 1-157                                   
+ src/i18n                          |       0 |        0 |       0 |       0 |                                         
+  config.ts                        |       0 |        0 |       0 |       0 | 1-48                                    
+ src/pages                         |       0 |        0 |       0 |       0 |                                         
+  ForbiddenPage.tsx                |       0 |        0 |       0 |       0 | 1-37                                    
+ src/pages/Airports                |       0 |        0 |       0 |       0 |                                         
+  AirportsPage.tsx                 |       0 |        0 |       0 |       0 | 1-307                                   
+ src/pages/Auth                    |   93.67 |    41.17 |     100 |   93.67 |                                         
+  LoginPage.tsx                    |   93.67 |    41.17 |     100 |   93.67 | 32-33,53-54,79-84,90                    
+ src/pages/Calendar                |       0 |        0 |       0 |       0 |                                         
+  CalendarPage.tsx                 |       0 |        0 |       0 |       0 | 1-337                                   
+ src/pages/Cities                  |       0 |        0 |       0 |       0 |                                         
+  CitiesPage.tsx                   |       0 |        0 |       0 |       0 | 1-308                                   
+ src/pages/Currency                |       0 |        0 |       0 |       0 |                                         
+  CurrencyPage.tsx                 |       0 |        0 |       0 |       0 | 1-288                                   
+ src/pages/DailyNotes              |       0 |        0 |       0 |       0 |                                         
+  DailyNotesPage.tsx               |       0 |        0 |       0 |       0 | 1-306                                   
+ src/pages/DailyRevenues           |       0 |        0 |       0 |       0 |                                         
+  DailyRevenuesPage.tsx            |       0 |        0 |       0 |       0 | 1-308                                   
+ src/pages/Dashboard               |       0 |        0 |       0 |       0 |                                         
+  DashboardPage.tsx                |       0 |        0 |       0 |       0 | 1-868                                   
+ src/pages/Emails                  |       0 |        0 |       0 |       0 |                                         
+  EmailsPage.tsx                   |       0 |        0 |       0 |       0 | 1-397                                   
+ src/pages/Files                   |       0 |        0 |       0 |       0 |                                         
+  FilesPage.tsx                    |       0 |        0 |       0 |       0 | 1-456                                   
+ src/pages/Guests                  |       0 |        0 |       0 |       0 |                                         
+  GuestDetailPage.tsx              |       0 |        0 |       0 |       0 | 1-517                                   
+  GuestsPage.tsx                   |       0 |        0 |       0 |       0 | 1-530                                   
+ src/pages/Hotels                  |       0 |        0 |       0 |       0 |                                         
+  HotelsPage.tsx                   |       0 |        0 |       0 |       0 | 1-402                                   
+ src/pages/Intelligence            |       0 |        0 |       0 |       0 |                                         
+  IntelligenceDashboardPage.tsx    |       0 |        0 |       0 |       0 | 1-443                                   
+ src/pages/Invoices                |       0 |        0 |       0 |       0 |                                         
+  InvoiceDetailPage.tsx            |       0 |        0 |       0 |       0 | 1-727                                   
+  InvoicesPage.tsx                 |       0 |        0 |       0 |       0 | 1-538                                   
+ src/pages/Itineraries             |       0 |        0 |       0 |       0 |                                         
+  ItinerariesPage.tsx              |       0 |        0 |       0 |       0 | 1-477                                   
+  ItineraryTimelinePage.tsx        |       0 |        0 |       0 |       0 | 1-133                                   
+ src/pages/Map                     |       0 |        0 |       0 |       0 |                                         
+  OperationalMapPage.tsx           |       0 |        0 |       0 |       0 | 1-11                                    
+ src/pages/NotificationRules       |       0 |        0 |       0 |       0 |                                         
+  NotificationRulesPage.tsx        |       0 |        0 |       0 |       0 | 1-11                                    
+ src/pages/Notifications           |       0 |        0 |       0 |       0 |                                         
+  NotificationsPage.tsx            |       0 |        0 |       0 |       0 | 1-412                                   
+ src/pages/Operations              |       0 |        0 |       0 |       0 |                                         
+  DailyOperationsPage.tsx          |       0 |        0 |       0 |       0 | 1-550                                   
+ src/pages/Payments                |       0 |        0 |       0 |       0 |                                         
+  PaymentsPage.tsx                 |       0 |        0 |       0 |       0 | 1-303                                   
+ src/pages/Personnel               |       0 |        0 |       0 |       0 |                                         
+  PersonnelDetailPage.tsx          |       0 |        0 |       0 |       0 | 1                                       
+  PersonnelPage.tsx                |       0 |        0 |       0 |       0 | 1-494                                   
+ src/pages/Privacy                 |       0 |        0 |       0 |       0 |                                         
+  PrivacyManagementPage.tsx        |       0 |        0 |       0 |       0 | 1-377                                   
+ src/pages/Reports                 |       0 |        0 |       0 |       0 |                                         
+  ReportsPage.tsx                  |       0 |        0 |       0 |       0 | 1-355                                   
+ src/pages/Reservations            |       0 |        0 |       0 |       0 |                                         
+  ReservationDetailPage.tsx        |       0 |        0 |       0 |       0 | 1-277                                   
+  ReservationsPage.tsx             |       0 |        0 |       0 |       0 | 1-405                                   
+ src/pages/Restaurants             |       0 |        0 |       0 |       0 |                                         
+  RestaurantsPage.tsx              |       0 |        0 |       0 |       0 | 1-412                                   
+ src/pages/RoomAssignments         |       0 |        0 |       0 |       0 |                                         
+  RoomAssignmentsPage.tsx          |       0 |        0 |       0 |       0 | 1-377                                   
+ src/pages/SMS                     |       0 |        0 |       0 |       0 |                                         
+  SmsPage.tsx                      |       0 |        0 |       0 |       0 | 1-371                                   
+ src/pages/Security                |       0 |        0 |       0 |       0 |                                         
+  LoginAuditPage.tsx               |       0 |        0 |       0 |       0 | 1-361                                   
+ src/pages/ServicePackages         |       0 |        0 |       0 |       0 |                                         
+  ServicePackagesPage.tsx          |       0 |        0 |       0 |       0 | 1-409                                   
+ src/pages/Settings                |       0 |        0 |       0 |       0 |                                         
+  SettingsPage.tsx                 |       0 |        0 |       0 |       0 | 1-176                                   
+ src/pages/Suppliers               |       0 |        0 |       0 |       0 |                                         
+  SupplierCostsPage.tsx            |       0 |        0 |       0 |       0 | 1-221                                   
+  SuppliersPage.tsx                |       0 |        0 |       0 |       0 | 1-400                                   
+ src/pages/Tours                   |       0 |        0 |       0 |       0 |                                         
+  CityTourDetailPage.tsx           |       0 |        0 |       0 |       0 | 1-411                                   
+  ToursPage.tsx                    |       0 |        0 |       0 |       0 | 1-1097                                  
+  YachtTourDetailPage.tsx          |       0 |        0 |       0 |       0 | 1-416                                   
+ src/pages/Transfers               |       0 |        0 |       0 |       0 |                                         
+  TransferDetailPage.tsx           |       0 |        0 |       0 |       0 | 1-449                                   
+  TransfersPage.tsx                |       0 |        0 |       0 |       0 | 1-1076                                  
+ src/pages/Vehicles                |       0 |        0 |       0 |       0 |                                         
+  VehiclesPage.tsx                 |       0 |        0 |       0 |       0 | 1-309                                   
+ src/pages/WhatsApp                |       0 |        0 |       0 |       0 |                                         
+  WhatsAppManagementPage.tsx       |       0 |        0 |       0 |       0 | 1-451                                   
+ src/services                      |    4.88 |    13.55 |   14.28 |    4.88 |                                         
+  airportService.ts                |       0 |        0 |       0 |       0 | 1-73                                    
+  analyticsService.ts              |       0 |        0 |       0 |       0 | 1-172                                   
+  api.ts                           |       0 |        0 |       0 |       0 | 1-183                                   
+  authService.ts                   |       0 |        0 |       0 |       0 | 1-17                                    
+  cityService.ts                   |       0 |        0 |       0 |       0 | 1-67                                    
+  communicationService.ts          |       0 |        0 |       0 |       0 | 1-59                                    
+  conciergeDashboardService.ts     |       0 |        0 |       0 |       0 | 1-46                                    
+  currencyService.ts               |       0 |        0 |       0 |       0 | 1-49                                    
+  dailyNoteService.ts              |       0 |        0 |       0 |       0 | 1-80                                    
+  dailyOperationsService.ts        |       0 |        0 |       0 |       0 | 1-20                                    
+  dailyRevenueService.ts           |       0 |        0 |       0 |       0 | 1-80                                    
+  dashboardService.ts              |       0 |        0 |       0 |       0 | 1-77                                    
+  dropdownService.ts               |       0 |        0 |       0 |       0 | 1-226                                   
+  emailService.ts                  |       0 |        0 |       0 |       0 | 1-125                                   
+  exportService.ts                 |       0 |        0 |       0 |       0 | 1-324                                   
+  fileService.ts                   |       0 |        0 |       0 |       0 | 1-153                                   
+  guestService.ts                  |       0 |        0 |       0 |       0 | 1-96                                    
+  hotelService.ts                  |       0 |        0 |       0 |       0 | 1-45                                    
+  importService.ts                 |       0 |        0 |       0 |       0 | 1-120                                   
+  intelligenceService.ts           |       0 |        0 |       0 |       0 | 1-193                                   
+  invoiceService.ts                |       0 |        0 |       0 |       0 | 1-120                                   
+  itineraryService.ts              |       0 |        0 |       0 |       0 | 1-68                                    
+  journalService.ts                |       0 |        0 |       0 |       0 | 1-52                                    
+  loginAuditService.ts             |       0 |        0 |       0 |       0 | 1-68                                    
+  mapService.ts                    |       0 |        0 |       0 |       0 | 1-50                                    
+  notificationRuleService.ts       |       0 |        0 |       0 |       0 | 1-103                                   
+  notificationService.ts           |       0 |        0 |       0 |       0 | 1-152                                   
+  operationsService.ts             |       0 |        0 |       0 |       0 | 1-53                                    
+  paymentService.ts                |       0 |        0 |       0 |       0 | 1-76                                    
+  personnelService.ts              |       0 |        0 |       0 |       0 | 1-113                                   
+  privacyService.ts                |       0 |        0 |       0 |       0 | 1-72                                    
+  reportsService.ts                |       0 |        0 |       0 |       0 | 1-102                                   
+  reservationService.ts            |       0 |        0 |       0 |       0 | 1-110                                   
+  restaurantService.ts             |       0 |        0 |       0 |       0 | 1-46                                    
+  roomService.ts                   |       0 |        0 |       0 |       0 | 1-118                                   
+  servicePackageService.ts         |       0 |        0 |       0 |       0 | 1-84                                    
+  signalRService.ts                |       0 |        0 |       0 |       0 | 1-226                                   
+  smsService.ts                    |       0 |        0 |       0 |       0 | 1-106                                   
+  supplierCostService.ts           |       0 |        0 |       0 |       0 | 1-30                                    
+  supplierService.ts               |       0 |        0 |       0 |       0 | 1-99                                    
+  tourService.ts                   |       0 |        0 |       0 |       0 | 1-394                                   
+  transferService.ts               |    95.6 |       50 |   61.53 |    95.6 | 196-198,211-212,225-226,233-234,237-238 
+  vehicleService.ts                |       0 |        0 |       0 |       0 | 1-75                                    
+  whatsAppService.ts               |       0 |        0 |       0 |       0 | 1-125                                   
+ src/stores                        |       0 |        0 |       0 |       0 |                                         
+  authStore.ts                     |       0 |        0 |       0 |       0 | 1-61                                    
+  notificationStore.ts             |       0 |        0 |       0 |       0 | 1-35                                    
+  userPreferencesStore.ts          |       0 |        0 |       0 |       0 | 1-75                                    
+ src/theme                         |       0 |        0 |       0 |       0 |                                         
+  ThemeProviderWithToggle.tsx      |       0 |        0 |       0 |       0 | 1-59                                    
+  theme.ts                         |       0 |        0 |       0 |       0 | 1-76                                    
+  useTheme.tsx                     |       0 |        0 |       0 |       0 | 1-14                                    
+ src/types                         |    2.95 |        0 |       0 |    2.95 |                                         
+  analytics.ts                     |       0 |        0 |       0 |       0 | 1-181                                   
+  communication.ts                 |       0 |        0 |       0 |       0 | 1-56                                    
+  conciergeDashboard.ts            |       0 |        0 |       0 |       0 | 1-166                                   
+  dailyOperations.ts               |       0 |        0 |       0 |       0 | 1-65                                    
+  dashboard.ts                     |       0 |        0 |       0 |       0 | 1-162                                   
+  enums.ts                         |     100 |      100 |     100 |     100 |                                         
+  guest.ts                         |       0 |        0 |       0 |       0 | 1-118                                   
+  guestPreferences.ts              |       0 |        0 |       0 |       0 | 1-60                                    
+  hotel.ts                         |       0 |        0 |       0 |       0 | 1-57                                    
+  invoice.ts                       |       0 |        0 |       0 |       0 | 1-92                                    
+  itinerary.ts                     |       0 |        0 |       0 |       0 | 1-107                                   
+  map.ts                           |       0 |        0 |       0 |       0 | 1-66                                    
+  notificationRule.ts              |       0 |        0 |       0 |       0 | 1-87                                    
+  restaurant.ts                    |       0 |        0 |       0 |       0 | 1-55                                    
+  room.ts                          |       0 |        0 |       0 |       0 | 1-8                                     
+  servicePackage.ts                |       0 |        0 |       0 |       0 | 1-72                                    
+  supplier.ts                      |       0 |        0 |       0 |       0 | 1-44                                    
+  tour.ts                          |       0 |        0 |       0 |       0 | 1-368                                   
+  transfer.ts                      |       0 |        0 |       0 |       0 | 1-158                                   
+  whatsApp.ts                      |       0 |        0 |       0 |       0 | 1-84                                    
+ src/utils                         |    8.87 |    47.22 |   19.44 |    8.87 |                                         
+  accessibility.ts                 |       0 |        0 |       0 |       0 | 1-92                                    
+  cacheManager.ts                  |       0 |        0 |       0 |       0 | 1-104                                   
+  calendarExport.ts                |       0 |        0 |       0 |       0 | 1-169                                   
+  countries.ts                     |       0 |        0 |       0 |       0 | 1-93                                    
+  dateLocalization.ts              |       0 |        0 |       0 |       0 | 1-78                                    
+  errorHandler.ts                  |       0 |        0 |       0 |       0 | 1-104                                   
+  exportUtils.ts                   |       0 |        0 |       0 |       0 | 1-128                                   
+  formatters.ts                    |   85.41 |    63.63 |      60 |   85.41 | 42-48                                   
+  memoization.ts                   |       0 |        0 |       0 |       0 | 1-53                                    
+  performance.tsx                  |       0 |        0 |       0 |       0 | 1-104                                   
+  permissions.ts                   |       0 |        0 |       0 |       0 | 1-195                                   
+  queryKeys.ts                     |       0 |        0 |       0 |       0 | 1-205                                   
+  responsive.ts                    |       0 |        0 |       0 |       0 | 1-64                                    
+  validation.ts                    |    82.2 |    76.92 |   21.05 |    82.2 | 15,28,31,35,49-51,80-81,90-101          
+-----------------------------------|---------|----------|---------|---------|-----------------------------------------
+Jest: "global" covera
+ge threshold for stat
+ements (4%) not met: 
+3.79%
+Jest: "global" covera
+ge threshold for line
+s (4%) not met: 3.79%
+Jest: "global" covera
+ge threshold for func
+tions (10%) not met: 
+9.12%
+Test Suites: 2 failed
+, 8 passed, 10 total
+Tests:       37 passe
+d, 37 total
+Snapshots:   0 total
+Time:        46.652 s
+Ran all test suites.

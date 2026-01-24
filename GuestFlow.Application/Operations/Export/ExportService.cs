@@ -6,6 +6,8 @@ using GuestFlow.Application.Operations.Invoice;
 using GuestFlow.Application.Operations.Reports;
 using GuestFlow.Application.Operations.Transfer;
 using GuestFlow.Domain.Entities.Core;
+using GuestFlow.Domain.Entities.Enum;
+using GuestFlow.Domain.Entities.Operations;
 using GuestFlow.Domain.Entities.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -26,6 +28,12 @@ namespace GuestFlow.Application.Operations.Export
         private readonly IRepository<TransferEntity> _transferRepository;
         private readonly IRepository<DailyRevenueEntity> _dailyRevenueRepository;
         private readonly IRepository<JournalEntry> _journalEntryRepository;
+        private readonly IRepository<PaymentEntity> _paymentRepository;
+        private readonly IRepository<CityTourEntity> _cityTourRepository;
+        private readonly IRepository<YachtTourEntity> _yachtTourRepository;
+        private readonly IRepository<GuestFlow.Domain.Entities.Core.Supplier> _supplierRepository;
+        private readonly IRepository<SupplierCost> _supplierCostRepository;
+        private readonly IRepository<RoomAssignmentEntity> _roomAssignmentRepository;
         private readonly IReportsService _reportsService;
         private readonly ILogger<ExportService> _logger;
 
@@ -35,6 +43,12 @@ namespace GuestFlow.Application.Operations.Export
             IRepository<TransferEntity> transferRepository,
             IRepository<DailyRevenueEntity> dailyRevenueRepository,
             IRepository<JournalEntry> journalEntryRepository,
+            IRepository<PaymentEntity> paymentRepository,
+            IRepository<CityTourEntity> cityTourRepository,
+            IRepository<YachtTourEntity> yachtTourRepository,
+            IRepository<GuestFlow.Domain.Entities.Core.Supplier> supplierRepository,
+            IRepository<SupplierCost> supplierCostRepository,
+            IRepository<RoomAssignmentEntity> roomAssignmentRepository,
             IReportsService reportsService,
             ILogger<ExportService> logger)
         {
@@ -43,6 +57,12 @@ namespace GuestFlow.Application.Operations.Export
             _transferRepository = transferRepository;
             _dailyRevenueRepository = dailyRevenueRepository;
             _journalEntryRepository = journalEntryRepository;
+            _paymentRepository = paymentRepository;
+            _cityTourRepository = cityTourRepository;
+            _yachtTourRepository = yachtTourRepository;
+            _supplierRepository = supplierRepository;
+            _supplierCostRepository = supplierCostRepository;
+            _roomAssignmentRepository = roomAssignmentRepository;
             _reportsService = reportsService;
             _logger = logger;
         }
@@ -308,7 +328,9 @@ namespace GuestFlow.Application.Operations.Export
                 // Özet sayfası
                 var summarySheet = workbook.Worksheets.Add("Gelir Özeti");
                 summarySheet.Cell(1, 1).Value = "Toplam Gelir";
-                summarySheet.Cell(1, 2).Value = revenueSummary.TotalRevenue;
+                // Use TotalRevenueByCurrency - default to TRY or first currency
+                var defaultCurrency = revenueSummary.TotalRevenueByCurrency.Keys.FirstOrDefault() ?? "TRY";
+                summarySheet.Cell(1, 2).Value = revenueSummary.TotalRevenueByCurrency.GetValueOrDefault(defaultCurrency, 0);
                 summarySheet.Cell(2, 1).Value = "Para Birimi";
                 summarySheet.Cell(2, 2).Value = "TRY";
                 summarySheet.Cell(3, 1).Value = "Başlangıç Tarihi";
@@ -371,8 +393,10 @@ namespace GuestFlow.Application.Operations.Export
 
                 var csv = new StringBuilder();
                 csv.AppendLine("Gelir Raporu");
-                csv.AppendLine($"Toplam Gelir,{revenueSummary.TotalRevenue}");
-                csv.AppendLine($"Para Birimi,TRY");
+                // Use TotalRevenueByCurrency - default to TRY or first currency
+                var defaultCurrency = revenueSummary.TotalRevenueByCurrency.Keys.FirstOrDefault() ?? "TRY";
+                csv.AppendLine($"Toplam Gelir ({defaultCurrency}),{revenueSummary.TotalRevenueByCurrency.GetValueOrDefault(defaultCurrency, 0)}");
+                csv.AppendLine($"Para Birimi,{defaultCurrency}");
                 csv.AppendLine($"Başlangıç Tarihi,{startDate?.ToString("dd.MM.yyyy") ?? "Tümü"}");
                 csv.AppendLine($"Bitiş Tarihi,{endDate?.ToString("dd.MM.yyyy") ?? "Tümü"}");
                 csv.AppendLine();
@@ -380,7 +404,8 @@ namespace GuestFlow.Application.Operations.Export
 
                 foreach (var daily in dailyRevenues)
                 {
-                    csv.AppendLine($"{daily.Date:dd.MM.yyyy},{daily.TotalRevenue},TRY");
+                    // DailyRevenueDto.TotalRevenue is not deprecated, it's single currency
+                    csv.AppendLine($"{daily.Date:dd.MM.yyyy},{daily.TotalRevenue},{daily.Currency}");
                 }
 
                 var fileName = $"Gelir_Raporu_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
@@ -709,6 +734,453 @@ namespace GuestFlow.Application.Operations.Export
             }
         }
 
+        public async Task<ExportResult> ExportGuestLedgerToCsvAsync(int? guestId = null, DateTime? startDate = null, DateTime? endDate = null)
+        {
+            try
+            {
+                var csv = new StringBuilder();
+                csv.AppendLine("Tarih,Tip,Referans,Açıklama,Debit (Borç),Credit (Alacak),Para Birimi,Durum");
+
+                // Invoices
+                var invoiceQuery = _invoiceRepository.GetAll(x => !x.IsDeleted)
+                    .Include(i => i.Guest)
+                    .AsQueryable();
+                
+                if (guestId.HasValue)
+                    invoiceQuery = invoiceQuery.Where(i => i.GuestId == guestId.Value);
+                if (startDate.HasValue)
+                    invoiceQuery = invoiceQuery.Where(i => i.IssueDate >= startDate.Value);
+                if (endDate.HasValue)
+                    invoiceQuery = invoiceQuery.Where(i => i.IssueDate <= endDate.Value);
+
+                var invoices = await invoiceQuery.OrderBy(i => i.IssueDate).ToListAsync();
+                foreach (var invoice in invoices)
+                {
+                    csv.AppendLine($"{invoice.IssueDate:yyyy-MM-dd},Fatura,{invoice.InvoiceNumber},{EscapeCsvValue(invoice.Notes)},,{invoice.TotalAmount:F2},{invoice.Currency},{invoice.Status}");
+                }
+
+                // Payments
+                var paymentQuery = _paymentRepository.GetAll(x => !x.IsDeleted)
+                    .Include(p => p.Guest)
+                    .AsQueryable();
+                
+                if (guestId.HasValue)
+                    paymentQuery = paymentQuery.Where(p => p.GuestId == guestId.Value);
+                if (startDate.HasValue)
+                    paymentQuery = paymentQuery.Where(p => p.PaymentDate >= startDate.Value);
+                if (endDate.HasValue)
+                    paymentQuery = paymentQuery.Where(p => p.PaymentDate <= endDate.Value);
+
+                var payments = await paymentQuery.OrderBy(p => p.PaymentDate).ToListAsync();
+                foreach (var payment in payments)
+                {
+                    var amount = payment.Status == PaymentStatus.Refunded ? -payment.Amount : payment.Amount;
+                    csv.AppendLine($"{payment.PaymentDate:yyyy-MM-dd},Ödeme,{payment.PaymentNumber},{EscapeCsvValue(payment.Notes ?? "Ödeme")},{amount:F2},,{payment.Currency},{payment.Status}");
+                }
+
+                var filename = $"guest_ledger_{guestId ?? 0}_{DateTime.UtcNow:yyyyMMdd}.csv";
+                return new ExportResult
+                {
+                    IsSuccess = true,
+                    FileContent = Encoding.UTF8.GetBytes(csv.ToString()),
+                    FileName = filename,
+                    ContentType = "text/csv; charset=utf-8"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Guest Ledger CSV'ye aktarılırken hata: {ex.Message}");
+                return new ExportResult
+                {
+                    IsSuccess = false,
+                    ErrorMessage = $"CSV'ye aktarılırken hata: {ex.Message}"
+                };
+            }
+        }
+
+        public async Task<ExportResult> ExportGuestLedgerToExcelAsync(int? guestId = null, DateTime? startDate = null, DateTime? endDate = null)
+        {
+            try
+            {
+                using var workbook = new XLWorkbook();
+                var worksheet = workbook.Worksheets.Add("Guest Ledger");
+
+                // Headers
+                worksheet.Cell(1, 1).Value = "Tarih";
+                worksheet.Cell(1, 2).Value = "Tip";
+                worksheet.Cell(1, 3).Value = "Referans";
+                worksheet.Cell(1, 4).Value = "Açıklama";
+                worksheet.Cell(1, 5).Value = "Debit (Borç)";
+                worksheet.Cell(1, 6).Value = "Credit (Alacak)";
+                worksheet.Cell(1, 7).Value = "Para Birimi";
+                worksheet.Cell(1, 8).Value = "Durum";
+
+                var headerRange = worksheet.Range(1, 1, 1, 8);
+                headerRange.Style.Font.Bold = true;
+                headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
+
+                int row = 2;
+
+                // Invoices
+                var invoiceQuery = _invoiceRepository.GetAll(x => !x.IsDeleted)
+                    .Include(i => i.Guest)
+                    .AsQueryable();
+                
+                if (guestId.HasValue)
+                    invoiceQuery = invoiceQuery.Where(i => i.GuestId == guestId.Value);
+                if (startDate.HasValue)
+                    invoiceQuery = invoiceQuery.Where(i => i.IssueDate >= startDate.Value);
+                if (endDate.HasValue)
+                    invoiceQuery = invoiceQuery.Where(i => i.IssueDate <= endDate.Value);
+
+                var invoices = await invoiceQuery.OrderBy(i => i.IssueDate).ToListAsync();
+                foreach (var invoice in invoices)
+                {
+                    worksheet.Cell(row, 1).Value = invoice.IssueDate;
+                    worksheet.Cell(row, 2).Value = "Fatura";
+                    worksheet.Cell(row, 3).Value = invoice.InvoiceNumber;
+                    worksheet.Cell(row, 4).Value = invoice.Notes ?? string.Empty;
+                    worksheet.Cell(row, 6).Value = invoice.TotalAmount;
+                    worksheet.Cell(row, 7).Value = invoice.Currency;
+                    worksheet.Cell(row, 8).Value = invoice.Status.ToString();
+                    row++;
+                }
+
+                // Payments
+                var paymentQuery = _paymentRepository.GetAll(x => !x.IsDeleted)
+                    .Include(p => p.Guest)
+                    .AsQueryable();
+                
+                if (guestId.HasValue)
+                    paymentQuery = paymentQuery.Where(p => p.GuestId == guestId.Value);
+                if (startDate.HasValue)
+                    paymentQuery = paymentQuery.Where(p => p.PaymentDate >= startDate.Value);
+                if (endDate.HasValue)
+                    paymentQuery = paymentQuery.Where(p => p.PaymentDate <= endDate.Value);
+
+                var payments = await paymentQuery.OrderBy(p => p.PaymentDate).ToListAsync();
+                foreach (var payment in payments)
+                {
+                    var amount = payment.Status == PaymentStatus.Refunded ? -payment.Amount : payment.Amount;
+                    worksheet.Cell(row, 1).Value = payment.PaymentDate;
+                    worksheet.Cell(row, 2).Value = "Ödeme";
+                    worksheet.Cell(row, 3).Value = payment.PaymentNumber;
+                    worksheet.Cell(row, 4).Value = payment.Notes ?? "Ödeme";
+                    worksheet.Cell(row, 5).Value = amount;
+                    worksheet.Cell(row, 7).Value = payment.Currency;
+                    worksheet.Cell(row, 8).Value = payment.Status.ToString();
+                    row++;
+                }
+
+                worksheet.Columns().AdjustToContents();
+
+                var filename = $"guest_ledger_{guestId ?? 0}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
+                using var stream = new MemoryStream();
+                workbook.SaveAs(stream);
+                
+                return new ExportResult
+                {
+                    IsSuccess = true,
+                    FileContent = stream.ToArray(),
+                    FileName = filename,
+                    ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Guest Ledger Excel'e aktarılırken hata: {ex.Message}");
+                return new ExportResult
+                {
+                    IsSuccess = false,
+                    ErrorMessage = $"Excel'e aktarılırken hata: {ex.Message}"
+                };
+            }
+        }
+
+        public async Task<ExportResult> ExportSupplierLedgerToCsvAsync(int? supplierId = null, DateTime? startDate = null, DateTime? endDate = null)
+        {
+            try
+            {
+                var csv = new StringBuilder();
+                csv.AppendLine("Tarih,Tip,Referans,Açıklama,Maliyet,Para Birimi,Durum");
+
+                var costQuery = _supplierCostRepository.GetAll(x => !x.IsDeleted)
+                    .Include(c => c.Supplier)
+                    .AsQueryable();
+                
+                if (supplierId.HasValue)
+                    costQuery = costQuery.Where(c => c.SupplierId == supplierId.Value);
+                if (startDate.HasValue)
+                    costQuery = costQuery.Where(c => c.CreatedDate >= startDate.Value);
+                if (endDate.HasValue)
+                    costQuery = costQuery.Where(c => c.CreatedDate <= endDate.Value);
+
+                var costs = await costQuery.OrderBy(c => c.CreatedDate).ToListAsync();
+                foreach (var cost in costs)
+                {
+                    var serviceType = cost.TransferId.HasValue ? "Transfer" :
+                                     cost.CityTourId.HasValue ? "CityTour" :
+                                     cost.YachtTourId.HasValue ? "YachtTour" : "Diğer";
+                    var reference = cost.TransferId?.ToString() ?? cost.CityTourId?.ToString() ?? cost.YachtTourId?.ToString() ?? "";
+                    csv.AppendLine($"{cost.CreatedDate:yyyy-MM-dd},{serviceType},{reference},{EscapeCsvValue(cost.Description ?? cost.CostType)},{cost.CostAmount:F2},{cost.Currency},{(cost.IsActive ? "Aktif" : "Pasif")}");
+                }
+
+                var filename = $"supplier_ledger_{supplierId ?? 0}_{DateTime.UtcNow:yyyyMMdd}.csv";
+                return new ExportResult
+                {
+                    IsSuccess = true,
+                    FileContent = Encoding.UTF8.GetBytes(csv.ToString()),
+                    FileName = filename,
+                    ContentType = "text/csv; charset=utf-8"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Supplier Ledger CSV'ye aktarılırken hata: {ex.Message}");
+                return new ExportResult
+                {
+                    IsSuccess = false,
+                    ErrorMessage = $"CSV'ye aktarılırken hata: {ex.Message}"
+                };
+            }
+        }
+
+        public async Task<ExportResult> ExportSupplierLedgerToExcelAsync(int? supplierId = null, DateTime? startDate = null, DateTime? endDate = null)
+        {
+            try
+            {
+                using var workbook = new XLWorkbook();
+                var worksheet = workbook.Worksheets.Add("Supplier Ledger");
+
+                worksheet.Cell(1, 1).Value = "Tarih";
+                worksheet.Cell(1, 2).Value = "Tip";
+                worksheet.Cell(1, 3).Value = "Referans";
+                worksheet.Cell(1, 4).Value = "Açıklama";
+                worksheet.Cell(1, 5).Value = "Maliyet";
+                worksheet.Cell(1, 6).Value = "Para Birimi";
+                worksheet.Cell(1, 7).Value = "Durum";
+
+                var headerRange = worksheet.Range(1, 1, 1, 7);
+                headerRange.Style.Font.Bold = true;
+                headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
+
+                var costQuery = _supplierCostRepository.GetAll(x => !x.IsDeleted)
+                    .Include(c => c.Supplier)
+                    .AsQueryable();
+                
+                if (supplierId.HasValue)
+                    costQuery = costQuery.Where(c => c.SupplierId == supplierId.Value);
+                if (startDate.HasValue)
+                    costQuery = costQuery.Where(c => c.CreatedDate >= startDate.Value);
+                if (endDate.HasValue)
+                    costQuery = costQuery.Where(c => c.CreatedDate <= endDate.Value);
+
+                var costs = await costQuery.OrderBy(c => c.CreatedDate).ToListAsync();
+                int row = 2;
+                foreach (var cost in costs)
+                {
+                    var serviceType = cost.TransferId.HasValue ? "Transfer" :
+                                     cost.CityTourId.HasValue ? "CityTour" :
+                                     cost.YachtTourId.HasValue ? "YachtTour" : "Diğer";
+                    var reference = cost.TransferId?.ToString() ?? cost.CityTourId?.ToString() ?? cost.YachtTourId?.ToString() ?? "";
+                    worksheet.Cell(row, 1).Value = cost.CreatedDate;
+                    worksheet.Cell(row, 2).Value = serviceType;
+                    worksheet.Cell(row, 3).Value = reference;
+                    worksheet.Cell(row, 4).Value = cost.Description ?? cost.CostType;
+                    worksheet.Cell(row, 5).Value = cost.CostAmount;
+                    worksheet.Cell(row, 6).Value = cost.Currency;
+                    worksheet.Cell(row, 7).Value = cost.IsActive ? "Aktif" : "Pasif";
+                    row++;
+                }
+
+                worksheet.Columns().AdjustToContents();
+
+                var filename = $"supplier_ledger_{supplierId ?? 0}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
+                using var stream = new MemoryStream();
+                workbook.SaveAs(stream);
+                
+                return new ExportResult
+                {
+                    IsSuccess = true,
+                    FileContent = stream.ToArray(),
+                    FileName = filename,
+                    ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Supplier Ledger Excel'e aktarılırken hata: {ex.Message}");
+                return new ExportResult
+                {
+                    IsSuccess = false,
+                    ErrorMessage = $"Excel'e aktarılırken hata: {ex.Message}"
+                };
+            }
+        }
+
+        public async Task<ExportResult> ExportRoomLedgerToCsvAsync(string? roomNumber = null, DateTime? startDate = null, DateTime? endDate = null)
+        {
+            try
+            {
+                var csv = new StringBuilder();
+                csv.AppendLine("Tarih,Tip,Misafir,Referans,Açıklama,Tutar,Para Birimi");
+
+                // Room Assignments
+                var assignmentQuery = _roomAssignmentRepository.GetAll(x => !x.IsDeleted)
+                    .Include(a => a.Guest)
+                    .AsQueryable();
+                
+                if (!string.IsNullOrEmpty(roomNumber))
+                    assignmentQuery = assignmentQuery.Where(a => a.RoomNumber == roomNumber);
+                if (startDate.HasValue)
+                    assignmentQuery = assignmentQuery.Where(a => a.StartDate >= startDate.Value);
+                if (endDate.HasValue)
+                    assignmentQuery = assignmentQuery.Where(a => a.StartDate <= endDate.Value);
+
+                var assignments = await assignmentQuery.OrderBy(a => a.StartDate).ToListAsync();
+                foreach (var assignment in assignments)
+                {
+                    csv.AppendLine($"{assignment.StartDate:yyyy-MM-dd},Oda Ataması,{EscapeCsvValue(assignment.Guest.FullName)},{assignment.RoomNumber},{EscapeCsvValue(assignment.Notes ?? "Oda ataması")},,");
+                }
+
+                // Invoices for guests in this room
+                var invoiceQuery = _invoiceRepository.GetAll(x => !x.IsDeleted)
+                    .Include(i => i.Guest)
+                    .AsQueryable();
+                
+                if (!string.IsNullOrEmpty(roomNumber))
+                {
+                    var guestIds = await assignmentQuery.Select(a => a.GuestId).Distinct().ToListAsync();
+                    invoiceQuery = invoiceQuery.Where(i => guestIds.Contains(i.GuestId));
+                }
+                if (startDate.HasValue)
+                    invoiceQuery = invoiceQuery.Where(i => i.IssueDate >= startDate.Value);
+                if (endDate.HasValue)
+                    invoiceQuery = invoiceQuery.Where(i => i.IssueDate <= endDate.Value);
+
+                var invoices = await invoiceQuery.OrderBy(i => i.IssueDate).ToListAsync();
+                foreach (var invoice in invoices)
+                {
+                    csv.AppendLine($"{invoice.IssueDate:yyyy-MM-dd},Fatura,{EscapeCsvValue(invoice.Guest.FullName)},{invoice.InvoiceNumber},{EscapeCsvValue(invoice.Notes)},{invoice.TotalAmount:F2},{invoice.Currency}");
+                }
+
+                var filename = $"room_ledger_{roomNumber ?? "all"}_{DateTime.UtcNow:yyyyMMdd}.csv";
+                return new ExportResult
+                {
+                    IsSuccess = true,
+                    FileContent = Encoding.UTF8.GetBytes(csv.ToString()),
+                    FileName = filename,
+                    ContentType = "text/csv; charset=utf-8"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Room Ledger CSV'ye aktarılırken hata: {ex.Message}");
+                return new ExportResult
+                {
+                    IsSuccess = false,
+                    ErrorMessage = $"CSV'ye aktarılırken hata: {ex.Message}"
+                };
+            }
+        }
+
+        public async Task<ExportResult> ExportRoomLedgerToExcelAsync(string? roomNumber = null, DateTime? startDate = null, DateTime? endDate = null)
+        {
+            try
+            {
+                using var workbook = new XLWorkbook();
+                var worksheet = workbook.Worksheets.Add("Room Ledger");
+
+                worksheet.Cell(1, 1).Value = "Tarih";
+                worksheet.Cell(1, 2).Value = "Tip";
+                worksheet.Cell(1, 3).Value = "Misafir";
+                worksheet.Cell(1, 4).Value = "Referans";
+                worksheet.Cell(1, 5).Value = "Açıklama";
+                worksheet.Cell(1, 6).Value = "Tutar";
+                worksheet.Cell(1, 7).Value = "Para Birimi";
+
+                var headerRange = worksheet.Range(1, 1, 1, 7);
+                headerRange.Style.Font.Bold = true;
+                headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
+
+                int row = 2;
+
+                // Room Assignments
+                var assignmentQuery = _roomAssignmentRepository.GetAll(x => !x.IsDeleted)
+                    .Include(a => a.Guest)
+                    .AsQueryable();
+                
+                if (!string.IsNullOrEmpty(roomNumber))
+                    assignmentQuery = assignmentQuery.Where(a => a.RoomNumber == roomNumber);
+                if (startDate.HasValue)
+                    assignmentQuery = assignmentQuery.Where(a => a.StartDate >= startDate.Value);
+                if (endDate.HasValue)
+                    assignmentQuery = assignmentQuery.Where(a => a.StartDate <= endDate.Value);
+
+                var assignments = await assignmentQuery.OrderBy(a => a.StartDate).ToListAsync();
+                foreach (var assignment in assignments)
+                {
+                    worksheet.Cell(row, 1).Value = assignment.StartDate;
+                    worksheet.Cell(row, 2).Value = "Oda Ataması";
+                    worksheet.Cell(row, 3).Value = assignment.Guest.FullName;
+                    worksheet.Cell(row, 4).Value = assignment.RoomNumber;
+                    worksheet.Cell(row, 5).Value = assignment.Notes ?? "Oda ataması";
+                    row++;
+                }
+
+                // Invoices
+                var invoiceQuery = _invoiceRepository.GetAll(x => !x.IsDeleted)
+                    .Include(i => i.Guest)
+                    .AsQueryable();
+                
+                if (!string.IsNullOrEmpty(roomNumber))
+                {
+                    var guestIds = await assignmentQuery.Select(a => a.GuestId).Distinct().ToListAsync();
+                    invoiceQuery = invoiceQuery.Where(i => guestIds.Contains(i.GuestId));
+                }
+                if (startDate.HasValue)
+                    invoiceQuery = invoiceQuery.Where(i => i.IssueDate >= startDate.Value);
+                if (endDate.HasValue)
+                    invoiceQuery = invoiceQuery.Where(i => i.IssueDate <= endDate.Value);
+
+                var invoices = await invoiceQuery.OrderBy(i => i.IssueDate).ToListAsync();
+                foreach (var invoice in invoices)
+                {
+                    worksheet.Cell(row, 1).Value = invoice.IssueDate;
+                    worksheet.Cell(row, 2).Value = "Fatura";
+                    worksheet.Cell(row, 3).Value = invoice.Guest.FullName;
+                    worksheet.Cell(row, 4).Value = invoice.InvoiceNumber;
+                    worksheet.Cell(row, 5).Value = invoice.Notes;
+                    worksheet.Cell(row, 6).Value = invoice.TotalAmount;
+                    worksheet.Cell(row, 7).Value = invoice.Currency;
+                    row++;
+                }
+
+                worksheet.Columns().AdjustToContents();
+
+                var filename = $"room_ledger_{roomNumber ?? "all"}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
+                using var stream = new MemoryStream();
+                workbook.SaveAs(stream);
+                
+                return new ExportResult
+                {
+                    IsSuccess = true,
+                    FileContent = stream.ToArray(),
+                    FileName = filename,
+                    ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Room Ledger Excel'e aktarılırken hata: {ex.Message}");
+                return new ExportResult
+                {
+                    IsSuccess = false,
+                    ErrorMessage = $"Excel'e aktarılırken hata: {ex.Message}"
+                };
+            }
+        }
+
         #region Private Methods
 
         /// <summary>
@@ -726,6 +1198,313 @@ namespace GuestFlow.Application.Operations.Export
             }
 
             return value;
+        }
+
+        #endregion
+
+        #region VAT Reports Export
+
+        public async Task<ExportResult> ExportVatAccrualReportToExcelAsync(DateTime? startDate = null, DateTime? endDate = null, string? currency = null)
+        {
+            try
+            {
+                var vatReport = await _reportsService.GetVatAccrualReportAsync(startDate, endDate, currency);
+
+                using var workbook = new XLWorkbook();
+
+                // Özet sayfası
+                var summarySheet = workbook.Worksheets.Add("KDV Tahakkuk Özeti");
+                summarySheet.Cell(1, 1).Value = "KDV Tahakkuk Raporu";
+                summarySheet.Cell(2, 1).Value = "Başlangıç Tarihi";
+                summarySheet.Cell(2, 2).Value = startDate?.ToString("dd.MM.yyyy") ?? "Tümü";
+                summarySheet.Cell(3, 1).Value = "Bitiş Tarihi";
+                summarySheet.Cell(3, 2).Value = endDate?.ToString("dd.MM.yyyy") ?? "Tümü";
+                summarySheet.Cell(4, 1).Value = "Para Birimi";
+                summarySheet.Cell(4, 2).Value = currency ?? "Tümü";
+                summarySheet.Cell(5, 1).Value = "Toplam Fatura Sayısı";
+                summarySheet.Cell(5, 2).Value = vatReport.TotalInvoiceCount;
+                summarySheet.Cell(6, 1).Value = "Post Edilmiş Journal Sayısı";
+                summarySheet.Cell(6, 2).Value = vatReport.PostedJournalCount;
+
+                // Currency bazlı toplam VAT
+                int row = 8;
+                summarySheet.Cell(row, 1).Value = "Para Birimi";
+                summarySheet.Cell(row, 2).Value = "Toplam KDV";
+                row++;
+                foreach (var kvp in vatReport.TotalVatByCurrency)
+                {
+                    summarySheet.Cell(row, 1).Value = kvp.Key;
+                    summarySheet.Cell(row, 2).Value = kvp.Value;
+                    row++;
+                }
+
+                // Post edilmemiş VAT
+                row += 2;
+                summarySheet.Cell(row, 1).Value = "Post Edilmemiş KDV";
+                row++;
+                summarySheet.Cell(row, 1).Value = "Para Birimi";
+                summarySheet.Cell(row, 2).Value = "Tutar";
+                row++;
+                foreach (var kvp in vatReport.UnpostedVatByCurrency)
+                {
+                    summarySheet.Cell(row, 1).Value = kvp.Key;
+                    summarySheet.Cell(row, 2).Value = kvp.Value;
+                    row++;
+                }
+
+                // Servis tipine göre VAT
+                var serviceTypeSheet = workbook.Worksheets.Add("Servis Tipine Göre KDV");
+                serviceTypeSheet.Cell(1, 1).Value = "Servis Tipi";
+                serviceTypeSheet.Cell(1, 2).Value = "Para Birimi";
+                serviceTypeSheet.Cell(1, 3).Value = "KDV Tutarı";
+
+                var headerRange = serviceTypeSheet.Range(1, 1, 1, 3);
+                headerRange.Style.Font.Bold = true;
+                headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
+                headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+                row = 2;
+                foreach (var serviceType in vatReport.VatByServiceType)
+                {
+                    foreach (var currencyKvp in serviceType.Value)
+                    {
+                        serviceTypeSheet.Cell(row, 1).Value = serviceType.Key;
+                        serviceTypeSheet.Cell(row, 2).Value = currencyKvp.Key;
+                        serviceTypeSheet.Cell(row, 3).Value = currencyKvp.Value;
+                        row++;
+                    }
+                }
+
+                summarySheet.Columns().AdjustToContents();
+                serviceTypeSheet.Columns().AdjustToContents();
+
+                using var stream = new MemoryStream();
+                workbook.SaveAs(stream);
+                stream.Position = 0;
+
+                var fileName = $"KDV_Tahakkuk_Raporu_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                return new ExportResult
+                {
+                    FileContent = stream.ToArray(),
+                    FileName = fileName,
+                    ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    IsSuccess = true
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"KDV tahakkuk raporu Excel'e aktarılırken hata: {ex.Message}");
+                return new ExportResult
+                {
+                    IsSuccess = false,
+                    ErrorMessage = $"Excel'e aktarılırken hata: {ex.Message}"
+                };
+            }
+        }
+
+        public async Task<ExportResult> ExportVatAccrualReportToCsvAsync(DateTime? startDate = null, DateTime? endDate = null, string? currency = null)
+        {
+            try
+            {
+                var vatReport = await _reportsService.GetVatAccrualReportAsync(startDate, endDate, currency);
+
+                var csv = new StringBuilder();
+                csv.AppendLine("KDV Tahakkuk Raporu");
+                csv.AppendLine($"Başlangıç Tarihi,{startDate?.ToString("dd.MM.yyyy") ?? "Tümü"}");
+                csv.AppendLine($"Bitiş Tarihi,{endDate?.ToString("dd.MM.yyyy") ?? "Tümü"}");
+                csv.AppendLine($"Para Birimi,{currency ?? "Tümü"}");
+                csv.AppendLine($"Toplam Fatura Sayısı,{vatReport.TotalInvoiceCount}");
+                csv.AppendLine($"Post Edilmiş Journal Sayısı,{vatReport.PostedJournalCount}");
+                csv.AppendLine();
+                csv.AppendLine("Para Birimi,Toplam KDV");
+                foreach (var kvp in vatReport.TotalVatByCurrency)
+                {
+                    csv.AppendLine($"{kvp.Key},{kvp.Value}");
+                }
+                csv.AppendLine();
+                csv.AppendLine("Post Edilmemiş KDV");
+                csv.AppendLine("Para Birimi,Tutar");
+                foreach (var kvp in vatReport.UnpostedVatByCurrency)
+                {
+                    csv.AppendLine($"{kvp.Key},{kvp.Value}");
+                }
+                csv.AppendLine();
+                csv.AppendLine("Servis Tipine Göre KDV");
+                csv.AppendLine("Servis Tipi,Para Birimi,KDV Tutarı");
+                foreach (var serviceType in vatReport.VatByServiceType)
+                {
+                    foreach (var currencyKvp in serviceType.Value)
+                    {
+                        csv.AppendLine($"{EscapeCsvValue(serviceType.Key)},{currencyKvp.Key},{currencyKvp.Value}");
+                    }
+                }
+
+                var fileName = $"KDV_Tahakkuk_Raporu_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+                var content = Encoding.UTF8.GetBytes(csv.ToString());
+
+                return new ExportResult
+                {
+                    FileContent = content,
+                    FileName = fileName,
+                    ContentType = "text/csv; charset=utf-8",
+                    IsSuccess = true
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"KDV tahakkuk raporu CSV'ye aktarılırken hata: {ex.Message}");
+                return new ExportResult
+                {
+                    IsSuccess = false,
+                    ErrorMessage = $"CSV'ye aktarılırken hata: {ex.Message}"
+                };
+            }
+        }
+
+        public async Task<ExportResult> ExportVatPeriodReportToExcelAsync(DateTime? startDate = null, DateTime? endDate = null, string? periodType = null, string? currency = null)
+        {
+            try
+            {
+                var periodReports = await _reportsService.GetVatPeriodReportAsync(startDate, endDate, periodType, currency);
+
+                using var workbook = new XLWorkbook();
+                var sheet = workbook.Worksheets.Add("Dönem Bazlı KDV Raporu");
+
+                // Başlıklar
+                sheet.Cell(1, 1).Value = "Dönem Başlangıç";
+                sheet.Cell(1, 2).Value = "Dönem Bitiş";
+                sheet.Cell(1, 3).Value = "Para Birimi";
+                sheet.Cell(1, 4).Value = "Toplam KDV";
+                sheet.Cell(1, 5).Value = "Toplam Net Tutar";
+                sheet.Cell(1, 6).Value = "Toplam Brüt Tutar";
+                sheet.Cell(1, 7).Value = "Fatura Sayısı";
+
+                var headerRange = sheet.Range(1, 1, 1, 7);
+                headerRange.Style.Font.Bold = true;
+                headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
+                headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+                // Veriler
+                int row = 2;
+                foreach (var report in periodReports)
+                {
+                    sheet.Cell(row, 1).Value = report.PeriodStart.ToString("dd.MM.yyyy");
+                    sheet.Cell(row, 2).Value = report.PeriodEnd.ToString("dd.MM.yyyy");
+                    sheet.Cell(row, 3).Value = report.Currency;
+                    sheet.Cell(row, 4).Value = report.TotalVat;
+                    sheet.Cell(row, 5).Value = report.TotalNetAmount;
+                    sheet.Cell(row, 6).Value = report.TotalGrossAmount;
+                    sheet.Cell(row, 7).Value = report.InvoiceCount;
+                    row++;
+                }
+
+                // Servis tipine göre KDV detayları (ikinci sayfa)
+                var serviceTypeSheet = workbook.Worksheets.Add("Servis Tipine Göre KDV");
+                serviceTypeSheet.Cell(1, 1).Value = "Dönem";
+                serviceTypeSheet.Cell(1, 2).Value = "Servis Tipi";
+                serviceTypeSheet.Cell(1, 3).Value = "KDV Tutarı";
+
+                var serviceHeaderRange = serviceTypeSheet.Range(1, 1, 1, 3);
+                serviceHeaderRange.Style.Font.Bold = true;
+                serviceHeaderRange.Style.Fill.BackgroundColor = XLColor.LightGray;
+                serviceHeaderRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+                row = 2;
+                foreach (var report in periodReports)
+                {
+                    var periodLabel = $"{report.PeriodStart:dd.MM.yyyy} - {report.PeriodEnd:dd.MM.yyyy}";
+                    foreach (var serviceType in report.VatByServiceType)
+                    {
+                        serviceTypeSheet.Cell(row, 1).Value = periodLabel;
+                        serviceTypeSheet.Cell(row, 2).Value = serviceType.Key;
+                        serviceTypeSheet.Cell(row, 3).Value = serviceType.Value;
+                        row++;
+                    }
+                }
+
+                sheet.Columns().AdjustToContents();
+                serviceTypeSheet.Columns().AdjustToContents();
+
+                using var stream = new MemoryStream();
+                workbook.SaveAs(stream);
+                stream.Position = 0;
+
+                var fileName = $"Dönem_Bazlı_KDV_Raporu_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                return new ExportResult
+                {
+                    FileContent = stream.ToArray(),
+                    FileName = fileName,
+                    ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    IsSuccess = true
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Dönem bazlı KDV raporu Excel'e aktarılırken hata: {ex.Message}");
+                return new ExportResult
+                {
+                    IsSuccess = false,
+                    ErrorMessage = $"Excel'e aktarılırken hata: {ex.Message}"
+                };
+            }
+        }
+
+        public async Task<ExportResult> ExportVatPeriodReportToCsvAsync(DateTime? startDate = null, DateTime? endDate = null, string? periodType = null, string? currency = null)
+        {
+            try
+            {
+                var periodReports = await _reportsService.GetVatPeriodReportAsync(startDate, endDate, periodType, currency);
+
+                var csv = new StringBuilder();
+                csv.AppendLine("Dönem Bazlı KDV Raporu");
+                csv.AppendLine($"Başlangıç Tarihi,{startDate?.ToString("dd.MM.yyyy") ?? "Tümü"}");
+                csv.AppendLine($"Bitiş Tarihi,{endDate?.ToString("dd.MM.yyyy") ?? "Tümü"}");
+                csv.AppendLine($"Dönem Tipi,{periodType ?? "Otomatik"}");
+                csv.AppendLine($"Para Birimi,{currency ?? "Tümü"}");
+                csv.AppendLine();
+                csv.AppendLine("Dönem Başlangıç,Dönem Bitiş,Para Birimi,Toplam KDV,Toplam Net Tutar,Toplam Brüt Tutar,Fatura Sayısı");
+                foreach (var report in periodReports)
+                {
+                    csv.AppendLine($"{report.PeriodStart:dd.MM.yyyy}," +
+                        $"{report.PeriodEnd:dd.MM.yyyy}," +
+                        $"{report.Currency}," +
+                        $"{report.TotalVat}," +
+                        $"{report.TotalNetAmount}," +
+                        $"{report.TotalGrossAmount}," +
+                        $"{report.InvoiceCount}");
+                }
+                csv.AppendLine();
+                csv.AppendLine("Servis Tipine Göre KDV");
+                csv.AppendLine("Dönem,Servis Tipi,KDV Tutarı");
+                foreach (var report in periodReports)
+                {
+                    var periodLabel = $"{report.PeriodStart:dd.MM.yyyy} - {report.PeriodEnd:dd.MM.yyyy}";
+                    foreach (var serviceType in report.VatByServiceType)
+                    {
+                        csv.AppendLine($"{periodLabel},{EscapeCsvValue(serviceType.Key)},{serviceType.Value}");
+                    }
+                }
+
+                var fileName = $"Dönem_Bazlı_KDV_Raporu_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+                var content = Encoding.UTF8.GetBytes(csv.ToString());
+
+                return new ExportResult
+                {
+                    FileContent = content,
+                    FileName = fileName,
+                    ContentType = "text/csv; charset=utf-8",
+                    IsSuccess = true
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Dönem bazlı KDV raporu CSV'ye aktarılırken hata: {ex.Message}");
+                return new ExportResult
+                {
+                    IsSuccess = false,
+                    ErrorMessage = $"CSV'ye aktarılırken hata: {ex.Message}"
+                };
+            }
         }
 
         #endregion

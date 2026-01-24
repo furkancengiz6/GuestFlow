@@ -29,9 +29,13 @@ try {
         dotnet build .\GuestFlow.Api --configuration Release --verbosity minimal
     }
 
-    Invoke-Step "BACKEND TESTS (dotnet test)" {
+    Invoke-Step "BACKEND TESTS (dotnet test with coverage)" {
         # Run the full solution tests so integration tests (WebApplicationFactory) are included.
-        dotnet test .\GuestFlow.sln --configuration Release --verbosity minimal
+        # Include code coverage collection
+        dotnet test .\GuestFlow.sln --configuration Release --verbosity normal `
+            --collect:"XPlat Code Coverage" `
+            --results-directory:"./TestResults" `
+            --settings:"./GuestFlow.Application.Tests/coverlet.runsettings"
     }
 
     Invoke-Step "FRONTEND BUILD" {

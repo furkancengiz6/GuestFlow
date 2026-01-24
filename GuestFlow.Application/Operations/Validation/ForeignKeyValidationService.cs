@@ -323,8 +323,17 @@ namespace GuestFlow.Application.Operations.Validation
                     };
                 }
 
-                // For now, assume yacht validation will be implemented later
-                // TODO: Add yacht repository validation
+                var exists = await _vehicleRepository.GetAll(x => x.Id == yachtId && !x.IsDeleted).AnyAsync();
+                if (!exists)
+                {
+                    return new ValidationResult
+                    {
+                        IsValid = false,
+                        ErrorMessage = $"ID'si {yachtId} olan yat (araç) bulunamadı veya silinmiş.",
+                        FieldName = "YachtId"
+                    };
+                }
+
                 return new ValidationResult { IsValid = true };
             }
             catch (Exception ex)

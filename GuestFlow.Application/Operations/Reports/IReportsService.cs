@@ -9,7 +9,7 @@ namespace GuestFlow.Application.Operations.Reports
         /// <summary>
         /// Tarih aralığına göre gelir özeti
         /// </summary>
-        Task<RevenueSummaryDto> GetRevenueSummaryAsync(DateTime? startDate = null, DateTime? endDate = null);
+        Task<RevenueSummaryDto> GetRevenueSummaryAsync(DateTime? startDate = null, DateTime? endDate = null, string? serviceType = null, int? personnelId = null);
 
         /// <summary>
         /// Misafir istatistikleri
@@ -24,7 +24,7 @@ namespace GuestFlow.Application.Operations.Reports
         /// <summary>
         /// Transfer istatistikleri
         /// </summary>
-        Task<TransferStatisticsDto> GetTransferStatisticsAsync(DateTime? startDate = null, DateTime? endDate = null);
+        Task<TransferStatisticsDto> GetTransferStatisticsAsync(DateTime? startDate = null, DateTime? endDate = null, int? personnelId = null);
 
         /// <summary>
         /// Aylık gelir dağılımı
@@ -64,7 +64,17 @@ namespace GuestFlow.Application.Operations.Reports
         /// <summary>
         /// Personel performans raporu
         /// </summary>
-        Task<List<PersonnelPerformanceDto>> GetPersonnelPerformanceAsync(DateTime? startDate = null, DateTime? endDate = null);
+        Task<List<PersonnelPerformanceDto>> GetPersonnelPerformanceAsync(DateTime? startDate = null, DateTime? endDate = null, string? serviceType = null, int? personnelId = null);
+
+        /// <summary>
+        /// VAT tahakkuk raporu (391 hesabına göre) - Dönem bazlı KDV raporu
+        /// </summary>
+        Task<VatAccrualReportDto> GetVatAccrualReportAsync(DateTime? startDate = null, DateTime? endDate = null, string? currency = null);
+
+        /// <summary>
+        /// Dönem bazlı KDV detay raporu (aylık/haftalık/günlük breakdown)
+        /// </summary>
+        Task<List<VatPeriodReportDto>> GetVatPeriodReportAsync(DateTime? startDate = null, DateTime? endDate = null, string? periodType = null, string? currency = null);
     }
 }
 

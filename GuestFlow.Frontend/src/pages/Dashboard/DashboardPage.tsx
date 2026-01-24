@@ -55,6 +55,8 @@ import { formatCurrency, formatDate } from '../../utils/formatters'
 import ContentState from '../../components/Feedback/ContentState'
 import { useQueryClient } from '@tanstack/react-query'
 import { useLiveUpdates } from '../../hooks/useLiveUpdates'
+import ConciergeDashboard from '../../components/ConciergeDashboard/ConciergeDashboard'
+import RealTimeKpiCards from '../../components/Analytics/RealTimeKpiCards'
 
 const DashboardPage = () => {
   const queryClient = useQueryClient()
@@ -117,16 +119,14 @@ const DashboardPage = () => {
       </Box>
 
       {dashboardMode === 'operations' ? (
-        // OPERATIONS DASHBOARD - CONCIERGE MODE
-        <OperationsDashboard
-          unpaidServices={unpaidServices}
-          isLoadingUnpaid={isLoadingUnpaid}
-          upcomingServices={upcomingServices}
-          isLoadingUpcoming={isLoadingUpcoming}
-        />
+        // OPERATIONS DASHBOARD - CONCIERGE MODE (PMS Entegrasyonlu)
+        <ConciergeDashboard />
       ) : (
         // ADMIN DASHBOARD - MANAGEMENT MODE
         <>
+          {/* Real-Time Analytics KPIs */}
+          <RealTimeKpiCards />
+          
           {/* Alert Section */}
       {!isLoadingUnpaid && unpaidServices && unpaidServices.items && unpaidServices.items.length > 0 && (
         <Alert severity="error" sx={{ mb: 3 }}>

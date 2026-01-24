@@ -12,9 +12,12 @@ using System;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using GuestFlow.Api.Filters;
 
 namespace GuestFlow.Api.Controllers
 {
+
+
     /// <summary>
     /// Kimlik doğrulama ve yetkilendirme işlemleri için API endpoint'leri
     /// </summary>
@@ -22,6 +25,7 @@ namespace GuestFlow.Api.Controllers
     [Route("api/v{version:apiVersion}/[controller]")]
     [ApiController]
     [Tags("Kimlik Doğrulama")]
+    [ValidateModel]
     public class AuthController : ControllerBase
     {
         // Burada kullanacağım değişkenleri tanımlıyorum.
@@ -32,6 +36,8 @@ namespace GuestFlow.Api.Controllers
         private readonly IPersonnelService _personnelService;
         private readonly IRefreshTokenService _refreshTokenService;
         private readonly IPasswordService _passwordService;
+        private readonly ITwoFactorService _twoFactorService;
+        private readonly IBruteForceProtectionService _bruteForceProtection;
         private readonly ILogger<AuthController> _logger;
         private readonly IConfiguration _configuration;
 
@@ -40,12 +46,16 @@ namespace GuestFlow.Api.Controllers
             IPersonnelService personnelService,
             IRefreshTokenService refreshTokenService,
             IPasswordService passwordService,
+            ITwoFactorService twoFactorService,
+            IBruteForceProtectionService bruteForceProtection,
             ILogger<AuthController> logger,
             IConfiguration configuration)
         {
             _personnelService = personnelService;
             _refreshTokenService = refreshTokenService;
             _passwordService = passwordService;
+            _twoFactorService = twoFactorService;
+            _bruteForceProtection = bruteForceProtection;
             _logger = logger;
             _configuration = configuration;
         }
@@ -72,13 +82,6 @@ namespace GuestFlow.Api.Controllers
         [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Register(RegisterRequest request)
         {
-            // Gelen isteğin doğruluğunu kontrol ediyorum. Eğer model geçersizse, hata döndürüyorum.
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-                // TODO: İlerde action filter ile yapılacak
-            }
-
             // Gelen isteği bir DTO'ya çeviriyorum ki serviste kullanabileyim.
             var addPersonnelDto = new AddPersonnelDto
             {
@@ -134,11 +137,22 @@ namespace GuestFlow.Api.Controllers
         {
             try
             {
-                if (!ModelState.IsValid)
+                // Brute-force protection: Check if login is allowed
+                var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+                var isLoginAllowed = await _bruteForceProtection.IsLoginAllowedAsync(request.Email, ipAddress);
+                
+                if (!isLoginAllowed)
                 {
-                    // Model geçersizse, bunu logluyorum ve hata döndürüyorum.
-                    _logger.LogWarning($"Geçersiz model durumu: {ModelState}");
-                    return BadRequest(ModelState);
+                    var remainingTime = await _bruteForceProtection.GetRemainingLockoutTimeAsync(request.Email, ipAddress);
+                    _logger.LogWarning($"Login blocked for {request.Email} from IP {ipAddress} - too many failed attempts. Remaining lockout: {remainingTime} seconds");
+                    
+                    // Record failed attempt
+                    await _bruteForceProtection.RecordLoginAttemptAsync(request.Email, ipAddress, false, "AccountLocked", null);
+                    
+                    return BadRequest(new { 
+                        message = $"Çok fazla başarısız giriş denemesi. Lütfen {remainingTime / 60} dakika sonra tekrar deneyin.",
+                        lockoutRemainingSeconds = remainingTime
+                    });
                 }
 
                 // Giriş denemesini logluyorum.
@@ -152,9 +166,20 @@ namespace GuestFlow.Api.Controllers
 
                 if (!result.IsSuccess)
                 {
+                    // Record failed login attempt
+                    await _bruteForceProtection.RecordLoginAttemptAsync(request.Email, ipAddress, false, result.Message, null);
+                    
                     // Eğer giriş başarısızsa, bunu logluyorum ve hata mesajı döndürüyorum.
                     _logger.LogWarning($"Giriş başarısız: {result.Message}");
-                    return BadRequest(new { message = result.Message });
+                    
+                    var failedCount = await _bruteForceProtection.GetFailedAttemptCountAsync(request.Email, ipAddress);
+                    var maxFailedAttempts = int.TryParse(_configuration["Security:BruteForce:MaxFailedAttempts"], out var maxAttempts) ? maxAttempts : 5;
+                    var remainingAttempts = maxFailedAttempts - failedCount;
+                    
+                    return BadRequest(new { 
+                        message = result.Message,
+                        remainingAttempts = remainingAttempts > 0 ? remainingAttempts : 0
+                    });
                 }
 
                 // Giriş başarılıysa, kullanıcı bilgilerini alıyorum.
@@ -165,6 +190,40 @@ namespace GuestFlow.Api.Controllers
                     return StatusCode(500, new { message = "Giriş sırasında bir hata oluştu." });
                 }
                 _logger.LogInformation($"Kullanıcı bilgileri alındı: Email: {user.Email}, UserType: {user.UserType}");
+
+                // Check if 2FA is enabled for this user
+                var is2FAEnabled = await _twoFactorService.IsEnabledAsync(user.Id);
+                if (is2FAEnabled)
+                {
+                    // Verify 2FA code or recovery code
+                    bool is2FAValid = false;
+                    if (!string.IsNullOrEmpty(request.TwoFactorCode))
+                    {
+                        is2FAValid = await _twoFactorService.VerifyCodeAsync(user.Id, request.TwoFactorCode);
+                    }
+                    else if (!string.IsNullOrEmpty(request.RecoveryCode))
+                    {
+                        is2FAValid = await _twoFactorService.VerifyRecoveryCodeAsync(user.Id, request.RecoveryCode);
+                    }
+
+                    if (!is2FAValid)
+                    {
+                        _logger.LogWarning($"2FA verification failed for user {user.Email}");
+                        return BadRequest(new { 
+                            message = "2FA doğrulaması başarısız. Lütfen 2FA kodunuzu veya recovery kodunuzu girin.",
+                            requiresTwoFactor = true 
+                        });
+                    }
+                }
+                else if (_twoFactorService.IsRequiredForUserType(user.UserType))
+                {
+                    // 2FA is required but not enabled - prompt user to set it up
+                    _logger.LogWarning($"2FA is required for {user.UserType} user {user.Email} but not enabled");
+                    return BadRequest(new { 
+                        message = "Bu kullanıcı tipi için 2FA zorunludur. Lütfen 2FA'yı etkinleştirin.",
+                        requiresTwoFactorSetup = true 
+                    });
+                }
 
                 // JWT access token oluşturmak için yapılandırma ayarlarını alıyorum.
                 var accessToken = JwtHelper.GenerateJwtToken(new JwtDto
@@ -180,11 +239,14 @@ namespace GuestFlow.Api.Controllers
                 });
 
                 // Refresh token oluştur
-                var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+                ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
                 var refreshToken = await _refreshTokenService.GenerateRefreshTokenAsync(user.Id, ipAddress);
 
                 // Refresh token'ı yalnızca HttpOnly cookie'de sakla
                 SetRefreshCookie(refreshToken);
+
+                // Record successful login attempt
+                await _bruteForceProtection.RecordLoginAttemptAsync(request.Email, ipAddress, true, null, user.Id);
 
                 // Token'ların oluşturulduğunu logluyorum.
                 _logger.LogInformation($"Token'lar oluşturuldu: Email: {user.Email}, Role: {user.UserType}");
@@ -286,7 +348,7 @@ namespace GuestFlow.Api.Controllers
         {
             try
             {
-                if (!ModelState.IsValid || string.IsNullOrEmpty(request.Email))
+                if (string.IsNullOrEmpty(request.Email))
                 {
                     return BadRequest(new { message = "E-posta adresi gereklidir." });
                 }
@@ -325,7 +387,7 @@ namespace GuestFlow.Api.Controllers
         {
             try
             {
-                if (!ModelState.IsValid || string.IsNullOrEmpty(request.Token) || string.IsNullOrEmpty(request.NewPassword))
+                if (string.IsNullOrEmpty(request.Token) || string.IsNullOrEmpty(request.NewPassword))
                 {
                     return BadRequest(new { message = "Token ve yeni şifre gereklidir." });
                 }
@@ -475,11 +537,6 @@ namespace GuestFlow.Api.Controllers
         {
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
-
                 // Kullanıcı ID'sini token'dan al
                 var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "id");
                 if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int personnelId))
@@ -558,6 +615,105 @@ namespace GuestFlow.Api.Controllers
             {
                 _logger.LogError(ex, $"Şifre doğrulanırken hata: {ex.Message}");
                 return StatusCode(500, new { message = "Şifre doğrulanırken bir hata oluştu." });
+            }
+        }
+
+        /// <summary>
+        /// Generate 2FA setup (secret + QR code) for current user
+        /// </summary>
+        [HttpPost("2fa/setup")]
+        [Authorize]
+        [ProducesResponseType(typeof(ApiResponse<GuestFlow.Application.Models.Responses.Auth.TwoFactorSetupResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> SetupTwoFactor()
+        {
+            try
+            {
+                var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "id");
+                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int personnelId))
+                {
+                    return Unauthorized(new { message = "Kullanıcı bilgisi bulunamadı." });
+                }
+
+                var userResult = await _personnelService.GetPersonnelById(personnelId);
+                if (!userResult.IsSuccess || userResult.Data == null)
+                {
+                    return NotFound(new { message = "Kullanıcı bulunamadı." });
+                }
+
+                var issuer = _configuration["Jwt:Issuer"] ?? "GuestFlow";
+                var setup = await _twoFactorService.GenerateSetupAsync(personnelId, userResult.Data.Email, issuer);
+                
+                return Ok(ApiResponse<GuestFlow.Application.Models.Responses.Auth.TwoFactorSetupResponse>.SuccessResponse(setup, "2FA setup başarıyla oluşturuldu."));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "2FA setup oluşturulurken hata oluştu.");
+                return StatusCode(500, new { message = "2FA setup oluşturulurken bir hata oluştu." });
+            }
+        }
+
+        /// <summary>
+        /// Verify and enable 2FA for current user
+        /// </summary>
+        [HttpPost("2fa/verify-enable")]
+        [Authorize]
+        [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> VerifyAndEnableTwoFactor([FromBody] GuestFlow.Application.Models.Responses.Auth.TwoFactorVerifyRequest request)
+        {
+            try
+            {
+                var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "id");
+                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int personnelId))
+                {
+                    return Unauthorized(new { message = "Kullanıcı bilgisi bulunamadı." });
+                }
+
+                var isValid = await _twoFactorService.VerifyAndEnableAsync(personnelId, request.Code);
+                if (!isValid)
+                {
+                    return BadRequest(new { message = "Geçersiz 2FA kodu." });
+                }
+
+                return Ok(ApiResponse<bool>.SuccessResponse(true, "2FA başarıyla etkinleştirildi."));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "2FA etkinleştirilirken hata oluştu.");
+                return StatusCode(500, new { message = "2FA etkinleştirilirken bir hata oluştu." });
+            }
+        }
+
+        /// <summary>
+        /// Disable 2FA for current user (only if not required for user type)
+        /// </summary>
+        [HttpPost("2fa/disable")]
+        [Authorize]
+        [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> DisableTwoFactor()
+        {
+            try
+            {
+                var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "id");
+                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int personnelId))
+                {
+                    return Unauthorized(new { message = "Kullanıcı bilgisi bulunamadı." });
+                }
+
+                var disabled = await _twoFactorService.DisableAsync(personnelId);
+                if (!disabled)
+                {
+                    return BadRequest(new { message = "2FA devre dışı bırakılamadı. Bu kullanıcı tipi için 2FA zorunludur." });
+                }
+
+                return Ok(ApiResponse<bool>.SuccessResponse(true, "2FA başarıyla devre dışı bırakıldı."));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "2FA devre dışı bırakılırken hata oluştu.");
+                return StatusCode(500, new { message = "2FA devre dışı bırakılırken bir hata oluştu." });
             }
         }
 

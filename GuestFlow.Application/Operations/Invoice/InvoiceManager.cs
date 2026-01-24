@@ -45,6 +45,7 @@ namespace GuestFlow.Application.Operations.Invoice
         private readonly IPdfUrlService _pdfUrlService;
         private readonly IMapper _mapper;
         private readonly IPaymentStatusService _paymentStatusService;
+        private readonly Microsoft.AspNetCore.Http.IHttpContextAccessor _httpContextAccessor;
 
         // Constructor (yapıcı metod): Bu sınıf oluşturulurken bağımlılıkları (dependency) buradan alıyoruz.
         public InvoiceManager(
@@ -62,7 +63,8 @@ namespace GuestFlow.Application.Operations.Invoice
             ILogger<InvoiceManager> logger,
             IPdfUrlService pdfUrlService,
             IMapper mapper,
-            IPaymentStatusService paymentStatusService)
+            IPaymentStatusService paymentStatusService,
+            Microsoft.AspNetCore.Http.IHttpContextAccessor httpContextAccessor)
         {
             _invoiceRepository = invoiceRepository;
             _invoiceItemRepository = invoiceItemRepository;
@@ -79,6 +81,7 @@ namespace GuestFlow.Application.Operations.Invoice
             _pdfUrlService = pdfUrlService;
             _mapper = mapper;
             _paymentStatusService = paymentStatusService;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         // Bu metod, belirli bir faturayı ID'sine göre getiriyor.
@@ -173,11 +176,31 @@ namespace GuestFlow.Application.Operations.Invoice
         /// This is a placeholder - in a real implementation, this would come from
         /// the current user's context (HttpContext, ClaimsPrincipal, etc.)
         /// </summary>
+        /// <summary>
+        /// Get current personnel ID from async context (if available)
+        /// </summary>
         private int? GetCurrentPersonnelId()
         {
-            // TODO: Implement proper personnel context retrieval
-            // For now, return null - the invoice will still be locked
-            return null;
+            try
+            {
+                var httpContext = _httpContextAccessor?.HttpContext;
+                if (httpContext?.User == null) return null;
+
+                var userIdClaim = httpContext.User.FindFirst("id")?.Value ??
+                                  httpContext.User.FindFirst("sub")?.Value ??
+                                  httpContext.User.FindFirst("userId")?.Value;
+
+                if (!string.IsNullOrEmpty(userIdClaim) && int.TryParse(userIdClaim, out int personnelId))
+                {
+                    return personnelId;
+                }
+                
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         /// <summary>

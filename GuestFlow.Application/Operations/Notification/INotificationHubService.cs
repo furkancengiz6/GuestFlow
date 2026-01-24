@@ -32,6 +32,11 @@ namespace GuestFlow.Application.Operations.Notification
         /// Send dashboard update to all users
         /// </summary>
         Task SendDashboardUpdateAsync(object updateData);
+
+        /// <summary>
+        /// Send daily operations update to all users
+        /// </summary>
+        Task SendDailyOperationsUpdateAsync(string action, object? data = null);
     }
 }
 

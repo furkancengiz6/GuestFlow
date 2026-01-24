@@ -35,11 +35,24 @@
     <ProjectReference Include="..\GuestFlow.Api\GuestFlow.Api.csproj" />
   </ItemGroup>
 
+  <!-- Code Coverage Settings -->
+  <PropertyGroup>
+    <CollectCoverage>true</CollectCoverage>
+    <CoverletOutputFormat>opencover,cobertura,json</CoverletOutputFormat>
+    <CoverletOutput>./coverage/</CoverletOutput>
+    <Threshold>0</Threshold>
+    <ThresholdType>line,branch,method</ThresholdType>
+    <ThresholdStat>total</ThresholdStat>
+    <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute,CompilerGeneratedAttribute</ExcludeByAttribute>
+    <Exclude>[*.Tests]*,[*.Test]*</Exclude>
+  </PropertyGroup>
+
   <!-- Exclude existing test files from compilation temporarily to fix build.
        Replace with a small placeholder test while we migrate/refactor tests. -->
   <ItemGroup>
     <Compile Remove="**\*.cs" />
     <Compile Include="PlaceholderTests\PlaceholderTest.cs" />
+    <Compile Include="Helpers\*.cs" />
     <!-- Re-enable selected migrated tests (batch 1) -->
     <Compile Include="Integration\TestWebApplicationFactory.cs" />
     <Compile Include="Integration\AuthorizedTestWebApplicationFactory.cs" />
@@ -51,6 +64,14 @@
     <Compile Include="Integration\Crud\TransfersCrudTests.cs" />
     <Compile Include="Integration\Crud\CityToursCrudTests.cs" />
     <Compile Include="Integration\Crud\YachtToursCrudTests.cs" />
+    <!-- Analytics Tests -->
+    <Compile Include="Operations\Analytics\AnalyticsServiceTests.cs" />
+    <!-- Reports Tests -->
+    <Compile Include="Operations\Reports\ReportsServiceTests.cs" />
+    <!-- Privacy Tests -->
+    <Compile Include="Operations\Privacy\PIIManagementServiceTests.cs" />
+    <!-- Currency Tests -->
+    <Compile Include="Operations\Currency\ExchangeRateServiceTests.cs" />
   </ItemGroup>
 
 </Project>

@@ -114,5 +114,6 @@ export interface GuestDetail {
   yachtTours: GuestYachtTour[]
   invoices: GuestInvoice[]
   timeline: GuestTimelineItem[]
+  isAnonymized?: boolean
 }
 

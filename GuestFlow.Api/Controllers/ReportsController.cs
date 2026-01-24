@@ -44,11 +44,13 @@ namespace GuestFlow.Api.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> GetRevenueSummary(
             [FromQuery] DateTime? startDate = null,
-            [FromQuery] DateTime? endDate = null)
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] string? serviceType = null,
+            [FromQuery] int? personnelId = null)
         {
             try
             {
-                var result = await _reportsService.GetRevenueSummaryAsync(startDate, endDate);
+                var result = await _reportsService.GetRevenueSummaryAsync(startDate, endDate, serviceType, personnelId);
                 return Success(result, "Gelir özeti başarıyla getirildi.");
             }
             catch (Exception ex)
@@ -129,11 +131,12 @@ namespace GuestFlow.Api.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> GetTransferStatistics(
             [FromQuery] DateTime? startDate = null,
-            [FromQuery] DateTime? endDate = null)
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] int? personnelId = null)
         {
             try
             {
-                var result = await _reportsService.GetTransferStatisticsAsync(startDate, endDate);
+                var result = await _reportsService.GetTransferStatisticsAsync(startDate, endDate, personnelId);
                 return Success(result, "Transfer istatistikleri başarıyla getirildi.");
             }
             catch (Exception ex)
@@ -346,17 +349,83 @@ namespace GuestFlow.Api.Controllers
         [HttpGet("personnel-performance")]
         public async Task<IActionResult> GetPersonnelPerformance(
             [FromQuery] DateTime? startDate = null,
-            [FromQuery] DateTime? endDate = null)
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] string? serviceType = null,
+            [FromQuery] int? personnelId = null)
         {
             try
             {
-                var result = await _reportsService.GetPersonnelPerformanceAsync(startDate, endDate);
+                var result = await _reportsService.GetPersonnelPerformanceAsync(startDate, endDate, serviceType, personnelId);
                 return Success(result, "Personel performans raporu başarıyla getirildi.");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Personel performans raporu getirilirken hata oluştu.");
                 return Error("Personel performans raporu getirilirken bir hata oluştu.", (int)HttpStatusCode.InternalServerError);
+            }
+        }
+
+        /// <summary>
+        /// VAT tahakkuk raporu (391 hesabına göre) - Dönem bazlı KDV raporu
+        /// </summary>
+        /// <param name="startDate">Başlangıç tarihi (opsiyonel)</param>
+        /// <param name="endDate">Bitiş tarihi (opsiyonel)</param>
+        /// <param name="currency">Para birimi filtresi (opsiyonel)</param>
+        /// <returns>VAT tahakkuk raporu</returns>
+        /// <response code="200">VAT tahakkuk raporu başarıyla getirildi</response>
+        /// <response code="500">Sunucu hatası</response>
+        /// <response code="401">Yetkisiz erişim</response>
+        [HttpGet("vat-accrual")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetVatAccrualReport(
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] string? currency = null)
+        {
+            try
+            {
+                var result = await _reportsService.GetVatAccrualReportAsync(startDate, endDate, currency);
+                return Success(result, "VAT tahakkuk raporu başarıyla getirildi.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "VAT tahakkuk raporu getirilirken hata oluştu.");
+                return Error("VAT tahakkuk raporu getirilirken bir hata oluştu.", (int)HttpStatusCode.InternalServerError);
+            }
+        }
+
+        /// <summary>
+        /// Dönem bazlı KDV detay raporu (aylık/haftalık/günlük breakdown)
+        /// </summary>
+        /// <param name="startDate">Başlangıç tarihi (opsiyonel)</param>
+        /// <param name="endDate">Bitiş tarihi (opsiyonel)</param>
+        /// <param name="periodType">Dönem tipi: daily, weekly, monthly (varsayılan: monthly)</param>
+        /// <param name="currency">Para birimi filtresi (opsiyonel)</param>
+        /// <returns>Dönem bazlı KDV raporu</returns>
+        /// <response code="200">Dönem bazlı KDV raporu başarıyla getirildi</response>
+        /// <response code="500">Sunucu hatası</response>
+        /// <response code="401">Yetkisiz erişim</response>
+        [HttpGet("vat-period")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetVatPeriodReport(
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] string? periodType = null,
+            [FromQuery] string? currency = null)
+        {
+            try
+            {
+                var result = await _reportsService.GetVatPeriodReportAsync(startDate, endDate, periodType, currency);
+                return Success(result, "Dönem bazlı KDV raporu başarıyla getirildi.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Dönem bazlı KDV raporu getirilirken hata oluştu.");
+                return Error("Dönem bazlı KDV raporu getirilirken bir hata oluştu.", (int)HttpStatusCode.InternalServerError);
             }
         }
     }

@@ -35,7 +35,7 @@ export const createQueryClient = () => {
     queryCache: new QueryCache({
       onError: (error) => {
         // Global error handler for queries
-        if (import.meta.env.DEV) {
+        if (process.env.DEV) {
           console.error('Query Error:', error)
         }
       },
@@ -43,7 +43,7 @@ export const createQueryClient = () => {
     mutationCache: new MutationCache({
       onError: (error) => {
         // Global error handler for mutations
-        if (import.meta.env.DEV) {
+        if (process.env.DEV) {
           console.error('Mutation Error:', error)
         }
       },

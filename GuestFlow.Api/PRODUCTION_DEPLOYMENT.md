@@ -1,5 +1,9 @@
 # GuestFlow API - Production Deployment Guide
 
+> **⚠️ ÖNEMLİ**: Bu doküman referans amaçlıdır. Güncel ve detaylı deployment bilgileri için **[DEPLOYMENT_CHECKLIST.md](../../DEPLOYMENT_CHECKLIST.md)** dosyasını kullanın.
+>
+> **Source of Truth**: `DEPLOYMENT_CHECKLIST.md` - Tüm deployment adımları ve checklist'ler bu dosyada tutulmaktadır.
+
 ## Prerequisites
 
 - .NET 8.0 Runtime installed

@@ -48,6 +48,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { personnelService, Personnel, PersonnelFilters } from '../../services/personnelService'
 import { formatDate } from '../../utils/formatters'
 import ContentState from '../../components/Feedback/ContentState'
+import { PersonnelForm } from '../../components/Personnel/PersonnelForm'
 import { useNotification } from '../../hooks/useNotification'
 
 const PersonnelPage = () => {
@@ -55,7 +56,11 @@ const PersonnelPage = () => {
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const [filtersOpen, setFiltersOpen] = useState(false)
-  
+
+  // Form states
+  const [formOpen, setFormOpen] = useState(false)
+  const [editingPersonnel, setEditingPersonnel] = useState<Personnel | null>(null)
+
   // Filter states
   const [searchTerm, setSearchTerm] = useState('')
   const [userType, setUserType] = useState('')
@@ -92,6 +97,31 @@ const PersonnelPage = () => {
     },
     onError: (error: any) => {
       notification.showError(error?.response?.data?.message || 'Personel silinirken bir hata oluştu.')
+    },
+  })
+
+  const createMutation = useMutation({
+    mutationFn: (data: any) => personnelService.createPersonnel(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['personnel'] })
+      setFormOpen(false)
+      notification.showSuccess('Personel başarıyla oluşturuldu.')
+    },
+    onError: (error: any) => {
+      notification.showError(error?.response?.data?.message || 'Personel oluşturulurken bir hata oluştu.')
+    },
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) => personnelService.updatePersonnel(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['personnel'] })
+      setFormOpen(false)
+      setEditingPersonnel(null)
+      notification.showSuccess('Personel başarıyla güncellendi.')
+    },
+    onError: (error: any) => {
+      notification.showError(error?.response?.data?.message || 'Personel güncellenirken bir hata oluştu.')
     },
   })
 
@@ -180,13 +210,30 @@ const PersonnelPage = () => {
           variant="contained"
           startIcon={<AddIcon />}
           onClick={() => {
-            // TODO: Open form
-            notification.showInfo('Personel formu yakında eklenecek.')
+            setEditingPersonnel(null)
+            setFormOpen(true)
           }}
         >
           Yeni Personel
         </Button>
       </Box>
+
+      <PersonnelForm
+        open={formOpen}
+        onClose={() => {
+          setFormOpen(false)
+          setEditingPersonnel(null)
+        }}
+        onSubmit={(data) => {
+          if (editingPersonnel) {
+            updateMutation.mutate({ id: editingPersonnel.id, data })
+          } else {
+            createMutation.mutate(data as any)
+          }
+        }}
+        initialData={editingPersonnel}
+        loading={createMutation.isPending || updateMutation.isPending}
+      />
 
       {/* Search and Filter Section */}
       <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={tr}>
@@ -384,7 +431,8 @@ const PersonnelPage = () => {
                           size="small"
                           color="primary"
                           onClick={() => {
-                            notification.showInfo('Personel düzenleme formu yakında eklenecek.')
+                            setEditingPersonnel(personnel)
+                            setFormOpen(true)
                           }}
                         >
                           <EditIcon fontSize="small" />

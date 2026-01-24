@@ -164,6 +164,18 @@ class SignalRService {
   }
 
   /**
+   * Register handler for daily operations updates
+   */
+  onDailyOperationsUpdate(callback: (update: any) => void): void {
+    if (!this.connection) {
+      console.warn('SignalR: Connection not initialized')
+      return
+    }
+
+    this.connection.on('ReceiveDailyOperationsUpdate', callback)
+  }
+
+  /**
    * Remove handler
    */
   off(eventName: string, callback?: (...args: any[]) => void): void {

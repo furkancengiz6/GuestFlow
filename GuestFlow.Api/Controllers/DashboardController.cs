@@ -19,10 +19,14 @@ namespace GuestFlow.Api.Controllers
     public class DashboardController : BaseController
     {
         private readonly IDashboardService _dashboardService;
+        private readonly DailyOperationsService _dailyOperationsService;
 
-        public DashboardController(IDashboardService dashboardService)
+        public DashboardController(
+            IDashboardService dashboardService,
+            DailyOperationsService dailyOperationsService)
         {
             _dashboardService = dashboardService;
+            _dailyOperationsService = dailyOperationsService;
         }
 
         /// <summary>
@@ -206,6 +210,31 @@ namespace GuestFlow.Api.Controllers
         {
             var result = await _dashboardService.GetCriticalEventsAsync();
             return Success(result, "Bugünkü kritik olaylar başarıyla getirildi.");
+        }
+
+        /// <summary>
+        /// Günlük operasyon özeti (bugün/yaklaşan servisler, risk bayrakları, hızlı istatistikler)
+        /// </summary>
+        /// <param name="date">Tarih (opsiyonel, varsayılan: bugün)</param>
+        /// <returns>Günlük operasyon özeti</returns>
+        /// <response code="200">Günlük operasyon özeti başarıyla getirildi</response>
+        /// <response code="500">Sunucu hatası</response>
+        /// <response code="401">Yetkisiz erişim</response>
+        [HttpGet("daily-operations")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetDailyOperations([FromQuery] DateTime? date = null)
+        {
+            try
+            {
+                var result = await _dailyOperationsService.GetDailyOperationsAsync(date);
+                return Success(result, "Günlük operasyon özeti başarıyla getirildi.");
+            }
+            catch (Exception ex)
+            {
+                return Error("Günlük operasyon özeti getirilirken bir hata oluştu.", 500, new { Error = ex.Message });
+            }
         }
     }
 }

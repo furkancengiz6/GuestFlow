@@ -9,6 +9,7 @@ using GuestFlow.Application.Operations.Guest.Dtos;
 using GuestFlow.Application.Operations.Hotel.Dtos;
 using GuestFlow.Application.Operations.Invoice.Dtos;
 using GuestFlow.Application.Operations.Notification.Dtos;
+using GuestFlow.Application.Operations.NotificationRules.Dtos;
 using GuestFlow.Application.Operations.Payment.Dtos;
 using GuestFlow.Application.Operations.Personnel.Dtos;
 using GuestFlow.Application.Operations.Restaurant.Dtos;
@@ -16,6 +17,7 @@ using GuestFlow.Application.Operations.Itinerary.Dtos;
 using GuestFlow.Application.Operations.RestaurantReservation.Dtos;
 using GuestFlow.Application.Operations.ServicePackage.Dtos;
 using GuestFlow.Application.Operations.Sms.Dtos;
+using GuestFlow.Application.Operations.WhatsApp.Dtos;
 using GuestFlow.Application.Operations.Reservation.Dtos;
 using GuestFlow.Application.Operations.Transfer.Dtos;
 using GuestFlow.Application.Operations.Vehicle.Dtos;
@@ -260,10 +262,16 @@ namespace GuestFlow.Application.Mappings
 
             // Payment Mappings
             CreateMap<PaymentEntity, GetPaymentDto>()
-                .ForMember(dest => dest.InvoiceNumber, opt => opt.MapFrom(src => src.Invoice != null ? src.Invoice.InvoiceNumber : 0))
-                .ForMember(dest => dest.GuestName, opt => opt.MapFrom(src => src.Guest != null ? src.Guest.FullName : string.Empty))
+                .ForMember(dest => dest.InvoiceNumber, opt => opt.MapFrom(src => src.Invoice != null ? src.Invoice.InvoiceNumber.ToString() : null))
+                .ForMember(dest => dest.GuestName, opt => opt.MapFrom(src => src.Guest != null ? src.Guest.FullName : "Bilinmiyor"))
+                .ForMember(dest => dest.CollectedByPersonnelName, opt => opt.MapFrom(src => src.CollectedByPersonnel != null ? src.CollectedByPersonnel.FullName : "Bilinmiyor"))
                 .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => PaymentMethodHelper.ToString(src.PaymentMethod)))
-                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => PaymentStatusHelper.ToString(src.Status)));
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => PaymentStatusHelper.ToString(src.Status)))
+                .ForMember(dest => dest.ServiceType, opt => opt.MapFrom(src => 
+                    src.TransferId.HasValue ? "Transfer" : 
+                    src.CityTourId.HasValue ? "CityTour" : 
+                    src.YachtTourId.HasValue ? "YachtTour" : "General"));
+
             CreateMap<AddPaymentDto, PaymentEntity>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
@@ -296,18 +304,37 @@ namespace GuestFlow.Application.Mappings
                 .ForMember(dest => dest.Guest, opt => opt.Ignore());
 
             CreateMap<PaymentEntity, PaymentDetailDto>()
-                .ForMember(dest => dest.InvoiceNumber, opt => opt.MapFrom(src => src.Invoice != null ? src.Invoice.InvoiceNumber : 0))
+                .ForMember(dest => dest.InvoiceNumber, opt => opt.MapFrom(src => src.Invoice != null ? src.Invoice.InvoiceNumber.ToString() : null))
                 .ForMember(dest => dest.InvoiceAmount, opt => opt.MapFrom(src => src.Invoice != null ? src.Invoice.TotalAmount : 0))
                 .ForMember(dest => dest.InvoiceCurrency, opt => opt.MapFrom(src => src.Invoice != null ? src.Invoice.Currency : string.Empty))
-                .ForMember(dest => dest.GuestName, opt => opt.MapFrom(src => src.Guest != null ? src.Guest.FullName : string.Empty))
+                .ForMember(dest => dest.GuestName, opt => opt.MapFrom(src => src.Guest != null ? src.Guest.FullName : "Bilinmiyor"))
                 .ForMember(dest => dest.GuestEmail, opt => opt.MapFrom(src => src.Guest != null ? src.Guest.Email : string.Empty))
                 .ForMember(dest => dest.GuestPhoneNumber, opt => opt.MapFrom(src => src.Guest != null ? src.Guest.PhoneNumber : string.Empty))
+                .ForMember(dest => dest.CollectedByPersonnelName, opt => opt.MapFrom(src => src.CollectedByPersonnel != null ? src.CollectedByPersonnel.FullName : "Bilinmiyor"))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => PaymentStatusHelper.ToString(src.Status)))
-                .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => PaymentMethodHelper.ToString(src.PaymentMethod)));
+                .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => PaymentMethodHelper.ToString(src.PaymentMethod)))
+                .ForMember(dest => dest.ServiceType, opt => opt.MapFrom(src => 
+                    src.TransferId.HasValue ? "Transfer" : 
+                    src.CityTourId.HasValue ? "CityTour" : 
+                    src.YachtTourId.HasValue ? "YachtTour" : "General"))
+                .ForMember(dest => dest.TransferDescription, opt => opt.MapFrom(src => src.Transfer != null ? $"{src.Transfer.PickupAddress} → {src.Transfer.DropoffAddress}" : null))
+                .ForMember(dest => dest.CityTourDescription, opt => opt.MapFrom(src => src.CityTour != null ? $"Şehir Turu - {src.CityTour.DurationHours} saat" : null))
+                .ForMember(dest => dest.YachtTourDescription, opt => opt.MapFrom(src => src.YachtTour != null ? $"Yat Turu - {src.YachtTour.YachtName}" : null));
 
             // SMS Mappings
             CreateMap<SmsHistoryEntity, GetSmsHistoryDto>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => SmsStatusHelper.ToString(src.Status)))
+                .ForMember(dest => dest.GuestName, opt => opt.MapFrom(src => src.Guest != null ? src.Guest.FullName : null))
+                .ForMember(dest => dest.PersonnelName, opt => opt.MapFrom(src => src.Personnel != null ? src.Personnel.FullName : null));
+
+            // WhatsApp Mappings
+            CreateMap<WhatsAppHistoryEntity, GetWhatsAppHistoryDto>()
+                .ForMember(dest => dest.MessageType, opt => opt.MapFrom((src, dest, destMember, context) =>
+                {
+                    if (Enum.TryParse<WhatsAppMessageType>(src.MessageType, out var type))
+                        return type;
+                    return WhatsAppMessageType.Text;
+                }))
                 .ForMember(dest => dest.GuestName, opt => opt.MapFrom(src => src.Guest != null ? src.Guest.FullName : null))
                 .ForMember(dest => dest.PersonnelName, opt => opt.MapFrom(src => src.Personnel != null ? src.Personnel.FullName : null));
 
@@ -515,6 +542,9 @@ namespace GuestFlow.Application.Mappings
                 .ForMember(dest => dest.PackageCityTours, opt => opt.Ignore())
                 .ForMember(dest => dest.PackageYachtTours, opt => opt.Ignore())
                 .ForMember(dest => dest.PackageRestaurantReservations, opt => opt.Ignore());
+            // Notification Rules
+            CreateMap<NotificationRuleEntity, NotificationRuleDto>();
+            CreateMap<UpsertNotificationRuleDto, NotificationRuleEntity>();
         }
     }
 }

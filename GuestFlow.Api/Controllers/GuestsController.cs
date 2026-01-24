@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
 
 namespace GuestFlow.Api.Controllers
 {
@@ -25,13 +27,22 @@ namespace GuestFlow.Api.Controllers
         // _guestService: Misafirlerle ilgili işlemleri yapmak için kullanıyorum.
         private readonly IGuestService _guestService;
         private readonly IRoomAssignmentService _roomAssignmentService;
+        private readonly IGuestPreferencesService _guestPreferencesService;
+        private readonly IGuestPreferenceAnalysisService _preferenceAnalysisService;
         private readonly ILogger<GuestsController> _logger;
 
         // Constructor: Bu sınıf oluşturulurken bağımlılıkları buradan alıyorum.
-        public GuestsController(IGuestService guestService, IRoomAssignmentService roomAssignmentService, ILogger<GuestsController> logger)
+        public GuestsController(
+            IGuestService guestService, 
+            IRoomAssignmentService roomAssignmentService, 
+            IGuestPreferencesService guestPreferencesService,
+            IGuestPreferenceAnalysisService preferenceAnalysisService,
+            ILogger<GuestsController> logger)
         {
             _guestService = guestService;
             _roomAssignmentService = roomAssignmentService;
+            _guestPreferencesService = guestPreferencesService;
+            _preferenceAnalysisService = preferenceAnalysisService;
             _logger = logger;
         }
 
@@ -386,6 +397,145 @@ namespace GuestFlow.Api.Controllers
             {
                 _logger.LogError(ex, $"Aktif oda ataması getirilirken hata: {ex.Message}");
                 return Error("Aktif oda ataması getirilirken hata oluştu.", 500);
+            }
+        }
+
+        /// <summary>
+        /// Misafir tercihlerini getirir
+        /// </summary>
+        /// <param name="id">Misafir ID'si</param>
+        /// <returns>Misafir tercihleri</returns>
+        /// <response code="200">Tercihler başarıyla getirildi</response>
+        /// <response code="404">Tercihler bulunamadı</response>
+        /// <response code="401">Yetkisiz erişim</response>
+        [HttpGet("{id}/preferences")]
+        [ProducesResponseType(typeof(ApiResponse<GuestPreferencesDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetGuestPreferences(int id)
+        {
+            var result = await _guestPreferencesService.GetGuestPreferencesAsync(id);
+            if (result.Success)
+                return Success(result.Data, result.Message);
+            return BadRequest(result);
+        }
+
+        /// <summary>
+        /// Misafir tercihlerini oluşturur veya günceller
+        /// </summary>
+        /// <param name="id">Misafir ID'si</param>
+        /// <param name="dto">Tercih bilgileri</param>
+        /// <returns>Oluşturulan/güncellenen tercihler</returns>
+        /// <response code="200">Tercihler başarıyla kaydedildi</response>
+        /// <response code="400">Geçersiz istek verisi</response>
+        /// <response code="401">Yetkisiz erişim</response>
+        [HttpPut("{id}/preferences")]
+        [ProducesResponseType(typeof(ApiResponse<GuestPreferencesDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> UpsertGuestPreferences(int id, [FromBody] UpsertGuestPreferencesDto dto)
+        {
+            dto.GuestId = id; // Ensure guest ID matches route parameter
+            var result = await _guestPreferencesService.UpsertGuestPreferencesAsync(id, dto);
+            if (result.Success)
+                return Success(result.Data, result.Message);
+            return BadRequest(result);
+        }
+
+        /// <summary>
+        /// Misafir tercihlerini siler
+        /// </summary>
+        /// <param name="id">Misafir ID'si</param>
+        /// <returns>Silme işlemi sonucu</returns>
+        /// <response code="200">Tercihler başarıyla silindi</response>
+        /// <response code="404">Tercihler bulunamadı</response>
+        /// <response code="401">Yetkisiz erişim</response>
+        [HttpDelete("{id}/preferences")]
+        [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> DeleteGuestPreferences(int id)
+        {
+            var result = await _guestPreferencesService.DeleteGuestPreferencesAsync(id);
+            if (result.Success)
+                return Success(result.Data, result.Message);
+            return BadRequest(result);
+        }
+
+        /// <summary>
+        /// Misafir tercih analizini getirir
+        /// </summary>
+        [HttpGet("{id}/preferences/analysis")]
+        [ProducesResponseType(typeof(ApiResponse<GuestPreferenceAnalysisDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetGuestPreferenceAnalysis(int id)
+        {
+            try
+            {
+                var result = await _preferenceAnalysisService.GetPreferenceAnalysisAsync(id);
+                return result.Success ? Success(result.Data, "Preference analysis retrieved successfully") : Error(result.Message, 404);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to get preference analysis for guest {GuestId}", id);
+                return Error("Failed to get preference analysis", 500, new { Error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Misafir tercih önerilerini getirir (Intelligence Layer'dan)
+        /// </summary>
+        [HttpGet("{id}/preferences/recommendations")]
+        [ProducesResponseType(typeof(ApiResponse<List<PreferenceRecommendationDto>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetGuestPreferenceRecommendations(int id)
+        {
+            try
+            {
+                var result = await _preferenceAnalysisService.GetPreferenceRecommendationsAsync(id);
+                return result.Success ? Success(result.Data, "Preference recommendations retrieved successfully") : Error(result.Message, 400);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to get preference recommendations for guest {GuestId}", id);
+                return Error("Failed to get preference recommendations", 500, new { Error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// PMS'den gelen tercihleri GuestFlow tercihleri ile birleştirir
+        /// </summary>
+        [HttpPost("{id}/preferences/merge-from-pms")]
+        [ProducesResponseType(typeof(ApiResponse<GuestPreferencesDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> MergePreferencesFromPMS(int id, [FromQuery] int pmsIntegrationId)
+        {
+            try
+            {
+                var result = await _preferenceAnalysisService.MergePreferencesFromPMSAsync(id, pmsIntegrationId);
+                return result.Success ? Success(result.Data, "Preferences merged from PMS successfully") : Error(result.Message, 400);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to merge preferences from PMS for guest {GuestId}", id);
+                return Error("Failed to merge preferences from PMS", 500, new { Error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Tercih uyumluluğunu hesaplar (misafir tercihleri ile hizmet arasında)
+        /// </summary>
+        [HttpGet("{id}/preferences/compatibility")]
+        [ProducesResponseType(typeof(ApiResponse<PreferenceCompatibilityDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> CalculatePreferenceCompatibility(int id, [FromQuery] string serviceType, [FromQuery] int? serviceId = null)
+        {
+            try
+            {
+                var result = await _preferenceAnalysisService.CalculatePreferenceCompatibilityAsync(id, serviceType, serviceId);
+                return result.Success ? Success(result.Data, "Preference compatibility calculated successfully") : Error(result.Message, 400);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to calculate preference compatibility for guest {GuestId}", id);
+                return Error("Failed to calculate preference compatibility", 500, new { Error = ex.Message });
             }
         }
     }

@@ -7,6 +7,7 @@ interface UseSignalROptions {
   onNotificationReceived?: (notification: any) => void
   onLiveUpdate?: (update: any) => void
   onDashboardUpdate?: (update: any) => void
+  onDailyOperationsUpdate?: (update: any) => void
   autoConnect?: boolean
 }
 
@@ -14,7 +15,7 @@ interface UseSignalROptions {
  * Hook for SignalR connection management
  */
 export const useSignalR = (options: UseSignalROptions = {}) => {
-  const { onNotificationReceived, onLiveUpdate, onDashboardUpdate, autoConnect = true } = options
+  const { onNotificationReceived, onLiveUpdate, onDashboardUpdate, onDailyOperationsUpdate, autoConnect = true } = options
   const [isConnected, setIsConnected] = useState(false)
   const [connectionState, setConnectionState] = useState<string>('Disconnected')
   const queryClient = useQueryClient()
@@ -100,6 +101,25 @@ export const useSignalR = (options: UseSignalROptions = {}) => {
           signalRService.onDashboardUpdate(dashboardHandler)
           handlersRef.current.set('ReceiveDashboardUpdate', dashboardHandler)
         }
+
+        // Register daily operations update handler
+        if (onDailyOperationsUpdate) {
+          // Remove old handler if exists
+          const oldHandler = handlersRef.current.get('ReceiveDailyOperationsUpdate')
+          if (oldHandler) {
+            signalRService.off('ReceiveDailyOperationsUpdate', oldHandler)
+          }
+
+          const dailyOpsHandler = (update: any) => {
+            onDailyOperationsUpdate(update)
+            // Invalidate daily operations queries
+            queryClient.invalidateQueries({ queryKey: ['dailyOperations'] })
+            queryClient.invalidateQueries({ queryKey: ['transfers'] })
+            queryClient.invalidateQueries({ queryKey: ['payments'] })
+          }
+          signalRService.onDailyOperationsUpdate(dailyOpsHandler)
+          handlersRef.current.set('ReceiveDailyOperationsUpdate', dailyOpsHandler)
+        }
       } catch (error) {
         console.error('SignalR connection error:', error)
         setIsConnected(false)
@@ -124,7 +144,7 @@ export const useSignalR = (options: UseSignalROptions = {}) => {
       })
       handlers.clear()
     }
-  }, [authStore.isAuthenticated, authStore.accessToken, autoConnect, onNotificationReceived, onLiveUpdate, onDashboardUpdate, queryClient])
+  }, [authStore.isAuthenticated, authStore.accessToken, autoConnect, onNotificationReceived, onLiveUpdate, onDashboardUpdate, onDailyOperationsUpdate, queryClient])
 
   // Disconnect on logout and cleanup on unmount
   useEffect(() => {

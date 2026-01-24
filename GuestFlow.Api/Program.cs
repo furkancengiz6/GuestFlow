@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Furkan Cengiz
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
 using GuestFlow.Api.Middleware;
 using GuestFlow.Api.Middlewares;
 using GuestFlow.Api.Filters;
@@ -34,6 +37,7 @@ using GuestFlow.Application.Operations.Auth;
 using GuestFlow.Application.Operations.Password;
 using GuestFlow.Application.Operations.Reports;
 using GuestFlow.Application.Operations.Dashboard;
+using GuestFlow.Application.Operations.Analytics;
 using GuestFlow.Application.Operations.Validation;
 using GuestFlow.Application.Operations.Currency;
 using GuestFlow.Application.Operations.Supplier;
@@ -48,6 +52,12 @@ using GuestFlow.Application.Operations.Import;
 using GuestFlow.Application.Operations.Calendar;
 using GuestFlow.Application.Operations.Common;
 using GuestFlow.Application.Configuration;
+using GuestFlow.Application.Operations.Intelligence.Graph;
+using GuestFlow.Application.Operations.Intelligence.Sentiment;
+using GuestFlow.Application.Operations.Intelligence.Relationship;
+using GuestFlow.Application.Operations.Intelligence.Behavioral;
+using GuestFlow.Application.Operations.Intelligence.Predictive;
+using GuestFlow.Application.Operations.Intelligence.Proactive;
 using GuestFlow.Application.Operations.Configuration;
 using GuestFlow.Api.Hubs;
 using GuestFlow.Api.Services;
@@ -293,6 +303,7 @@ builder.Services.Configure<FileSettings>(builder.Configuration.GetSection("FileS
 builder.Services.Configure<CurrencySettings>(builder.Configuration.GetSection("CurrencySettings"));
 builder.Services.Configure<SmsSettings>(builder.Configuration.GetSection("SmsSettings"));
 builder.Services.Configure<LocalizationSettings>(builder.Configuration.GetSection("LocalizationSettings"));
+builder.Services.Configure<Neo4jSettings>(builder.Configuration.GetSection("Neo4j"));
 builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
 builder.Services.Configure<RateLimitSettings>(builder.Configuration.GetSection("RateLimitSettings"));
 builder.Services.Configure<SecurityHeadersSettings>(builder.Configuration.GetSection("SecurityHeaders"));
@@ -448,7 +459,16 @@ builder.Services.AddScoped<IVehicleService, VehicleManager>();
 builder.Services.AddScoped<IAirportService, AirportManager>();
 builder.Services.AddScoped<IPersonnelService, PersonnelManager>();
 builder.Services.AddScoped<IGuestService, GuestManager>();
+builder.Services.AddScoped<IGuestPreferencesService, GuestPreferencesService>();
+builder.Services.AddScoped<IGuestPreferenceAnalysisService, GuestPreferenceAnalysisService>();
 builder.Services.AddScoped<IRoomAssignmentService, RoomAssignmentManager>();
+builder.Services.AddScoped<GuestFlow.Application.Operations.Communication.IUnifiedCommunicationService, GuestFlow.Application.Operations.Communication.UnifiedCommunicationService>();
+builder.Services.AddScoped<GuestFlow.Application.Operations.Communication.ISmartNotificationService, GuestFlow.Application.Operations.Communication.SmartNotificationService>();
+builder.Services.AddScoped<GuestFlow.Application.Operations.NotificationRules.INotificationRuleService, GuestFlow.Application.Operations.NotificationRules.NotificationRuleService>();
+builder.Services.AddScoped<GuestFlow.Application.Operations.Map.IGeocodingService, GuestFlow.Application.Operations.Map.GeocodingService>();
+builder.Services.AddScoped<GuestFlow.Application.Operations.Map.IMapService, GuestFlow.Application.Operations.Map.MapService>();
+builder.Services.AddHttpClient<GuestFlow.Application.Operations.Map.GeocodingService>();
+builder.Services.AddScoped<GuestFlow.Application.Operations.WhatsApp.IWhatsAppService, GuestFlow.Application.Operations.WhatsApp.WhatsAppService>();
 
 // Supplier and Profitability services
 builder.Services.AddScoped<ISupplierService, SupplierManager>();
@@ -456,6 +476,24 @@ builder.Services.AddScoped<IProfitabilityService, ProfitabilityService>();
 
 // OTA Integration services
 builder.Services.AddScoped<IOTAIntegrationService, OTAIntegrationService>();
+builder.Services.AddScoped<IOTAChannelManagerService, OTAChannelManagerService>();
+builder.Services.AddScoped<IOTAReservationMappingService, OTAReservationMappingService>();
+
+// PMS Integration services
+builder.Services.AddScoped<GuestFlow.Application.Operations.PMS.IPMSIntegrationService, GuestFlow.Application.Operations.PMS.PMSIntegrationService>();
+builder.Services.AddScoped<GuestFlow.Application.Operations.PMS.IPMSSyncService, GuestFlow.Application.Operations.PMS.PMSSyncService>();
+builder.Services.AddScoped<GuestFlow.Application.Operations.PMS.IPMSWebhookProcessor, GuestFlow.Application.Operations.PMS.PMSWebhookProcessor>();
+builder.Services.AddScoped<GuestFlow.Application.Operations.Communication.ISmartNotificationService, GuestFlow.Application.Operations.Communication.SmartNotificationService>();
+
+// Intelligence Layer - Graph Database (Neo4j)
+builder.Services.AddSingleton<INeo4jService, Neo4jService>();
+builder.Services.AddScoped<IGraphDataService, GraphDataService>();
+builder.Services.AddScoped<IBehavioralTrackingService, BehavioralTrackingService>();
+builder.Services.AddScoped<ISentimentAnalysisService, SentimentAnalysisService>();
+builder.Services.AddScoped<IRelationshipIntelligenceService, RelationshipIntelligenceService>();
+builder.Services.AddScoped<IPredictiveIntelligenceService, PredictiveIntelligenceService>();
+builder.Services.AddScoped<IProactiveIntelligenceService, ProactiveIntelligenceService>();
+builder.Services.AddHostedService<GuestFlow.Application.Operations.PMS.PMSPollingBackgroundService>();
 // Accounting / Journal service
 builder.Services.AddScoped<GuestFlow.Application.Operations.Accounting.IJournalService, GuestFlow.Application.Operations.Accounting.JournalService>();
 #region Supplier cost service
@@ -479,6 +517,12 @@ builder.Services.AddScoped<ITransferRecommendationService, TransferRecommendatio
 builder.Services.AddScoped<IAutomaticNotificationService, AutomaticNotificationService>();
 builder.Services.AddScoped<IGoogleMapsService, GoogleMapsService>();
 builder.Services.AddScoped<IQRCodeService, QRCodeService>();
+builder.Services.AddScoped<GuestFlow.Application.Operations.Auth.ITwoFactorService, GuestFlow.Application.Operations.Auth.TwoFactorService>();
+builder.Services.AddScoped<GuestFlow.Application.Operations.Auth.IBruteForceProtectionService, GuestFlow.Application.Operations.Auth.BruteForceProtectionService>();
+builder.Services.AddScoped<GuestFlow.Application.Operations.Auth.ILoginAuditService, GuestFlow.Application.Operations.Auth.LoginAuditService>();
+builder.Services.AddScoped<GuestFlow.Application.Operations.Privacy.IPIIManagementService, GuestFlow.Application.Operations.Privacy.PIIManagementService>();
+builder.Services.AddScoped<GuestFlow.Application.Operations.FeatureFlags.IFeatureFlagService, GuestFlow.Application.Operations.FeatureFlags.FeatureFlagService>();
+builder.Services.AddScoped<GuestFlow.Application.Operations.Authorization.IPermissionService, GuestFlow.Application.Operations.Authorization.PermissionService>();
 builder.Services.AddScoped<IDailyNoteService, DailyNoteManager>();
 builder.Services.AddScoped<IDailyRevenueService, DailyRevenueManager>();
 builder.Services.AddScoped<IPdfService, PdfService>();
@@ -491,12 +535,22 @@ builder.Services.AddHostedService<EmailQueueBackgroundService>();
 builder.Services.AddHostedService<RefreshTokenCleanupBackgroundService>();
 builder.Services.AddHostedService<ServiceConfirmationBackgroundService>();
 builder.Services.AddHostedService<PaymentReminderBackgroundService>();
+builder.Services.AddHostedService<GuestFlow.Application.Operations.Communication.SmartNotificationBackgroundService>();
+builder.Services.AddHostedService<GuestFlow.Application.Operations.NotificationRules.NotificationRuleBackgroundService>();
 builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddScoped<IFileShareService, FileShareService>();
 builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IReportsService, ReportsService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IConciergeDashboardService, ConciergeDashboardService>();
+builder.Services.AddScoped<IQuickActionService, QuickActionService>();
+builder.Services.AddScoped<GuestFlow.Application.Operations.Production.IProductionConfigurationValidator, GuestFlow.Application.Operations.Production.ProductionConfigurationValidator>();
+builder.Services.AddScoped<GuestFlow.Application.Operations.Production.IMigrationDriftChecker, GuestFlow.Application.Operations.Production.MigrationDriftChecker>();
+builder.Services.AddScoped<GuestFlow.Application.Operations.Production.IDependencyVulnerabilityChecker, GuestFlow.Application.Operations.Production.DependencyVulnerabilityChecker>();
+builder.Services.AddScoped<GuestFlow.Application.Operations.Production.IDatabaseBackupService, GuestFlow.Application.Operations.Production.DatabaseBackupService>();
+builder.Services.AddScoped<DailyOperationsService>();
+builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 builder.Services.AddScoped<IForeignKeyValidationService, ForeignKeyValidationService>();
 builder.Services.AddScoped<ICurrencyService, CurrencyService>();
 builder.Services.AddScoped<IPdfUrlService, PdfUrlService>();
@@ -510,6 +564,7 @@ builder.Services.AddScoped<IExportService, ExportService>();
 builder.Services.AddScoped<IImportService, ImportService>();
 builder.Services.AddScoped<ICalendarService, CalendarService>();
 builder.Services.AddScoped<IPriceCalculationService, PriceCalculationService>();
+builder.Services.AddScoped<GuestFlow.Application.Operations.Currency.IExchangeRateService, GuestFlow.Application.Operations.Currency.ExchangeRateService>();
 builder.Services.AddScoped<IDateValidationService, DateValidationService>();
 builder.Services.AddScoped<IInvoiceCreationService, InvoiceCreationService>();
 builder.Services.AddScoped<IConfigurationService, ConfigurationService>();
@@ -518,6 +573,7 @@ builder.Services.AddScoped<GuestFlow.Application.Operations.Cache.ICacheService,
 builder.Services.AddScoped<InputValidationService>(); // SECURITY: Input validation service
 builder.Services.AddScoped<DailyRevenueJob>();
 builder.Services.AddHostedService<DailyRevenueBackgroundService>(); //
+builder.Services.AddHostedService<GuestFlow.Application.Operations.OTA.OTAWebhookRetryBackgroundService>(); // OTA Webhook Retry Service
 
 // SignalR
 builder.Services.AddSignalR(options =>

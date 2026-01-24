@@ -22,6 +22,9 @@ namespace GuestFlow.Application.Operations.Reports
         private readonly IRepository<YachtTourEntity> _yachtTourRepository;
         private readonly IRepository<TransferEntity> _transferRepository;
         private readonly IRepository<InvoicesEntity> _invoiceRepository;
+        private readonly IRepository<InvoiceItemEntity> _invoiceItemRepository;
+        private readonly IRepository<JournalEntry> _journalEntryRepository;
+        private readonly IRepository<JournalLine> _journalLineRepository;
         private readonly IRepository<CityEntity> _cityRepository;
         private readonly IRepository<PersonnelEntity> _personnelRepository;
         private readonly ILogger<ReportsService> _logger;
@@ -34,6 +37,9 @@ namespace GuestFlow.Application.Operations.Reports
             IRepository<YachtTourEntity> yachtTourRepository,
             IRepository<TransferEntity> transferRepository,
             IRepository<InvoicesEntity> invoiceRepository,
+            IRepository<InvoiceItemEntity> invoiceItemRepository,
+            IRepository<JournalEntry> journalEntryRepository,
+            IRepository<JournalLine> journalLineRepository,
             IRepository<CityEntity> cityRepository,
             IRepository<PersonnelEntity> personnelRepository,
             ILogger<ReportsService> logger)
@@ -45,6 +51,9 @@ namespace GuestFlow.Application.Operations.Reports
             _yachtTourRepository = yachtTourRepository;
             _transferRepository = transferRepository;
             _invoiceRepository = invoiceRepository;
+            _invoiceItemRepository = invoiceItemRepository;
+            _journalEntryRepository = journalEntryRepository;
+            _journalLineRepository = journalLineRepository;
             _cityRepository = cityRepository;
             _personnelRepository = personnelRepository;
             _logger = logger;
@@ -54,7 +63,7 @@ namespace GuestFlow.Application.Operations.Reports
         /// Gelir özeti - Tahsilat bazlı (PaymentEntity'den hesaplanır)
         /// Gelir = Tamamlanmış ödemeler (Status = Completed)
         /// </summary>
-        public async Task<RevenueSummaryDto> GetRevenueSummaryAsync(DateTime? startDate = null, DateTime? endDate = null)
+        public async Task<RevenueSummaryDto> GetRevenueSummaryAsync(DateTime? startDate = null, DateTime? endDate = null, string? serviceType = null, int? personnelId = null)
         {
             try
             {
@@ -62,21 +71,57 @@ namespace GuestFlow.Application.Operations.Reports
                 var end = endDate ?? DateTime.UtcNow;
 
                 // Tamamlanmış ödemeleri çek (tahsilat bazlı gelir)
-                var completedPayments = await _paymentRepository.GetAll()
+                var completedPaymentsQuery = _paymentRepository.GetAll()
                     .Where(p => p.PaymentDate.Date >= start.Date && 
                                p.PaymentDate.Date <= end.Date && 
                                p.Status == PaymentStatus.Completed && 
-                               !p.IsDeleted)
-                    .ToListAsync();
+                               !p.IsDeleted);
+
+                // Servis tipi filtresi
+                if (!string.IsNullOrEmpty(serviceType))
+                {
+                    if (serviceType == "Transfer")
+                        completedPaymentsQuery = completedPaymentsQuery.Where(p => p.TransferId.HasValue);
+                    else if (serviceType == "CityTour")
+                        completedPaymentsQuery = completedPaymentsQuery.Where(p => p.CityTourId.HasValue);
+                    else if (serviceType == "YachtTour")
+                        completedPaymentsQuery = completedPaymentsQuery.Where(p => p.YachtTourId.HasValue);
+                }
+
+                // Personel filtresi (CollectedByPersonnelId)
+                if (personnelId.HasValue)
+                {
+                    completedPaymentsQuery = completedPaymentsQuery.Where(p => p.CollectedByPersonnelId == personnelId.Value);
+                }
+
+                var completedPayments = await completedPaymentsQuery.ToListAsync();
 
                 // İade edilen ödemeleri çek
-                var refundedPayments = await _paymentRepository.GetAll()
+                var refundedPaymentsQuery = _paymentRepository.GetAll()
                     .Where(p => p.RefundDate.HasValue &&
                                p.RefundDate.Value.Date >= start.Date && 
                                p.RefundDate.Value.Date <= end.Date && 
                                p.Status == PaymentStatus.Refunded && 
-                               !p.IsDeleted)
-                    .ToListAsync();
+                               !p.IsDeleted);
+
+                // Servis tipi filtresi
+                if (!string.IsNullOrEmpty(serviceType))
+                {
+                    if (serviceType == "Transfer")
+                        refundedPaymentsQuery = refundedPaymentsQuery.Where(p => p.TransferId.HasValue);
+                    else if (serviceType == "CityTour")
+                        refundedPaymentsQuery = refundedPaymentsQuery.Where(p => p.CityTourId.HasValue);
+                    else if (serviceType == "YachtTour")
+                        refundedPaymentsQuery = refundedPaymentsQuery.Where(p => p.YachtTourId.HasValue);
+                }
+
+                // Personel filtresi
+                if (personnelId.HasValue)
+                {
+                    refundedPaymentsQuery = refundedPaymentsQuery.Where(p => p.CollectedByPersonnelId == personnelId.Value);
+                }
+
+                var refundedPayments = await refundedPaymentsQuery.ToListAsync();
 
                 // Currency bazlı grupla
                 var currencies = completedPayments.Select(p => p.Currency)
@@ -122,24 +167,71 @@ namespace GuestFlow.Application.Operations.Reports
                     result.NetRevenueByCurrency[currency] = netRevenue;
                 }
 
-                // Rezervasyon sayıları (servis bazlı - değişmedi)
-                var cityTourCount = await _cityTourRepository.GetAll()
-                    .Where(ct => ct.TourDate.Date >= start.Date && ct.TourDate.Date <= end.Date)
-                    .CountAsync();
+                // Rezervasyon sayıları (servis bazlı)
+                var cityTourQuery = _cityTourRepository.GetAll()
+                    .Where(ct => ct.TourDate.Date >= start.Date && ct.TourDate.Date <= end.Date);
+                
+                var yachtTourQuery = _yachtTourRepository.GetAll()
+                    .Where(yt => yt.TourDate.Date >= start.Date && yt.TourDate.Date <= end.Date);
+                
+                var transferQuery = _transferRepository.GetAll()
+                    .Where(t => t.TransferDate.Date >= start.Date && t.TransferDate.Date <= end.Date);
 
-                var yachtTourCount = await _yachtTourRepository.GetAll()
-                    .Where(yt => yt.TourDate.Date >= start.Date && yt.TourDate.Date <= end.Date)
-                    .CountAsync();
+                // Personel filtresi (servis bazlı)
+                if (personnelId.HasValue)
+                {
+                    cityTourQuery = cityTourQuery.Where(ct => ct.PersonnelId == personnelId.Value);
+                    yachtTourQuery = yachtTourQuery.Where(yt => yt.PersonnelId == personnelId.Value);
+                    transferQuery = transferQuery.Where(t => t.PersonnelId == personnelId.Value);
+                }
 
-                var transferCount = await _transferRepository.GetAll()
-                    .Where(t => t.TransferDate.Date >= start.Date && t.TransferDate.Date <= end.Date)
-                    .CountAsync();
+                // Servis tipi filtresi
+                if (!string.IsNullOrEmpty(serviceType))
+                {
+                    if (serviceType == "CityTour")
+                    {
+                        var cityTourCount = await cityTourQuery.CountAsync();
+                        result.CityTourCount = cityTourCount;
+                        result.YachtTourCount = 0;
+                        result.TransferCount = 0;
+                        result.TotalBookings = cityTourCount;
+                    }
+                    else if (serviceType == "YachtTour")
+                    {
+                        var yachtTourCount = await yachtTourQuery.CountAsync();
+                        result.CityTourCount = 0;
+                        result.YachtTourCount = yachtTourCount;
+                        result.TransferCount = 0;
+                        result.TotalBookings = yachtTourCount;
+                    }
+                    else if (serviceType == "Transfer")
+                    {
+                        var transferCount = await transferQuery.CountAsync();
+                        result.CityTourCount = 0;
+                        result.YachtTourCount = 0;
+                        result.TransferCount = transferCount;
+                        result.TotalBookings = transferCount;
+                    }
+                    else
+                    {
+                        result.CityTourCount = 0;
+                        result.YachtTourCount = 0;
+                        result.TransferCount = 0;
+                        result.TotalBookings = 0;
+                    }
+                }
+                else
+                {
+                    var cityTourCount = await cityTourQuery.CountAsync();
+                    var yachtTourCount = await yachtTourQuery.CountAsync();
+                    var transferCount = await transferQuery.CountAsync();
 
-                result.CityTourCount = cityTourCount;
-                result.YachtTourCount = yachtTourCount;
-                result.TransferCount = transferCount;
-                result.TotalBookings = cityTourCount + yachtTourCount + transferCount;
-                result.TotalPaymentCount = completedPayments.Count;
+                    result.CityTourCount = cityTourCount;
+                    result.YachtTourCount = yachtTourCount;
+                    result.TransferCount = transferCount;
+                    result.TotalBookings = cityTourCount + yachtTourCount + transferCount;
+                    result.TotalPaymentCount = completedPayments.Count;
+                }
 
                 return result;
             }
@@ -300,7 +392,7 @@ namespace GuestFlow.Application.Operations.Reports
             }
         }
 
-        public async Task<TransferStatisticsDto> GetTransferStatisticsAsync(DateTime? startDate = null, DateTime? endDate = null)
+        public async Task<TransferStatisticsDto> GetTransferStatisticsAsync(DateTime? startDate = null, DateTime? endDate = null, int? personnelId = null)
         {
             try
             {
@@ -310,6 +402,12 @@ namespace GuestFlow.Application.Operations.Reports
 
                 var transfers = _transferRepository.GetAll()
                     .Where(t => t.TransferDate.Date >= start.Date && t.TransferDate.Date <= end.Date);
+
+                // Personel filtresi
+                if (personnelId.HasValue)
+                {
+                    transfers = transfers.Where(t => t.PersonnelId == personnelId.Value);
+                }
 
                 var totalTransfers = await transfers.CountAsync();
                 // REVENUE REALITY: Revenue = collected money only (from PaymentEntity)
@@ -643,7 +741,7 @@ namespace GuestFlow.Application.Operations.Reports
                         CityTourRevenue = cityTourRevenue,
                         YachtTourRevenue = yachtTourRevenue,
                         TransferRevenue = transferRevenue,
-                        BookingCount = bookingCount
+                        PaymentCount = bookingCount
                     });
 
                     currentDate = currentDate.AddDays(1);
@@ -861,26 +959,66 @@ namespace GuestFlow.Application.Operations.Reports
             }
         }
 
-        public async Task<List<PersonnelPerformanceDto>> GetPersonnelPerformanceAsync(DateTime? startDate = null, DateTime? endDate = null)
+        public async Task<List<PersonnelPerformanceDto>> GetPersonnelPerformanceAsync(DateTime? startDate = null, DateTime? endDate = null, string? serviceType = null, int? personnelId = null)
         {
             try
             {
                 var start = startDate ?? DateTime.UtcNow.AddMonths(-3);
                 var end = endDate ?? DateTime.UtcNow;
 
-                var transferPersonnelIds = await _transferRepository.GetAll()
-                    .Where(t => t.TransferDate >= start && t.TransferDate <= end && t.PersonnelId.HasValue && t.PersonnelId.Value > 0)
+                var transferQuery = _transferRepository.GetAll()
+                    .Where(t => t.TransferDate.Date >= start.Date && t.TransferDate.Date <= end.Date);
+                
+                var cityTourQuery = _cityTourRepository.GetAll()
+                    .Where(ct => ct.TourDate.Date >= start.Date && ct.TourDate.Date <= end.Date);
+                
+                var yachtTourQuery = _yachtTourRepository.GetAll()
+                    .Where(yt => yt.TourDate.Date >= start.Date && yt.TourDate.Date <= end.Date);
+
+                // Servis tipi filtresi
+                if (!string.IsNullOrEmpty(serviceType))
+                {
+                    if (serviceType == "Transfer")
+                    {
+                        cityTourQuery = cityTourQuery.Where(_ => false); // Empty query
+                        yachtTourQuery = yachtTourQuery.Where(_ => false);
+                    }
+                    else if (serviceType == "CityTour")
+                    {
+                        transferQuery = transferQuery.Where(_ => false);
+                        yachtTourQuery = yachtTourQuery.Where(_ => false);
+                    }
+                    else if (serviceType == "YachtTour")
+                    {
+                        transferQuery = transferQuery.Where(_ => false);
+                        cityTourQuery = cityTourQuery.Where(_ => false);
+                    }
+                }
+
+                // Personel filtresi - eğer belirtilmişse sadece o personeli göster
+                if (personnelId.HasValue)
+                {
+                    transferQuery = transferQuery.Where(t => t.PersonnelId == personnelId.Value);
+                    cityTourQuery = cityTourQuery.Where(ct => ct.PersonnelId == personnelId.Value);
+                    yachtTourQuery = yachtTourQuery.Where(yt => yt.PersonnelId == personnelId.Value);
+                }
+
+                var transferPersonnelIds = await transferQuery
+                    .Where(t => t.PersonnelId.HasValue && t.PersonnelId.Value > 0)
                     .Select(t => t.PersonnelId!.Value)
+                    .Distinct()
                     .ToListAsync();
 
-                var cityTourPersonnelIds = await _cityTourRepository.GetAll()
-                    .Where(ct => ct.TourDate >= start && ct.TourDate <= end && ct.PersonnelId.HasValue && ct.PersonnelId.Value > 0)
+                var cityTourPersonnelIds = await cityTourQuery
+                    .Where(ct => ct.PersonnelId.HasValue && ct.PersonnelId.Value > 0)
                     .Select(ct => ct.PersonnelId!.Value)
+                    .Distinct()
                     .ToListAsync();
 
-                var yachtTourPersonnelIds = await _yachtTourRepository.GetAll()
-                    .Where(yt => yt.TourDate >= start && yt.TourDate <= end && yt.PersonnelId.HasValue && yt.PersonnelId.Value > 0)
+                var yachtTourPersonnelIds = await yachtTourQuery
+                    .Where(yt => yt.PersonnelId.HasValue && yt.PersonnelId.Value > 0)
                     .Select(yt => yt.PersonnelId!.Value)
+                    .Distinct()
                     .ToListAsync();
 
                 var personnelIds = transferPersonnelIds
@@ -891,21 +1029,21 @@ namespace GuestFlow.Application.Operations.Reports
 
                 var performances = new List<PersonnelPerformanceDto>();
 
-                foreach (var personnelId in personnelIds)
+                foreach (var pid in personnelIds)
                 {
-                    var personnel = await _personnelRepository.GetByIdAsync(personnelId);
+                    var personnel = await _personnelRepository.GetByIdAsync(pid);
                     if (personnel == null) continue;
 
-                    var transfers = await _transferRepository.GetAll()
-                        .Where(t => t.PersonnelId.HasValue && t.PersonnelId.Value == personnelId && t.TransferDate >= start && t.TransferDate <= end)
+                    var transfers = await transferQuery
+                        .Where(t => t.PersonnelId.HasValue && t.PersonnelId.Value == pid)
                         .ToListAsync();
 
-                    var cityTours = await _cityTourRepository.GetAll()
-                        .Where(ct => ct.PersonnelId.HasValue && ct.PersonnelId.Value == personnelId && ct.TourDate >= start && ct.TourDate <= end)
+                    var cityTours = await cityTourQuery
+                        .Where(ct => ct.PersonnelId.HasValue && ct.PersonnelId.Value == pid)
                         .ToListAsync();
 
-                    var yachtTours = await _yachtTourRepository.GetAll()
-                        .Where(yt => yt.PersonnelId.HasValue && yt.PersonnelId.Value == personnelId && yt.TourDate >= start && yt.TourDate <= end)
+                    var yachtTours = await yachtTourQuery
+                        .Where(yt => yt.PersonnelId.HasValue && yt.PersonnelId.Value == pid)
                         .ToListAsync();
 
                     var totalBookings = transfers.Count + cityTours.Count + yachtTours.Count;
@@ -916,7 +1054,7 @@ namespace GuestFlow.Application.Operations.Reports
 
                     performances.Add(new PersonnelPerformanceDto
                     {
-                        PersonnelId = personnelId,
+                        PersonnelId = pid,
                         FullName = personnel.FullName,
                         UserType = personnel.UserType.ToString(),
                         TotalBookings = totalBookings,
@@ -933,6 +1071,180 @@ namespace GuestFlow.Application.Operations.Reports
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Personel performans raporu getirilirken hata: {ex.Message}");
+                throw;
+            }
+        }
+
+        public async Task<VatAccrualReportDto> GetVatAccrualReportAsync(DateTime? startDate = null, DateTime? endDate = null, string? currency = null)
+        {
+            try
+            {
+                var report = new VatAccrualReportDto
+                {
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    Currency = currency
+                };
+
+                // Get invoices in date range
+                var invoicesQuery = _invoiceRepository.GetAll();
+                
+                if (startDate.HasValue)
+                    invoicesQuery = invoicesQuery.Where(i => i.IssueDate >= startDate.Value);
+                
+                if (endDate.HasValue)
+                    invoicesQuery = invoicesQuery.Where(i => i.IssueDate <= endDate.Value.AddDays(1).AddTicks(-1));
+
+                var invoices = await invoicesQuery
+                    .Include(i => i.InvoiceItems)
+                    .ToListAsync();
+
+                report.TotalInvoiceCount = invoices.Count;
+
+                // Get posted journal entries
+                var postedJournalEntries = await _journalEntryRepository
+                    .GetAll(j => j.InvoiceId != null && invoices.Select(i => i.Id).Contains(j.InvoiceId.Value))
+                    .Include(j => j.Lines)
+                    .ToListAsync();
+
+                report.PostedJournalCount = postedJournalEntries.Count;
+
+                // Calculate VAT from invoice items
+                foreach (var invoice in invoices)
+                {
+                    if (currency != null && invoice.Currency != currency)
+                        continue;
+
+                    var invoiceCurrency = invoice.Currency ?? "TRY";
+                    var invoiceVat = invoice.InvoiceItems.Sum(ii => ii.VatAmount);
+
+                    // Add to total VAT by currency
+                    if (!report.TotalVatByCurrency.ContainsKey(invoiceCurrency))
+                        report.TotalVatByCurrency[invoiceCurrency] = 0m;
+                    report.TotalVatByCurrency[invoiceCurrency] += invoiceVat;
+
+                    // Add to VAT by service type
+                    foreach (var item in invoice.InvoiceItems)
+                    {
+                        var serviceType = item.ServiceType ?? "General";
+                        if (!report.VatByServiceType.ContainsKey(serviceType))
+                            report.VatByServiceType[serviceType] = new Dictionary<string, decimal>();
+
+                        if (!report.VatByServiceType[serviceType].ContainsKey(invoiceCurrency))
+                            report.VatByServiceType[serviceType][invoiceCurrency] = 0m;
+
+                        report.VatByServiceType[serviceType][invoiceCurrency] += item.VatAmount;
+                    }
+
+                    // Check if VAT is posted (391 account)
+                    var isPosted = postedJournalEntries.Any(j => j.InvoiceId == invoice.Id);
+                    if (!isPosted)
+                    {
+                        if (!report.UnpostedVatByCurrency.ContainsKey(invoiceCurrency))
+                            report.UnpostedVatByCurrency[invoiceCurrency] = 0m;
+                        report.UnpostedVatByCurrency[invoiceCurrency] += invoiceVat;
+                    }
+                }
+
+                return report;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"VAT tahakkuk raporu getirilirken hata: {ex.Message}");
+                throw;
+            }
+        }
+
+        public async Task<List<VatPeriodReportDto>> GetVatPeriodReportAsync(DateTime? startDate = null, DateTime? endDate = null, string? periodType = null, string? currency = null)
+        {
+            try
+            {
+                periodType = periodType?.ToLowerInvariant() ?? "monthly"; // monthly, weekly, daily
+
+                // Default date range: current year
+                if (!startDate.HasValue)
+                    startDate = new DateTime(DateTime.UtcNow.Year, 1, 1);
+                
+                if (!endDate.HasValue)
+                    endDate = DateTime.UtcNow;
+
+                // Get invoices in date range
+                var invoicesQuery = _invoiceRepository.GetAll()
+                    .Where(i => i.IssueDate >= startDate.Value && i.IssueDate <= endDate.Value.AddDays(1).AddTicks(-1));
+
+                if (currency != null)
+                    invoicesQuery = invoicesQuery.Where(i => i.Currency == currency);
+
+                var invoices = await invoicesQuery
+                    .Include(i => i.InvoiceItems)
+                    .ToListAsync();
+
+                var periodReports = new Dictionary<string, VatPeriodReportDto>();
+
+                foreach (var invoice in invoices)
+                {
+                    var invoiceCurrency = invoice.Currency ?? "TRY";
+                    var invoiceVat = invoice.InvoiceItems.Sum(ii => ii.VatAmount);
+                    var invoiceNet = invoice.InvoiceItems.Sum(ii => ii.Amount - ii.VatAmount);
+                    var invoiceGross = invoice.TotalAmount;
+
+                    string periodKey;
+                    DateTime periodStart;
+                    DateTime periodEnd;
+
+                    switch (periodType)
+                    {
+                        case "daily":
+                            periodKey = invoice.IssueDate.ToString("yyyy-MM-dd");
+                            periodStart = invoice.IssueDate.Date;
+                            periodEnd = periodStart.AddDays(1).AddTicks(-1);
+                            break;
+                        case "weekly":
+                            var weekStart = invoice.IssueDate.Date.AddDays(-(int)invoice.IssueDate.DayOfWeek);
+                            periodKey = $"{weekStart:yyyy}-W{System.Globalization.CultureInfo.CurrentCulture.Calendar.GetWeekOfYear(weekStart, System.Globalization.CalendarWeekRule.FirstDay, DayOfWeek.Monday):D2}";
+                            periodStart = weekStart;
+                            periodEnd = periodStart.AddDays(7).AddTicks(-1);
+                            break;
+                        case "monthly":
+                        default:
+                            periodKey = invoice.IssueDate.ToString("yyyy-MM");
+                            periodStart = new DateTime(invoice.IssueDate.Year, invoice.IssueDate.Month, 1);
+                            periodEnd = periodStart.AddMonths(1).AddTicks(-1);
+                            break;
+                    }
+
+                    if (!periodReports.ContainsKey(periodKey))
+                    {
+                        periodReports[periodKey] = new VatPeriodReportDto
+                        {
+                            Period = periodKey,
+                            PeriodStart = periodStart,
+                            PeriodEnd = periodEnd,
+                            Currency = invoiceCurrency
+                        };
+                    }
+
+                    var report = periodReports[periodKey];
+                    report.TotalVat += invoiceVat;
+                    report.TotalNetAmount += invoiceNet;
+                    report.TotalGrossAmount += invoiceGross;
+                    report.InvoiceCount++;
+
+                    // Add VAT by service type
+                    foreach (var item in invoice.InvoiceItems)
+                    {
+                        var serviceType = item.ServiceType ?? "General";
+                        if (!report.VatByServiceType.ContainsKey(serviceType))
+                            report.VatByServiceType[serviceType] = 0m;
+                        report.VatByServiceType[serviceType] += item.VatAmount;
+                    }
+                }
+
+                return periodReports.Values.OrderBy(r => r.PeriodStart).ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Dönem bazlı KDV raporu getirilirken hata: {ex.Message}");
                 throw;
             }
         }

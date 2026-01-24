@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 Furkan Cengiz
+ * Licensed under the MIT License. See LICENSE file in the project root for full license information.
+ */
+
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Suspense } from 'react'
 import { Box, CircularProgress } from './components/ui'
@@ -39,8 +44,12 @@ const VehiclesPage = lazyLoad(() => import('./pages/Vehicles/VehiclesPage'), 'Ve
 const DailyNotesPage = lazyLoad(() => import('./pages/DailyNotes/DailyNotesPage'), 'DailyNotesPage')
 const DailyRevenuesPage = lazyLoad(() => import('./pages/DailyRevenues/DailyRevenuesPage'), 'DailyRevenuesPage')
 const SmsPage = lazyLoad(() => import('./pages/SMS/SmsPage'), 'SmsPage')
+const WhatsAppManagementPage = lazyLoad(() => import('./pages/WhatsApp/WhatsAppManagementPage'), 'WhatsAppManagementPage')
 const EmailsPage = lazyLoad(() => import('./pages/Emails/EmailsPage'), 'EmailsPage')
 const NotificationsPage = lazyLoad(() => import('./pages/Notifications/NotificationsPage'), 'NotificationsPage')
+const NotificationRulesPage = lazyLoad(() => import('./pages/NotificationRules/NotificationRulesPage'), 'NotificationRulesPage')
+const OperationalMapPage = lazyLoad(() => import('./pages/Map/OperationalMapPage'), 'OperationalMapPage')
+const DailyOperationsPage = lazyLoad(() => import('./pages/Operations/DailyOperationsPage'), 'DailyOperationsPage')
 const FilesPage = lazyLoad(() => import('./pages/Files/FilesPage'), 'FilesPage')
 const CalendarPage = lazyLoad(() => import('./pages/Calendar/CalendarPage'), 'CalendarPage')
 const HotelsPage = lazyLoad(() => import('./pages/Hotels/HotelsPage'), 'HotelsPage')
@@ -53,6 +62,9 @@ const PaymentsPage = lazyLoad(() => import('./pages/Payments/PaymentsPage'), 'Pa
 const RoomAssignmentsPage = lazyLoad(() => import('./pages/RoomAssignments/RoomAssignmentsPage'), 'RoomAssignmentsPage')
 const SuppliersPage = lazyLoad(() => import('./pages/Suppliers/SuppliersPage'), 'SuppliersPage')
 const SupplierCostsPage = lazyLoad(() => import('./pages/Suppliers/SupplierCostsPage'), 'SupplierCostsPage')
+const LoginAuditPage = lazyLoad(() => import('./pages/Security/LoginAuditPage'), 'LoginAuditPage')
+const IntelligenceDashboardPage = lazyLoad(() => import('./pages/Intelligence/IntelligenceDashboardPage'), 'IntelligenceDashboardPage')
+const PrivacyManagementPage = lazyLoad(() => import('./pages/Privacy/PrivacyManagementPage'), 'PrivacyManagementPage')
 
 // Loading fallback component
 const PageLoader = () => (
@@ -213,6 +225,16 @@ function App() {
                       }
                     />
                     <Route
+                      path="/intelligence"
+                      element={
+                        <ProtectedRoute roles={['Admin', 'Staff']} fallbackPath="/dashboard">
+                          <Suspense fallback={<PageLoader />}>
+                            <IntelligenceDashboardPage />
+                          </Suspense>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
                       path="/airports"
                       element={
                         <ProtectedRoute roles={['Admin']} fallbackPath="/dashboard">
@@ -289,6 +311,16 @@ function App() {
                       }
                     />
                     <Route
+                      path="/whatsapp"
+                      element={
+                        <ProtectedRoute roles={['Manager', 'Admin', 'Owner', 'Staff']} fallbackPath="/dashboard">
+                          <Suspense fallback={<PageLoader />}>
+                            <WhatsAppManagementPage />
+                          </Suspense>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
                       path="/emails"
                       element={
                         <ProtectedRoute roles={['Admin']} fallbackPath="/dashboard">
@@ -304,6 +336,34 @@ function App() {
                         <Suspense fallback={<PageLoader />}>
                           <NotificationsPage />
                         </Suspense>
+                      }
+                    />
+                    <Route
+                      path="/notification-rules"
+                      element={
+                        <ProtectedRoute roles={['Admin', 'Staff']} fallbackPath="/dashboard">
+                          <Suspense fallback={<PageLoader />}>
+                            <NotificationRulesPage />
+                          </Suspense>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/operational-map"
+                      element={
+                        <Suspense fallback={<PageLoader />}>
+                          <OperationalMapPage />
+                        </Suspense>
+                      }
+                    />
+                    <Route
+                      path="/daily-operations"
+                      element={
+                        <ProtectedRoute roles={['Admin', 'Staff']} fallbackPath="/dashboard">
+                          <Suspense fallback={<PageLoader />}>
+                            <DailyOperationsPage />
+                          </Suspense>
+                        </ProtectedRoute>
                       }
                     />
                     <Route
@@ -416,6 +476,26 @@ function App() {
                         <ProtectedRoute roles={['Admin']} fallbackPath="/dashboard">
                           <Suspense fallback={<PageLoader />}>
                             <SupplierCostsPage />
+                          </Suspense>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/security/login-audit"
+                      element={
+                        <ProtectedRoute roles={['Admin', 'Owner']} fallbackPath="/dashboard">
+                          <Suspense fallback={<PageLoader />}>
+                            <LoginAuditPage />
+                          </Suspense>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/privacy"
+                      element={
+                        <ProtectedRoute roles={['Admin', 'Owner']} fallbackPath="/dashboard">
+                          <Suspense fallback={<PageLoader />}>
+                            <PrivacyManagementPage />
                           </Suspense>
                         </ProtectedRoute>
                       }

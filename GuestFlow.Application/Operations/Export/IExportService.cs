@@ -59,6 +59,56 @@ namespace GuestFlow.Application.Operations.Export
         /// Journal kayıtlarını (posting date aralığına göre) Excel formatında dışa aktarır
         /// </summary>
         Task<ExportResult> ExportJournalToExcelAsync(DateTime? startDate = null, DateTime? endDate = null);
+
+        /// <summary>
+        /// Guest Ledger - Misafir bazlı tüm finansal hareketleri CSV formatında dışa aktarır
+        /// </summary>
+        Task<ExportResult> ExportGuestLedgerToCsvAsync(int? guestId = null, DateTime? startDate = null, DateTime? endDate = null);
+
+        /// <summary>
+        /// Guest Ledger - Misafir bazlı tüm finansal hareketleri Excel formatında dışa aktarır
+        /// </summary>
+        Task<ExportResult> ExportGuestLedgerToExcelAsync(int? guestId = null, DateTime? startDate = null, DateTime? endDate = null);
+
+        /// <summary>
+        /// Supplier Ledger - Tedarikçi bazlı tüm finansal hareketleri CSV formatında dışa aktarır
+        /// </summary>
+        Task<ExportResult> ExportSupplierLedgerToCsvAsync(int? supplierId = null, DateTime? startDate = null, DateTime? endDate = null);
+
+        /// <summary>
+        /// Supplier Ledger - Tedarikçi bazlı tüm finansal hareketleri Excel formatında dışa aktarır
+        /// </summary>
+        Task<ExportResult> ExportSupplierLedgerToExcelAsync(int? supplierId = null, DateTime? startDate = null, DateTime? endDate = null);
+
+        /// <summary>
+        /// Room Ledger - Oda bazlı tüm işlemleri CSV formatında dışa aktarır
+        /// </summary>
+        Task<ExportResult> ExportRoomLedgerToCsvAsync(string? roomNumber = null, DateTime? startDate = null, DateTime? endDate = null);
+
+        /// <summary>
+        /// Room Ledger - Oda bazlı tüm işlemleri Excel formatında dışa aktarır
+        /// </summary>
+        Task<ExportResult> ExportRoomLedgerToExcelAsync(string? roomNumber = null, DateTime? startDate = null, DateTime? endDate = null);
+
+        /// <summary>
+        /// VAT tahakkuk raporunu (391 hesabı) Excel formatında dışa aktarır
+        /// </summary>
+        Task<ExportResult> ExportVatAccrualReportToExcelAsync(DateTime? startDate = null, DateTime? endDate = null, string? currency = null);
+
+        /// <summary>
+        /// VAT tahakkuk raporunu (391 hesabı) CSV formatında dışa aktarır
+        /// </summary>
+        Task<ExportResult> ExportVatAccrualReportToCsvAsync(DateTime? startDate = null, DateTime? endDate = null, string? currency = null);
+
+        /// <summary>
+        /// Dönem bazlı KDV raporunu Excel formatında dışa aktarır
+        /// </summary>
+        Task<ExportResult> ExportVatPeriodReportToExcelAsync(DateTime? startDate = null, DateTime? endDate = null, string? periodType = null, string? currency = null);
+
+        /// <summary>
+        /// Dönem bazlı KDV raporunu CSV formatında dışa aktarır
+        /// </summary>
+        Task<ExportResult> ExportVatPeriodReportToCsvAsync(DateTime? startDate = null, DateTime? endDate = null, string? periodType = null, string? currency = null);
     }
 
     /// <summary>

@@ -1,0 +1,51 @@
+﻿src/pages/WhatsApp/WhatsAppManagementPage.tsx(228,16): error TS2304: Cannot find name 'TextField'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(232,28): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(241,8): error TS2304: Cannot find name 'TableContainer'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(242,10): error TS2304: Cannot find name 'Table'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(243,12): error TS2304: Cannot find name 'TableHead'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(244,14): error TS2304: Cannot find name 'TableRow'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(245,16): error TS2304: Cannot find name 'TableCell'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(245,33): error TS2304: Cannot find name 'TableCell'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(246,16): error TS2304: Cannot find name 'TableCell'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(246,35): error TS2304: Cannot find name 'TableCell'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(247,16): error TS2304: Cannot find name 'TableCell'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(247,33): error TS2304: Cannot find name 'TableCell'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(248,16): error TS2304: Cannot find name 'TableCell'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(248,33): error TS2304: Cannot find name 'TableCell'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(249,16): error TS2304: Cannot find name 'TableCell'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(249,35): error TS2304: Cannot find name 'TableCell'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(250,16): error TS2304: Cannot find name 'TableCell'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(250,36): error TS2304: Cannot find name 'TableCell'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(251,15): error TS2304: Cannot find name 'TableRow'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(252,13): error TS2304: Cannot find name 'TableHead'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(253,12): error TS2304: Cannot find name 'TableBody'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(255,16): error TS2304: Cannot find name 'TableRow'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(256,18): error TS2304: Cannot find name 'TableCell'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(258,19): error TS2304: Cannot find name 'TableCell'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(259,17): error TS2304: Cannot find name 'TableRow'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(262,18): error TS2304: Cannot find name 'TableRow'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(263,20): error TS2304: Cannot find name 'TableCell'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(263,58): error TS2304: Cannot find name 'TableCell'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(264,20): error TS2304: Cannot find name 'TableCell'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(264,49): error TS2304: Cannot find name 'TableCell'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(265,20): error TS2304: Cannot find name 'TableCell'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(269,21): error TS2304: Cannot find name 'TableCell'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(270,20): error TS2304: Cannot find name 'TableCell'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(271,22): error TS2304: Cannot find name 'Chip'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(277,21): error TS2304: Cannot find name 'TableCell'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(278,20): error TS2304: Cannot find name 'TableCell'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(280,24): error TS2304: Cannot find name 'Chip'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(286,21): error TS2304: Cannot find name 'TableCell'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(287,20): error TS2304: Cannot find name 'TableCell'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(296,21): error TS2304: Cannot find name 'TableCell'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(297,19): error TS2304: Cannot find name 'TableRow'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(300,13): error TS2304: Cannot find name 'TableBody'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(301,11): error TS2304: Cannot find name 'Table'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(302,9): error TS2304: Cannot find name 'TableContainer'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(325,12): error TS2304: Cannot find name 'TextField'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(330,24): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(334,12): error TS2304: Cannot find name 'TextField'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(339,24): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(347,12): error TS2304: Cannot find name 'TextField'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(352,24): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(394,20): error TS2304: Cannot find name 'Chip'.

@@ -1,0 +1,89 @@
+﻿src/components/Analytics/RealTimeKpiCards.tsx(90,17): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: { component: ElementType<any, keyof IntrinsicElements>; } & ChipOwnProps & CommonProps & Omit<any, "className" | ... 15 more ... | "skipFocusWhenDisabled">): Element | null', gave the following error.
+    Type 'Element | null' is not assignable to type 'ReactElement<any, string | JSXElementConstructor<any>> | undefined'.
+      Type 'null' is not assignable to type 'ReactElement<any, string | JSXElementConstructor<any>> | undefined'.
+  Overload 2 of 2, '(props: DefaultComponentProps<ChipTypeMap<{}, "div">>): Element | null', gave the following error.
+    Type 'Element | null' is not assignable to type 'ReactElement<any, string | JSXElementConstructor<any>> | undefined'.
+      Type 'null' is not assignable to type 'ReactElement<any, string | JSXElementConstructor<any>> | undefined'.
+src/components/NotificationRules/NotificationRules.tsx(525,9): error TS2322: Type '{ open: boolean; onClose: () => void; onConfirm: () => void; title: string; message: string; }' is not assignable to type 'IntrinsicAttributes & ConfirmationDialogProps'.
+  Property 'onClose' does not exist on type 'IntrinsicAttributes & ConfirmationDialogProps'.
+src/components/Personnel/PersonnelForm.tsx(20,31): error TS2307: Cannot find module '@mui/lab' or its corresponding type declarations.
+src/pages/Guests/GuestDetailPage.tsx(65,69): error TS2339: Property 'isAnonymized' does not exist on type 'GuestDetail'.
+src/pages/Guests/GuestDetailPage.tsx(68,33): error TS2339: Property 'isAnonymized' does not exist on type 'GuestDetail'.
+src/pages/Guests/GuestDetailPage.tsx(73,56): error TS2339: Property 'isAnonymized' does not exist on type 'GuestDetail'.
+src/pages/Guests/GuestDetailPage.tsx(79,75): error TS2339: Property 'isAnonymized' does not exist on type 'GuestDetail'.
+src/pages/Guests/GuestDetailPage.tsx(82,33): error TS2339: Property 'isAnonymized' does not exist on type 'GuestDetail'.
+src/pages/Guests/GuestDetailPage.tsx(87,62): error TS2339: Property 'isAnonymized' does not exist on type 'GuestDetail'.
+src/pages/Guests/GuestDetailPage.tsx(94,31): error TS2339: Property 'isAnonymized' does not exist on type 'GuestDetail'.
+src/pages/Guests/GuestDetailPage.tsx(103,31): error TS2339: Property 'isAnonymized' does not exist on type 'GuestDetail'.
+src/pages/Guests/GuestDetailPage.tsx(231,41): error TS2339: Property 'isAnonymized' does not exist on type 'GuestDetail'.
+src/pages/Operations/DailyOperationsPage.tsx(238,17): error TS2552: Cannot find name 'setAssignDriverDialog'. Did you mean 'useAssignDriver'?
+src/pages/Operations/DailyOperationsPage.tsx(241,17): error TS2304: Cannot find name 'setPaymentDialog'.
+src/pages/Operations/DailyOperationsPage.tsx(243,50): error TS2552: Cannot find name 'confirmTransfer'. Did you mean 'useConfirmTransfer'?
+src/pages/Operations/DailyOperationsPage.tsx(244,49): error TS2552: Cannot find name 'cancelTransfer'. Did you mean 'useCancelTransfer'?
+src/pages/Operations/DailyOperationsPage.tsx(245,31): error TS2552: Cannot find name 'confirmTransfer'. Did you mean 'useConfirmTransfer'?
+src/pages/Operations/DailyOperationsPage.tsx(246,30): error TS2552: Cannot find name 'cancelTransfer'. Did you mean 'useCancelTransfer'?
+src/pages/Operations/DailyOperationsPage.tsx(254,17): error TS2304: Cannot find name 'setAssignDriverDialog'.
+src/pages/Operations/DailyOperationsPage.tsx(257,17): error TS2304: Cannot find name 'setPaymentDialog'.
+src/pages/Operations/DailyOperationsPage.tsx(259,50): error TS2304: Cannot find name 'confirmTransfer'.
+src/pages/Operations/DailyOperationsPage.tsx(260,49): error TS2304: Cannot find name 'cancelTransfer'.
+src/pages/Operations/DailyOperationsPage.tsx(261,31): error TS2304: Cannot find name 'confirmTransfer'.
+src/pages/Operations/DailyOperationsPage.tsx(262,30): error TS2304: Cannot find name 'cancelTransfer'.
+src/pages/Operations/DailyOperationsPage.tsx(270,15): error TS2304: Cannot find name 'assignDriverDialog'.
+src/pages/Operations/DailyOperationsPage.tsx(271,24): error TS2552: Cannot find name 'setAssignDriverDialog'. Did you mean 'useAssignDriver'?
+src/pages/Operations/DailyOperationsPage.tsx(280,20): error TS2304: Cannot find name 'selectedPersonnelId'.
+src/pages/Operations/DailyOperationsPage.tsx(281,30): error TS2304: Cannot find name 'setSelectedPersonnelId'.
+src/pages/Operations/DailyOperationsPage.tsx(288,34): error TS2304: Cannot find name 'setAssignDriverDialog'.
+src/pages/Operations/DailyOperationsPage.tsx(293,19): error TS2304: Cannot find name 'selectedPersonnelId'.
+src/pages/Operations/DailyOperationsPage.tsx(294,17): error TS2304: Cannot find name 'assignDriver'.
+src/pages/Operations/DailyOperationsPage.tsx(295,31): error TS2304: Cannot find name 'assignDriverDialog'.
+src/pages/Operations/DailyOperationsPage.tsx(296,32): error TS2304: Cannot find name 'selectedPersonnelId'.
+src/pages/Operations/DailyOperationsPage.tsx(298,17): error TS2304: Cannot find name 'setAssignDriverDialog'.
+src/pages/Operations/DailyOperationsPage.tsx(299,17): error TS2304: Cannot find name 'setSelectedPersonnelId'.
+src/pages/Operations/DailyOperationsPage.tsx(303,23): error TS2304: Cannot find name 'selectedPersonnelId'.
+src/pages/Operations/DailyOperationsPage.tsx(303,51): error TS2304: Cannot find name 'assignDriver'.
+src/pages/Operations/DailyOperationsPage.tsx(311,21): error TS2304: Cannot find name 'paymentDialog'.
+src/pages/Operations/DailyOperationsPage.tsx(311,56): error TS2304: Cannot find name 'setPaymentDialog'.
+src/pages/Operations/DailyOperationsPage.tsx(319,20): error TS2304: Cannot find name 'paymentAmount'.
+src/pages/Operations/DailyOperationsPage.tsx(319,37): error TS2304: Cannot find name 'paymentDialog'.
+src/pages/Operations/DailyOperationsPage.tsx(320,30): error TS2304: Cannot find name 'setPaymentAmount'.
+src/pages/Operations/DailyOperationsPage.tsx(324,28): error TS2304: Cannot find name 'paymentMethod'.
+src/pages/Operations/DailyOperationsPage.tsx(324,60): error TS2304: Cannot find name 'setPaymentMethod'.
+src/pages/Operations/DailyOperationsPage.tsx(335,28): error TS2304: Cannot find name 'setPaymentDialog'.
+src/pages/Operations/DailyOperationsPage.tsx(341,41): error TS2304: Cannot find name 'paymentAmount'.
+src/pages/Operations/DailyOperationsPage.tsx(341,58): error TS2304: Cannot find name 'paymentDialog'.
+src/pages/Operations/DailyOperationsPage.tsx(343,17): error TS2304: Cannot find name 'recordPayment'.
+src/pages/Operations/DailyOperationsPage.tsx(344,32): error TS2304: Cannot find name 'paymentDialog'.
+src/pages/Operations/DailyOperationsPage.tsx(345,30): error TS2304: Cannot find name 'paymentDialog'.
+src/pages/Operations/DailyOperationsPage.tsx(347,30): error TS2304: Cannot find name 'paymentDialog'.
+src/pages/Operations/DailyOperationsPage.tsx(349,31): error TS2304: Cannot find name 'paymentDialog'.
+src/pages/Operations/DailyOperationsPage.tsx(350,36): error TS2304: Cannot find name 'paymentMethod'.
+src/pages/Operations/DailyOperationsPage.tsx(353,17): error TS2304: Cannot find name 'setPaymentDialog'.
+src/pages/Operations/DailyOperationsPage.tsx(354,17): error TS2304: Cannot find name 'setPaymentAmount'.
+src/pages/Operations/DailyOperationsPage.tsx(355,17): error TS2304: Cannot find name 'setPaymentMethod'.
+src/pages/Operations/DailyOperationsPage.tsx(359,24): error TS2304: Cannot find name 'paymentAmount'.
+src/pages/Operations/DailyOperationsPage.tsx(359,52): error TS2304: Cannot find name 'paymentAmount'.
+src/pages/Operations/DailyOperationsPage.tsx(359,75): error TS2304: Cannot find name 'recordPayment'.
+src/pages/Privacy/PrivacyManagementPage.tsx(39,23): error TS2307: Cannot find module 'react-toastify' or its corresponding type declarations.
+src/pages/Privacy/PrivacyManagementPage.tsx(174,28): error TS2339: Property 'isAnonymized' does not exist on type 'GuestDetail'.
+src/pages/Privacy/PrivacyManagementPage.tsx(185,39): error TS2339: Property 'isAnonymized' does not exist on type 'GuestDetail'.
+src/pages/Security/LoginAuditPage.tsx(31,8): error TS2307: Cannot find module '../components/ui' or its corresponding type declarations.
+src/pages/Security/LoginAuditPage.tsx(174,28): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/Security/LoginAuditPage.tsx(184,28): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/Security/LoginAuditPage.tsx(193,28): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/Security/LoginAuditPage.tsx(202,28): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/Security/LoginAuditPage.tsx(211,30): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(280,23): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: { component: ElementType<any, keyof IntrinsicElements>; } & ChipOwnProps & CommonProps & Omit<any, "className" | ... 15 more ... | "skipFocusWhenDisabled">): Element | null', gave the following error.
+    Type 'Element | null' is not assignable to type 'ReactElement<any, string | JSXElementConstructor<any>> | undefined'.
+      Type 'null' is not assignable to type 'ReactElement<any, string | JSXElementConstructor<any>> | undefined'.
+  Overload 2 of 2, '(props: DefaultComponentProps<ChipTypeMap<{}, "div">>): Element | null', gave the following error.
+    Type 'Element | null' is not assignable to type 'ReactElement<any, string | JSXElementConstructor<any>> | undefined'.
+      Type 'null' is not assignable to type 'ReactElement<any, string | JSXElementConstructor<any>> | undefined'.
+src/pages/WhatsApp/WhatsAppManagementPage.tsx(403,21): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: { component: ElementType<any, keyof IntrinsicElements>; } & ChipOwnProps & CommonProps & Omit<any, "className" | ... 15 more ... | "skipFocusWhenDisabled">): Element | null', gave the following error.
+    Type 'Element | null' is not assignable to type 'ReactElement<any, string | JSXElementConstructor<any>> | undefined'.
+      Type 'null' is not assignable to type 'ReactElement<any, string | JSXElementConstructor<any>> | undefined'.
+  Overload 2 of 2, '(props: DefaultComponentProps<ChipTypeMap<{}, "div">>): Element | null', gave the following error.
+    Type 'Element | null' is not assignable to type 'ReactElement<any, string | JSXElementConstructor<any>> | undefined'.
+      Type 'null' is not assignable to type 'ReactElement<any, string | JSXElementConstructor<any>> | undefined'.

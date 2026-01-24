@@ -1,0 +1,31 @@
+GuestFlow - Otel ve Misafir Yönetim Sistemi
+
+Copyright (c) 2025 Furkan Cengiz
+
+This project is licensed under the MIT License.
+
+For more information, see:
+- LICENSE file for full license text
+- COPYRIGHT file for copyright information
+- README.md for project documentation
+
+Third-Party Licenses:
+This software uses the following open-source libraries and frameworks:
+
+Backend:
+- .NET 8.0 (MIT License)
+- Entity Framework Core (Apache License 2.0)
+- Serilog (Apache License 2.0)
+- AutoMapper (MIT License)
+- QuestPDF (MIT License)
+
+Frontend:
+- React 18 (MIT License)
+- TypeScript (Apache License 2.0)
+- Material-UI (MIT License)
+- React Query (MIT License)
+- Zustand (MIT License)
+
+For full list of dependencies and their licenses, please refer to:
+- Backend: .csproj files
+- Frontend: package.json file

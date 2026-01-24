@@ -357,6 +357,248 @@ namespace GuestFlow.Api.Controllers
                 return Error($"Dışa aktarma sırasında hata oluştu: {ex.Message}", 500);
             }
         }
+
+        /// <summary>
+        /// Guest Ledger - Misafir bazlı tüm finansal hareketleri CSV formatında dışa aktarır
+        /// </summary>
+        [HttpGet("guest-ledger/csv")]
+        public async Task<IActionResult> ExportGuestLedgerToCsv(
+            [FromQuery] int? guestId = null,
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null)
+        {
+            try
+            {
+                var result = await _exportService.ExportGuestLedgerToCsvAsync(guestId, startDate, endDate);
+
+                if (!result.IsSuccess)
+                    return Error(result.ErrorMessage ?? "Dışa aktarma başarısız oldu.", 500);
+
+                return File(result.FileContent, result.ContentType, result.FileName);
+            }
+            catch (Exception ex)
+            {
+                return Error($"Dışa aktarma sırasında hata oluştu: {ex.Message}", 500);
+            }
+        }
+
+        /// <summary>
+        /// Guest Ledger - Misafir bazlı tüm finansal hareketleri Excel formatında dışa aktarır
+        /// </summary>
+        [HttpGet("guest-ledger/excel")]
+        public async Task<IActionResult> ExportGuestLedgerToExcel(
+            [FromQuery] int? guestId = null,
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null)
+        {
+            try
+            {
+                var result = await _exportService.ExportGuestLedgerToExcelAsync(guestId, startDate, endDate);
+
+                if (!result.IsSuccess)
+                    return Error(result.ErrorMessage ?? "Dışa aktarma başarısız oldu.", 500);
+
+                return File(result.FileContent, result.ContentType, result.FileName);
+            }
+            catch (Exception ex)
+            {
+                return Error($"Dışa aktarma sırasında hata oluştu: {ex.Message}", 500);
+            }
+        }
+
+        /// <summary>
+        /// Supplier Ledger - Tedarikçi bazlı tüm finansal hareketleri CSV formatında dışa aktarır
+        /// </summary>
+        [HttpGet("supplier-ledger/csv")]
+        public async Task<IActionResult> ExportSupplierLedgerToCsv(
+            [FromQuery] int? supplierId = null,
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null)
+        {
+            try
+            {
+                var result = await _exportService.ExportSupplierLedgerToCsvAsync(supplierId, startDate, endDate);
+
+                if (!result.IsSuccess)
+                    return Error(result.ErrorMessage ?? "Dışa aktarma başarısız oldu.", 500);
+
+                return File(result.FileContent, result.ContentType, result.FileName);
+            }
+            catch (Exception ex)
+            {
+                return Error($"Dışa aktarma sırasında hata oluştu: {ex.Message}", 500);
+            }
+        }
+
+        /// <summary>
+        /// Supplier Ledger - Tedarikçi bazlı tüm finansal hareketleri Excel formatında dışa aktarır
+        /// </summary>
+        [HttpGet("supplier-ledger/excel")]
+        public async Task<IActionResult> ExportSupplierLedgerToExcel(
+            [FromQuery] int? supplierId = null,
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null)
+        {
+            try
+            {
+                var result = await _exportService.ExportSupplierLedgerToExcelAsync(supplierId, startDate, endDate);
+
+                if (!result.IsSuccess)
+                    return Error(result.ErrorMessage ?? "Dışa aktarma başarısız oldu.", 500);
+
+                return File(result.FileContent, result.ContentType, result.FileName);
+            }
+            catch (Exception ex)
+            {
+                return Error($"Dışa aktarma sırasında hata oluştu: {ex.Message}", 500);
+            }
+        }
+
+        /// <summary>
+        /// Room Ledger - Oda bazlı tüm işlemleri CSV formatında dışa aktarır
+        /// </summary>
+        [HttpGet("room-ledger/csv")]
+        public async Task<IActionResult> ExportRoomLedgerToCsv(
+            [FromQuery] string? roomNumber = null,
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null)
+        {
+            try
+            {
+                var result = await _exportService.ExportRoomLedgerToCsvAsync(roomNumber, startDate, endDate);
+
+                if (!result.IsSuccess)
+                    return Error(result.ErrorMessage ?? "Dışa aktarma başarısız oldu.", 500);
+
+                return File(result.FileContent, result.ContentType, result.FileName);
+            }
+            catch (Exception ex)
+            {
+                return Error($"Dışa aktarma sırasında hata oluştu: {ex.Message}", 500);
+            }
+        }
+
+        /// <summary>
+        /// Room Ledger - Oda bazlı tüm işlemleri Excel formatında dışa aktarır
+        /// </summary>
+        [HttpGet("room-ledger/excel")]
+        public async Task<IActionResult> ExportRoomLedgerToExcel(
+            [FromQuery] string? roomNumber = null,
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null)
+        {
+            try
+            {
+                var result = await _exportService.ExportRoomLedgerToExcelAsync(roomNumber, startDate, endDate);
+
+                if (!result.IsSuccess)
+                    return Error(result.ErrorMessage ?? "Dışa aktarma başarısız oldu.", 500);
+
+                return File(result.FileContent, result.ContentType, result.FileName);
+            }
+            catch (Exception ex)
+            {
+                return Error($"Dışa aktarma sırasında hata oluştu: {ex.Message}", 500);
+            }
+        }
+
+        /// <summary>
+        /// VAT tahakkuk raporunu (391 hesabı) Excel formatında dışa aktarır
+        /// </summary>
+        [HttpGet("vat-accrual/excel")]
+        public async Task<IActionResult> ExportVatAccrualReportToExcel(
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] string? currency = null)
+        {
+            try
+            {
+                var result = await _exportService.ExportVatAccrualReportToExcelAsync(startDate, endDate, currency);
+
+                if (!result.IsSuccess)
+                    return Error(result.ErrorMessage ?? "Dışa aktarma başarısız oldu.", 500);
+
+                return File(result.FileContent, result.ContentType, result.FileName);
+            }
+            catch (Exception ex)
+            {
+                return Error($"Dışa aktarma sırasında hata oluştu: {ex.Message}", 500);
+            }
+        }
+
+        /// <summary>
+        /// VAT tahakkuk raporunu (391 hesabı) CSV formatında dışa aktarır
+        /// </summary>
+        [HttpGet("vat-accrual/csv")]
+        public async Task<IActionResult> ExportVatAccrualReportToCsv(
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] string? currency = null)
+        {
+            try
+            {
+                var result = await _exportService.ExportVatAccrualReportToCsvAsync(startDate, endDate, currency);
+
+                if (!result.IsSuccess)
+                    return Error(result.ErrorMessage ?? "Dışa aktarma başarısız oldu.", 500);
+
+                return File(result.FileContent, result.ContentType, result.FileName);
+            }
+            catch (Exception ex)
+            {
+                return Error($"Dışa aktarma sırasında hata oluştu: {ex.Message}", 500);
+            }
+        }
+
+        /// <summary>
+        /// Dönem bazlı KDV raporunu Excel formatında dışa aktarır
+        /// </summary>
+        [HttpGet("vat-period/excel")]
+        public async Task<IActionResult> ExportVatPeriodReportToExcel(
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] string? periodType = null,
+            [FromQuery] string? currency = null)
+        {
+            try
+            {
+                var result = await _exportService.ExportVatPeriodReportToExcelAsync(startDate, endDate, periodType, currency);
+
+                if (!result.IsSuccess)
+                    return Error(result.ErrorMessage ?? "Dışa aktarma başarısız oldu.", 500);
+
+                return File(result.FileContent, result.ContentType, result.FileName);
+            }
+            catch (Exception ex)
+            {
+                return Error($"Dışa aktarma sırasında hata oluştu: {ex.Message}", 500);
+            }
+        }
+
+        /// <summary>
+        /// Dönem bazlı KDV raporunu CSV formatında dışa aktarır
+        /// </summary>
+        [HttpGet("vat-period/csv")]
+        public async Task<IActionResult> ExportVatPeriodReportToCsv(
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] string? periodType = null,
+            [FromQuery] string? currency = null)
+        {
+            try
+            {
+                var result = await _exportService.ExportVatPeriodReportToCsvAsync(startDate, endDate, periodType, currency);
+
+                if (!result.IsSuccess)
+                    return Error(result.ErrorMessage ?? "Dışa aktarma başarısız oldu.", 500);
+
+                return File(result.FileContent, result.ContentType, result.FileName);
+            }
+            catch (Exception ex)
+            {
+                return Error($"Dışa aktarma sırasında hata oluştu: {ex.Message}", 500);
+            }
+        }
     }
 }
 

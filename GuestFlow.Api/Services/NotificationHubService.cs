@@ -112,6 +112,29 @@ namespace GuestFlow.Api.Services
                 _logger.LogError(ex, $"Error sending dashboard update via SignalR: {ex.Message}");
             }
         }
+
+        /// <summary>
+        /// Send daily operations update to all users
+        /// </summary>
+        public async Task SendDailyOperationsUpdateAsync(string action, object? data = null)
+        {
+            try
+            {
+                var update = new
+                {
+                    Action = action, // "ServiceUpdated", "ServiceCreated", "ServiceDeleted", "PaymentRecorded", "DriverAssigned"
+                    Data = data,
+                    Timestamp = DateTime.UtcNow
+                };
+
+                await _hubContext.Clients.All.SendAsync("ReceiveDailyOperationsUpdate", update);
+                _logger.LogInformation($"Daily operations update sent via SignalR: {action}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error sending daily operations update via SignalR: {ex.Message}");
+            }
+        }
     }
 }
 

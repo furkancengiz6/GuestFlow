@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Furkan Cengiz
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
 using GuestFlow.Domain.Entities.Interfaces;
 using GuestFlow.Domain.Entities.Operations;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -23,6 +26,7 @@ namespace GuestFlow.Domain.Entities.Core
         public string Nationality { get; set; } = string.Empty;
         public string GuestCode { get; set; } = string.Empty; // Benzersiz misafir kodu
         public bool IsSpecialGuest { get; set; } // Özel misafir mi?
+        public bool IsAnonymized { get; set; } = false; // KVKK/GDPR: Veri anonymize edildi mi?
 
         // Emergency contact information
         public string? EmergencyContactName { get; set; } // Who to call if guest unreachable
@@ -38,6 +42,8 @@ namespace GuestFlow.Domain.Entities.Core
         public DateTime? CheckInDate { get; set; } // Otel giriş tarihi
         public DateTime? CheckOutDate { get; set; } // Otel çıkış tarihi
         public int? HotelId { get; set; } // Otel ID (misafir hangi otelde kalıyor)
+        
+        public DateTime? DateOfBirth { get; set; } // Doğum tarihi
 
         // Relational Properties
         /// <summary>
@@ -57,6 +63,11 @@ namespace GuestFlow.Domain.Entities.Core
         /// Use this for historical room queries instead of RoomNumber field.
         /// </summary>
         public virtual ICollection<GuestRoomHistoryEntity> RoomHistory { get; set; } = new List<GuestRoomHistoryEntity>();
+
+        /// <summary>
+        /// Guest preferences - oda, yemek, aktivite ve iletişim tercihleri
+        /// </summary>
+        public virtual GuestPreferencesEntity? Preferences { get; set; }
     }
 
     public class GuestConfiguration : BaseConfiguration<GuestEntity>

@@ -222,5 +222,104 @@ export const exportService = {
     const filename = `journal_${new Date().toISOString().split('T')[0]}.xlsx`
     downloadFile(response.data, filename)
   },
+
+  // Guest Ledger
+  exportGuestLedgerToCsv: async (params?: { guestId?: number; startDate?: string; endDate?: string }) => {
+    const queryParams = new URLSearchParams()
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          queryParams.append(key, value.toString())
+        }
+      })
+    }
+    const response = await api.get(`/export/guest-ledger/csv?${queryParams.toString()}`, {
+      responseType: 'blob',
+    })
+    const filename = `guest_ledger_${params?.guestId ?? 'all'}_${new Date().toISOString().split('T')[0]}.csv`
+    downloadFile(response.data, filename)
+  },
+
+  exportGuestLedgerToExcel: async (params?: { guestId?: number; startDate?: string; endDate?: string }) => {
+    const queryParams = new URLSearchParams()
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          queryParams.append(key, value.toString())
+        }
+      })
+    }
+    const response = await api.get(`/export/guest-ledger/excel?${queryParams.toString()}`, {
+      responseType: 'blob',
+    })
+    const filename = `guest_ledger_${params?.guestId ?? 'all'}_${new Date().toISOString().split('T')[0]}.xlsx`
+    downloadFile(response.data, filename)
+  },
+
+  // Supplier Ledger
+  exportSupplierLedgerToCsv: async (params?: { supplierId?: number; startDate?: string; endDate?: string }) => {
+    const queryParams = new URLSearchParams()
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          queryParams.append(key, value.toString())
+        }
+      })
+    }
+    const response = await api.get(`/export/supplier-ledger/csv?${queryParams.toString()}`, {
+      responseType: 'blob',
+    })
+    const filename = `supplier_ledger_${params?.supplierId ?? 'all'}_${new Date().toISOString().split('T')[0]}.csv`
+    downloadFile(response.data, filename)
+  },
+
+  exportSupplierLedgerToExcel: async (params?: { supplierId?: number; startDate?: string; endDate?: string }) => {
+    const queryParams = new URLSearchParams()
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          queryParams.append(key, value.toString())
+        }
+      })
+    }
+    const response = await api.get(`/export/supplier-ledger/excel?${queryParams.toString()}`, {
+      responseType: 'blob',
+    })
+    const filename = `supplier_ledger_${params?.supplierId ?? 'all'}_${new Date().toISOString().split('T')[0]}.xlsx`
+    downloadFile(response.data, filename)
+  },
+
+  // Room Ledger
+  exportRoomLedgerToCsv: async (params?: { roomNumber?: string; startDate?: string; endDate?: string }) => {
+    const queryParams = new URLSearchParams()
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          queryParams.append(key, value.toString())
+        }
+      })
+    }
+    const response = await api.get(`/export/room-ledger/csv?${queryParams.toString()}`, {
+      responseType: 'blob',
+    })
+    const filename = `room_ledger_${params?.roomNumber ?? 'all'}_${new Date().toISOString().split('T')[0]}.csv`
+    downloadFile(response.data, filename)
+  },
+
+  exportRoomLedgerToExcel: async (params?: { roomNumber?: string; startDate?: string; endDate?: string }) => {
+    const queryParams = new URLSearchParams()
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          queryParams.append(key, value.toString())
+        }
+      })
+    }
+    const response = await api.get(`/export/room-ledger/excel?${queryParams.toString()}`, {
+      responseType: 'blob',
+    })
+    const filename = `room_ledger_${params?.roomNumber ?? 'all'}_${new Date().toISOString().split('T')[0]}.xlsx`
+    downloadFile(response.data, filename)
+  },
 }
 

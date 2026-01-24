@@ -42,6 +42,17 @@ namespace GuestFlow.Api.Controllers
                 : Error(result.Message, result.StatusCode == 0 ? 400 : result.StatusCode, result.Errors);
         }
 
+        [HttpPost("reverse/{journalEntryId:int}")]
+        [ProducesResponseType(typeof(ApiResponse<JournalEntryResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> Reverse([FromRoute] int journalEntryId, [FromBody] ReverseJournalRequest? request = null)
+        {
+            var result = await _journalService.ReverseJournalEntryAsync(journalEntryId, request?.Description);
+            return result.Success
+                ? Success(result.Data, result.Message)
+                : Error(result.Message, result.StatusCode == 0 ? 400 : result.StatusCode, result.Errors);
+        }
+
         [HttpGet("by-invoice/{invoiceId:int}")]
         [ProducesResponseType(typeof(ApiResponse<JournalEntryResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]

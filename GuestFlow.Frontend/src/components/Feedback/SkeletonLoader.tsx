@@ -87,7 +87,7 @@ export const SkeletonLoader = ({
 
   // Default: list variant
   return (
-    <Stack spacing={2}>
+    <Stack spacing={2} data-testid="skeleton-loader">
       {Array.from({ length: rows }).map((_, idx) => (
         <Box key={idx}>
           <Stack direction="row" spacing={2} alignItems="center">

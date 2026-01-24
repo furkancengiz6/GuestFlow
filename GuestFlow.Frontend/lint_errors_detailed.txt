@@ -1,0 +1,25 @@
+﻿FILE: C:\GuestFlow\GuestFlow.Frontend\src\components\Guests\GuestPreferences.tsx
+LINE: 35
+RULE: no-redeclare
+MSG : 'GuestPreferences' is already defined.
+-------------------
+FILE: C:\GuestFlow\GuestFlow.Frontend\src\components\Guests\GuestPreferences.tsx
+LINE: 35
+RULE: no-import-assign
+MSG : 'GuestPreferences' is read-only.
+-------------------
+FILE: C:\GuestFlow\GuestFlow.Frontend\src\components\Guests\UnifiedGuestProfile.tsx
+LINE: 50
+RULE: no-redeclare
+MSG : 'UnifiedGuestProfile' is already defined.
+-------------------
+FILE: C:\GuestFlow\GuestFlow.Frontend\src\components\Guests\UnifiedGuestProfile.tsx
+LINE: 50
+RULE: no-import-assign
+MSG : 'UnifiedGuestProfile' is read-only.
+-------------------
+FILE: C:\GuestFlow\GuestFlow.Frontend\tests\e2e\analytics.spec.ts
+LINE: 106
+RULE: no-useless-escape
+MSG : Unnecessary escape character: \-.
+-------------------

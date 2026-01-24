@@ -807,6 +807,86 @@ namespace GuestFlow.Persistence.Migrations
                     b.ToTable("EmailTemplates");
                 });
 
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.FeatureFlagEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("DisabledDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EnabledBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("EnabledDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Environment")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasDefaultValue("Production");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsEnabledForAdmins")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<decimal>("RolloutPercentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<string>("TargetRoles")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("TargetUserIds")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name", "Environment")
+                        .IsUnique();
+
+                    b.ToTable("FeatureFlags");
+                });
+
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.GuestEntity", b =>
                 {
                     b.Property<int>("Id")
@@ -825,6 +905,9 @@ namespace GuestFlow.Persistence.Migrations
                         .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DateOfBirth")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Email")
@@ -857,6 +940,9 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<int?>("HotelId")
                         .HasColumnType("int");
 
+                    b.Property<bool>("IsAnonymized")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
@@ -872,6 +958,9 @@ namespace GuestFlow.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
+
+                    b.Property<int?>("PreferencesId")
+                        .HasColumnType("int");
 
                     b.Property<string>("RoomNumber")
                         .HasMaxLength(50)
@@ -890,7 +979,104 @@ namespace GuestFlow.Persistence.Migrations
 
                     b.HasIndex("HotelId");
 
+                    b.HasIndex("PreferencesId");
+
                     b.ToTable("Guests");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.GuestPreferencesEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ActivityPreferences")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("BedPreference")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DietaryPreferences")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("FoodAllergies")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("GuestId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Interests")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("PreferredLanguage")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("PreferredRoomType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("PrefersEmail")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("PrefersPhone")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("PrefersSMS")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("PrefersWhatsApp")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("RoomSpecialRequests")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("SmokingPreference")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("SpecialFoodRequests")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuestId")
+                        .IsUnique();
+
+                    b.ToTable("GuestPreferences");
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.GuestRoomHistoryEntity", b =>
@@ -1325,7 +1511,8 @@ namespace GuestFlow.Persistence.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("CreatedBy")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<int?>("CreatedByPersonnelId")
                         .HasColumnType("int");
@@ -1335,11 +1522,15 @@ namespace GuestFlow.Persistence.Migrations
 
                     b.Property<string>("Currency")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)")
+                        .HasDefaultValue("USD");
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<int?>("InvoiceId")
                         .HasColumnType("int");
@@ -1347,13 +1538,41 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsReversed")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PostedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int?>("PostedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("PostedDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime>("PostingDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("ReversedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int?>("ReversedByJournalEntryId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ReversedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ReversedDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<decimal>("TotalCredit")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("TotalDebit")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int?>("UpdatedByPersonnelId")
@@ -1364,9 +1583,20 @@ namespace GuestFlow.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedByPersonnelId");
+
                     b.HasIndex("InvoiceId")
                         .IsUnique()
                         .HasFilter("[InvoiceId] IS NOT NULL");
+
+                    b.HasIndex("PostedByPersonnelId");
+
+                    b.HasIndex("PostingDate");
+
+                    b.HasIndex("ReversedByJournalEntryId")
+                        .HasFilter("[ReversedByJournalEntryId] IS NOT NULL");
+
+                    b.HasIndex("ReversedByPersonnelId");
 
                     b.ToTable("JournalEntries");
                 });
@@ -1381,7 +1611,8 @@ namespace GuestFlow.Persistence.Migrations
 
                     b.Property<string>("AccountCode")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<int?>("CreatedByPersonnelId")
                         .HasColumnType("int");
@@ -1390,13 +1621,27 @@ namespace GuestFlow.Persistence.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<decimal>("Credit")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)")
+                        .HasDefaultValue("USD");
+
                     b.Property<decimal>("Debit")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<decimal?>("ExchangeRate")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("decimal(18,6)");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -1418,6 +1663,237 @@ namespace GuestFlow.Persistence.Migrations
                     b.HasIndex("JournalEntryId");
 
                     b.ToTable("JournalLines");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.LoginAttemptEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AttemptDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("FailureReason")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(45)
+                        .HasColumnType("nvarchar(45)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsSuccessful")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("PersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AttemptDate");
+
+                    b.HasIndex("PersonnelId");
+
+                    b.HasIndex("Email", "AttemptDate");
+
+                    b.HasIndex("IpAddress", "AttemptDate");
+
+                    b.ToTable("LoginAttempts");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.NotificationEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("NotificationType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ReadDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RecipientEmail")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("RecipientGuestId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("RecipientPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("RelatedEntityId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RelatedEntityType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("SentDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TemplateName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Notifications");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.NotificationRuleEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("CheckIntervalMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Conditions")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastCheckedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("LastTriggeredAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("NotificationChannel")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Parameters")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("RecipientId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RecipientType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("RuleType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("TemplateName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("TriggerCount")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Category");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("RuleType");
+
+                    b.HasIndex("IsActive", "Priority");
+
+                    b.ToTable("NotificationRules");
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.PaymentEntity", b =>
@@ -1542,6 +2018,60 @@ namespace GuestFlow.Persistence.Migrations
                     b.ToTable("Payments");
                 });
 
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.PermissionEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("Permissions");
+                });
+
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.PersonnelEntity", b =>
                 {
                     b.Property<int>("Id")
@@ -1574,6 +2104,20 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<bool>("TwoFactorEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("TwoFactorRecoveryCodes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("TwoFactorSecret")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("TwoFactorSetupDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<int?>("UpdatedByPersonnelId")
                         .HasColumnType("int");
 
@@ -1589,6 +2133,59 @@ namespace GuestFlow.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("Personnels");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.PrivacyActionHistoryEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("ActionDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ActionType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("GuestId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int?>("RequestedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActionDate");
+
+                    b.HasIndex("RequestedByPersonnelId");
+
+                    b.HasIndex("GuestId", "ActionDate");
+
+                    b.ToTable("PrivacyActionHistories");
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.RefreshTokenEntity", b =>
@@ -1891,6 +2488,47 @@ namespace GuestFlow.Persistence.Migrations
                     b.HasIndex("TransferId");
 
                     b.ToTable("RestaurantReservations");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.RolePermissionEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("PermissionId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RoleName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PermissionId");
+
+                    b.HasIndex("RoleName", "PermissionId")
+                        .IsUnique();
+
+                    b.ToTable("RolePermissions");
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.RoomAssignmentEntity", b =>
@@ -2572,6 +3210,122 @@ namespace GuestFlow.Persistence.Migrations
                     b.ToTable("Vehicles");
                 });
 
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.WhatsAppHistoryEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeliveredDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("GatewayResponse")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<int?>("GuestId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("MessageCategory")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("MessageId")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("MessageType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("PersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Provider")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("ReadDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("RelatedEntityId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RelatedEntityType")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("RichMessageData")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<DateTime>("SentDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("TemplateName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("TemplateParameters")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuestId");
+
+                    b.HasIndex("MessageId");
+
+                    b.HasIndex("PersonnelId");
+
+                    b.HasIndex("PhoneNumber");
+
+                    b.HasIndex("SentDate");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("RelatedEntityType", "RelatedEntityId");
+
+                    b.ToTable("WhatsAppHistories");
+                });
+
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.YachtTourEntity", b =>
                 {
                     b.Property<int>("Id")
@@ -2839,6 +3593,276 @@ namespace GuestFlow.Persistence.Migrations
                     b.HasIndex("TourDate", "Status", "IsDeleted");
 
                     b.ToTable("YachtTours");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Intelligence.GuestBehaviorEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal?>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("BehaviorDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("BehaviorType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("BehaviorValue")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("Category")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Currency")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("DayOfWeek")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("GraphSyncDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("GuestId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("RelatedEntityId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RelatedEntityType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<double?>("SatisfactionScore")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Season")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<double?>("SentimentScore")
+                        .HasColumnType("float");
+
+                    b.Property<bool>("SyncedToGraph")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("TimeOfDay")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuestId");
+
+                    b.HasIndex("GuestId", "BehaviorDate");
+
+                    b.HasIndex("GuestId", "BehaviorType");
+
+                    b.HasIndex("GuestId", "SyncedToGraph");
+
+                    b.ToTable("GuestBehaviors");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Intelligence.GuestStaffInteractionEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Channel")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Context")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("DurationMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("GraphSyncDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("GuestId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("InteractionDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("InteractionType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<double?>("RelationshipStrength")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("SatisfactionScore")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("SentimentScore")
+                        .HasColumnType("float");
+
+                    b.Property<int?>("ServiceId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ServiceType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("StaffId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("SyncedToGraph")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuestId");
+
+                    b.HasIndex("StaffId");
+
+                    b.HasIndex("GuestId", "InteractionDate");
+
+                    b.HasIndex("GuestId", "StaffId");
+
+                    b.HasIndex("GuestId", "SyncedToGraph");
+
+                    b.HasIndex("GuestId", "StaffId", "InteractionDate");
+
+                    b.ToTable("GuestStaffInteractions");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Intelligence.StaffBehaviorEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("BehaviorDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("BehaviorType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("BehaviorValue")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("Category")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("GraphSyncDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("GuestId")
+                        .HasColumnType("int");
+
+                    b.Property<double?>("GuestSatisfaction")
+                        .HasColumnType("float");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("PreferenceLearned")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("ProblemSolved")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("ResponseTimeMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ServiceId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ServiceType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("StaffId")
+                        .HasColumnType("int");
+
+                    b.Property<double?>("SuccessScore")
+                        .HasColumnType("float");
+
+                    b.Property<bool>("SyncedToGraph")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuestId");
+
+                    b.HasIndex("StaffId");
+
+                    b.HasIndex("StaffId", "BehaviorDate");
+
+                    b.HasIndex("StaffId", "BehaviorType");
+
+                    b.HasIndex("StaffId", "GuestId");
+
+                    b.HasIndex("StaffId", "SyncedToGraph");
+
+                    b.ToTable("StaffBehaviors");
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Operations.GuestCityTour", b =>
@@ -3159,6 +4183,411 @@ namespace GuestFlow.Persistence.Migrations
                     b.ToTable("OTAReservations");
                 });
 
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Operations.OTAWebhookLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeadLetterAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ErrorDetails")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsDeadLetter")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastRetryAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("MaxRetries")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("NextRetryAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("OTAIntegrationId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("ProcessedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ProviderCode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("ReservationId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Signature")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdempotencyKey")
+                        .IsUnique();
+
+                    b.HasIndex("IsDeadLetter")
+                        .HasFilter("[IsDeadLetter] = 1");
+
+                    b.HasIndex("NextRetryAt")
+                        .HasFilter("[NextRetryAt] IS NOT NULL AND [Status] = 'Failed'");
+
+                    b.HasIndex("OTAIntegrationId", "Status");
+
+                    b.HasIndex("ProviderCode", "Status");
+
+                    b.ToTable("OTAWebhookLogs");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Operations.PMSGuestMapping", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ConflictDetails")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("GuestFlowGuestId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("LastSyncedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PMSGuestId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("PMSIntegrationId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SyncStatus")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuestFlowGuestId");
+
+                    b.HasIndex("PMSGuestId");
+
+                    b.HasIndex("PMSIntegrationId");
+
+                    b.HasIndex("PMSIntegrationId", "PMSGuestId")
+                        .IsUnique();
+
+                    b.ToTable("PMSGuestMappings", (string)null);
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Operations.PMSIntegration", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AccessToken")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ApiEndpoint")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ApiKey")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ApiSecret")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastConnectionTestDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool?>("LastConnectionTestResult")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastSyncDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastSyncStatus")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("PollingIntervalMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ProviderCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ProviderName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("RefreshToken")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SyncErrorMessage")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("SyncMode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("TokenExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("WebhookSecret")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("WebhookUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("ProviderCode");
+
+                    b.ToTable("PMSIntegrations", (string)null);
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Operations.PMSReservationMapping", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ConflictDetails")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("GuestFlowReservationId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("LastSyncedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("PMSIntegrationId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PMSReservationId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("SyncStatus")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PMSIntegrationId");
+
+                    b.HasIndex("PMSReservationId");
+
+                    b.HasIndex("PMSIntegrationId", "PMSReservationId")
+                        .IsUnique();
+
+                    b.ToTable("PMSReservationMappings", (string)null);
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Operations.PMSSyncHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EntityId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("PMSIntegrationId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("RecordsFailed")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("RecordsProcessed")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("RecordsSucceeded")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("SyncDetails")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("SyncEndTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("SyncStartTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SyncType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PMSIntegrationId");
+
+                    b.HasIndex("SyncStartTime");
+
+                    b.HasIndex("PMSIntegrationId", "SyncType", "Status");
+
+                    b.ToTable("PMSSyncHistories", (string)null);
+                });
+
             modelBuilder.Entity("GuestFlow.Domain.Entities.Operations.PackageCityTourEntity", b =>
                 {
                     b.Property<int>("PackageId")
@@ -3366,7 +4795,24 @@ namespace GuestFlow.Persistence.Migrations
                         .HasForeignKey("HotelId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("GuestFlow.Domain.Entities.Core.GuestPreferencesEntity", "Preferences")
+                        .WithMany()
+                        .HasForeignKey("PreferencesId");
+
                     b.Navigation("Hotel");
+
+                    b.Navigation("Preferences");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.GuestPreferencesEntity", b =>
+                {
+                    b.HasOne("GuestFlow.Domain.Entities.Core.GuestEntity", "Guest")
+                        .WithOne()
+                        .HasForeignKey("GuestFlow.Domain.Entities.Core.GuestPreferencesEntity", "GuestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Guest");
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.GuestRoomHistoryEntity", b =>
@@ -3474,6 +4920,30 @@ namespace GuestFlow.Persistence.Migrations
                     b.Navigation("Itinerary");
                 });
 
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.JournalEntry", b =>
+                {
+                    b.HasOne("GuestFlow.Domain.Entities.Core.PersonnelEntity", "CreatedByPersonnel")
+                        .WithMany()
+                        .HasForeignKey("CreatedByPersonnelId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("GuestFlow.Domain.Entities.Core.PersonnelEntity", "PostedByPersonnel")
+                        .WithMany()
+                        .HasForeignKey("PostedByPersonnelId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("GuestFlow.Domain.Entities.Core.PersonnelEntity", "ReversedByPersonnel")
+                        .WithMany()
+                        .HasForeignKey("ReversedByPersonnelId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("CreatedByPersonnel");
+
+                    b.Navigation("PostedByPersonnel");
+
+                    b.Navigation("ReversedByPersonnel");
+                });
+
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.JournalLine", b =>
                 {
                     b.HasOne("GuestFlow.Domain.Entities.Core.JournalEntry", "JournalEntry")
@@ -3483,6 +4953,16 @@ namespace GuestFlow.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("JournalEntry");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.LoginAttemptEntity", b =>
+                {
+                    b.HasOne("GuestFlow.Domain.Entities.Core.PersonnelEntity", "Personnel")
+                        .WithMany()
+                        .HasForeignKey("PersonnelId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Personnel");
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.PaymentEntity", b =>
@@ -3534,6 +5014,24 @@ namespace GuestFlow.Persistence.Migrations
                     b.Navigation("Transfer");
 
                     b.Navigation("YachtTour");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.PrivacyActionHistoryEntity", b =>
+                {
+                    b.HasOne("GuestFlow.Domain.Entities.Core.GuestEntity", "Guest")
+                        .WithMany()
+                        .HasForeignKey("GuestId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GuestFlow.Domain.Entities.Core.PersonnelEntity", "RequestedByPersonnel")
+                        .WithMany()
+                        .HasForeignKey("RequestedByPersonnelId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Guest");
+
+                    b.Navigation("RequestedByPersonnel");
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.RefreshTokenEntity", b =>
@@ -3616,6 +5114,17 @@ namespace GuestFlow.Persistence.Migrations
                     b.Navigation("ReturnTransfer");
 
                     b.Navigation("Transfer");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.RolePermissionEntity", b =>
+                {
+                    b.HasOne("GuestFlow.Domain.Entities.Core.PermissionEntity", "Permission")
+                        .WithMany()
+                        .HasForeignKey("PermissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Permission");
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.RoomAssignmentEntity", b =>
@@ -3722,6 +5231,23 @@ namespace GuestFlow.Persistence.Migrations
                     b.Navigation("Vehicle");
                 });
 
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Core.WhatsAppHistoryEntity", b =>
+                {
+                    b.HasOne("GuestFlow.Domain.Entities.Core.GuestEntity", "Guest")
+                        .WithMany()
+                        .HasForeignKey("GuestId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("GuestFlow.Domain.Entities.Core.PersonnelEntity", "Personnel")
+                        .WithMany()
+                        .HasForeignKey("PersonnelId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Guest");
+
+                    b.Navigation("Personnel");
+                });
+
             modelBuilder.Entity("GuestFlow.Domain.Entities.Core.YachtTourEntity", b =>
                 {
                     b.HasOne("GuestFlow.Domain.Entities.Core.CityEntity", "City")
@@ -3752,6 +5278,54 @@ namespace GuestFlow.Persistence.Migrations
                     b.Navigation("Personnel");
 
                     b.Navigation("PickupHotel");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Intelligence.GuestBehaviorEntity", b =>
+                {
+                    b.HasOne("GuestFlow.Domain.Entities.Core.GuestEntity", "Guest")
+                        .WithMany()
+                        .HasForeignKey("GuestId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Guest");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Intelligence.GuestStaffInteractionEntity", b =>
+                {
+                    b.HasOne("GuestFlow.Domain.Entities.Core.GuestEntity", "Guest")
+                        .WithMany()
+                        .HasForeignKey("GuestId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GuestFlow.Domain.Entities.Core.PersonnelEntity", "Staff")
+                        .WithMany()
+                        .HasForeignKey("StaffId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Guest");
+
+                    b.Navigation("Staff");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Intelligence.StaffBehaviorEntity", b =>
+                {
+                    b.HasOne("GuestFlow.Domain.Entities.Core.GuestEntity", "Guest")
+                        .WithMany()
+                        .HasForeignKey("GuestId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("GuestFlow.Domain.Entities.Core.PersonnelEntity", "Staff")
+                        .WithMany()
+                        .HasForeignKey("StaffId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Guest");
+
+                    b.Navigation("Staff");
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Operations.GuestCityTour", b =>
@@ -3839,6 +5413,58 @@ namespace GuestFlow.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("OTAIntegration");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Operations.OTAWebhookLog", b =>
+                {
+                    b.HasOne("GuestFlow.Domain.Entities.Operations.OTAIntegration", "OTAIntegration")
+                        .WithMany()
+                        .HasForeignKey("OTAIntegrationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("OTAIntegration");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Operations.PMSGuestMapping", b =>
+                {
+                    b.HasOne("GuestFlow.Domain.Entities.Core.GuestEntity", "GuestFlowGuest")
+                        .WithMany()
+                        .HasForeignKey("GuestFlowGuestId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GuestFlow.Domain.Entities.Operations.PMSIntegration", "PMSIntegration")
+                        .WithMany("GuestMappings")
+                        .HasForeignKey("PMSIntegrationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("GuestFlowGuest");
+
+                    b.Navigation("PMSIntegration");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Operations.PMSReservationMapping", b =>
+                {
+                    b.HasOne("GuestFlow.Domain.Entities.Operations.PMSIntegration", "PMSIntegration")
+                        .WithMany("ReservationMappings")
+                        .HasForeignKey("PMSIntegrationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PMSIntegration");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Operations.PMSSyncHistory", b =>
+                {
+                    b.HasOne("GuestFlow.Domain.Entities.Operations.PMSIntegration", "PMSIntegration")
+                        .WithMany("SyncHistories")
+                        .HasForeignKey("PMSIntegrationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PMSIntegration");
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Operations.PackageCityTourEntity", b =>
@@ -4075,6 +5701,15 @@ namespace GuestFlow.Persistence.Migrations
                     b.Navigation("GuestYachtTours");
 
                     b.Navigation("Invoices");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Operations.PMSIntegration", b =>
+                {
+                    b.Navigation("GuestMappings");
+
+                    b.Navigation("ReservationMappings");
+
+                    b.Navigation("SyncHistories");
                 });
 #pragma warning restore 612, 618
         }

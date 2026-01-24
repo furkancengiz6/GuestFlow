@@ -293,7 +293,7 @@ namespace GuestFlow.Application.Operations.Payment
                 if (payment == null)
                     return null;
 
-                return MapToGetPaymentDto(payment);
+                return _mapper.Map<GetPaymentDto>(payment);
             }
             catch (Exception ex)
             {
@@ -318,7 +318,7 @@ namespace GuestFlow.Application.Operations.Payment
                 if (payment == null)
                     return null;
 
-                return MapToPaymentDetailDto(payment);
+                return _mapper.Map<PaymentDetailDto>(payment);
             }
             catch (Exception ex)
             {
@@ -355,7 +355,7 @@ namespace GuestFlow.Application.Operations.Payment
                     .Take(pageSize)
                     .ToListAsync();
 
-                var dtos = payments.Select(MapToGetPaymentDto).ToList();
+                var dtos = _mapper.Map<List<GetPaymentDto>>(payments);
 
                 return new PagedResult<GetPaymentDto>
                 {
@@ -378,91 +378,7 @@ namespace GuestFlow.Application.Operations.Payment
             }
         }
 
-        /// <summary>
-        /// PaymentEntity'yi GetPaymentDto'ya dönüştürür
-        /// </summary>
-        private GetPaymentDto MapToGetPaymentDto(PaymentEntity payment)
-        {
-            string? serviceType = null;
-            if (payment.TransferId.HasValue) serviceType = "Transfer";
-            else if (payment.CityTourId.HasValue) serviceType = "CityTour";
-            else if (payment.YachtTourId.HasValue) serviceType = "YachtTour";
-            else serviceType = "General";
-
-            return new GetPaymentDto
-            {
-                Id = payment.Id,
-                PaymentNumber = payment.PaymentNumber,
-                InvoiceId = payment.InvoiceId,
-                InvoiceNumber = payment.Invoice?.InvoiceNumber.ToString(),
-                GuestId = payment.GuestId,
-                GuestName = payment.Guest?.FullName ?? "Bilinmiyor",
-                CollectedByPersonnelId = payment.CollectedByPersonnelId,
-                CollectedByPersonnelName = payment.CollectedByPersonnel?.FullName ?? "Bilinmiyor",
-                TransferId = payment.TransferId,
-                CityTourId = payment.CityTourId,
-                YachtTourId = payment.YachtTourId,
-                ServiceType = serviceType,
-                Amount = payment.Amount,
-                Currency = payment.Currency,
-                PaymentMethod = PaymentMethodHelper.ToString(payment.PaymentMethod),
-                Status = PaymentStatusHelper.ToString(payment.Status),
-                PaymentDate = payment.PaymentDate,
-                TransactionId = payment.TransactionId,
-                RefundDate = payment.RefundDate,
-                RefundReason = payment.RefundReason,
-                Notes = payment.Notes,
-                CreatedDate = payment.CreatedDate
-            };
-        }
-
-        /// <summary>
-        /// PaymentEntity'yi PaymentDetailDto'ya dönüştürür
-        /// </summary>
-        private PaymentDetailDto MapToPaymentDetailDto(PaymentEntity payment)
-        {
-            string? serviceType = null;
-            if (payment.TransferId.HasValue) serviceType = "Transfer";
-            else if (payment.CityTourId.HasValue) serviceType = "CityTour";
-            else if (payment.YachtTourId.HasValue) serviceType = "YachtTour";
-            else serviceType = "General";
-
-            return new PaymentDetailDto
-            {
-                Id = payment.Id,
-                PaymentNumber = payment.PaymentNumber,
-                InvoiceId = payment.InvoiceId,
-                InvoiceNumber = payment.Invoice?.InvoiceNumber.ToString(),
-                InvoiceAmount = payment.Invoice?.TotalAmount,
-                InvoiceCurrency = payment.Invoice?.Currency,
-                GuestId = payment.GuestId,
-                GuestName = payment.Guest?.FullName ?? "Bilinmiyor",
-                GuestEmail = payment.Guest?.Email,
-                GuestPhoneNumber = payment.Guest?.PhoneNumber,
-                CollectedByPersonnelId = payment.CollectedByPersonnelId,
-                CollectedByPersonnelName = payment.CollectedByPersonnel?.FullName ?? "Bilinmiyor",
-                TransferId = payment.TransferId,
-                TransferDescription = payment.Transfer != null ? $"{payment.Transfer.PickupAddress} → {payment.Transfer.DropoffAddress}" : null,
-                CityTourId = payment.CityTourId,
-                CityTourDescription = payment.CityTour != null ? $"Şehir Turu - {payment.CityTour.DurationHours} saat" : null,
-                YachtTourId = payment.YachtTourId,
-                YachtTourDescription = payment.YachtTour != null ? $"Yat Turu - {payment.YachtTour.YachtName}" : null,
-                ServiceType = serviceType,
-                Amount = payment.Amount,
-                Currency = payment.Currency,
-                PaymentMethod = PaymentMethodHelper.ToString(payment.PaymentMethod),
-                Status = PaymentStatusHelper.ToString(payment.Status),
-                PaymentDate = payment.PaymentDate,
-                TransactionId = payment.TransactionId,
-                GatewayResponse = payment.GatewayResponse,
-                RefundDate = payment.RefundDate,
-                RefundReason = payment.RefundReason,
-                CancellationReason = payment.CancellationReason,
-                Notes = payment.Notes,
-                CreatedDate = payment.CreatedDate,
-                UpdatedDate = null // BaseEntity'de UpdatedDate yok, gelecekte eklenebilir
-            };
-        }
+        // Methods MapToGetPaymentDto and MapToPaymentDetailDto removed as they are replaced by AutoMapper.
 
         public async Task<ServiceMessage> CompletePaymentAsync(int paymentId, string transactionId, string? gatewayResponse = null)
         {
@@ -648,7 +564,7 @@ namespace GuestFlow.Application.Operations.Payment
                     .OrderByDescending(p => p.PaymentDate)
                     .ToListAsync();
 
-                return payments.Select(MapToGetPaymentDto).ToList();
+                return _mapper.Map<List<GetPaymentDto>>(payments);
             }
             catch (Exception ex)
             {
@@ -671,7 +587,7 @@ namespace GuestFlow.Application.Operations.Payment
                     .OrderByDescending(p => p.PaymentDate)
                     .ToListAsync();
 
-                return payments.Select(MapToGetPaymentDto).ToList();
+                return _mapper.Map<List<GetPaymentDto>>(payments);
             }
             catch (Exception ex)
             {
@@ -698,7 +614,7 @@ namespace GuestFlow.Application.Operations.Payment
                     .OrderByDescending(p => p.PaymentDate)
                     .ToListAsync();
 
-                return payments.Select(MapToGetPaymentDto).ToList();
+                return _mapper.Map<List<GetPaymentDto>>(payments);
             }
             catch (Exception ex)
             {

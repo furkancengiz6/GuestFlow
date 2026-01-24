@@ -155,10 +155,6 @@ namespace GuestFlow.Application.Operations.Sms
                 await _unitOfWork.CommitTransactionAsync();
 
                 var dto = _mapper.Map<GetSmsHistoryDto>(smsHistory);
-                if (smsHistory.Guest != null)
-                    dto.GuestName = smsHistory.Guest.FullName;
-                if (smsHistory.Personnel != null)
-                    dto.PersonnelName = smsHistory.Personnel.FullName;
 
                 if (sendResult)
                 {
@@ -429,12 +425,7 @@ namespace GuestFlow.Application.Operations.Sms
                 if (sms == null)
                     return null;
 
-                var dto = _mapper.Map<GetSmsHistoryDto>(sms);
-                dto.GuestName = sms.Guest?.FullName;
-                dto.PersonnelName = sms.Personnel?.FullName;
-                dto.Status = SmsStatusHelper.ToString(sms.Status);
-
-                return dto;
+                return _mapper.Map<GetSmsHistoryDto>(sms);
             }
             catch (Exception ex)
             {

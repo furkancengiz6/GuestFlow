@@ -1,5 +1,7 @@
 using GuestFlow.Domain.Entities.Core;
 using GuestFlow.Domain.Entities.Operations;
+using GuestFlow.Domain.Entities.Intelligence;
+using GuestFlow.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
 
 namespace GuestFlow.Persistence.Context
@@ -18,6 +20,7 @@ namespace GuestFlow.Persistence.Context
         public DbSet<DailyNoteEntity> DailyNotes => Set<DailyNoteEntity>();
         public DbSet<DailyRevenueEntity> DailyRevenues => Set<DailyRevenueEntity>();
         public DbSet<GuestEntity> Guests => Set<GuestEntity>();
+        public DbSet<GuestPreferencesEntity> GuestPreferences => Set<GuestPreferencesEntity>();
         public DbSet<RoomAssignmentEntity> RoomAssignments => Set<RoomAssignmentEntity>();
         public DbSet<InvoicesEntity> Invoices => Set<InvoicesEntity>();
         public DbSet<InvoiceItemEntity> InvoiceItems => Set<InvoiceItemEntity>();
@@ -28,12 +31,20 @@ namespace GuestFlow.Persistence.Context
         public DbSet<GuestCityTour> GuestCityTours => Set<GuestCityTour>();
         public DbSet<SettingEntity> Settings {  get; set; }
         public DbSet<RefreshTokenEntity> RefreshTokens => Set<RefreshTokenEntity>();
+        public DbSet<LoginAttemptEntity> LoginAttempts => Set<LoginAttemptEntity>();
+        public DbSet<PrivacyActionHistoryEntity> PrivacyActionHistories => Set<PrivacyActionHistoryEntity>();
+        public DbSet<FeatureFlagEntity> FeatureFlags => Set<FeatureFlagEntity>();
+        public DbSet<PermissionEntity> Permissions => Set<PermissionEntity>();
+        public DbSet<RolePermissionEntity> RolePermissions => Set<RolePermissionEntity>();
         public DbSet<EmailQueueEntity> EmailQueues => Set<EmailQueueEntity>();
         public DbSet<EmailTemplateEntity> EmailTemplates => Set<EmailTemplateEntity>();
         public DbSet<EmailHistoryEntity> EmailHistories => Set<EmailHistoryEntity>();
         public DbSet<ReservationEntity> Reservations => Set<ReservationEntity>();
         public DbSet<PaymentEntity> Payments => Set<PaymentEntity>();
         public DbSet<SmsHistoryEntity> SmsHistories => Set<SmsHistoryEntity>();
+        public DbSet<WhatsAppHistoryEntity> WhatsAppHistories => Set<WhatsAppHistoryEntity>();
+        public DbSet<NotificationEntity> Notifications => Set<NotificationEntity>();
+        public DbSet<NotificationRuleEntity> NotificationRules => Set<NotificationRuleEntity>();
         public DbSet<HotelEntity> Hotels => Set<HotelEntity>();
         public DbSet<RestaurantEntity> Restaurants => Set<RestaurantEntity>();
         public DbSet<ItineraryEntity> Itineraries => Set<ItineraryEntity>();
@@ -57,9 +68,21 @@ namespace GuestFlow.Persistence.Context
         public DbSet<GuestFlow.Domain.Entities.Operations.OTAHotelMapping> OTAHotelMappings => Set<GuestFlow.Domain.Entities.Operations.OTAHotelMapping>();
         public DbSet<GuestFlow.Domain.Entities.Operations.OTAReservation> OTAReservations => Set<GuestFlow.Domain.Entities.Operations.OTAReservation>();
         public DbSet<GuestFlow.Domain.Entities.Operations.OTAPriceUpdate> OTAPriceUpdates => Set<GuestFlow.Domain.Entities.Operations.OTAPriceUpdate>();
+        public DbSet<GuestFlow.Domain.Entities.Operations.OTAWebhookLog> OTAWebhookLogs => Set<GuestFlow.Domain.Entities.Operations.OTAWebhookLog>();
+
+        // PMS integrations
+        public DbSet<GuestFlow.Domain.Entities.Operations.PMSIntegration> PMSIntegrations => Set<GuestFlow.Domain.Entities.Operations.PMSIntegration>();
+        public DbSet<GuestFlow.Domain.Entities.Operations.PMSSyncHistory> PMSSyncHistories => Set<GuestFlow.Domain.Entities.Operations.PMSSyncHistory>();
+        public DbSet<GuestFlow.Domain.Entities.Operations.PMSGuestMapping> PMSGuestMappings => Set<GuestFlow.Domain.Entities.Operations.PMSGuestMapping>();
+        public DbSet<GuestFlow.Domain.Entities.Operations.PMSReservationMapping> PMSReservationMappings => Set<GuestFlow.Domain.Entities.Operations.PMSReservationMapping>();
         // Accounting - journal entries
         public DbSet<GuestFlow.Domain.Entities.Core.JournalEntry> JournalEntries => Set<GuestFlow.Domain.Entities.Core.JournalEntry>();
         public DbSet<GuestFlow.Domain.Entities.Core.JournalLine> JournalLines => Set<GuestFlow.Domain.Entities.Core.JournalLine>();
+
+        // Intelligence Layer - Behavioral Data Collection
+        public DbSet<GuestBehaviorEntity> GuestBehaviors => Set<GuestBehaviorEntity>();
+        public DbSet<StaffBehaviorEntity> StaffBehaviors => Set<StaffBehaviorEntity>();
+        public DbSet<GuestStaffInteractionEntity> GuestStaffInteractions => Set<GuestStaffInteractionEntity>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -72,6 +95,10 @@ namespace GuestFlow.Persistence.Context
                 .IsUnique()
                 .HasFilter("[InvoiceId] IS NOT NULL");
 
+            // Journal Entry and Line configurations
+            modelBuilder.ApplyConfiguration(new JournalEntryConfiguration());
+            modelBuilder.ApplyConfiguration(new JournalLineConfiguration());
+
             // Fluent API ile yapılandırmaları uyguluyoruz
             modelBuilder.ApplyConfiguration(new AirportConfiguration());
             modelBuilder.ApplyConfiguration(new CityConfiguration());
@@ -80,6 +107,8 @@ namespace GuestFlow.Persistence.Context
             modelBuilder.ApplyConfiguration(new DailyNoteConfiguration());
             modelBuilder.ApplyConfiguration(new DailyRevenueConfiguration());
             modelBuilder.ApplyConfiguration(new GuestConfiguration());
+            modelBuilder.ApplyConfiguration(new GuestPreferencesConfiguration());
+            modelBuilder.ApplyConfiguration(new NotificationRuleConfiguration());
             modelBuilder.ApplyConfiguration(new InvoicesConfiguration());
             modelBuilder.ApplyConfiguration(new InvoiceItemConfiguration());
             modelBuilder.ApplyConfiguration(new PersonnelConfiguration());
@@ -95,6 +124,7 @@ namespace GuestFlow.Persistence.Context
             modelBuilder.ApplyConfiguration(new ReservationConfiguration());
             modelBuilder.ApplyConfiguration(new PaymentConfiguration());
             modelBuilder.ApplyConfiguration(new SmsHistoryConfiguration());
+            modelBuilder.ApplyConfiguration(new WhatsAppHistoryConfiguration());
             modelBuilder.ApplyConfiguration(new HotelConfiguration());
             modelBuilder.ApplyConfiguration(new RestaurantConfiguration());
             modelBuilder.ApplyConfiguration(new ItineraryConfiguration());
@@ -105,6 +135,31 @@ namespace GuestFlow.Persistence.Context
             modelBuilder.ApplyConfiguration(new PackageCityTourConfiguration());
             modelBuilder.ApplyConfiguration(new PackageYachtTourConfiguration());
             modelBuilder.ApplyConfiguration(new PackageRestaurantReservationConfiguration());
+
+            // Intelligence Layer - Behavioral Data Collection
+            modelBuilder.ApplyConfiguration(new GuestBehaviorConfiguration());
+            modelBuilder.ApplyConfiguration(new StaffBehaviorConfiguration());
+            modelBuilder.ApplyConfiguration(new GuestStaffInteractionConfiguration());
+
+            // OTA Webhook Log configuration
+            modelBuilder.ApplyConfiguration(new GuestFlow.Domain.Entities.Operations.OTAWebhookLogConfiguration());
+
+            // Login Attempt configuration
+            modelBuilder.ApplyConfiguration(new LoginAttemptConfiguration());
+
+            // Privacy Action History configuration
+            modelBuilder.ApplyConfiguration(new PrivacyActionHistoryConfiguration());
+
+            // Feature Flag configuration
+            modelBuilder.ApplyConfiguration(new FeatureFlagConfiguration());
+
+            // Permission configuration
+            modelBuilder.ApplyConfiguration(new PermissionConfiguration());
+            modelBuilder.ApplyConfiguration(new RolePermissionConfiguration());
+
+            // PMS Integration configurations
+            ConfigurePMSIntegrations(modelBuilder);
+
             modelBuilder.Entity<SettingEntity>().HasData(new SettingEntity
             {
                 Id = 1,
@@ -119,6 +174,84 @@ namespace GuestFlow.Persistence.Context
 
 
                 );
+        }
+
+        private void ConfigurePMSIntegrations(ModelBuilder modelBuilder)
+        {
+            // PMSIntegration configuration
+            modelBuilder.Entity<PMSIntegration>(entity =>
+            {
+                entity.ToTable("PMSIntegrations");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.ProviderName).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.ProviderCode).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.ApiEndpoint).IsRequired();
+                entity.Property(e => e.ApiKey).IsRequired();
+                entity.Property(e => e.LastSyncStatus).HasMaxLength(50);
+                entity.Property(e => e.SyncErrorMessage).HasMaxLength(1000);
+                entity.Property(e => e.SyncMode).HasConversion<string>().HasMaxLength(20);
+                entity.HasIndex(e => e.ProviderCode);
+                entity.HasIndex(e => e.IsActive);
+            });
+
+            // PMSSyncHistory configuration
+            modelBuilder.Entity<PMSSyncHistory>(entity =>
+            {
+                entity.ToTable("PMSSyncHistories");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.EntityType).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.EntityId).HasMaxLength(100);
+                entity.Property(e => e.ErrorMessage).HasMaxLength(2000);
+                entity.Property(e => e.SyncDetails).HasColumnType("nvarchar(max)");
+                entity.Property(e => e.SyncType).HasConversion<string>().HasMaxLength(20);
+                entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);
+                entity.HasOne(e => e.PMSIntegration)
+                    .WithMany(i => i.SyncHistories)
+                    .HasForeignKey(e => e.PMSIntegrationId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(e => e.PMSIntegrationId);
+                entity.HasIndex(e => e.SyncStartTime);
+                entity.HasIndex(e => new { e.PMSIntegrationId, e.SyncType, e.Status });
+            });
+
+            // PMSGuestMapping configuration
+            modelBuilder.Entity<PMSGuestMapping>(entity =>
+            {
+                entity.ToTable("PMSGuestMappings");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.PMSGuestId).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.SyncStatus).HasMaxLength(50);
+                entity.Property(e => e.ConflictDetails).HasMaxLength(2000);
+                entity.HasOne(e => e.PMSIntegration)
+                    .WithMany(i => i.GuestMappings)
+                    .HasForeignKey(e => e.PMSIntegrationId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(e => e.GuestFlowGuest)
+                    .WithMany()
+                    .HasForeignKey(e => e.GuestFlowGuestId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.HasIndex(e => e.PMSIntegrationId);
+                entity.HasIndex(e => e.PMSGuestId);
+                entity.HasIndex(e => e.GuestFlowGuestId);
+                entity.HasIndex(e => new { e.PMSIntegrationId, e.PMSGuestId }).IsUnique();
+            });
+
+            // PMSReservationMapping configuration
+            modelBuilder.Entity<PMSReservationMapping>(entity =>
+            {
+                entity.ToTable("PMSReservationMappings");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.PMSReservationId).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.SyncStatus).HasMaxLength(50);
+                entity.Property(e => e.ConflictDetails).HasMaxLength(2000);
+                entity.HasOne(e => e.PMSIntegration)
+                    .WithMany(i => i.ReservationMappings)
+                    .HasForeignKey(e => e.PMSIntegrationId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(e => e.PMSIntegrationId);
+                entity.HasIndex(e => e.PMSReservationId);
+                entity.HasIndex(e => new { e.PMSIntegrationId, e.PMSReservationId }).IsUnique();
+            });
         }
     }
 }

@@ -64,7 +64,7 @@ class EnhancedErrorBoundary extends Component<Props, State> {
     const { error, errorInfo } = this.state
     const { children, fallback } = this.props
     // In dev/test environments, show error details by default unless explicitly overridden
-    const showDetails = (this.props.showDetails ?? (import.meta.env.DEV ?? false)) as boolean
+    const showDetails = (this.props.showDetails ?? (process.env.DEV ?? false)) as boolean
 
     if (error) {
       if (fallback) {

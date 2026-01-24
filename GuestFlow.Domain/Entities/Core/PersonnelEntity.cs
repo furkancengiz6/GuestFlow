@@ -12,6 +12,12 @@ namespace GuestFlow.Domain.Entities.Core
         public string Password { get; set; } 
         public UserType UserType { get; set; }
 
+        // Two-Factor Authentication (2FA) - Required for Admin/Owner
+        public bool TwoFactorEnabled { get; set; } = false;
+        public string? TwoFactorSecret { get; set; } // Base32 encoded secret for TOTP
+        public string? TwoFactorRecoveryCodes { get; set; } // JSON array of recovery codes (encrypted)
+        public DateTime? TwoFactorSetupDate { get; set; }
+
         // Relational Properties
         public virtual ICollection<TransferEntity> Transfers { get; set; } = new List<TransferEntity>();
         public virtual ICollection<YachtTourEntity> YachtTours { get; set; } = new List<YachtTourEntity>();
@@ -28,6 +34,8 @@ namespace GuestFlow.Domain.Entities.Core
             builder.Property(p => p.FullName).HasMaxLength(200);
             builder.Property(p => p.Email).HasMaxLength(255);
             builder.Property(p => p.Password).HasMaxLength(256); // Şifrelenmiş hali için 
+            builder.Property(p => p.TwoFactorSecret).HasMaxLength(100);
+            builder.Property(p => p.TwoFactorRecoveryCodes).HasMaxLength(2000); // Encrypted recovery codes
             builder.HasIndex(p => p.Email).IsUnique();
         }
     }

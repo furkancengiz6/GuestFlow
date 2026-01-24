@@ -228,5 +228,76 @@ namespace GuestFlow.Application.Operations.Reports
         public decimal TotalRevenue { get; set; }
         public decimal AverageBookingValue { get; set; }
     }
+
+    /// <summary>
+    /// VAT tahakkuk raporu DTO'su (391 hesabına göre)
+    /// </summary>
+    public class VatAccrualReportDto
+    {
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public string? Currency { get; set; }
+        
+        /// <summary>
+        /// Currency bazlı toplam VAT tahakkuk
+        /// </summary>
+        public Dictionary<string, decimal> TotalVatByCurrency { get; set; } = new Dictionary<string, decimal>();
+        
+        /// <summary>
+        /// Currency bazlı servis tipine göre VAT tahakkuk
+        /// </summary>
+        public Dictionary<string, Dictionary<string, decimal>> VatByServiceType { get; set; } = new Dictionary<string, Dictionary<string, decimal>>();
+        
+        /// <summary>
+        /// Toplam fatura sayısı
+        /// </summary>
+        public int TotalInvoiceCount { get; set; }
+        
+        /// <summary>
+        /// Post edilmiş journal entry sayısı
+        /// </summary>
+        public int PostedJournalCount { get; set; }
+        
+        /// <summary>
+        /// Post edilmemiş VAT tutarı (currency bazlı)
+        /// </summary>
+        public Dictionary<string, decimal> UnpostedVatByCurrency { get; set; } = new Dictionary<string, decimal>();
+    }
+
+    /// <summary>
+    /// Dönem bazlı KDV raporu DTO'su
+    /// </summary>
+    public class VatPeriodReportDto
+    {
+        public string Period { get; set; } = string.Empty; // "2025-01", "2025-W01", "2025-01-15"
+        public DateTime PeriodStart { get; set; }
+        public DateTime PeriodEnd { get; set; }
+        public string Currency { get; set; } = "TRY";
+        
+        /// <summary>
+        /// Dönem içindeki toplam VAT
+        /// </summary>
+        public decimal TotalVat { get; set; }
+        
+        /// <summary>
+        /// Dönem içindeki toplam net tutar (VAT hariç)
+        /// </summary>
+        public decimal TotalNetAmount { get; set; }
+        
+        /// <summary>
+        /// Dönem içindeki toplam brüt tutar (VAT dahil)
+        /// </summary>
+        public decimal TotalGrossAmount { get; set; }
+        
+        /// <summary>
+        /// Dönem içindeki fatura sayısı
+        /// </summary>
+        public int InvoiceCount { get; set; }
+        
+        /// <summary>
+        /// Servis tipine göre VAT breakdown
+        /// </summary>
+        public Dictionary<string, decimal> VatByServiceType { get; set; } = new Dictionary<string, decimal>();
+    }
 }
 

@@ -38,3 +38,11 @@ export const formatDateTime = (dateString: string | Date) => {
   })
 }
 
+export const formatTime = (dateString: string | Date) => {
+  const date = typeof dateString === 'string' ? new Date(dateString) : dateString
+  const locale = i18n.language === 'tr' ? 'tr-TR' : 'en-US'
+  return new Date(date).toLocaleTimeString(locale, {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}

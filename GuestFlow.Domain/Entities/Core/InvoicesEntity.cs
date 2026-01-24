@@ -15,7 +15,11 @@ namespace GuestFlow.Domain.Entities.Core
         /// <summary>PDF Generated - LOCKED and immutable</summary>
         Generated = 1,
         /// <summary>Cancelled - cannot be used</summary>
-        Cancelled = 2
+        Cancelled = 2,
+        /// <summary>Paid - synced from PMS</summary>
+        Paid = 3,
+        /// <summary>Unpaid - synced from PMS</summary>
+        Unpaid = 4
     }
     
     /// <summary>

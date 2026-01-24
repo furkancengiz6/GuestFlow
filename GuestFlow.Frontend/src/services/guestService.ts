@@ -1,8 +1,10 @@
 import apiClient from './api'
 import { Guest, PagedGuests, GuestDetail } from '../types/guest'
+import { GuestPreferences, UpsertGuestPreferences } from '../types/guestPreferences'
 
 // Re-export types for convenience
 export type { Guest, PagedGuests, GuestDetail }
+export type { GuestPreferences, UpsertGuestPreferences }
 
 export interface CreateGuestRequest {
   fullName: string
@@ -75,6 +77,21 @@ export const guestService = {
 
   deleteGuest: async (id: number): Promise<void> => {
     await apiClient.delete(`/Guests/${id}`)
+  },
+
+  // Guest Preferences
+  getGuestPreferences: async (id: number): Promise<GuestPreferences> => {
+    const response = await apiClient.get(`/Guests/${id}/preferences`)
+    return response.data.data || response.data
+  },
+
+  upsertGuestPreferences: async (id: number, data: UpsertGuestPreferences): Promise<GuestPreferences> => {
+    const response = await apiClient.put(`/Guests/${id}/preferences`, data)
+    return response.data.data || response.data
+  },
+
+  deleteGuestPreferences: async (id: number): Promise<void> => {
+    await apiClient.delete(`/Guests/${id}/preferences`)
   },
 }
 

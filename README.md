@@ -1,282 +1,98 @@
-# GuestFlow API
+# GuestFlow
 
-![.NET](https://img.shields.io/badge/.NET-8.0-blueviolet) ![C#](https://img.shields.io/badge/C%23-11.0-brightgreen) ![License](https://img.shields.io/badge/license-MIT-blue) [![CI](https://github.com/furkancengiz6/GuestFlow/actions/workflows/ci.yml/badge.svg)](https://github.com/furkancengiz6/GuestFlow/actions/workflows/ci.yml)
+GuestFlow is an enterprise-grade Guest Management and Operations platform specifically designed for 5-star hotel concierge desks. It acts as the "Memory of Human Relations" for hotels, transforming interactions between guests, staff, and services into actionable intelligence.
 
-**GuestFlow API** is a RESTful API designed to manage guest-related operations for a hospitality and tourism business. It provides functionalities for managing guests, airports, cities, transfers, city tours, yacht tours, daily revenues, invoices, and more.
+## 🌟 Key Features
 
-The project is built using modern .NET practices, following a **Domain-Driven Design (DDD)** approach with a **layered architecture**.
+- **Comprehensive Guest Management**: VIP status tracking, preferences, and detailed history.
+- **Service & Operatons Hub**:
+  - **Transfers**: Airport/Hotel/Restaurant/City transfers with driver and vehicle assignment.
+  - **Tours**: Managed City and Yacht tours with automated scheduling.
+  - **Reservations**: Integrated restaurant bookings.
+- **Financial Integration**: Automated invoice generation (PDF), multi-currency support, and journal entry posting for accounting (ERP) systems.
+- **Enterprise Ready**:
+  - **PMS Integration**: Real-time sync with Opera Cloud and Elektraweb.
+  - **Security**: JWT-based RBAC, PII management, and comprehensive audit logging.
+  - **Monitoring**: Built-in health checks and structured logging.
 
----
+## 🛠 Tech Stack
 
-## 📌 Table of Contents
-- [Features](#features)
-- [Technologies Used](#technologies-used)
-- [Project Structure](#project-structure)
-- [Prerequisites](#prerequisites)
-- [Setup and Installation](#setup-and-installation)
-- [Configuration](#configuration)
-- [Running the Application](#running-the-application)
-- [API Endpoints](#api-endpoints)
-- [Authentication](#authentication)
-- [Maintenance Mode](#maintenance-mode)
-- [Contributing](#contributing)
-- [License](#license)
+### Backend
 
----
+- **Framework**: .NET 8 (C# 11)
+- **Database**: SQL Server (EF Core 8)
+- **Reporting**: QuestPDF, ClosedXML
+- **Identity**: JWT Bearer, Role-Based Access Control
 
-## 🚀 Features
+### Frontend
 
-- **Guest Management**: CRUD operations for guests with support for special guests.
-- **Airport Management**: Manage airports with unique codes and associated cities.
-- **City Management**: Manage cities and their associated airports, tours, and transfers.
-- **Hotel Management**: Manage hotels with star ratings, amenities, and location information.
-- **Restaurant Management**: Manage restaurants with cuisine types, capacity, and reservation requirements.
-- **Transfer Management**: Schedule and manage transfers with invoice and discount support. Supports multiple transfer types (AirportToHotel, HotelToRestaurant, HotelToCity, etc.).
-- **City Tours & Yacht Tours**: Organize and manage tours with pricing, discounts, and invoice generation.
-- **Itinerary Management**: Create and manage guest travel plans with timeline visualization.
-- **Restaurant Reservations**: Manage restaurant bookings with transfer integration.
-- **Service Packages**: Create service packages combining transfers, tours, and restaurant reservations.
-- **Transfer Recommendations**: Intelligent transfer recommendations based on guest activities.
-- **Daily Revenues**: Automatically calculate daily revenues.
-- **Invoices**: Generate and manage invoices with PDF export support.
-- **Daily Notes**: Add and manage daily notes for staff.
-- **Vehicles**: Manage vehicles used for transfers.
-- **Authentication & Authorization**: JWT-based authentication with role-based access (**Staff, Admin**).
-- **Maintenance Mode**: Enable/disable maintenance mode to restrict API access.
-- **Logging**: Comprehensive logging for debugging and monitoring.
-
----
-
-## 🛠 Technologies Used
-
-- **.NET 8.0** – Core framework for building the API.
-- **C# 11.0** – Primary programming language.
-- **Entity Framework Core** – ORM for database operations.
-- **SQL Server** – Database backend (configurable to other EF Core-supported databases).
-- **ASP.NET Core** – RESTful API development framework.
-- **JWT Authentication** – Secure API endpoints with token-based authentication.
-- **Dependency Injection** – Built-in DI for managing services and repositories.
-- **Unit of Work & Repository Pattern** – Database transaction management.
-- **Fluent API** – Entity Framework Core configuration.
-
----
+- **Library**: React 18 (TypeScript)
+- **Build Tool**: Vite
+- **UI Framework**: Material UI (MUI) 5
+- **State/Data**: Zustand, React Query
 
 ## 📂 Project Structure
 
-The project follows a **layered architecture** based on **Domain-Driven Design (DDD)**:
-
-```
+```text
 GuestFlow/
-├── GuestFlow.Api/                # API layer (Controllers, Middleware, Filters)
-├── GuestFlow.Application/        # Application layer (Business logic, Services, DTOs)
-├── GuestFlow.Domain/             # Domain layer (Entities, Interfaces, Enums)
-├── GuestFlow.Persistence/        # Persistence layer (DbContext, Repositories, Unit of Work)
-└── README.md                     # Project documentation
+├── GuestFlow.Api/          # API Controllers and Middleware
+├── GuestFlow.Application/  # Business Logic and Services
+├── GuestFlow.Domain/       # Domain Entities and Interfaces
+├── GuestFlow.Persistence/ # Database Context and Repositories
+├── GuestFlow.Frontend/    # React Application
+└── docs/                  # Project Documentation
 ```
 
----
+## 🚀 Getting Started
 
-## 🔧 Prerequisites
+### Prerequisites
 
-Before running the project, ensure you have the following installed:
+- .NET 8.0 SDK
+- Node.js (Latest LTS)
+- SQL Server
 
-- **.NET 8.0 SDK** → [Download](https://dotnet.microsoft.com/download/dotnet/8.0)
-- **SQL Server** → Database backend (or any EF Core-supported DB)
-- **Visual Studio 2022** / **VS Code** (with C# extensions)
-- **Git** → For cloning the repository
+### Backend Setup
 
----
+1. Update connection string in `appsettings.json`.
+2. Run database migrations:
 
-## 📥 Setup and Installation
-
-1. **Clone the Repository**
    ```bash
-   git clone https://github.com/furkancengiz6/guestflow-api.git
-   cd guestflow-api
-   ```
-2. **Restore Dependencies**
-   ```bash
-   dotnet restore
-   ```
-3. **Set Up the Database**
-   - Update the **connection string** in `appsettings.json`.
-   - Run the migrations to create the database and tables:
-     ```bash
-     dotnet ef migrations add InitialCreate --project GuestFlow.Persistence
-     dotnet ef database update --project GuestFlow.Persistence
-     ```
-4. **Build the Project**
-   ```bash
-   dotnet build
+   dotnet ef database update --project GuestFlow.Persistence
    ```
 
-5. **Seed Demo Data (Development Only)**
-   ```bash
-   # Set environment to Development and enable demo data seeding
-   set ASPNETCORE_ENVIRONMENT=Development
-   set SeedDemoData=true
+3. Start the API:
 
-   # Run the application - demo data will be seeded automatically
+   ```bash
    dotnet run --project GuestFlow.Api
    ```
 
-   **⚠️ SECURITY WARNING:**
-   - Demo data seeding is **DISABLED by default** in production
-   - Only works when `ASPNETCORE_ENVIRONMENT=Development` AND `SeedDemoData=true`
-   - Demo users are created with **randomly generated passwords** (logged to console)
-   - Demo emails use `@guestflow.local` domain (clearly not real)
-   - **Never enable in production environments**
+### Frontend Setup
 
-   **Demo Credentials:**
-   After seeding, check the application logs for generated credentials:
-   ```
-   🚨 DEMO USERS CREATED - SAVE THESE CREDENTIALS! 🚨
-   Admin: demo.admin.demo.admin@guestflow.local / [random-password]
-   Staff1: demo.staff.1.demo.staff@guestflow.local / [random-password]
-   Staff2: demo.staff.2.demo.staff@guestflow.local / [random-password]
-   Staff3: demo.staff.3.demo.staff@guestflow.local / [random-password]
-   ```
+1. Navigate to `GuestFlow.Frontend`.
+2. Install dependencies:
 
----
-
-
-
-## ⚙️ Configuration
-
-The project uses `appsettings.json` for configuration. Example:
-
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=localhost;Database=GuestFlowDb;Trusted_Connection=True;TrustServerCertificate=True"
-  },
-  "Jwt": {
-    "SecretKey": "YourSecretKeyHere",
-    "Issuer": "GuestFlowApi",
-    "Audience": "GuestFlowApp",
-    "ExpireMinutes": 45
-  },
-  "Logging": {
-    "LogLevel": {
-      "Default": "Information",
-      "Microsoft": "Warning",
-      "Microsoft.Hosting.Lifetime": "Information"
-    }
-  }
-}
-```
-
----
-
-## ▶️ Running the Application
-
-1. **Run the Application**
    ```bash
-   dotnet run --project GuestFlow.Api
+   npm install
    ```
-2. **Access the API**
-   - Swagger UI: [https://localhost:5001/swagger](https://localhost:5001/swagger)
-   - Use Postman or another tool to test endpoints.
 
----
+3. Start dev server:
 
-## 📡 API Endpoints
-
-| Method | Endpoint | Description | Roles |
-|--------|-----------------|------------------------|--------------|
-| POST   | /api/v1.0/auth/register | Register a new user | None |
-| POST   | /api/v1.0/auth/login | Login and get a JWT token | None |
-| GET    | /api/v1.0/auth/me | Get current user info | Staff, Admin |
-| POST   | /api/airports | Add a new airport | Staff, Admin |
-| GET    | /api/airports | Get all airports | Staff, Admin |
-| GET    | /api/airports/{id} | Get airport by ID | Staff, Admin |
-| PATCH  | /api/v1.0/settings | Toggle maintenance mode | Admin, Staff |
-| GET    | /api/v1.0/settings/maintenance | Get maintenance mode status | Admin |
-
-_For a full list of endpoints, check the Swagger documentation._
-
----
-
-## 🗺️ Roadmap
-
-Projenin **tek güncel yol haritası**:
-- `ROADMAP.md`
-
-## 📚 Documentation (Source of Truth)
-
-- **Roadmap**: `ROADMAP.md` (tek güncel yol haritası)
-- **Testing**: `TESTING_GUIDE.md` (tek komutla test + E2E çalışma şekli)
-- **Deployment checklist**: `DEPLOYMENT_CHECKLIST.md`
-- **API endpoints (list)**: `API_ENDPOINTS.md`
-- **API documentation (examples)**: `API_DOCUMENTATION.md`
-- **Security policy**: `SECURITY.md`
-
-## 🧪 Staging E2E (Real Backend) — Smoke Suite
-
-Prod riskini en hızlı düşüren gate: staging ortamına karşı **mock’suz** Playwright smoke.
-
-- **Workflow (manual run)**: `.github/workflows/staging-e2e.yml`
-- **Repo secrets**:
-  - `STAGING_FRONTEND_URL`
-  - `STAGING_API_BASE_URL`
-  - `STAGING_E2E_USER_EMAIL`
-  - `STAGING_E2E_USER_PASSWORD`
-- **Local run** (Frontend):
-  - `GuestFlow.Frontend` içinde: `npm run test:e2e:staging`
-  - Gerekli env’ler: `E2E_BASE_URL`, `E2E_API_BASE_URL`, `E2E_USER_EMAIL`, `E2E_USER_PASSWORD`, opsiyonel `E2E_INVOICE_ID`
-
-## 🔐 Authentication
-
-- **JWT-based authentication** is used.
-- To access protected endpoints:
-  1. Register via `/api/v1.0/auth/register`
-  2. Login via `/api/v1.0/auth/login` and obtain a JWT token.
-  3. Include the token in requests:
-     ```
-     Authorization: Bearer <your-token>
-     ```
-
----
-
-## 🔄 Maintenance Mode
-
-- When enabled, all requests (except login and settings endpoints) return **503 Service Unavailable**.
-- Toggle maintenance mode via `/api/v1.0/settings` (Admin, Staff).
-- Check status via `/api/v1.0/settings/maintenance` (Admin).
-
----
-
-## 🤝 Contributing
-
-1. **Fork the repository**.
-2. **Create a new branch**:
    ```bash
-   git checkout -b feature/your-feature
-   ```
-3. **Commit your changes**:
-   ```bash
-   git commit -m "Add your feature"
-   ```
-4. **Push & open a PR**:
-   ```bash
-   git push origin feature/your-feature
+   npm run dev
    ```
 
----
+## 📚 Documentation
 
-## 📜 License
+For more detailed information, please refer to the files in the `docs/` directory:
 
-This project is licensed under the **MIT License**.
+- [API Reference](docs/API.md)
+- [Endpoints List](docs/API_ENDPOINTS.md)
+- [Technical Stack](docs/TECH_STACK.md)
+- [Deployment Guide](docs/DEPLOYMENT.md)
+- [Testing Guide](docs/TESTING.md)
 
-## GuestFlow Dashbord Screenshot
+## ⚖️ License
 
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## GuestFlow API Endpoints
-
-![indir](https://github.com/user-attachments/assets/e01ef2a1-b7d9-48f2-8852-40c6c890cc40)
-
-## GuestFlow Db Diagram
-
-![Adsız](https://github.com/user-attachments/assets/65528491-8eae-4acc-9cfa-f5f11a207079)
-
-
+Copyright (c) 2025 Furkan Cengiz

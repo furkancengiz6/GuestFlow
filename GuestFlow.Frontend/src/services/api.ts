@@ -136,6 +136,9 @@ apiClient.interceptors.response.use(
         }
         return apiClient(originalRequest)
       } catch (refreshError) {
+        if (process.env.DEV) {
+          console.error('[API] Refresh error:', refreshError)
+        }
         return Promise.reject(refreshError)
       }
     }
@@ -154,9 +157,9 @@ apiClient.interceptors.response.use(
       // Backend validation errors are already formatted
       // Network errors and timeouts are handled by the error handler utility
       const errorMessage = error.response.data?.message || error.message
-      
+
       // Log error for debugging (only in development)
-      if (import.meta.env.DEV) {
+      if (process.env.DEV) {
         console.error('API Error:', {
           url: originalRequest.url,
           method: originalRequest.method,
