@@ -9,6 +9,7 @@ using GuestFlow.Application.Operations.Intelligence.Graph.Dtos;
 using static GuestFlow.Application.Operations.Intelligence.Graph.GraphNodeTypes;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
+using GuestFlow.Application.Operations.Notification;
 
 namespace GuestFlow.Application.Operations.Intelligence.Behavioral
 {
@@ -20,17 +21,20 @@ namespace GuestFlow.Application.Operations.Intelligence.Behavioral
         private readonly IUnitOfWork _unitOfWork;
         private readonly IGraphDataService _graphDataService;
         private readonly GuestFlow.Domain.Entities.Repositories.IRepository<PersonnelEntity> _personnelRepository;
+        private readonly INotificationService _notificationService;
         private readonly ILogger<BehavioralTrackingService> _logger;
 
         public BehavioralTrackingService(
             IUnitOfWork unitOfWork,
             IGraphDataService graphDataService,
             GuestFlow.Domain.Entities.Repositories.IRepository<PersonnelEntity> personnelRepository,
+            INotificationService notificationService,
             ILogger<BehavioralTrackingService> logger)
         {
             _unitOfWork = unitOfWork;
             _graphDataService = graphDataService;
             _personnelRepository = personnelRepository;
+            _notificationService = notificationService;
             _logger = logger;
         }
 
@@ -62,12 +66,59 @@ namespace GuestFlow.Application.Operations.Intelligence.Behavioral
                 await _unitOfWork.GuestBehaviors.AddAsync(behavior);
                 await _unitOfWork.SaveChangesAsync();
 
+                // Dual-write: Sync to Graph immediately
+                await SyncGuestBehaviorToGraphAsync(behavior);
+
                 _logger.LogInformation("Guest behavior tracked: GuestId={GuestId}, Type={BehaviorType}", guestId, behaviorType);
+
+                // Fetch guest info once for all notifications
+                var guest = await _unitOfWork.Guests.GetByIdAsync(guestId);
+
+                // Notify staff for critical behaviors
+                if (guest != null && ((sentimentScore.HasValue && sentimentScore < -0.5) || 
+                    (satisfactionScore.HasValue && satisfactionScore <= 2.0)))
+                {
+                    try
+                    {
+                        await _notificationService.CreateAndSendNotificationAsync(new GuestFlow.Application.Operations.Notification.Dtos.CreateNotificationDto
+                        {
+                            Title = "Kritik Misafir Davranışı Tespiti",
+                            Content = $"{guest.FullName} için olumsuz bir deneyim tespit edildi. Tür: {behaviorType}, Kategori: {category}",
+                            NotificationType = "Push",
+                            RelatedEntityType = "GuestBehavior",
+                            RelatedEntityId = behavior.Id
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to send notification for critical behavior");
+                    }
+                }
+
+                // VIP Misafir Takibi ve Özel Bildirim
+                if (guest != null && guest.IsSpecialGuest)
+                {
+                    try
+                    {
+                        await _notificationService.CreateAndSendNotificationAsync(new GuestFlow.Application.Operations.Notification.Dtos.CreateNotificationDto
+                        {
+                            Title = "⭐ VIP MİSAFİR AKTİVİTESİ",
+                            Content = $"VIP Misafir {guest.FullName} için yeni bir aktivite tespit edildi: {behaviorType}. Lütfen öncelikli hizmet sağlayın.",
+                            NotificationType = "Push",
+                            RelatedEntityType = "Guest",
+                            RelatedEntityId = guestId
+                        });
+                        _logger.LogInformation("VIP notification sent for GuestId={GuestId}", guestId);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to send VIP notification");
+                    }
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to track guest behavior: GuestId={GuestId}", guestId);
-                throw;
+                _logger.LogError(ex, "Error tracking guest behavior: {Message}", ex.Message);
             }
         }
 
@@ -98,6 +149,9 @@ namespace GuestFlow.Application.Operations.Intelligence.Behavioral
 
                 await _unitOfWork.StaffBehaviors.AddAsync(behavior);
                 await _unitOfWork.SaveChangesAsync();
+
+                // Dual-write: Sync to Graph immediately
+                await SyncStaffBehaviorToGraphAsync(behavior);
 
                 _logger.LogInformation("Staff behavior tracked: StaffId={StaffId}, Type={BehaviorType}", staffId, behaviorType);
             }
@@ -132,6 +186,9 @@ namespace GuestFlow.Application.Operations.Intelligence.Behavioral
 
                 await _unitOfWork.GuestStaffInteractions.AddAsync(interaction);
                 await _unitOfWork.SaveChangesAsync();
+
+                // Dual-write: Sync to Graph immediately
+                await SyncInteractionToGraphAsync(interaction);
 
                 // Calculate relationship strength
                 await CalculateRelationshipStrengthAsync(guestId, staffId);

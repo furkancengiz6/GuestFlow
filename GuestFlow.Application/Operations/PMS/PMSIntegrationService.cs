@@ -348,6 +348,25 @@ namespace GuestFlow.Application.Operations.PMS
             }
         }
 
+        public async Task<ApiResponse<List<PMSRoomType>>> GetRoomTypesAsync(int integrationId)
+        {
+            try
+            {
+                var integration = await _unitOfWork.PMSIntegrations.GetByIdAsync(integrationId);
+                if (integration == null)
+                    return ApiResponse<List<PMSRoomType>>.Fail("PMS integration not found");
+
+                var adapter = CreateAdapter(integration);
+                var roomTypes = await adapter.GetRoomTypesAsync();
+
+                return ApiResponse<List<PMSRoomType>>.SuccessResponse(roomTypes);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to get room types: {IntegrationId}", integrationId);
+                return ApiResponse<List<PMSRoomType>>.Fail($"Failed to get room types: {ex.Message}");
+            }
+        }
 
         public async Task<ApiResponse<PMSFolio>> GetFolioAsync(int integrationId, string reservationId)
         {
@@ -482,6 +501,8 @@ namespace GuestFlow.Application.Operations.PMS
             
             return providerCode switch
             {
+                "MOCK" => new MockPMSAdapter(integration, _httpClientFactory,
+                    _loggerFactory.CreateLogger<MockPMSAdapter>()),
                 "OPERA" => new OperaPMSAdapter(integration, _httpClientFactory, 
                     _loggerFactory.CreateLogger<OperaPMSAdapter>()),
                 "ELEKTRAWEB" => new ElektrawebPMSAdapter(integration, _httpClientFactory, 

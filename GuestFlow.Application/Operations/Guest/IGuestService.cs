@@ -29,5 +29,10 @@ namespace GuestFlow.Application.Operations.Guest
         /// Misafir zaman çizelgesini getirir (transferler, turlar kronolojik sırada)
         /// </summary>
         Task<List<GuestTimelineItemDto>> GetGuestTimelineAsync(int guestId);
+
+        /// <summary>
+        /// Misafir kodu ile misafiri getirir
+        /// </summary>
+        Task<GetGuestDto?> GetGuestByCodeAsync(string code);
     }
 }

@@ -29,54 +29,38 @@ const ProtectedRoute = ({ children, roles, fallbackPath = '/forbidden' }: Props)
   useEffect(() => {
     let cancelled = false
     const ensureSession = async () => {
+      // 1. E2E Bypass
       if (e2eBypass) {
-        // Provide a mocked user for tests/dev when bypass is enabled
         const mockedUser = { id: 1, email: 'test@guestflow.local', fullName: 'Test User', role: 'Admin' }
         setAuthenticated(mockedUser)
         setChecking(false)
         return
       }
-      // If localStorage has persisted zustand auth key, use it (helps e2e storageState fallback)
-      if (typeof window !== 'undefined') {
-        try {
-          const stored = localStorage.getItem('auth-storage')
-          if (stored) {
-          let parsed = JSON.parse(stored)
-          // Support multiple persist shapes: direct {user,...} or {state: { user: ... }} etc.
-          const userFromParsed = parsed.user || parsed.state?.user || parsed.auth?.user || (typeof parsed === 'string' ? JSON.parse(parsed).user : undefined)
-          const isAuthFlag = parsed.isAuthenticated || parsed.state?.isAuthenticated || parsed.auth?.isAuthenticated
-          if (userFromParsed) {
-            setAuthenticated(userFromParsed)
-            setChecking(false)
-            return
-          }
-          if (isAuthFlag) {
-            // no user object but flagged as authenticated — create minimal user
-            setAuthenticated({ id: 1, email: 'test@guestflow.local', fullName: 'Test User', role: 'Admin' })
-            setChecking(false)
-            return
-          }
-          }
-        } catch {
-          // ignore parse errors and continue with normal flow
-        }
+
+      // 2. If we already have a user in state, we are likely fine for now.
+      // The global API interceptor will handle any later 401s.
+      if (isAuthenticated && user) {
+        setChecking(false)
+        return
       }
+
+      // 3. Fallback: Check /auth/me to sync session
       try {
-        if (isAuthenticated) return
-        const res = await apiClient.get('/auth/me', { withCredentials: true })
+        const res = await apiClient.get('/auth/me')
         const data = res.data.data || res.data
-        const usr = {
-          id: data.id,
-          email: data.email,
-          fullName: data.fullName,
-          role: data.userType || data.role,
-          userType: data.userType,
-          createdDate: data.createdDate,
-        }
         if (!cancelled) {
-          setAuthenticated(usr)
+          setAuthenticated({
+            id: data.id,
+            email: data.email,
+            fullName: data.fullName,
+            role: data.userType || data.role,
+            userType: data.userType,
+            createdDate: data.createdDate,
+          })
         }
       } catch (err) {
+        // If /auth/me fails, the interceptor will have tried to refresh.
+        // If we're here, it means both failed.
         if (!cancelled) {
           logout()
         }
@@ -84,11 +68,12 @@ const ProtectedRoute = ({ children, roles, fallbackPath = '/forbidden' }: Props)
         if (!cancelled) setChecking(false)
       }
     }
+
     ensureSession()
     return () => {
       cancelled = true
     }
-  }, [e2eBypass, isAuthenticated, logout, setAuthenticated])
+  }, [e2eBypass, isAuthenticated, logout, setAuthenticated, user])
 
   if (checking) {
     return (

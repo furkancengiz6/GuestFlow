@@ -1,7 +1,7 @@
 # GuestFlow — Tek Yol Haritası (Roadmap)
 
-> **📊 Tamamlanma Durumu**: %93 tamamlandı (27/29 görev)  
-> **Son Güncelleme**: 2025-01-20  
+> **📊 Tamamlanma Durumu**: %94 tamamlandı (28/29 görev)  
+> **Son Güncelleme**: 2026-01-25  
 > **Detaylı Durum**: `ROADMAP_COMPLETION_STATUS.md` dosyasına bakınız
 
 **Vizyon**: GuestFlow = Otelin "İnsan İlişkileri Hafızası"  
@@ -10,13 +10,15 @@
 **Amaç**: Bu repo içindeki dağınık/çelişkili dokümanları tek bir "gerçekçi" yol haritasında birleştirmek. Bu dosya, **koddaki mevcut duruma göre** hazırlanmıştır (backend `.NET 8`, frontend `React + TS`).
 
 **İlgili Dokümanlar**:
-- [VISION_TURIZM_INTELLIGENCE_LAYER.md](./VISION_TURIZM_INTELLIGENCE_LAYER.md) - **YENİ VİZYON**: Turizm Operasyon Intelligence Layer ve İnsan İlişkileri Hafızası
+
+- [VISION_TURIZM_INTELLIGENCE_LAYER.md](./VISION_TURIZM_INTELLIGENCE_LAYER.md) - **YENİ VİZYON**: Turizm Operasyon Intelligence Layer ve İnsan İlişkileri Hafızası (Henüz oluşturulmadı)
 - [PROJE_OBJEKTIF_DEGERLENDIRME.md](./PROJE_OBJEKTIF_DEGERLENDIRME.md) - Objektif proje değerlendirmesi, sınıflandırma ve pazar analizi
 - [TEKNOLOJILER_VE_OZELLIKLER.md](./TEKNOLOJILER_VE_OZELLIKLER.md) - Tüm teknolojiler, kütüphaneler ve özellikler kataloğu
 
 ## Durum Fotoğrafı (Kod Bazlı)
 
 ### Backend (GuestFlow.Api)
+
 - **Mimari**: DDD + katmanlı yapı (`GuestFlow.Domain`, `GuestFlow.Application`, `GuestFlow.Persistence`, `GuestFlow.Api`)
 - **Güvenlik**:
   - JWT auth + refresh token
@@ -31,6 +33,7 @@
 - **Modüller**: Controller’lar mevcut (örnekler): Guests, Transfers, Tours (City/Yacht), Invoices, Payments, Reservations, Emails/SMS/Notifications, Files, Hotels/Restaurants/Itineraries, Suppliers/SupplierCosts, OTA, Journal, Reports/Dashboard, Currency, Calendar, RoomAssignments.
 
 ### Frontend (GuestFlow.Frontend)
+
 - **Stack**: React 18 + TypeScript + Vite + MUI + React Query + Zustand + Zod + Playwright
 - **Routing / Sayfalar**: Login, Dashboard, Guests, Transfers, Tours, Invoices, Reservations, Personnel(Admin), Reports(Admin), Settings(Admin), Airports/Cities/Vehicles(Admin), DailyNotes/Admin, DailyRevenues/Admin, SMS/Admin, Emails/Admin, Notifications, Files/Admin, Calendar, Hotels/Admin, Restaurants/Admin, Itineraries, Currency/Admin, ServicePackages, Payments, RoomAssignments, Suppliers/Admin, SupplierCosts/Admin.
 - **Prod kalitesi**: Lazy loading + error boundary’ler + token refresh + session timeout.
@@ -38,10 +41,12 @@
 ## Sprint 0 (Hemen) — Dokümantasyon ve Netlik
 
 ### Hedef
+
 - Repo içinde **tek yol haritası** bu dosya olsun.
 - Çelişkili “tamamlandı/bitmedi” anlatımlarını kaldırıp, kaynak olarak **kod** referans alınsın.
 
 ### Yapılacaklar
+
 - **Doküman sadeleştirme**:
   - Roadmap/TODO/Phase türü çakışan dosyaları kaldır (bu dosyaya taşındı).
   - “%100 tamamlandı / 12 sprint bitti” gibi **koddaki durumu aşan** iddiaları içeren dokümanları kaldır.
@@ -50,9 +55,11 @@
 ## Sprint 1 (1–2 hafta) — Güvenlik ve Middleware Temizliği
 
 ### Hedef
+
 Güvenlik katmanını sadeleştirip doğru sıraya oturtmak; sürpriz davranışları azaltmak.
 
 ### Yapılacaklar
+
 - **Security headers duplikasyonunu kaldır**: ✅ (tek kaynak: `SecurityHeadersMiddleware`)
 - **Rate limit “BlockedUserAgents” yeniden değerlendir**:
   - ✅ Production-only UA blocking + Postman/curl QA/dev akışını bozmayacak şekilde düzenlendi.
@@ -62,9 +69,11 @@ Güvenlik katmanını sadeleştirip doğru sıraya oturtmak; sürpriz davranış
 ## Sprint 2 (2–4 hafta) — Kalite, Test, CI Disiplini
 
 ### Hedef
+
 Regresyon riskini düşürmek ve release sürecini otomatikleştirmek.
 
 ### Yapılacaklar
+
 - **Backend**:
   - Integration test’ler: auth + temel CRUD smoke (en az 30-40 senaryo).
   - Migration’lar için CI “smoke” (DB migrate + basic request) akışı.
@@ -73,6 +82,7 @@ Regresyon riskini düşürmek ve release sürecini otomatikleştirmek.
   - Playwright: login + 2 kritik akış (Guests list, Transfers list) CI’da stabil çalışsın.
 
 ### Tamamlananlar (Mevcut Durum)
+
 - **CI**:
   - Backend build+test job ✅
   - Frontend Playwright smoke job ✅
@@ -85,9 +95,11 @@ Regresyon riskini düşürmek ve release sürecini otomatikleştirmek.
 ## Sprint 3 (4–8 hafta) — Finans / Muhasebe (Mevcut Temele Dayalı)
 
 ### Hedef
+
 Mevcut `Journal` ve `SupplierCost/Profitability` altyapısını gerçek operasyonel akışa dönüştürmek.
 
 ### Yapılacaklar
+
 - **Invoice → Journal Preview → Post** akışını netleştir (UI + API):
   - “Önizleme” zorunlu, otomatik post yok.
 - **GL mapping / şablonlar**:
@@ -96,6 +108,7 @@ Mevcut `Journal` ve `SupplierCost/Profitability` altyapısını gerçek operasyo
   - Muhasebe için CSV/Excel export (Room Ledger / Guest Ledger gibi çıktılar).
 
 ### Tamamlananlar (Mevcut Durum)
+
 - **API (Journal)**:
   - ✅ Versioned route: `GET /api/v1.0/Journal/preview?invoiceId=...`, `POST /api/v1.0/Journal/post` (roles: Staff/Admin)
   - ✅ Post guard’ları: aynı invoice için tekrar post engeli + debit/credit balance kontrolü
@@ -106,6 +119,7 @@ Mevcut `Journal` ve `SupplierCost/Profitability` altyapısını gerçek operasyo
   - ✅ Invoice detail’da “Journal Posted” durumu artık **JE #id + posting date** ile görünür (post sonrası otomatik refresh)
 
 ### Sıradaki Yapılması Gerekenler (Önerilen Sıra)
+
 - ✅ **S3.1 — API sözleşmesini sabitle (DONE)**
   - Journal endpoint’leri tüm API’ler gibi **tek response şekline** sahip (frontend’in `data.data` beklentisi ile uyumlu).
   - Swagger’da örnek response’lar netleştirildi.
@@ -148,12 +162,14 @@ Mevcut `Journal` ve `SupplierCost/Profitability` altyapısını gerçek operasyo
   - En az 1 export: Journal by date range (API + test).
 
 ### Sprint 3 Kabul Kriterleri (Done Definition)
+
 - Invoice detail’da **Preview → Post** akışı üretimde kullanılabilir ve tekrar post edilemez.
 - Post sonrası JE id/tarih UI’da görünür; JE detayı API’dan okunabilir.
 - GL mapping hardcode’dan çıkmış; en az 3 servis tipi için mapping yapılabilir.
 - Muhasebe export’larından en az 1 tanesi (Journal by date range) çalışır ve test edilmiştir.
 
 ### Notlar / Riskler
+
 - **Çoklu para birimi**: Post edilen JE’nin currency’si ve satır currency’si politikası netleşmeli (tek currency mi, multi-line currency mi?).
 - **Rounding/discount**: invoice total ile item sum farkı için adjustment satırı var; muhasebe kuralı netleşmeli.
 - **Audit**: “kim post etti” alanı şu an `system`; gerçek kullanıcı (personnel) claim’inden doldurulmalı.
@@ -161,9 +177,11 @@ Mevcut `Journal` ve `SupplierCost/Profitability` altyapısını gerçek operasyo
 ## Sprint 4 (8+ hafta) — Productionization / Go-Live (Operasyon + Ürünleşme)
 
 ### Hedef
+
 Projeyi **üretime güvenli şekilde çıkarma** (security + ops + QA gate) ve saha kullanımında operasyonel değeri artırma.
 
 ### Go-Live Gate (Çıkış için zorunlu)
+
 - **Build/Test Gate (CI)**:
   - Backend: `dotnet build` + `dotnet test` ✅
     - `dotnet build` **warnings-as-errors** (PR'da yeni warning oluşamaz)
@@ -186,6 +204,7 @@ Projeyi **üretime güvenli şekilde çıkarma** (security + ops + QA gate) ve s
   - DB backup stratejisi + restore drill (en az 1 kez) (DatabaseBackupService eklendi)
 
 ### Kalite & Teknik Borç (yüksek ROI)
+
 - **Build warning cleanup**: ⏳
   - Nullability uyarılarını kademeli azalt (hedef: < 20, sonra < 10) - Devam ediyor
   - EF "shadow FK" / relationship warning'larını temizle (özellikle `TransferEntity` tarafı) - Devam ediyor
@@ -196,13 +215,21 @@ Projeyi **üretime güvenli şekilde çıkarma** (security + ops + QA gate) ve s
 - **Docs hygiene**: ✅
   - `QA_TEST_REPORT.md` içindeki endpoint örnekleri `/api/v1.0/...` ile uyumlu hale getir ✅
   - Deployment dokümanlarını tek bir "source of truth"e bağla (`DEPLOYMENT_CHECKLIST.md`) ✅
+- **Kritik Hata Düzeltmeleri (Hotfixes)**:
+  - **Audit Log Constraint Fix**: ✅
+    - `AuditLogs` tablosunda `NULL` hatası ("Error 515") giderildi.
+    - `AuditInterceptor.cs`: Hükümsüz kullanıcı durumları (seeding, background jobs) için varsayılan değerler ("System", "127.0.0.1") eklendi.
+    - `AuditLog.cs`: Teknik alanlar `nullable` yapıldı.
+    - Seeding işlemi (`dotnet run --project GuestFlow.Api --SeedDemoData=true`) başarıyla doğrulandı.
 
 ### Yapılacaklar (seçmeli)
+
 - OTA entegrasyonlarının gerçek provider API'leri ile hardening'i (retry, idempotency, monitoring). ✅ (OTAIntegrationService'te idempotency, retry/backoff, dead-letter queue mevcut)
 - Mobil-first operasyon ekranları (özellikle "bugünkü hizmetler", "yaklaşanlar", "ödemesi alınmayanlar").
 - Observability: OpenTelemetry trace/metric + dashboard.
 
 ### Gelecek Özellikler / Backlog (öncelikli)
+
 - **P0 — Finans/Muhasebe (yüksek ROI)**
   - Multi-currency muhasebe politikası: JE currency & satır currency standardı + rounding kuralları. ✅ (ExchangeRateService, JournalService multi-currency rounding)
   - "Posted by" audit: JE'de `CreatedBy/PostedBy` gerçek kullanıcı claim'inden doldurulsun. ✅ (JournalService'te Personnel entity'den FullName alınıyor)
@@ -229,9 +256,11 @@ Projeyi **üretime güvenli şekilde çıkarma** (security + ops + QA gate) ve s
 ## Sprint 5 (10-16 hafta) — Concierge Yönetimi ve PMS Entegrasyonları (Kritik Öncelik)
 
 ### Hedef
+
 **GuestFlow'un asıl amacı**: 5 yıldızlı otellerin **concierge desk** operasyonları için tasarlanmış bir **misafir yönetim sistemi**dir. Mevcut PMS sistemleri (Opera, Elektraweb) ile **anlık entegrasyon** sağlayarak concierge personelinin tüm misafir hizmetlerini tek platformdan yönetmesini sağlamak.
 
 ### Proje Odak Noktası
+
 - **Concierge/Misafir Yönetimi**: 5 yıldızlı otellerin concierge desk'i için özel tasarım
 - **PMS Entegrasyonu**: Opera, Elektraweb gibi mevcut otel sistemleri ile anlık veri senkronizasyonu
 - **OTA Entegrasyonu**: Booking.com, Expedia gibi kanallardan otomatik veri çekme
@@ -240,6 +269,7 @@ Projeyi **üretime güvenli şekilde çıkarma** (security + ops + QA gate) ve s
 ### 🎯 P0 — PMS Entegrasyonları (EN YÜKSEK ÖNCELİK - Kritik)
 
 #### Opera PMS Entegrasyonu
+
 - **Opera Cloud API Entegrasyonu**:
   - Opera Cloud REST API veya XML API entegrasyonu
   - Authentication (OAuth 2.0 veya API key)
@@ -264,6 +294,7 @@ Projeyi **üretime güvenli şekilde çıkarma** (security + ops + QA gate) ve s
   - Error logging ve alerting (e-posta/SMS)
 
 #### Elektraweb Entegrasyonu
+
 - **Elektraweb API Entegrasyonu**:
   - Elektraweb REST API entegrasyonu
   - Authentication mekanizması
@@ -279,7 +310,9 @@ Projeyi **üretime güvenli şekilde çıkarma** (security + ops + QA gate) ve s
   - Field mapping configuration
 
 #### PMS Entegrasyon Mimarisi ✅
+
 - **Generic PMS Adapter Pattern**: ✅
+
   ```csharp
   public interface IPMSIntegrationService
   {
@@ -294,6 +327,7 @@ Projeyi **üretime güvenli şekilde çıkarma** (security + ops + QA gate) ve s
   public class OperaPMSAdapter : IPMSIntegrationService { }
   public class ElektrawebPMSAdapter : IPMSIntegrationService { }
   ```
+
   - IPMSIntegrationService, PMSIntegrationService, PMSSyncService implementasyonu mevcut
 - **Veri Senkronizasyon Stratejisi**: ✅
   - **Real-time sync (Tercih Edilen)**: Webhook-based (Opera Cloud webhook'ları) ✅ (PMSWebhookProcessor, HMAC SHA256 signature validation)
@@ -307,6 +341,7 @@ Projeyi **üretime güvenli şekilde çıkarma** (security + ops + QA gate) ve s
 ### 🎯 P0 — Concierge Desk Özellikleri
 
 #### Unified Guest Profile (PMS + GuestFlow Verileri) ✅
+
 - **Misafir Profili Birleştirme**: ✅
   - PMS'den gelen misafir bilgileri (Opera/Elektraweb) ✅ (PMSIntegrationService)
   - GuestFlow'da oluşturulan hizmet geçmişi (transfer, tur, restoran) ✅
@@ -325,6 +360,7 @@ Projeyi **üretime güvenli şekilde çıkarma** (security + ops + QA gate) ve s
   - İletişim tercihleri (e-posta, SMS, WhatsApp) ✅
 
 #### Concierge Dashboard (Günlük Operasyon Merkezi) ✅
+
 - **Günlük Operasyon Ekranı**: ✅
   - **Bugün Check-in Olan Misafirler** (PMS'den çekilen) ✅ (ConciergeDashboardService.GetTodayCheckInsAsync)
   - **Bugün Check-out Olan Misafirler** (PMS'den) ✅ (ConciergeDashboardService.GetTodayCheckOutsAsync)
@@ -346,6 +382,7 @@ Projeyi **üretime güvenli şekilde çıkarma** (security + ops + QA gate) ve s
   - Fatura görüntüleme (PMS folio) ✅ (QuickActionService.GetFolioAsync)
 
 #### Misafir İletişim Merkezi ✅
+
 - **Unified Communication**: ✅
   - E-posta entegrasyonu (misafir e-postaları - PMS'den çekilen) ✅ (UnifiedCommunicationService)
   - SMS entegrasyonu ✅ (UnifiedCommunicationService)
@@ -365,6 +402,7 @@ Projeyi **üretime güvenli şekilde çıkarma** (security + ops + QA gate) ve s
 ## 🧠 Sprint 6-7 (17-24 hafta) — Turizm Operasyon Intelligence Layer (YENİ VİZYON)
 
 ### Hedef
+
 GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davranışını ürünün merkezine koyarak, oteldeki **insan + misafir + hizmet + zaman + duygu** ilişkilerinin graf veri modelini oluşturmak.
 
 **Vizyon**: GuestFlow = Otelin "İnsan İlişkileri Hafızası"
@@ -372,6 +410,7 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
 ### Yapılacaklar
 
 #### Graf Veri Modeli Altyapısı ✅
+
 - **Neo4j Entegrasyonu**: ✅
   - Neo4j database kurulumu ve konfigürasyonu ✅ (Neo4jSettings, INeo4jService)
   - Neo4j .NET driver entegrasyonu (`Neo4j.Driver`) ✅
@@ -401,6 +440,7 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
   - `context` (bağlam: JSON) ✅
 
 #### Behavioral Data Collection (Davranışsal Veri Toplama) ✅
+
 - **Misafir Davranış Takibi**: ✅
   - Rezervasyon kalıpları analizi (tarih, süre, oda tipi) ✅ (GuestBehaviorEntity, BehavioralTrackingService)
   - Hizmet tercihleri tracking (transfer, tur, restoran) ✅
@@ -421,6 +461,7 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
   - Duygu-Hizmet uyumu skorları ✅
 
 #### Sentiment & Emotional Intelligence (Duygu Zekası) ✅
+
 - **Sentiment Analysis Integration**: ✅
   - Communication sentiment (Email, SMS, WhatsApp mesajları) ✅ (SentimentAnalysisService.AnalyzeSentimentAsync)
   - Review sentiment (OTA reviews: Booking.com, Expedia) ✅
@@ -435,6 +476,7 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
   - Emotional triggers (duygusal tetikleyiciler) ✅
 
 #### Relationship Intelligence Service (İlişki Zekası Servisi) ✅
+
 - **Guest-Staff Matching (Misafir-Personel Eşleştirmesi)**: ✅
   - Uyum analizi algoritması (compatibility algorithm) ✅ (RelationshipIntelligenceService.FindBestStaffMatchesAsync)
   - Başarı skorları hesaplama (success score calculation) ✅ (RelationshipIntelligenceService.CalculateCompatibilityAsync)
@@ -452,6 +494,7 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
   - İlişki öngörüleri (relationship predictions) ✅
 
 #### Predictive Intelligence (Tahminsel Zeka) ✅
+
 - **Guest Behavior Prediction (Misafir Davranış Tahmini)**: ✅
   - Rezervasyon tahminleri (reservation predictions) ✅ (PredictiveIntelligenceService.PredictGuestBehaviorAsync)
   - Hizmet talep tahminleri (service demand predictions) ✅ (PredictiveIntelligenceService.PredictServiceDemandAsync)
@@ -469,6 +512,7 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
   - Loyalty fırsatları (sadakat fırsatları) ✅
 
 #### Proactive Intelligence (Proaktif Zeka) ✅
+
 - **Proactive Service Recommendations (Proaktif Hizmet Önerileri)**: ✅
   - Davranış bazlı öneriler (behavior-based recommendations) ✅ (ProactiveIntelligenceService.GetProactiveServiceRecommendationsAsync)
   - Zaman bazlı öneriler (time-based recommendations) ✅
@@ -486,6 +530,7 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
   - Context-aware suggestions (bağlam farkındalıklı öneriler) ✅
 
 ### Teknik Gereksinimler ✅
+
 - **Neo4j Database**: Community veya Enterprise edition ✅ (Neo4jSettings yapılandırıldı)
 - **Neo4j .NET Driver**: `Neo4j.Driver` NuGet package ✅
 - **Sentiment Analysis**: Azure Text Analytics veya AWS Comprehend ✅ (SentimentAnalysisService - keyword-based, Azure entegrasyonu için hazır)
@@ -493,6 +538,7 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
 - **Graph Query Language**: Cypher (Neo4j query language) ✅ (GraphDataService Cypher queries kullanıyor)
 
 ### Mevcut Sistemle Entegrasyon ✅
+
 - **SQL Server**: Transactional data (mevcut) ✅
 - **Neo4j**: Relationship data (yeni) ✅
 - **Dual-Write Pattern**: Her iki veritabanına yazma ✅ (BehavioralTrackingService)
@@ -502,12 +548,14 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
 ### 🎯 P0 — OTA Entegrasyonları (PMS ile Entegre)
 
 #### Mevcut Durum
+
 - ✅ OTA entity'leri ve temel servisler mevcut
 - ✅ Booking.com, Expedia, Agoda, Airbnb enum'ları var
 - ⚠️ Gerçek API entegrasyonları eksik
 - ⚠️ Webhook işleme tam değil
 
 #### Yapılacaklar (PMS ile Senkronize)
+
 - **Booking.com Entegrasyonu (PMS ile Entegre)**:
   - API v2/v3 entegrasyonu (reservations, availability, rates)
   - Webhook handler: rezervasyon oluşturma, iptal, değişiklik
@@ -540,6 +588,7 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
 ### 🎯 P0 — Misafir Deneyimi İyileştirmeleri
 
 #### Misafir Portalı (Self-Service)
+
 - **Rezervasyon Yönetimi**:
   - Misafir self-check-in/check-out
   - Rezervasyon değişiklik talepleri (tarih, oda tipi)
@@ -561,6 +610,7 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
   - Feedback/şikayet formu
 
 #### QR Kod Sistemi
+
 - **Check-in/Check-out QR Kodları**:
   - Misafir için özel QR kod oluşturma
   - Mobil check-in (QR kod okutma)
@@ -576,6 +626,7 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
 ### 🎯 P0 — Dinamik Fiyatlama ve Revenue Management
 
 #### Dinamik Fiyatlama Motoru
+
 - **Fiyat Kuralları**:
   - Sezon bazlı fiyatlandırma (yüksek/düşük sezon)
   - Doluluk oranına göre otomatik fiyat ayarlama
@@ -591,6 +642,7 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
   - Revenue per available room (RevPAR) optimizasyonu
 
 #### Revenue Management Dashboard
+
 - RevPAR analizi
 - ADR (Average Daily Rate) takibi
 - Occupancy rate (doluluk oranı) analizi
@@ -600,6 +652,7 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
 ### 🎯 P1 — Mobil Uygulama
 
 #### React Native Mobil Uygulama
+
 - **Personel Uygulaması** (iOS + Android):
   - Günlük operasyon ekranı (bugünkü servisler)
   - Misafir bilgileri (hızlı erişim)
@@ -617,6 +670,7 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
 ### 🎯 P1 — Review ve Rating Sistemi
 
 #### Misafir Değerlendirmeleri
+
 - **Review Yönetimi**:
   - Check-out sonrası otomatik review talebi (e-posta/SMS)
   - Review formu (misafir portalı veya e-posta linki)
@@ -635,6 +689,7 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
 ### 🎯 P1 — Loyalty Programı
 
 #### Sadakat Programı
+
 - **Puan Sistemi**:
   - Her rezervasyon için puan kazanma
   - Puan kullanımı (indirim, ücretsiz hizmet)
@@ -651,6 +706,7 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
 ### 🎯 P1 — AI Destekli Özellikler
 
 #### Akıllı Öneriler
+
 - **Transfer Önerileri** (mevcut özellik genişletilebilir):
   - Misafir aktivitelerine göre otomatik transfer önerileri
   - Trafik durumuna göre zaman önerileri
@@ -665,6 +721,7 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
   - Hizmet bilgisi
 
 #### Tahmin Analitiği
+
 - **Demand Forecasting**:
   - Gelecek dönem talep tahmini
   - Sezon bazlı tahminler
@@ -676,6 +733,7 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
 ### 🎯 P1 — Real-Time Inventory Management
 
 #### Stok ve Kullanılabilirlik Yönetimi
+
 - **Oda Envanteri**:
   - Gerçek zamanlı oda durumu (available, occupied, maintenance, out of order)
   - Oda tipi bazlı envanter
@@ -691,12 +749,14 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
 ### 🎯 P1 — Weather ve Event Entegrasyonları
 
 #### Hava Durumu Entegrasyonu
+
 - **Weather API Entegrasyonu** (OpenWeatherMap, WeatherAPI):
   - Hava durumu bilgisi (misafir dashboard'unda)
   - Hava durumuna göre hizmet önerileri (yağmurlu gün → kapalı mekan turları)
   - Hava durumu uyarıları (fırtına, kar vb.)
 
 #### Etkinlik Yönetimi
+
 - **Event Management**:
   - Şehir etkinlikleri takibi (festival, konser, spor etkinliği)
   - Etkinlik bazlı talep artışı tahmini
@@ -705,6 +765,7 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
 ### 🎯 P1 — Çoklu Dil ve Yerelleştirme
 
 #### Dil Desteği Genişletme
+
 - **Ek Diller**:
   - Almanca (Alman turistler için)
   - Rusça (Rus turistler için)
@@ -719,6 +780,7 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
 ### 🎯 P1 — Yerel Ödeme Yöntemleri
 
 #### Ödeme Gateway Entegrasyonları
+
 - **Türkiye**:
   - İyzico entegrasyonu
   - PayTR entegrasyonu
@@ -735,6 +797,7 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
 ### 🎯 P1 — Concierge İş Akışları (PMS Entegre)
 
 #### Misafir Karşılama Akışı (End-to-End)
+
 - **Pre-Arrival (Geliş Öncesi)**:
   - Rezervasyon bilgisi (PMS'den otomatik çekilir)
   - Misafir profili kontrolü (PMS + GuestFlow geçmiş)
@@ -760,6 +823,7 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
   - Son hizmet önerileri (check-out sonrası transfer)
 
 #### Hizmet Yönetimi Akışı (PMS Verileri ile Entegre)
+
 - **Transfer Yönetimi**:
   - Misafir check-in/check-out zamanına göre otomatik transfer önerisi (PMS'den)
   - Havalimanı transferleri (PMS'den uçuş bilgisi çekilebilir - gelecekte)
@@ -777,6 +841,7 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
 ### 🎯 P1 — Raporlama ve Analitik (PMS + GuestFlow Verileri)
 
 #### Concierge Performans Raporları
+
 - **Hizmet Dağılımı**:
   - Transfer sayıları (GuestFlow)
   - Tur rezervasyonları (GuestFlow)
@@ -791,6 +856,7 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
   - Sorun çözme süreleri
 
 #### Operasyonel Raporlar (PMS + GuestFlow Unified)
+
 - **Günlük Operasyon Özeti**:
   - Check-in/check-out sayıları (PMS'den)
   - Aktif misafir sayısı (PMS'den)
@@ -806,6 +872,7 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
 ### 🎯 P1 — WhatsApp Business Entegrasyonu
 
 #### WhatsApp Business API
+
 - **Otomatik Mesajlaşma**:
   - Rezervasyon onay mesajları (PMS rezervasyon bilgisi ile)
   - Check-in hatırlatmaları (PMS check-in tarihi ile)
@@ -819,6 +886,7 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
 ### 🎯 P2 — Analytics ve Business Intelligence
 
 #### Gelişmiş Raporlama
+
 - **Business Intelligence Dashboard**:
   - Power BI veya Tableau entegrasyonu
   - Özel dashboard'lar (yönetim için)
@@ -833,6 +901,7 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
 ### 🎯 P2 — White-Label Çözüm
 
 #### Çoklu Marka Desteği
+
 - **Multi-Tenancy**:
   - Birden fazla otel/marka yönetimi
   - Marka bazlı özelleştirme (logo, renkler, tema)
@@ -845,6 +914,7 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
 ### 🎯 P2 — API Marketplace
 
 #### Üçüncü Taraf Entegrasyonları
+
 - **API Documentation**:
   - Swagger/OpenAPI dokümantasyonu (mevcut, genişletilebilir)
   - API key yönetimi
@@ -859,6 +929,7 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
 ### 🎯 P2 — Compliance ve Güvenlik
 
 #### KVKK/GDPR Uyumu
+
 - **Veri Koruma**:
   - Veri maskeleme (PII koruması)
   - Veri silme/anonymize (right to be forgotten)
@@ -876,11 +947,13 @@ GuestFlow'u **Turizm Operasyon Intelligence Layer** haline getirmek. İnsan davr
 ## Sprint 6 (16-24 hafta) — Ölçeklenme ve Platform Genişletme
 
 ### Hedef
+
 Projeyi ölçeklenebilir bir platforma dönüştürmek ve SaaS modeline hazırlamak.
 
 ### 🎯 P0 — SaaS Altyapısı
 
 #### Multi-Tenancy
+
 - **Tenant Yönetimi**:
   - Tenant isolation (veritabanı seviyesinde)
   - Tenant bazlı konfigürasyon
@@ -893,6 +966,7 @@ Projeyi ölçeklenebilir bir platforma dönüştürmek ve SaaS modeline hazırla
 ### 🎯 P1 — Performance ve Ölçeklenebilirlik
 
 #### Optimizasyonlar
+
 - **Database Optimizasyonu**:
   - Read replica'lar (okuma performansı)
   - Database sharding (büyük veri için)
@@ -909,6 +983,7 @@ Projeyi ölçeklenebilir bir platforma dönüştürmek ve SaaS modeline hazırla
 ### 🎯 P1 — Monitoring ve Observability
 
 #### Gelişmiş İzleme
+
 - **Application Performance Monitoring (APM)**:
   - OpenTelemetry entegrasyonu
   - Distributed tracing
@@ -926,6 +1001,7 @@ Projeyi ölçeklenebilir bir platforma dönüştürmek ve SaaS modeline hazırla
 ## Öncelik Matrisi (Satış ve Pazar Etkisi)
 
 ### 🔥 EN YÜKSEK ÖNCELİK (Kritik - Hemen Başla)
+
 1. **PMS Entegrasyonları (Opera, Elektraweb)** - ⭐⭐⭐⭐⭐
    - **Neden Kritik**: Projenin temel amacı - concierge desk için zorunlu
    - **Satış Etkisi**: %300+ artış (5 yıldızlı oteller için zorunlu özellik)
@@ -946,22 +1022,24 @@ Projeyi ölçeklenebilir bir platforma dönüştürmek ve SaaS modeline hazırla
    - **Müşteri Segmenti**: Tüm oteller
 
 ### 🔥 Yüksek Öncelik (3-6 Ay)
-4. **Unified Guest Profile (PMS + GuestFlow)** - ⭐⭐⭐⭐
+
+1. **Unified Guest Profile (PMS + GuestFlow)** - ⭐⭐⭐⭐
    - **Satış Etkisi**: %100+ artış (misafir deneyimi)
    - **Rekabet Avantajı**: Tek ekranda tüm misafir bilgileri
 
-5. **Misafir Portalı** - ⭐⭐⭐
+2. **Misafir Portalı** - ⭐⭐⭐
    - **Satış Etkisi**: %50+ artış (müşteri memnuniyeti)
    - **Rekabet Avantajı**: Self-service özellikler
 
-6. **Mobil Uygulama (Concierge)** - ⭐⭐⭐
+3. **Mobil Uygulama (Concierge)** - ⭐⭐⭐
    - **Satış Etkisi**: %80+ artış (operasyonel verimlilik)
    - **Rekabet Avantajı**: Sahada çalışan personel için
 
-7. **Review/Rating Sistemi** - ⭐⭐⭐
+4. **Review/Rating Sistemi** - ⭐⭐⭐
    - **Satış Etkisi**: %40+ artış (online görünürlük)
 
 ### ⚡ Orta Öncelik (3-6 Ay)
+
 1. **Loyalty Programı** - Müşteri sadakati
 2. **AI Öneriler** - Farklılaşma
 3. **WhatsApp Entegrasyonu** - Yerel pazar için önemli
@@ -969,6 +1047,7 @@ Projeyi ölçeklenebilir bir platforma dönüştürmek ve SaaS modeline hazırla
 5. **Weather/Event Entegrasyonları** - Değer katma
 
 ### 📈 Düşük Öncelik (6+ Ay)
+
 1. **White-Label** - Enterprise müşteriler için
 2. **API Marketplace** - Platform genişletme
 3. **SaaS Altyapısı** - Ölçeklenme
@@ -998,6 +1077,7 @@ Projeyi ölçeklenebilir bir platforma dönüştürmek ve SaaS modeline hazırla
 ### 🎯 Satış Stratejisi Değişiklikleri (PMS Odaklı)
 
 #### 1. Hedef Müşteri Segmenti Değişikliği
+
 **ÖNCE**: Genel otel yönetim sistemi (tüm oteller)
 **ŞİMDİ**: **5 yıldızlı oteller ve concierge desk kullanan oteller** (odaklanmış pazar)
 
@@ -1007,6 +1087,7 @@ Projeyi ölçeklenebilir bir platforma dönüştürmek ve SaaS modeline hazırla
 > "GuestFlow, 5 yıldızlı otellerin concierge desk operasyonları için özel tasarlanmış bir misafir yönetim sistemidir. Mevcut PMS sisteminizle (Opera, Elektraweb) **anlık entegrasyon** sağlayarak, concierge personelinizin tüm misafir bilgilerini ve hizmetlerini **tek ekrandan** yönetmesini sağlar."
 
 **Destekleyici Satış Noktaları**:
+
 1. **"PMS Entegrasyonu"**: "Opera veya Elektraweb sisteminizle anlık senkronizasyon - Veri girişi yok, otomatik çalışır"
 2. **"Concierge Dashboard"**: "Bugünkü check-in/check-out'ları, aktif misafirleri, yaklaşan servisleri tek ekranda görün"
 3. **"Unified Guest Profile"**: "PMS'den gelen misafir bilgileri + hizmet geçmişi = Tam misafir profili"
@@ -1026,12 +1107,14 @@ Projeyi ölçeklenebilir bir platforma dönüştürmek ve SaaS modeline hazırla
 #### 4. Rekabet Analizi Güncellemesi
 
 **Rakip Ürünler**:
+
 - **Opera Concierge**: Opera'nın kendi concierge modülü (sınırlı özellikler)
 - **Elektraweb Concierge**: Elektraweb'in concierge modülü (sınırlı)
 - **GuestBridge**: Concierge yönetimi (PMS entegrasyonu zayıf)
 - **ALICE**: Concierge platformu (pahalı, $200-500/oda/ay)
 
 **GuestFlow'un Avantajları**:
+
 - ✅ **PMS Entegrasyonu**: Opera ve Elektraweb ile anlık entegrasyon (rakiplerde yok)
 - ✅ **Unified Platform**: PMS + hizmetler tek ekranda
 - ✅ **Türkçe Dil Desteği**: Yerel pazar için
@@ -1041,16 +1124,19 @@ Projeyi ölçeklenebilir bir platforma dönüştürmek ve SaaS modeline hazırla
 #### 5. Satış Kanalı Stratejisi
 
 **Doğrudan Satış**:
+
 - 5 yıldızlı otel yöneticileri ile doğrudan görüşme
 - Concierge müdürleri ile demo
 - Otel zincirleri ile kurumsal anlaşmalar
 
 **Partner Satışı**:
+
 - PMS danışmanları (Opera, Elektraweb danışmanları)
 - Otel yönetim şirketleri
 - Turizm danışmanları
 
 **Referans Programı**:
+
 - İlk 5 müşteri için özel fiyatlandırma
 - Başarı hikayeleri oluşturma
 - Case study'ler hazırlama
@@ -1060,6 +1146,7 @@ Projeyi ölçeklenebilir bir platforma dönüştürmek ve SaaS modeline hazırla
 ## Başarı Metrikleri (KPI'lar) - PMS Odaklı
 
 ### Teknik Metrikler
+
 - **PMS Entegrasyon Başarı Oranı**: %99.9+ (kritik - concierge için zorunlu)
 - **PMS Sync Latency**: < 5 saniye (real-time sync)
 - **PMS Data Accuracy**: %100 (veri tutarlılığı)
@@ -1069,6 +1156,7 @@ Projeyi ölçeklenebilir bir platforma dönüştürmek ve SaaS modeline hazırla
 - API response time: < 500ms (p95)
 
 ### İş Metrikleri (PMS Entegrasyonu Sonrası)
+
 - **Concierge Verimlilik Artışı**: %40-60 (tek ekranda tüm bilgiler)
 - **Hata Oranı Azalması**: %50-70 (manuel veri girişi yok)
 - **Müşteri Memnuniyeti**: 4.7/5 (hızlı ve doğru hizmet)
@@ -1078,6 +1166,7 @@ Projeyi ölçeklenebilir bir platforma dönüştürmek ve SaaS modeline hazırla
 - Tekrar rezervasyon oranı: %30+ (loyalty programı ile)
 
 ### Satış Metrikleri (PMS Odaklı)
+
 - **5 Yıldızlı Otel Segmenti Pazar Payı**: %5+ (hedef 3 yıl)
 - **Concierge Desk Kullanan Oteller**: %10+ (hedef 3 yıl)
 - **Müşteri Başına Ortalama Gelir**: $20,000-50,000/yıl (premium segment)
@@ -1089,23 +1178,48 @@ Projeyi ölçeklenebilir bir platforma dönüştürmek ve SaaS modeline hazırla
 ## Notlar ve Riskler
 
 ### Teknik Riskler
+
 - **OTA API Değişiklikleri**: OTA provider'lar API'lerini değiştirebilir → Versioning stratejisi gerekli
 - **Yüksek Trafik**: OTA webhook'ları yüksek trafik yaratabilir → Scalable architecture gerekli
 - **Veri Senkronizasyonu**: Çoklu kanal → veri tutarsızlığı riski → Idempotency kritik
 
 ### İş Riskleri
+
 - **Rekabet**: Büyük oyuncular (Opera, Cloudbeds) → Farklılaşma önemli
 - **Müşteri Adaptasyonu**: Yeni özellikler → Eğitim gerekli
 - **Maliyet**: Geliştirme maliyeti → ROI hesaplaması önemli
 
 ### Çözüm Önerileri
+
 - **Agile Development**: Hızlı iterasyon, müşteri feedback'i
 - **Pilot Program**: Beta müşteriler ile test
 - **Dokümantasyon**: Kapsamlı kullanım kılavuzları
 - **Destek**: 7/24 teknik destek (SaaS modelinde)
 
 ## Kabul Kriterleri (Roadmap’in “bitti” sayılması)
+
 - Bu dosya dışında repo kökünde “roadmap/todo/phase” amaçlı **ikinci bir yol haritası dokümanı kalmaması**.
 - README’de tek bir yol haritasına yönlendirme olması.
 - Sprint 1 sonunda middleware davranışlarının (headers + rate limit) tutarlı ve test edilebilir olması.
 
+---
+
+## 🛠️ Gelecek İçin Öneriler (Antigravity)
+
+### 1. Mock PMS Servisi (Testing)
+
+Gerçek PMS entegrasyonları (Opera/Elektraweb) VPN, lisans ve kontrat gerektirir. Geliştirme sürecini bloke etmemek için:
+
+- **Mock PMS Microservice**: Standart `IPMSIntegrationService` arayüzünü implemente eden, randomize veri üreten ve webhook tetikleyebilen hafif bir servis yazılmalı. Bu sayede local ortamda "Senkronizasyon" senaryoları uçtan uca test edilebilir.
+
+### 2. Yük Testi (Graph Dual-Write)
+
+SQL + Neo4j (dual-write) mimarisi transaction süresini uzatabilir.
+
+- **K6 veya JMeter** ile yüksek trafik altında (örn. aynı anda 100 check-in) sistemin tepki süresi ve veri tutarlılığı test edilmeli. `BehavioralTrackingService` asenkron (fire-and-forget) kuyruk yapısına (RabbitMQ/MassTransit) geçirilerek ana akış rahatlatılabilir.
+
+### 3. Mobil Uygulama (React Native)
+
+Yol haritasında P1 olarak geçen Mobil Uygulama, saha operasyonu (şoförler, karşılama ekibi) için kritiktir.
+
+- **Sprint 8** olarak resmiyet kazandırılmalı. Backend API'leri (özellikle `Authentication` ve `Operations`) mobil tüketime hazır görünüyor (`JWT` flow mevcut).

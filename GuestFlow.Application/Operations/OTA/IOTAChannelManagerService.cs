@@ -34,5 +34,20 @@ namespace GuestFlow.Application.Operations.OTA
         /// Tüm aktif PMS ve OTA entegrasyonları için otomatik senkronizasyon
         /// </summary>
         Task<ApiResponse<bool>> SyncAllActiveIntegrationsAsync();
+
+        /// <summary>
+        /// OTA'dan gelen rezervasyonu işle (Orchestration)
+        /// </summary>
+        Task<ApiResponse<bool>> ProcessIncomingReservationAsync(int otaIntegrationId, OTAReservationDto reservationDto);
+
+        /// <summary>
+        /// Explicitly push a rate update to an OTA (used by Dynamic Pricing)
+        /// </summary>
+        Task<ApiResponse<bool>> PushRateUpdateAsync(int otaIntegrationId, string otaRoomTypeId, DateTime date, decimal amount, string currency = "TRY");
+
+        /// <summary>
+        /// Broadcast Stop Sell to all active OTAs (Emergency Stop)
+        /// </summary>
+        Task<ApiResponse<bool>> BroadcastStopSellAsync(int hotelId, DateTime startDate, DateTime endDate);
     }
 }

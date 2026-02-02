@@ -16,39 +16,27 @@ namespace GuestFlow.Application.Operations.OTA
         private readonly IUnitOfWork _unitOfWork;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IPMSIntegrationService _pmsIntegrationService;
+        private readonly IOTAChannelManagerService _channelManagerService;
         private readonly ILogger<OTAIntegrationService> _logger;
         private readonly ILoggerFactory _loggerFactory;
+        private readonly IOTAAdapterFactory _adapterFactory;
 
         public OTAIntegrationService(
             IUnitOfWork unitOfWork, 
             IHttpClientFactory httpClientFactory,
             IPMSIntegrationService pmsIntegrationService,
+            IOTAChannelManagerService channelManagerService,
             ILogger<OTAIntegrationService> logger,
-            ILoggerFactory loggerFactory)
+            ILoggerFactory loggerFactory,
+            IOTAAdapterFactory adapterFactory)
         {
             _unitOfWork = unitOfWork;
             _httpClientFactory = httpClientFactory;
             _pmsIntegrationService = pmsIntegrationService;
+            _channelManagerService = channelManagerService;
             _logger = logger;
             _loggerFactory = loggerFactory;
-        }
-
-        /// <summary>
-        /// OTA adapter oluştur (factory pattern)
-        /// </summary>
-        private BaseOTAAdapter CreateAdapter(OTAIntegration integration)
-        {
-            var providerCode = integration.ProviderCode.ToUpperInvariant();
-            var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
-            
-            return providerCode switch
-            {
-                "BKG" or "BOOKING" or "BOOKINGCOM" => new BookingComAdapter(integration, _httpClientFactory,
-                    loggerFactory.CreateLogger<BookingComAdapter>()),
-                "EXP" or "EXPEDIA" => new ExpediaAdapter(integration, _httpClientFactory,
-                    loggerFactory.CreateLogger<ExpediaAdapter>()),
-                _ => throw new NotSupportedException($"OTA provider '{integration.ProviderCode}' is not supported")
-            };
+            _adapterFactory = adapterFactory;
         }
 
         public async Task<ApiResponse<OTAIntegration>> CreateOTAIntegrationAsync(CreateOTAIntegrationRequest request)
@@ -98,7 +86,7 @@ namespace GuestFlow.Application.Operations.OTA
                 if (integration == null)
                     return ApiResponse<bool>.Fail("OTA integration not found");
 
-                var adapter = CreateAdapter(integration);
+                var adapter = _adapterFactory.CreateAdapter(integration);
                 var isConnected = await adapter.TestConnectionAsync();
 
                 // Update last sync info
@@ -130,7 +118,7 @@ namespace GuestFlow.Application.Operations.OTA
                 if (integration == null)
                     return ApiResponse<bool>.Fail("OTA integration not found");
 
-                var adapter = CreateAdapter(integration);
+                var adapter = _adapterFactory.CreateAdapter(integration);
                 
                 // OTA'dan rezervasyonları getir
                 var otaReservations = await adapter.GetReservationsAsync(startDate, endDate);
@@ -328,7 +316,7 @@ namespace GuestFlow.Application.Operations.OTA
                 if (integration == null)
                     return ApiResponse<bool>.Fail("OTA integration not found");
 
-                var adapter = CreateAdapter(integration);
+                var adapter = _adapterFactory.CreateAdapter(integration);
                 int succeeded = 0, failed = 0;
 
                 // Her fiyat güncellemesini OTA'ya gönder
@@ -487,6 +475,7 @@ namespace GuestFlow.Application.Operations.OTA
                 var webhookHandler = new OTAWebhookHandler(
                     _unitOfWork,
                     this,
+                    _channelManagerService,
                     _pmsIntegrationService,
                     _loggerFactory.CreateLogger<OTAWebhookHandler>());
 

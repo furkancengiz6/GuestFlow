@@ -1,0 +1,21 @@
+﻿[14:54:11 INF] Audit: System Insert on Cities - Keys:  {"SourceContext": "GuestFlow.Persistence.Interceptors.AuditInterceptor"}
+[14:54:11 INF] Audit: System Insert on Cities - Keys:  {"SourceContext": "GuestFlow.Persistence.Interceptors.AuditInterceptor"}
+[14:54:11 INF] Audit: System Insert on Cities - Keys:  {"SourceContext": "GuestFlow.Persistence.Interceptors.AuditInterceptor"}
+[14:54:11 INF] Audit: System Insert on Cities - Keys:  {"SourceContext": "GuestFlow.Persistence.Interceptors.AuditInterceptor"}
+[14:54:11 INF] Audit: System Insert on Cities - Keys:  {"SourceContext": "GuestFlow.Persistence.Interceptors.AuditInterceptor"}
+[14:54:11 INF] Audit: System Insert on Cities - Keys:  {"SourceContext": "GuestFlow.Persistence.Interceptors.AuditInterceptor"}
+[14:54:11 INF] Audit: System Insert on Cities - Keys:  {"SourceContext": "GuestFlow.Persistence.Interceptors.AuditInterceptor"}
+[14:54:11 INF] Audit: System Insert on Cities - Keys:  {"SourceContext": "GuestFlow.Persistence.Interceptors.AuditInterceptor"}
+[14:54:11 ERR] An exception occurred in the database while saving changes for context type 'GuestFlow.Persistence.Context.GuestFlowDbContext'.
+Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while saving the entity changes. See the inner exception for details.
+ ---> Microsoft.Data.SqlClient.SqlException (0x80131904): Cannot insert the value NULL into column 'CorrelationId', table 'GuestFlowDb.dbo.AuditLogs'; column does not allow nulls. UPDATE fails.
+   at Microsoft.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, Action`1 wrapCloseInAction)
+   at Microsoft.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, Boolean callerHasConnectionLock, Boolean asyncClose)
+   at Microsoft.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean& dataReady)
+   at Microsoft.Data.SqlClient.SqlDataReader.TryHasMoreRows(Boolean& moreRows)
+   at Microsoft.Data.SqlClient.SqlDataReader.TryReadInternal(Boolean setTimeout, Boolean& more)
+   at Microsoft.Data.SqlClient.SqlDataReader.ReadAsyncExecute(Task task, Object state)
+   at Microsoft.Data.SqlClient.SqlDataReader.InvokeAsyncCall[T](SqlDataReaderBaseAsyncCallContext`1 context)
+--- End of stack trace from previous location ---
+   at Microsoft.EntityFrameworkCore.Update.AffectedCountModificationCommandBatch.ConsumeResultSetAsync(Int32 startCommandIndex, RelationalDataReader reader, CancellationToken cancellationToken)

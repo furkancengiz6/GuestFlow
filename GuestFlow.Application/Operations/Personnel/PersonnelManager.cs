@@ -143,6 +143,7 @@ namespace GuestFlow.Application.Operations.Personnel
                     Data = new PersonnelInfoDto
                     {
                         Id = personnel.Id,
+                        TenantId = personnel.TenantId,
                         Email = personnel.Email,
                         FullName = personnel.FullName,
                         UserType = personnel.UserType
@@ -187,6 +188,7 @@ namespace GuestFlow.Application.Operations.Personnel
                     Data = new PersonnelInfoDto
                     {
                         Id = personnel.Id,
+                        TenantId = personnel.TenantId,
                         Email = personnel.Email,
                         FullName = personnel.FullName,
                         UserType = personnel.UserType,
@@ -213,6 +215,7 @@ namespace GuestFlow.Application.Operations.Personnel
                     .Select(p => new PersonnelInfoDto
                     {
                         Id = p.Id,
+                        TenantId = p.TenantId,
                         Email = p.Email,
                         FullName = p.FullName,
                         UserType = p.UserType,
@@ -702,6 +705,7 @@ namespace GuestFlow.Application.Operations.Personnel
                     .Select(p => new PersonnelInfoDto
                     {
                         Id = p.Id,
+                        TenantId = p.TenantId,
                         Email = p.Email,
                         FullName = p.FullName,
                         UserType = p.UserType,

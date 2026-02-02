@@ -7,9 +7,9 @@ namespace GuestFlow.Domain.Entities.Core
 {
     public class PersonnelEntity : BaseEntity, IPersonnel
     {
-        public string FullName { get; set; }
-        public string Email { get; set; }
-        public string Password { get; set; } 
+        public string FullName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
         public UserType UserType { get; set; }
 
         // Two-Factor Authentication (2FA) - Required for Admin/Owner

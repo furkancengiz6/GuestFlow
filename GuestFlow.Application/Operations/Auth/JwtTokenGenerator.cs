@@ -29,6 +29,7 @@ namespace GuestFlow.Application.Operations.Auth
                 new Claim("FullName", personnel.FullName),
                 new Claim("Email", personnel.Email),
                 new Claim("UserType", personnel.UserType.ToString()),
+                new Claim("TenantId", personnel.TenantId.ToString()),
                 new Claim(ClaimTypes.Role, personnel.UserType.ToString())
             };
 

@@ -8,6 +8,7 @@ using GuestFlow.Persistence.Repositories;
 using GuestFlow.Domain.Entities.Core;
 using GuestFlow.Domain.Entities.Operations;
 using GuestFlow.Domain.Entities.Intelligence;
+using GuestFlow.Domain.Entities.Finance;
 
 namespace GuestFlow.Persistence.UnitOfWork
 {
@@ -52,6 +53,7 @@ namespace GuestFlow.Persistence.UnitOfWork
         private readonly IRepository<GuestBehaviorEntity> _guestBehaviors;
         private readonly IRepository<StaffBehaviorEntity> _staffBehaviors;
         private readonly IRepository<GuestStaffInteractionEntity> _guestStaffInteractions;
+        private readonly IRepository<PricingRuleEntity> _pricingRules;
 
         public UnitOfWork(GuestFlowDbContext context)
         {
@@ -92,6 +94,7 @@ namespace GuestFlow.Persistence.UnitOfWork
             _guestBehaviors = new Repository<GuestBehaviorEntity>(_context);
             _staffBehaviors = new Repository<StaffBehaviorEntity>(_context);
             _guestStaffInteractions = new Repository<GuestStaffInteractionEntity>(_context);
+            _pricingRules = new Repository<PricingRuleEntity>(_context);
         }
 
         public async Task<int> SaveChangesAsync()
@@ -204,5 +207,6 @@ namespace GuestFlow.Persistence.UnitOfWork
         public IRepository<GuestBehaviorEntity> GuestBehaviors => _guestBehaviors;
         public IRepository<StaffBehaviorEntity> StaffBehaviors => _staffBehaviors;
         public IRepository<GuestStaffInteractionEntity> GuestStaffInteractions => _guestStaffInteractions;
+        public IRepository<PricingRuleEntity> PricingRules => _pricingRules;
     }
 }

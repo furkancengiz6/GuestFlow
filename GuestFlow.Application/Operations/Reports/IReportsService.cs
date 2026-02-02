@@ -75,6 +75,11 @@ namespace GuestFlow.Application.Operations.Reports
         /// Dönem bazlı KDV detay raporu (aylık/haftalık/günlük breakdown)
         /// </summary>
         Task<List<VatPeriodReportDto>> GetVatPeriodReportAsync(DateTime? startDate = null, DateTime? endDate = null, string? periodType = null, string? currency = null);
+
+        /// <summary>
+        /// Haftalık operasyonel rapor oluşturur (PDF)
+        /// </summary>
+        Task<string> GenerateWeeklyOperationalReportAsync(DateTime startDate, DateTime endDate);
     }
 }
 

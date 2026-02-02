@@ -1,18 +1,27 @@
 using GuestFlow.Domain.Entities.Core;
 using GuestFlow.Domain.Entities.Operations;
 using GuestFlow.Domain.Entities.Intelligence;
+using GuestFlow.Domain.Entities.Finance;
 using GuestFlow.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
+using GuestFlow.Domain.Entities.Interfaces;
+using GuestFlow.Persistence.MultiTenancy;
+using System.Linq.Expressions;
+using System.Reflection;
 
 namespace GuestFlow.Persistence.Context
 {
     public class GuestFlowDbContext : DbContext
     {
-        public GuestFlowDbContext(DbContextOptions<GuestFlowDbContext> options) : base(options)
+        private readonly ITenantProvider _tenantProvider;
+
+        public GuestFlowDbContext(DbContextOptions<GuestFlowDbContext> options, ITenantProvider tenantProvider) : base(options)
         {
+            _tenantProvider = tenantProvider;
         }
 
         public DbSet<AirportEntity> Airports => Set<AirportEntity>();
+        public DbSet<PricingRuleEntity> PricingRules => Set<PricingRuleEntity>();
         public DbSet<PersonnelEntity> Personnels => Set<PersonnelEntity>();
         public DbSet<CityEntity> Cities => Set<CityEntity>();
         public DbSet<TourEntity> Tours => Set<TourEntity>();
@@ -78,6 +87,7 @@ namespace GuestFlow.Persistence.Context
         // Accounting - journal entries
         public DbSet<GuestFlow.Domain.Entities.Core.JournalEntry> JournalEntries => Set<GuestFlow.Domain.Entities.Core.JournalEntry>();
         public DbSet<GuestFlow.Domain.Entities.Core.JournalLine> JournalLines => Set<GuestFlow.Domain.Entities.Core.JournalLine>();
+        public DbSet<GuestReview> GuestReviews => Set<GuestReview>();
 
         // Intelligence Layer - Behavioral Data Collection
         public DbSet<GuestBehaviorEntity> GuestBehaviors => Set<GuestBehaviorEntity>();
@@ -140,6 +150,9 @@ namespace GuestFlow.Persistence.Context
             modelBuilder.ApplyConfiguration(new GuestBehaviorConfiguration());
             modelBuilder.ApplyConfiguration(new StaffBehaviorConfiguration());
             modelBuilder.ApplyConfiguration(new GuestStaffInteractionConfiguration());
+            
+            // Finance - Pricing Rules
+            modelBuilder.ApplyConfiguration(new PricingRuleConfiguration());
 
             // OTA Webhook Log configuration
             modelBuilder.ApplyConfiguration(new GuestFlow.Domain.Entities.Operations.OTAWebhookLogConfiguration());
@@ -160,9 +173,24 @@ namespace GuestFlow.Persistence.Context
             // PMS Integration configurations
             ConfigurePMSIntegrations(modelBuilder);
 
+            // GuestReview configuration to avoid multiple cascade paths
+            modelBuilder.Entity<GuestReview>(entity =>
+            {
+                entity.HasOne(e => e.Guest)
+                    .WithMany()
+                    .HasForeignKey(e => e.GuestId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.Reservation)
+                    .WithMany()
+                    .HasForeignKey(e => e.ReservationId)
+                    .OnDelete(DeleteBehavior.Restrict); // Corrected to restrict to avoid multiple cascade paths
+            });
+
             modelBuilder.Entity<SettingEntity>().HasData(new SettingEntity
             {
                 Id = 1,
+                TenantId = 1, // Default tenant
                 MainteneceMode = false,
                 // IMPORTANT: keep seed deterministic; BaseEntity constructor sets CreatedDate=UtcNow.
                 CreatedDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
@@ -170,10 +198,37 @@ namespace GuestFlow.Persistence.Context
                 CreatedByPersonnelId = null,
                 UpdatedByPersonnelId = null,
                 UpdatedDate = null
+            });
+
+            ApplyGlobalFilters(modelBuilder);
+        }
+
+        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            foreach (var entry in ChangeTracker.Entries<ITenantEntity>().Where(e => e.State == EntityState.Added))
+            {
+                entry.Entity.TenantId = _tenantProvider.TenantId;
             }
+            return base.SaveChangesAsync(cancellationToken);
+        }
 
+        private void ApplyGlobalFilters(ModelBuilder modelBuilder)
+        {
+            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            {
+                if (typeof(ITenantEntity).IsAssignableFrom(entityType.ClrType))
+                {
+                    var method = typeof(GuestFlowDbContext)
+                        .GetMethod(nameof(ApplyFilter), BindingFlags.NonPublic | BindingFlags.Instance)
+                        .MakeGenericMethod(entityType.ClrType);
+                    method.Invoke(this, new object[] { modelBuilder });
+                }
+            }
+        }
 
-                );
+        private void ApplyFilter<T>(ModelBuilder modelBuilder) where T : class, ITenantEntity
+        {
+            modelBuilder.Entity<T>().HasQueryFilter(e => e.TenantId == _tenantProvider.TenantId && !((ISoftDelete)(object)e).IsDeleted);
         }
 
         private void ConfigurePMSIntegrations(ModelBuilder modelBuilder)

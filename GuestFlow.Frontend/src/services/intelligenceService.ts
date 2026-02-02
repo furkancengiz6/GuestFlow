@@ -7,7 +7,7 @@ import api from './api'
 
 // Intelligence Layer Types
 export interface ProactiveRecommendation {
-  guestId: number
+  guestId?: number
   recommendationType: string
   title: string
   description: string
@@ -29,7 +29,7 @@ export interface ProblemPreventionAlert {
 }
 
 export interface PersonalizationSuggestion {
-  guestId: number
+  guestId?: number
   suggestionType: string
   title: string
   description: string
@@ -48,8 +48,8 @@ export interface EarlyWarningSignal {
 }
 
 export interface AutomaticAction {
-  guestId: number
-  actionType: string
+  guestId?: number
+  actionType?: string
   title: string
   description: string
   canExecuteAutomatically: boolean

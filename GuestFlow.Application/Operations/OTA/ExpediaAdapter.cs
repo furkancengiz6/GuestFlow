@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 using GuestFlow.Domain.Entities.Operations;
+using GuestFlow.Application.Operations.OTA.Expedia;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;
 using System.Text.Json;
@@ -13,12 +14,16 @@ namespace GuestFlow.Application.Operations.OTA
     /// </summary>
     public class ExpediaAdapter : BaseOTAAdapter
     {
+        private readonly IExpediaService _expediaService;
+
         public ExpediaAdapter(
             OTAIntegration integration,
             IHttpClientFactory httpClientFactory,
-            ILogger<ExpediaAdapter> logger)
+            ILogger<ExpediaAdapter> logger,
+            IExpediaService expediaService)
             : base(integration, httpClientFactory, logger)
         {
+            _expediaService = expediaService;
         }
 
         protected override void AddAuthenticationHeaders(HttpClient client)
@@ -45,13 +50,42 @@ namespace GuestFlow.Application.Operations.OTA
         {
             try
             {
-                // Expedia OAuth 2.0 token refresh
                 _logger.LogInformation("Refreshing Expedia access token for integration {IntegrationId}", _integration.Id);
+
+                // Expedia Token Endpoint (Example: https://api.ean.com/v3/auth/token)
+                var tokenEndpoint = $"{_integration.ApiEndpoint.TrimEnd('/')}/auth/token";
                 
-                // TODO: Expedia token refresh implementation
-                // Expedia Partner Solutions API dokümantasyonuna göre implement edilecek
+                using var client = _httpClientFactory.CreateClient();
+                var request = new HttpRequestMessage(HttpMethod.Post, tokenEndpoint);
                 
-                return true;
+                // Basic Auth with Key/Secret for Token Endpoint
+                var credentials = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($"{_integration.ApiKey}:{_integration.ApiSecret}"));
+                request.Headers.Authorization = new AuthenticationHeaderValue("Basic", credentials);
+                
+                var content = new FormUrlEncodedContent(new[]
+                {
+                    new KeyValuePair<string, string>("grant_type", "client_credentials")
+                });
+                request.Content = content;
+
+                var response = await client.SendAsync(request);
+                response.EnsureSuccessStatusCode();
+
+                var json = await response.Content.ReadAsStringAsync();
+                var tokenData = JsonSerializer.Deserialize<JsonElement>(json);
+
+                if (tokenData.TryGetProperty("access_token", out var accessToken))
+                {
+                    // Update in-memory integration object
+                    // Note: Persistence should be handled by the caller/service if needed, 
+                    // but usually adapters are short-lived. 
+                    // Ideally, we'd fire an event or have a callback to save the new token.
+                    _integration.AccessToken = accessToken.GetString();
+                    return true;
+                }
+
+                _logger.LogError("Failed to parse access token from Expedia response");
+                return false;
             }
             catch (Exception ex)
             {
@@ -163,26 +197,20 @@ namespace GuestFlow.Application.Operations.OTA
         {
             try
             {
-                // Expedia webhook signature validation
-                if (!string.IsNullOrEmpty(signature))
+                // verify signature if secret is present
+                if (!string.IsNullOrEmpty(signature) && !string.IsNullOrEmpty(_integration.ApiSecret))
                 {
-                    // TODO: Implement Expedia webhook signature validation
+                    if (!_expediaService.ValidateSignature(payload, signature, _integration.ApiSecret))
+                    {
+                        _logger.LogWarning("Invalid Expedia webhook signature");
+                        return false;
+                    }
                 }
 
-                // Parse webhook payload
-                var webhookData = JsonSerializer.Deserialize<Dictionary<string, object>>(payload, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-
-                if (webhookData == null) return false;
-
-                // Process webhook based on event type
-                var eventType = webhookData.ContainsKey("eventType") ? webhookData["eventType"]?.ToString() : null;
+                var webhookData = _expediaService.ParsePayload(payload);
                 
-                _logger.LogInformation("Processing Expedia webhook: EventType={EventType}", eventType);
-                
-                // TODO: Implement webhook processing logic
+                // Process logic based on event type
+                // Usually maps to reservation updates
                 return true;
             }
             catch (Exception ex)

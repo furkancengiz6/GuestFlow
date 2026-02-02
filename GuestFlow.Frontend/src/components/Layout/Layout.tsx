@@ -3,6 +3,7 @@ import { Box, Container } from '@mui/material'
 import Sidebar from './Sidebar'
 import Header from './Header'
 import BreadcrumbsBar from '../Common/BreadcrumbsBar'
+import AIChatWidget from '../ai/AIChatWidget'
 
 interface LayoutProps {
   children: ReactNode
@@ -28,6 +29,7 @@ const Layout = ({ children }: LayoutProps) => {
           </Container>
         </Box>
       </Box>
+      <AIChatWidget />
     </Box>
   )
 }

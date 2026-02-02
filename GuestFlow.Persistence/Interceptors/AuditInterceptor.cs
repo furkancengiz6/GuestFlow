@@ -135,11 +135,11 @@ namespace GuestFlow.Persistence.Interceptors
                 var httpContext = _httpContextAccessor?.HttpContext;
                 return httpContext?.User?.FindFirst("sub")?.Value ??
                        httpContext?.User?.FindFirst("userId")?.Value ??
-                       httpContext?.User?.Identity?.Name;
+                       httpContext?.User?.Identity?.Name ?? "0";
             }
             catch
             {
-                return null;
+                return "0";
             }
         }
 
@@ -150,11 +150,11 @@ namespace GuestFlow.Persistence.Interceptors
                 var httpContext = _httpContextAccessor?.HttpContext;
                 return httpContext?.User?.FindFirst("preferred_username")?.Value ??
                        httpContext?.User?.FindFirst("name")?.Value ??
-                       httpContext?.User?.Identity?.Name;
+                       httpContext?.User?.Identity?.Name ?? "System";
             }
             catch
             {
-                return null;
+                return "System";
             }
         }
 
@@ -163,7 +163,7 @@ namespace GuestFlow.Persistence.Interceptors
             try
             {
                 var httpContext = _httpContextAccessor?.HttpContext;
-                if (httpContext == null) return null;
+                if (httpContext == null) return "127.0.0.1";
 
                 // Check for forwarded headers
                 var forwardedFor = httpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
@@ -190,11 +190,11 @@ namespace GuestFlow.Persistence.Interceptors
         {
             try
             {
-                return _httpContextAccessor?.HttpContext?.Request.Headers["User-Agent"].FirstOrDefault();
+                return _httpContextAccessor?.HttpContext?.Request.Headers["User-Agent"].FirstOrDefault() ?? "Internal/System";
             }
             catch
             {
-                return null;
+                return "Internal/System";
             }
         }
 
@@ -202,11 +202,11 @@ namespace GuestFlow.Persistence.Interceptors
         {
             try
             {
-                return _httpContextAccessor?.HttpContext?.Session?.Id;
+                return _httpContextAccessor?.HttpContext?.Session?.Id ?? "N/A";
             }
             catch
             {
-                return null;
+                return "N/A";
             }
         }
 
@@ -214,11 +214,11 @@ namespace GuestFlow.Persistence.Interceptors
         {
             try
             {
-                return _httpContextAccessor?.HttpContext?.TraceIdentifier;
+                return _httpContextAccessor?.HttpContext?.TraceIdentifier ?? Guid.NewGuid().ToString();
             }
             catch
             {
-                return null;
+                return Guid.NewGuid().ToString();
             }
         }
     }

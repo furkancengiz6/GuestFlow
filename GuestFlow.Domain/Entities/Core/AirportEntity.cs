@@ -6,12 +6,12 @@ namespace GuestFlow.Domain.Entities.Core
 {
     public class AirportEntity : BaseEntity, IAirport
     {
-        public string Name { get; set; }
-        public string Code { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Code { get; set; } = string.Empty;
         public int CityId { get; set; }
 
         public virtual ICollection<TransferEntity> Transfers { get; set; } = new List<TransferEntity>();
-        public virtual CityEntity City { get; set; }
+        public virtual CityEntity City { get; set; } = null!;
     }
 
     public class AirportConfiguration : BaseConfiguration<AirportEntity>

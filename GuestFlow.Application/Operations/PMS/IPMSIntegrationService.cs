@@ -36,6 +36,9 @@ namespace GuestFlow.Application.Operations.PMS
         // Room Operations
         Task<ApiResponse<PMSRoomStatus>> GetRoomStatusAsync(int integrationId, string roomNumber);
         Task<ApiResponse<List<PMSRoomStatus>>> GetRoomsStatusAsync(int integrationId, DateTime? date = null);
+        
+        // Room Type Operations
+        Task<ApiResponse<List<PMSRoomType>>> GetRoomTypesAsync(int integrationId);
 
         // Folio Operations
         Task<ApiResponse<PMSFolio>> GetFolioAsync(int integrationId, string reservationId);

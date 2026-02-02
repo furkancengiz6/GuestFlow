@@ -52,6 +52,9 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("UpdatedByPersonnelId")
                         .HasColumnType("int");
 
@@ -74,11 +77,9 @@ namespace GuestFlow.Persistence.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Action")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CorrelationId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("CreatedByPersonnelId")
@@ -88,27 +89,25 @@ namespace GuestFlow.Persistence.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("IpAddress")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
                     b.Property<string>("NewValues")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("OldValues")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("SessionId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("TableName")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("datetime2");
@@ -120,15 +119,12 @@ namespace GuestFlow.Persistence.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("UserAgent")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("UserId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("UserName")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
@@ -162,6 +158,9 @@ namespace GuestFlow.Persistence.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
 
                     b.Property<int?>("UpdatedByPersonnelId")
                         .HasColumnType("int");
@@ -372,6 +371,9 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("TourConfirmationTime")
                         .HasColumnType("datetime2");
 
@@ -460,6 +462,9 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<int>("RoomNumber")
                         .HasColumnType("int");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("UpdatedByPersonnelId")
                         .HasColumnType("int");
 
@@ -516,6 +521,9 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<decimal>("RefundedAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
 
                     b.Property<decimal>("TotalRevenue")
                         .HasPrecision(18, 2)
@@ -611,6 +619,9 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<string>("TemplateName")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
 
                     b.Property<string>("To")
                         .IsRequired()
@@ -712,6 +723,9 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<string>("TemplateVariables")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<string>("To")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -780,6 +794,9 @@ namespace GuestFlow.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -873,6 +890,9 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("UpdatedByPersonnelId")
                         .HasColumnType("int");
 
@@ -965,6 +985,9 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<string>("RoomNumber")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
 
                     b.Property<int?>("UpdatedByPersonnelId")
                         .HasColumnType("int");
@@ -1065,6 +1088,9 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("UpdatedByPersonnelId")
                         .HasColumnType("int");
 
@@ -1121,6 +1147,9 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<string>("Source")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
 
                     b.Property<int?>("UpdatedByPersonnelId")
                         .HasColumnType("int");
@@ -1200,6 +1229,9 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(1)
                         .HasColumnType("int");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("UpdatedByPersonnelId")
                         .HasColumnType("int");
 
@@ -1255,6 +1287,9 @@ namespace GuestFlow.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
 
                     b.Property<int?>("UpdatedByPersonnelId")
                         .HasColumnType("int");
@@ -1335,6 +1370,9 @@ namespace GuestFlow.Persistence.Migrations
                         .HasColumnType("int");
 
                     b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TenantId")
                         .HasColumnType("int");
 
                     b.Property<decimal>("TotalAmount")
@@ -1419,6 +1457,9 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<decimal>("TotalCost")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
@@ -1484,6 +1525,9 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<string>("Status")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
 
                     b.Property<int?>("UpdatedByPersonnelId")
                         .HasColumnType("int");
@@ -1566,6 +1610,9 @@ namespace GuestFlow.Persistence.Migrations
 
                     b.Property<DateTime?>("ReversedDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
 
                     b.Property<decimal>("TotalCredit")
                         .HasPrecision(18, 2)
@@ -1652,6 +1699,9 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<int?>("ReferenceId")
                         .HasColumnType("int");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("UpdatedByPersonnelId")
                         .HasColumnType("int");
 
@@ -1702,6 +1752,9 @@ namespace GuestFlow.Persistence.Migrations
                         .HasColumnType("bit");
 
                     b.Property<int?>("PersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TenantId")
                         .HasColumnType("int");
 
                     b.Property<int?>("UpdatedByPersonnelId")
@@ -1781,6 +1834,9 @@ namespace GuestFlow.Persistence.Migrations
 
                     b.Property<string>("TemplateName")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -1873,6 +1929,9 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<string>("TemplateName")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
 
                     b.Property<int>("TriggerCount")
                         .HasColumnType("int");
@@ -1971,6 +2030,9 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<string>("TransactionId")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
@@ -2058,6 +2120,9 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("UpdatedByPersonnelId")
                         .HasColumnType("int");
 
@@ -2103,6 +2168,9 @@ namespace GuestFlow.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
 
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("bit");
@@ -2171,6 +2239,9 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<int?>("RequestedByPersonnelId")
                         .HasColumnType("int");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("UpdatedByPersonnelId")
                         .HasColumnType("int");
 
@@ -2225,6 +2296,9 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Token")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -2263,6 +2337,12 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<DateTime?>("CancelledDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("CheckInDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("CheckOutDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime?>("ConfirmedDate")
                         .HasColumnType("datetime2");
 
@@ -2298,6 +2378,9 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int?>("RoomTypeId")
+                        .HasColumnType("int");
+
                     b.Property<int>("ServiceId")
                         .HasColumnType("int");
 
@@ -2307,6 +2390,9 @@ namespace GuestFlow.Persistence.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TenantId")
                         .HasColumnType("int");
 
                     b.Property<decimal>("TotalAmount")
@@ -2390,6 +2476,9 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("UpdatedByPersonnelId")
                         .HasColumnType("int");
 
@@ -2462,6 +2551,9 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("TransferId")
                         .HasColumnType("int");
 
@@ -2514,6 +2606,9 @@ namespace GuestFlow.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
 
                     b.Property<int?>("UpdatedByPersonnelId")
                         .HasColumnType("int");
@@ -2570,6 +2665,9 @@ namespace GuestFlow.Persistence.Migrations
 
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
 
                     b.Property<int?>("UpdatedByPersonnelId")
                         .HasColumnType("int");
@@ -2645,6 +2743,9 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<DateTime?>("StartDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<decimal>("TotalPrice")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
@@ -2684,6 +2785,9 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<bool>("MainteneceMode")
                         .HasColumnType("bit");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("UpdatedByPersonnelId")
                         .HasColumnType("int");
 
@@ -2700,7 +2804,8 @@ namespace GuestFlow.Persistence.Migrations
                             Id = 1,
                             CreatedDate = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             IsDeleted = false,
-                            MainteneceMode = false
+                            MainteneceMode = false,
+                            TenantId = 1
                         });
                 });
 
@@ -2779,6 +2884,9 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("UpdatedByPersonnelId")
                         .HasColumnType("int");
 
@@ -2839,6 +2947,9 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<string>("PhoneNumber")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -2888,6 +2999,9 @@ namespace GuestFlow.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
 
                     b.Property<int?>("UpdatedByPersonnelId")
                         .HasColumnType("int");
@@ -3102,6 +3216,9 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("TransferDate")
                         .HasColumnType("datetime2");
 
@@ -3193,6 +3310,9 @@ namespace GuestFlow.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Type")
                         .IsRequired()
@@ -3300,6 +3420,9 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<string>("TemplateParameters")
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
 
                     b.Property<int?>("UpdatedByPersonnelId")
                         .HasColumnType("int");
@@ -3527,6 +3650,9 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("TourCategory")
                         .HasColumnType("int");
 
@@ -3593,6 +3719,72 @@ namespace GuestFlow.Persistence.Migrations
                     b.HasIndex("TourDate", "Status", "IsDeleted");
 
                     b.ToTable("YachtTours");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Finance.PricingRuleEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AdjustmentType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("AdjustmentValue")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ConditionValue")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RuleName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("RuleType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("Priority");
+
+                    b.ToTable("PricingRules", (string)null);
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Intelligence.GuestBehaviorEntity", b =>
@@ -3664,6 +3856,9 @@ namespace GuestFlow.Persistence.Migrations
 
                     b.Property<bool>("SyncedToGraph")
                         .HasColumnType("bit");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
 
                     b.Property<string>("TimeOfDay")
                         .HasMaxLength(20)
@@ -3751,6 +3946,9 @@ namespace GuestFlow.Persistence.Migrations
 
                     b.Property<bool>("SyncedToGraph")
                         .HasColumnType("bit");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
 
                     b.Property<int?>("UpdatedByPersonnelId")
                         .HasColumnType("int");
@@ -3842,6 +4040,9 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<bool>("SyncedToGraph")
                         .HasColumnType("bit");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("UpdatedByPersonnelId")
                         .HasColumnType("int");
 
@@ -3876,6 +4077,9 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<int?>("CreatedByPersonnelId")
                         .HasColumnType("int");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("UpdatedByPersonnelId")
                         .HasColumnType("int");
 
@@ -3889,6 +4093,80 @@ namespace GuestFlow.Persistence.Migrations
                     b.ToTable("GuestCityTours");
                 });
 
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Operations.GuestReview", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CleanlinessRating")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Comment")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("CreatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("GuestId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsApproved")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ReservationId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ResponseDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("ServiceId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ServiceQualityRating")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ServiceType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("StaffRating")
+                        .HasColumnType("int");
+
+                    b.Property<string>("StaffResponse")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("UpdatedByPersonnelId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuestId");
+
+                    b.HasIndex("ReservationId");
+
+                    b.ToTable("GuestReviews");
+                });
+
             modelBuilder.Entity("GuestFlow.Domain.Entities.Operations.GuestYachtTour", b =>
                 {
                     b.Property<int>("GuestId")
@@ -3898,6 +4176,9 @@ namespace GuestFlow.Persistence.Migrations
                         .HasColumnType("int");
 
                     b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TenantId")
                         .HasColumnType("int");
 
                     b.HasKey("GuestId", "YachtTourId");
@@ -3951,6 +4232,9 @@ namespace GuestFlow.Persistence.Migrations
 
                     b.Property<decimal?>("PriceMultiplier")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
 
                     b.Property<int?>("UpdatedByPersonnelId")
                         .HasColumnType("int");
@@ -4018,6 +4302,9 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<string>("SyncErrorMessage")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("TokenExpiresAt")
                         .HasColumnType("datetime2");
 
@@ -4080,6 +4367,9 @@ namespace GuestFlow.Persistence.Migrations
 
                     b.Property<DateTime?>("SentAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
 
                     b.Property<string>("UpdateStatus")
                         .HasColumnType("nvarchar(max)");
@@ -4166,6 +4456,9 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
 
                     b.Property<decimal>("TotalPrice")
                         .HasColumnType("decimal(18,2)");
@@ -4270,6 +4563,9 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("UpdatedByPersonnelId")
                         .HasColumnType("int");
 
@@ -4336,6 +4632,9 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<string>("SyncStatus")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
 
                     b.Property<int?>("UpdatedByPersonnelId")
                         .HasColumnType("int");
@@ -4429,6 +4728,9 @@ namespace GuestFlow.Persistence.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("TokenExpiresAt")
                         .HasColumnType("datetime2");
 
@@ -4491,6 +4793,9 @@ namespace GuestFlow.Persistence.Migrations
                     b.Property<string>("SyncStatus")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
 
                     b.Property<int?>("UpdatedByPersonnelId")
                         .HasColumnType("int");
@@ -4570,6 +4875,9 @@ namespace GuestFlow.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("TenantId")
+                        .HasColumnType("int");
 
                     b.Property<int?>("UpdatedByPersonnelId")
                         .HasColumnType("int");
@@ -4688,6 +4996,9 @@ namespace GuestFlow.Persistence.Migrations
                         .HasColumnType("int");
 
                     b.Property<int>("SupplierId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TenantId")
                         .HasColumnType("int");
 
                     b.Property<int?>("TransferId")
@@ -4869,7 +5180,7 @@ namespace GuestFlow.Persistence.Migrations
                     b.HasOne("GuestFlow.Domain.Entities.Core.PersonnelEntity", "LockedByPersonnel")
                         .WithMany()
                         .HasForeignKey("LockedByPersonnelId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("GuestFlow.Domain.Entities.Core.PersonnelEntity", "Personnel")
                         .WithMany("Invoices")
@@ -4925,17 +5236,17 @@ namespace GuestFlow.Persistence.Migrations
                     b.HasOne("GuestFlow.Domain.Entities.Core.PersonnelEntity", "CreatedByPersonnel")
                         .WithMany()
                         .HasForeignKey("CreatedByPersonnelId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("GuestFlow.Domain.Entities.Core.PersonnelEntity", "PostedByPersonnel")
                         .WithMany()
                         .HasForeignKey("PostedByPersonnelId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("GuestFlow.Domain.Entities.Core.PersonnelEntity", "ReversedByPersonnel")
                         .WithMany()
                         .HasForeignKey("ReversedByPersonnelId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("CreatedByPersonnel");
 
@@ -4970,7 +5281,7 @@ namespace GuestFlow.Persistence.Migrations
                     b.HasOne("GuestFlow.Domain.Entities.Core.CityTourEntity", "CityTour")
                         .WithMany()
                         .HasForeignKey("CityTourId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("GuestFlow.Domain.Entities.Core.PersonnelEntity", "CollectedByPersonnel")
                         .WithMany()
@@ -4987,7 +5298,7 @@ namespace GuestFlow.Persistence.Migrations
                     b.HasOne("GuestFlow.Domain.Entities.Core.InvoicesEntity", "Invoice")
                         .WithMany()
                         .HasForeignKey("InvoiceId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("GuestFlow.Domain.Entities.Core.TransferEntity", null)
                         .WithMany("Payments")
@@ -4996,12 +5307,12 @@ namespace GuestFlow.Persistence.Migrations
                     b.HasOne("GuestFlow.Domain.Entities.Core.TransferEntity", "Transfer")
                         .WithMany()
                         .HasForeignKey("TransferId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("GuestFlow.Domain.Entities.Core.YachtTourEntity", "YachtTour")
                         .WithMany()
                         .HasForeignKey("YachtTourId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("CityTour");
 
@@ -5345,6 +5656,24 @@ namespace GuestFlow.Persistence.Migrations
                     b.Navigation("CityTour");
 
                     b.Navigation("Guest");
+                });
+
+            modelBuilder.Entity("GuestFlow.Domain.Entities.Operations.GuestReview", b =>
+                {
+                    b.HasOne("GuestFlow.Domain.Entities.Core.GuestEntity", "Guest")
+                        .WithMany()
+                        .HasForeignKey("GuestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GuestFlow.Domain.Entities.Core.ReservationEntity", "Reservation")
+                        .WithMany()
+                        .HasForeignKey("ReservationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Guest");
+
+                    b.Navigation("Reservation");
                 });
 
             modelBuilder.Entity("GuestFlow.Domain.Entities.Operations.GuestYachtTour", b =>

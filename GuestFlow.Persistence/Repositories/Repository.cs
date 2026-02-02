@@ -5,12 +5,13 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using GuestFlow.Domain.Entities.Core;
 using GuestFlow.Domain.Entities.Repositories;
+using GuestFlow.Domain.Entities.Interfaces;
 using GuestFlow.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
 
 namespace GuestFlow.Persistence.Repositories
 {
-    public class Repository<TEntity> : IRepository<TEntity> where TEntity : BaseEntity
+    public class Repository<TEntity> : IRepository<TEntity> where TEntity : BaseEntity, ISoftDelete
     {
         private readonly GuestFlowDbContext _context;
         private readonly DbSet<TEntity> _dbSet;

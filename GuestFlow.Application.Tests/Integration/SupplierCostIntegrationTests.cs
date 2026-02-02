@@ -26,7 +26,10 @@ namespace GuestFlow.Application.Tests.Integration
                 .UseInMemoryDatabase($"SupplierCostTest_{Guid.NewGuid()}")
                 .Options;
 
-            _context = new GuestFlowDbContext(options);
+            var tenantProviderMock = new Mock<GuestFlow.Persistence.MultiTenancy.ITenantProvider>();
+            tenantProviderMock.Setup(x => x.TenantId).Returns(1);
+
+            _context = new GuestFlowDbContext(options, tenantProviderMock.Object);
 
             // Seed supplier
             var supplier = new Supplier

@@ -106,9 +106,11 @@ namespace GuestFlow.Application.Operations.PMS
                 var response = await CallApiAsync<object>("/api/v1/health", HttpMethod.Get);
                 return response != null;
             }
-            catch
+            catch (Exception ex)
             {
-                return false;
+                _logger.LogError(ex, "Opera PMS Connection Test Failed for Integration {IntegrationId}", _integration.Id);
+                // Re-throw so the controller can see the error
+                throw new Exception($"Opera PMS Connection Failed: {ex.Message}", ex); 
             }
         }
 
@@ -275,6 +277,13 @@ namespace GuestFlow.Application.Operations.PMS
                 _logger.LogError(ex, "Failed to get folios from Opera");
                 throw;
             }
+        }
+
+        public override Task<List<PMSRoomType>> GetRoomTypesAsync()
+        {
+            // TODO: Implement actual API call to Opera
+            _logger.LogWarning("GetRoomTypesAsync not implemented for Opera, returning empty list.");
+            return Task.FromResult(new List<PMSRoomType>());
         }
 
         // Mapping methods - Opera API response'larını PMS model'lerine map eder

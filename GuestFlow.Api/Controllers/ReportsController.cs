@@ -34,6 +34,8 @@ namespace GuestFlow.Api.Controllers
         /// </summary>
         /// <param name="startDate">Başlangıç tarihi (opsiyonel)</param>
         /// <param name="endDate">Bitiş tarihi (opsiyonel)</param>
+        /// <param name="serviceType">Hizmet tipi (opsiyonel)</param>
+        /// <param name="personnelId">Personel ID (opsiyonel)</param>
         /// <returns>Gelir özet bilgileri</returns>
         /// <response code="200">Gelir özeti başarıyla getirildi</response>
         /// <response code="500">Sunucu hatası</response>
@@ -121,6 +123,7 @@ namespace GuestFlow.Api.Controllers
         /// </summary>
         /// <param name="startDate">Başlangıç tarihi (opsiyonel)</param>
         /// <param name="endDate">Bitiş tarihi (opsiyonel)</param>
+        /// <param name="personnelId">Personel ID (opsiyonel)</param>
         /// <returns>Transfer istatistik verileri</returns>
         /// <response code="200">Transfer istatistikleri başarıyla getirildi</response>
         /// <response code="500">Sunucu hatası</response>
@@ -346,6 +349,11 @@ namespace GuestFlow.Api.Controllers
         /// <summary>
         /// Personel performans raporu
         /// </summary>
+        /// <param name="startDate">Başlangıç tarihi (opsiyonel)</param>
+        /// <param name="endDate">Bitiş tarihi (opsiyonel)</param>
+        /// <param name="serviceType">Hizmet tipi (opsiyonel)</param>
+        /// <param name="personnelId">Personel ID (opsiyonel)</param>
+        /// <returns>Personel performans verileri</returns>
         [HttpGet("personnel-performance")]
         public async Task<IActionResult> GetPersonnelPerformance(
             [FromQuery] DateTime? startDate = null,

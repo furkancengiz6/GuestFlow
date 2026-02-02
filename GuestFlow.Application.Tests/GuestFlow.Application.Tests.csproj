@@ -17,6 +17,7 @@
     </PackageReference>
     <PackageReference Include="FluentAssertions" Version="8.8.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="MockQueryable.Moq" Version="7.0.3" />
     <PackageReference Include="Moq" Version="4.20.72" />
     <PackageReference Include="System.IO.Packaging" Version="8.0.1" />
     <PackageReference Include="System.Text.Json" Version="8.0.5" />
@@ -64,14 +65,14 @@
     <Compile Include="Integration\Crud\TransfersCrudTests.cs" />
     <Compile Include="Integration\Crud\CityToursCrudTests.cs" />
     <Compile Include="Integration\Crud\YachtToursCrudTests.cs" />
-    <!-- Analytics Tests -->
     <Compile Include="Operations\Analytics\AnalyticsServiceTests.cs" />
-    <!-- Reports Tests -->
     <Compile Include="Operations\Reports\ReportsServiceTests.cs" />
-    <!-- Privacy Tests -->
     <Compile Include="Operations\Privacy\PIIManagementServiceTests.cs" />
-    <!-- Currency Tests -->
     <Compile Include="Operations\Currency\ExchangeRateServiceTests.cs" />
+    
+    <!-- Finance Tests -->
+    <Compile Include="Operations\Finance\Pricing\DynamicPricingServiceTests.cs" />
+    <Compile Include="Operations\Finance\Revenue\RevenueServiceTests.cs" />
   </ItemGroup>
 
 </Project>

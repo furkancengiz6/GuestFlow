@@ -42,7 +42,11 @@ using GuestFlow.Application.Operations.Validation;
 using GuestFlow.Application.Operations.Currency;
 using GuestFlow.Application.Operations.Supplier;
 using GuestFlow.Application.Operations.Profitability;
+using GuestFlow.Application.Operations.Finance.Pricing;
+using GuestFlow.Application.Operations.Finance.Revenue;
 using GuestFlow.Application.Operations.OTA;
+using GuestFlow.Application.Operations.OTA.BookingDotCom;
+using GuestFlow.Application.Operations.OTA.Expedia;
 using GuestFlow.Application.Operations.Reservation;
 using GuestFlow.Application.Operations.Payment;
 using GuestFlow.Application.Operations.Sms;
@@ -59,6 +63,7 @@ using GuestFlow.Application.Operations.Intelligence.Behavioral;
 using GuestFlow.Application.Operations.Intelligence.Predictive;
 using GuestFlow.Application.Operations.Intelligence.Proactive;
 using GuestFlow.Application.Operations.Configuration;
+using GuestFlow.Application.Operations.Review;
 using GuestFlow.Api.Hubs;
 using GuestFlow.Api.Services;
 using GuestFlow.Api.HealthChecks;
@@ -71,6 +76,7 @@ using GuestFlow.Domain.UnitOfWork;
 using GuestFlow.Persistence.Context;
 using GuestFlow.Persistence.Repositories;
 using GuestFlow.Persistence.UnitOfWork;
+using GuestFlow.Persistence.MultiTenancy;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
@@ -120,6 +126,7 @@ builder.Services.AddControllers(options =>
 {
     // Global olarak ValidationActionFilter ekle
     options.Filters.Add<ValidationActionFilter>();
+    options.Filters.Add<TenantFilter>();
 })
     .AddJsonOptions(options =>
     {
@@ -453,6 +460,7 @@ builder.Services.AddDbContext<GuestFlowDbContext>((serviceProvider, options) =>
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));//generic typeof
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<ITenantProvider, TenantProvider>();
 
 
 builder.Services.AddScoped<IVehicleService, VehicleManager>();
@@ -475,15 +483,24 @@ builder.Services.AddScoped<ISupplierService, SupplierManager>();
 builder.Services.AddScoped<IProfitabilityService, ProfitabilityService>();
 
 // OTA Integration services
+builder.Services.AddScoped<IOTAAdapterFactory, OTAAdapterFactory>();
 builder.Services.AddScoped<IOTAIntegrationService, OTAIntegrationService>();
 builder.Services.AddScoped<IOTAChannelManagerService, OTAChannelManagerService>();
 builder.Services.AddScoped<IOTAReservationMappingService, OTAReservationMappingService>();
+builder.Services.AddScoped<IBookingDotComService, BookingDotComService>();
+builder.Services.AddScoped<IExpediaService, ExpediaService>();
 
 // PMS Integration services
 builder.Services.AddScoped<GuestFlow.Application.Operations.PMS.IPMSIntegrationService, GuestFlow.Application.Operations.PMS.PMSIntegrationService>();
 builder.Services.AddScoped<GuestFlow.Application.Operations.PMS.IPMSSyncService, GuestFlow.Application.Operations.PMS.PMSSyncService>();
 builder.Services.AddScoped<GuestFlow.Application.Operations.PMS.IPMSWebhookProcessor, GuestFlow.Application.Operations.PMS.PMSWebhookProcessor>();
 builder.Services.AddScoped<GuestFlow.Application.Operations.Communication.ISmartNotificationService, GuestFlow.Application.Operations.Communication.SmartNotificationService>();
+
+// Mock PMS Webhook Simulator (Development only)
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddScoped<GuestFlow.Application.Operations.PMS.IMockPMSWebhookSimulator, GuestFlow.Application.Operations.PMS.MockPMSWebhookSimulator>();
+}
 
 // Intelligence Layer - Graph Database (Neo4j)
 builder.Services.AddSingleton<INeo4jService, Neo4jService>();
@@ -493,6 +510,15 @@ builder.Services.AddScoped<ISentimentAnalysisService, SentimentAnalysisService>(
 builder.Services.AddScoped<IRelationshipIntelligenceService, RelationshipIntelligenceService>();
 builder.Services.AddScoped<IPredictiveIntelligenceService, PredictiveIntelligenceService>();
 builder.Services.AddScoped<IProactiveIntelligenceService, ProactiveIntelligenceService>();
+builder.Services.AddScoped<IPredictiveAnalyticsService, PredictiveAnalyticsService>();
+
+// AI Smart Concierge Services
+builder.Services.AddScoped<GuestFlow.Application.Operations.AI.ContextRetriever>();
+builder.Services.AddScoped<GuestFlow.Application.Operations.AI.IPIIMaskingService, GuestFlow.Application.Operations.AI.PIIMaskingService>();
+builder.Services.AddScoped<GuestFlow.Application.Operations.AI.IAICommandHandler, GuestFlow.Application.Operations.AI.AICommandHandler>();
+builder.Services.AddScoped<GuestFlow.Application.Operations.AI.IAIAssistantService, GuestFlow.Application.Operations.AI.OpenAIAssistantAdapter>();
+builder.Services.AddScoped<GuestFlow.Application.Operations.AI.IAIChatService, GuestFlow.Application.Operations.AI.AIChatService>();
+
 builder.Services.AddHostedService<GuestFlow.Application.Operations.PMS.PMSPollingBackgroundService>();
 // Accounting / Journal service
 builder.Services.AddScoped<GuestFlow.Application.Operations.Accounting.IJournalService, GuestFlow.Application.Operations.Accounting.JournalService>();
@@ -564,12 +590,15 @@ builder.Services.AddScoped<IExportService, ExportService>();
 builder.Services.AddScoped<IImportService, ImportService>();
 builder.Services.AddScoped<ICalendarService, CalendarService>();
 builder.Services.AddScoped<IPriceCalculationService, PriceCalculationService>();
+builder.Services.AddScoped<IDynamicPricingService, DynamicPricingService>();
+builder.Services.AddScoped<IRevenueService, RevenueService>();
 builder.Services.AddScoped<GuestFlow.Application.Operations.Currency.IExchangeRateService, GuestFlow.Application.Operations.Currency.ExchangeRateService>();
 builder.Services.AddScoped<IDateValidationService, DateValidationService>();
 builder.Services.AddScoped<IInvoiceCreationService, InvoiceCreationService>();
 builder.Services.AddScoped<IConfigurationService, ConfigurationService>();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<GuestFlow.Application.Operations.Cache.ICacheService, GuestFlow.Application.Operations.Cache.InMemoryCacheService>();
+builder.Services.AddScoped<IReviewService, ReviewManager>();
 builder.Services.AddScoped<InputValidationService>(); // SECURITY: Input validation service
 builder.Services.AddScoped<DailyRevenueJob>();
 builder.Services.AddHostedService<DailyRevenueBackgroundService>(); //
@@ -636,6 +665,7 @@ app.MapControllers();
 
 // SignalR Hub mapping
 app.MapHub<GuestFlow.Api.Hubs.NotificationsHub>("/hubs/notifications");
+app.MapHub<GuestFlow.Api.Hubs.AIChatHub>("/hubs/ai-chat");
 
 // Development ortamında demo veri oluştur
 // Database seeding is controlled by configuration for security

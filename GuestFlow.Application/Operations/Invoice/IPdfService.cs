@@ -9,6 +9,11 @@ namespace GuestFlow.Application.Operations.Invoice
         /// Fatura için PDF oluşturur ve dosya yolunu döndürür
         /// </summary>
         Task<string> GenerateInvoicePdfAsync(InvoicesEntity invoice, GuestEntity guest, PersonnelEntity? personnel = null);
+
+        /// <summary>
+        /// Haftalık operasyonel rapor için PDF oluşturur
+        /// </summary>
+        Task<string> GenerateWeeklyReportPdfAsync(object reportData);
     }
 }
 

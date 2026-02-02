@@ -11,7 +11,13 @@ namespace GuestFlow.Persistence.Context
             optionsBuilder.UseSqlServer("Server=localhost\\SQLEXPRESS;Database=GuestFlowDb;Trusted_Connection=True;TrustServerCertificate=True;",
                 x => x.MigrationsAssembly("GuestFlow.Persistence"));
 
-            return new GuestFlowDbContext(optionsBuilder.Options);
+            return new GuestFlowDbContext(optionsBuilder.Options, new DesignTimeTenantProvider());
+        }
+
+        private class DesignTimeTenantProvider : GuestFlow.Persistence.MultiTenancy.ITenantProvider
+        {
+             public int TenantId => 1;
+             public void SetTenantId(int tenantId) { }
         }
     }
 }

@@ -1,4 +1,5 @@
 using GuestFlow.Domain.Entities.Core;
+using GuestFlow.Domain.Entities.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace GuestFlow.Domain.Entities.Repositories
 {
-    public interface IRepository<TEntity> where TEntity : BaseEntity
+    public interface IRepository<TEntity> where TEntity : BaseEntity, ISoftDelete
     {
         Task AddAsync(TEntity entity);
         Task DeleteAsync(TEntity entity);

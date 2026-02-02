@@ -12,7 +12,7 @@ namespace GuestFlow.Domain.Entities.Core
         /// <summary>
         /// Ödeme numarası (benzersiz)
         /// </summary>
-        public string PaymentNumber { get; set; }
+        public string PaymentNumber { get; set; } = string.Empty;
 
         /// <summary>
         /// Fatura ID (opsiyonel - ödeme fatura olmadan da kaydedilebilir)
@@ -101,8 +101,8 @@ namespace GuestFlow.Domain.Entities.Core
 
         // Relational Properties
         public virtual InvoicesEntity? Invoice { get; set; }
-        public virtual GuestEntity Guest { get; set; }
-        public virtual PersonnelEntity CollectedByPersonnel { get; set; }
+        public virtual GuestEntity Guest { get; set; } = null!;
+        public virtual PersonnelEntity CollectedByPersonnel { get; set; } = null!;
         public virtual TransferEntity? Transfer { get; set; }
         public virtual CityTourEntity? CityTour { get; set; }
         public virtual YachtTourEntity? YachtTour { get; set; }
@@ -167,7 +167,7 @@ namespace GuestFlow.Domain.Entities.Core
             builder.HasOne(p => p.Invoice)
                 .WithMany()
                 .HasForeignKey(p => p.InvoiceId)
-                .OnDelete(DeleteBehavior.SetNull)
+                .OnDelete(DeleteBehavior.Restrict) // Changed from SetNull
                 .IsRequired(false);
 
             // Guest - zorunlu
@@ -186,21 +186,21 @@ namespace GuestFlow.Domain.Entities.Core
             builder.HasOne(p => p.Transfer)
                 .WithMany()
                 .HasForeignKey(p => p.TransferId)
-                .OnDelete(DeleteBehavior.SetNull)
+                .OnDelete(DeleteBehavior.Restrict) // Changed from SetNull
                 .IsRequired(false);
 
             // CityTour - opsiyonel
             builder.HasOne(p => p.CityTour)
                 .WithMany()
                 .HasForeignKey(p => p.CityTourId)
-                .OnDelete(DeleteBehavior.SetNull)
+                .OnDelete(DeleteBehavior.Restrict) // Changed from SetNull
                 .IsRequired(false);
 
             // YachtTour - opsiyonel
             builder.HasOne(p => p.YachtTour)
                 .WithMany()
                 .HasForeignKey(p => p.YachtTourId)
-                .OnDelete(DeleteBehavior.SetNull)
+                .OnDelete(DeleteBehavior.Restrict) // Changed from SetNull
                 .IsRequired(false);
 
             // Index'ler - sık kullanılan sorgular için

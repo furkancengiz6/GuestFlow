@@ -88,7 +88,6 @@ namespace GuestFlow.Domain.Entities.Core
         // Status and control fields
         public string Status { get; set; } = "Pending"; // Tour status
         public bool IsVipGroup { get; set; } = false; // VIP group flag
-        public bool IsDeleted { get; set; } = false; // Soft delete flag
 
         // Internal coordination fields
         public string? ConciergeInternalNotes { get; set; } // For concierge staff only

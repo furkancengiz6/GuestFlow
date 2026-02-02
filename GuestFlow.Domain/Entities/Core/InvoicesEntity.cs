@@ -38,9 +38,9 @@ namespace GuestFlow.Domain.Entities.Core
         public int InvoiceNumber { get; set; }
         public DateTime IssueDate { get; set; }
         public decimal TotalAmount { get; set; }
-        public string Currency { get; set; }
+        public string Currency { get; set; } = string.Empty;
         public string Notes { get; set; } = string.Empty;
-        public string PdfUrl { get; set; }
+        public string PdfUrl { get; set; } = string.Empty;
         public int GuestId { get; set; }
         public int? PersonnelId { get; set; }
         public int? LockedByPersonnelId { get; set; }
@@ -80,8 +80,8 @@ namespace GuestFlow.Domain.Entities.Core
         }
 
         // Relational Properties
-        public virtual GuestEntity Guest { get; set; }
-        public virtual PersonnelEntity Personnel { get; set; }
+        public virtual GuestEntity Guest { get; set; } = null!;
+        public virtual PersonnelEntity Personnel { get; set; } = null!;
         public virtual PersonnelEntity? LockedByPersonnel { get; set; }
         public virtual ICollection<InvoiceItemEntity> InvoiceItems { get; set; } = new List<InvoiceItemEntity>();
     }
@@ -105,7 +105,7 @@ namespace GuestFlow.Domain.Entities.Core
             builder.HasOne(i => i.LockedByPersonnel)
                 .WithMany()
                 .HasForeignKey(i => i.LockedByPersonnelId)
-                .OnDelete(DeleteBehavior.SetNull);
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

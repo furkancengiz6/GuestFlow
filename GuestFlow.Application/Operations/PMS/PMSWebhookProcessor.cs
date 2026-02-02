@@ -104,7 +104,11 @@ namespace GuestFlow.Application.Operations.PMS
                         integrationId, webhookData.PMSGuestId);
                     
                     // Sync guest via PMSSyncService
-                    // await _pmsSyncService.SyncGuestAsync(integrationId, guestResponse.Data);
+                    var syncResult = await _pmsSyncService.SyncGuestAsync(integrationId, guestResponse.Data);
+                    if (!syncResult.Success)
+                    {
+                        return syncResult;
+                    }
                 }
 
                 return ApiResponse<bool>.SuccessResponse(true, "Guest webhook processed successfully");
@@ -138,7 +142,11 @@ namespace GuestFlow.Application.Operations.PMS
                 if (reservationResponse.Success && reservationResponse.Data != null)
                 {
                     // PMSSyncService'e delegate et
-                    // await _pmsSyncService.SyncReservationAsync(integrationId, reservationResponse.Data);
+                    var syncResult = await _pmsSyncService.SyncReservationAsync(integrationId, reservationResponse.Data);
+                    if (!syncResult.Success)
+                    {
+                        return syncResult;
+                    }
                 }
 
                 return ApiResponse<bool>.SuccessResponse(true, "Reservation webhook processed successfully");
@@ -174,7 +182,11 @@ namespace GuestFlow.Application.Operations.PMS
                     if (reservationResponse.Success && reservationResponse.Data != null)
                     {
                         // PMSSyncService'e delegate et
-                        // await _pmsSyncService.SyncReservationAsync(integrationId, reservationResponse.Data);
+                        var syncResult = await _pmsSyncService.SyncReservationAsync(integrationId, reservationResponse.Data);
+                        if (!syncResult.Success)
+                        {
+                            return syncResult;
+                        }
                     }
                 }
 
@@ -209,7 +221,11 @@ namespace GuestFlow.Application.Operations.PMS
                 if (roomStatusResponse.Success && roomStatusResponse.Data != null)
                 {
                     // PMSSyncService'e delegate et
-                    // await _pmsSyncService.SyncRoomStatusAsync(integrationId, roomStatusResponse.Data);
+                    var syncResult = await _pmsSyncService.SyncRoomStatusAsync(integrationId, roomStatusResponse.Data);
+                    if (!syncResult.Success)
+                    {
+                        return syncResult;
+                    }
                 }
 
                 return ApiResponse<bool>.SuccessResponse(true, "Room status webhook processed successfully");
@@ -243,7 +259,11 @@ namespace GuestFlow.Application.Operations.PMS
                 if (folioResponse.Success && folioResponse.Data != null)
                 {
                     // PMSSyncService'e delegate et
-                    // await _pmsSyncService.SyncFolioAsync(integrationId, folioResponse.Data);
+                    var syncResult = await _pmsSyncService.SyncFolioAsync(integrationId, folioResponse.Data);
+                    if (!syncResult.Success)
+                    {
+                        return syncResult;
+                    }
                 }
 
                 return ApiResponse<bool>.SuccessResponse(true, "Folio webhook processed successfully");

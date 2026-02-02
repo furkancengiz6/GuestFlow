@@ -3,6 +3,7 @@ using System.Linq;
 using System.Linq.Expressions;
 
 using GuestFlow.Domain.Entities.Core;
+using GuestFlow.Domain.Entities.Interfaces;
 
 namespace GuestFlow.Domain.Entities.Repositories
 {
@@ -10,7 +11,7 @@ namespace GuestFlow.Domain.Entities.Repositories
     /// Specification pattern interface
     /// Karmaşık sorgular için kullanılır
     /// </summary>
-    public interface ISpecification<TEntity> where TEntity : BaseEntity
+    public interface ISpecification<TEntity> where TEntity : BaseEntity, ISoftDelete
     {
         /// <summary>
         /// Where koşulu

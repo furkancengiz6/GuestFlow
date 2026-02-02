@@ -81,3 +81,14 @@ export const useUpcomingServices = (startDate?: string, endDate?: string) => {
   })
 }
 
+// Revenue Dashboard Hook - ADR, RevPAR, Occupancy Rate
+import { revenueService } from '../services/revenueService'
+import type { RevenueDashboard } from '../types/revenue'
+
+export const useRevenueDashboard = (startDate?: string, endDate?: string) => {
+  return useQuery<RevenueDashboard>({
+    queryKey: ['revenue', 'dashboard', startDate, endDate],
+    queryFn: () => revenueService.getRevenueDashboard(startDate, endDate),
+    staleTime: 5 * 60 * 1000, // 5 dakika
+  })
+}

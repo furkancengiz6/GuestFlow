@@ -17,10 +17,8 @@ namespace GuestFlow.Domain.Entities.Core
         // Audit fields: Hybrid approach (ID + Snapshot)
         // ID for referential integrity and joins, Snapshot for historical accuracy
         public string? CreatedBy { get; set; } // Snapshot: User FullName at creation time (for historical accuracy)
-        public int? CreatedByPersonnelId { get; set; } // Foreign key: Personnel ID (for joins and referential integrity)
         public string? PostedBy { get; set; } // Snapshot: User FullName at posting time (for historical accuracy)
         public int? PostedByPersonnelId { get; set; } // Foreign key: Personnel ID who posted (for joins and referential integrity)
-        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
         public DateTime? PostedDate { get; set; } // When the journal was posted
 
         // Reversal tracking (unpost is NOT allowed - only reversal entries)

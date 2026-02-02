@@ -545,6 +545,11 @@ namespace GuestFlow.Application.Mappings
             // Notification Rules
             CreateMap<NotificationRuleEntity, NotificationRuleDto>();
             CreateMap<UpsertNotificationRuleDto, NotificationRuleEntity>();
+
+            // Review Mappings
+            CreateMap<GuestFlow.Domain.Entities.Operations.GuestReview, GuestFlow.Application.Operations.Review.GuestReviewDto>()
+                .ForMember(dest => dest.GuestFullName, opt => opt.MapFrom(src => src.Guest != null ? src.Guest.FullName : string.Empty));
+            CreateMap<GuestFlow.Application.Operations.Review.CreateGuestReviewDto, GuestFlow.Domain.Entities.Operations.GuestReview>();
         }
     }
 }

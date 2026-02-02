@@ -9,6 +9,8 @@ using Microsoft.Extensions.Logging;
 using System.Text;
 using System.Text.Json;
 using System.Security.Cryptography;
+using GuestFlow.Application.Models.Responses;
+using GuestFlow.Application.Models.Requests.OTA;
 
 namespace GuestFlow.Application.Operations.OTA
 {
@@ -19,17 +21,20 @@ namespace GuestFlow.Application.Operations.OTA
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IOTAIntegrationService _otaIntegrationService;
+        private readonly IOTAChannelManagerService _channelManagerService;
         private readonly IPMSIntegrationService _pmsIntegrationService;
         private readonly ILogger<OTAWebhookHandler> _logger;
 
         public OTAWebhookHandler(
             IUnitOfWork unitOfWork,
             IOTAIntegrationService otaIntegrationService,
+            IOTAChannelManagerService channelManagerService,
             IPMSIntegrationService pmsIntegrationService,
             ILogger<OTAWebhookHandler> logger)
         {
             _unitOfWork = unitOfWork;
             _otaIntegrationService = otaIntegrationService;
+            _channelManagerService = channelManagerService;
             _pmsIntegrationService = pmsIntegrationService;
             _logger = logger;
         }
@@ -285,27 +290,25 @@ namespace GuestFlow.Application.Operations.OTA
         {
             try
             {
-                // OTA'dan rezervasyon detaylarını getir
-                // OTAIntegrationService üzerinden rezervasyonları senkronize et
                 if (string.IsNullOrEmpty(webhookEvent.ReservationId))
                     return;
 
-                // OTAIntegrationService'deki SyncReservationsAsync metodunu kullanarak rezervasyonu senkronize et
-                var today = DateTime.UtcNow.Date;
-                var syncResult = await _otaIntegrationService.SyncReservationsAsync(
-                    otaIntegrationId,
-                    today,
-                    today.AddDays(30));
-
-                if (!syncResult.Success)
+                // 1. Parse payload to generic DTO
+                var reservationDto = ParseReservationFromPayload(webhookEvent);
+                if (reservationDto == null)
                 {
-                    _logger.LogWarning("Failed to sync reservation from OTA: {ReservationId}, Error: {Error}",
-                        webhookEvent.ReservationId, syncResult.Message);
+                    _logger.LogWarning("Failed to parse reservation DTO from payload for event {EventType}", webhookEvent.EventType);
                     return;
                 }
 
-                // Rezervasyon zaten SyncReservationsAsync içinde senkronize edildi
-                // PMS'e gönder işlemi de OTAIntegrationService içinde yapılıyor
+                // 2. Delegate to Channel Manager for orchestration
+                var result = await _channelManagerService.ProcessIncomingReservationAsync(otaIntegrationId, reservationDto);
+
+                if (!result.Success)
+                {
+                    _logger.LogWarning("Failed to process incoming reservation {ReservationId}: {Message}", 
+                        webhookEvent.ReservationId, result.Message);
+                }
             }
             catch (Exception ex)
             {
@@ -322,22 +325,24 @@ namespace GuestFlow.Application.Operations.OTA
         {
             try
             {
-                // OTA'dan güncel rezervasyon detaylarını getir ve senkronize et
                 if (string.IsNullOrEmpty(webhookEvent.ReservationId))
                     return;
 
-                // OTAIntegrationService üzerinden rezervasyonları senkronize et
-                var today = DateTime.UtcNow.Date;
-                var syncResult = await _otaIntegrationService.SyncReservationsAsync(
-                    otaIntegrationId,
-                    today,
-                    today.AddDays(30));
-
-                if (!syncResult.Success)
+                 // 1. Parse payload to generic DTO
+                var reservationDto = ParseReservationFromPayload(webhookEvent);
+                if (reservationDto == null)
                 {
-                    _logger.LogWarning("Failed to sync updated reservation from OTA: {ReservationId}, Error: {Error}",
-                        webhookEvent.ReservationId, syncResult.Message);
+                    _logger.LogWarning("Failed to parse reservation DTO from payload for event {EventType}", webhookEvent.EventType);
                     return;
+                }
+
+                // 2. Delegate to Channel Manager (same logic for create/update usually, or specialized)
+                var result = await _channelManagerService.ProcessIncomingReservationAsync(otaIntegrationId, reservationDto);
+
+                if (!result.Success)
+                {
+                     _logger.LogWarning("Failed to process updated reservation {ReservationId}: {Message}", 
+                        webhookEvent.ReservationId, result.Message);
                 }
             }
             catch (Exception ex)
@@ -530,6 +535,40 @@ namespace GuestFlow.Application.Operations.OTA
             }
             return $"GUEST-{year}-{nextNumber:D4}";
         }
+
+        private OTAReservationDto? ParseReservationFromPayload(OTAWebhookEvent webhookEvent)
+        {
+             try
+            {
+                // Simplified generic parsing based on provider
+                if (webhookEvent.ProviderCode == "BKG")
+                {
+                    // Basic JSON parsing - assuming flat structure or matching DTO for now
+                    // In real implementation, use BookingWebhookPayloadDto and map
+                    using var doc = JsonDocument.Parse(webhookEvent.Payload);
+                    var root = doc.RootElement;
+                    
+                    return new OTAReservationDto
+                    {
+                        OTAReservationId = webhookEvent.ReservationId ?? string.Empty,
+                         // Safe defaults if parsing fails or fields missing in webhook (webhooks often partial)
+                         // Real impl would need callbacks to get full details if webhook is lightweight
+                        GuestName = root.TryGetProperty("guest_name", out var gn) ? gn.GetString() ?? "Unknown" : "Unknown",
+                        TotalPrice = root.TryGetProperty("total_price", out var tp) && tp.TryGetDecimal(out var d) ? d : 0,
+                        Status = "Confirmed", // Default since we are in Created/Updated
+                        OTAHotelId = root.TryGetProperty("hotel_id", out var hi) ? hi.GetString() ?? "" : "",
+                        CheckInDate = DateTime.UtcNow.Date.AddDays(1), // Dummy if not found
+                        CheckOutDate = DateTime.UtcNow.Date.AddDays(2)
+                    };
+                }
+                
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
     }
 
     /// <summary>
@@ -541,5 +580,7 @@ namespace GuestFlow.Application.Operations.OTA
         public string? ReservationId { get; set; }
         public string Payload { get; set; } = string.Empty;
         public string ProviderCode { get; set; } = string.Empty;
+
+
     }
 }

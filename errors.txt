@@ -1,0 +1,21 @@
+﻿  GuestFlow.Domain -> C:\GuestFlow\GuestFlow.Domain\bin\Debug\net8.0\GuestFlow.Domain.dll
+  GuestFlow.Persistence -> C:\GuestFlow\GuestFlow.Persistence\bin\Debug\net8.0\GuestFlow.Persistence.dll
+  GuestFlow.Application -> C:\GuestFlow\GuestFlow.Application\bin\Debug\net8.0\GuestFlow.Application.dll
+  GuestFlow.Api -> C:\GuestFlow\GuestFlow.Api\bin\Debug\net8.0\GuestFlow.Api.dll
+C:\GuestFlow\GuestFlow.Application.Tests\Helpers\MockQueryableHelper.cs(54,24): warning CS8603: Possible null reference return. [C:\GuestFlow\GuestFlow.Application.Tests\GuestFlow.Application.Tests.csproj]
+C:\GuestFlow\GuestFlow.Application.Tests\Helpers\MockQueryableHelper.cs(71,33): warning CS8602: Dereference of a possibly null reference. [C:\GuestFlow\GuestFlow.Application.Tests\GuestFlow.Application.Tests.csproj]
+C:\GuestFlow\GuestFlow.Application.Tests\Helpers\MockQueryableHelper.cs(71,24): warning CS8600: Converting null literal or possible null value to non-nullable type. [C:\GuestFlow\GuestFlow.Application.Tests\GuestFlow.Application.Tests.csproj]
+C:\GuestFlow\GuestFlow.Application.Tests\Helpers\MockQueryableHelper.cs(71,24): warning CS8603: Possible null reference return. [C:\GuestFlow\GuestFlow.Application.Tests\GuestFlow.Application.Tests.csproj]
+C:\GuestFlow\GuestFlow.Application.Tests\Operations\Finance\Pricing\DynamicPricingServiceTests.cs(222,31): error CS0234: The type or namespace name 'ApiResponse' does not exist in the namespace 'GuestFlow.Application.Models.Responses' (are you missing an assembly reference?) [C:\GuestFlow\GuestFlow.Application.Tests\GuestFlow.Application.Tests.csproj]
+
+Build FAILED.
+
+C:\GuestFlow\GuestFlow.Application.Tests\Helpers\MockQueryableHelper.cs(54,24): warning CS8603: Possible null reference return. [C:\GuestFlow\GuestFlow.Application.Tests\GuestFlow.Application.Tests.csproj]
+C:\GuestFlow\GuestFlow.Application.Tests\Helpers\MockQueryableHelper.cs(71,33): warning CS8602: Dereference of a possibly null reference. [C:\GuestFlow\GuestFlow.Application.Tests\GuestFlow.Application.Tests.csproj]
+C:\GuestFlow\GuestFlow.Application.Tests\Helpers\MockQueryableHelper.cs(71,24): warning CS8600: Converting null literal or possible null value to non-nullable type. [C:\GuestFlow\GuestFlow.Application.Tests\GuestFlow.Application.Tests.csproj]
+C:\GuestFlow\GuestFlow.Application.Tests\Helpers\MockQueryableHelper.cs(71,24): warning CS8603: Possible null reference return. [C:\GuestFlow\GuestFlow.Application.Tests\GuestFlow.Application.Tests.csproj]
+C:\GuestFlow\GuestFlow.Application.Tests\Operations\Finance\Pricing\DynamicPricingServiceTests.cs(222,31): error CS0234: The type or namespace name 'ApiResponse' does not exist in the namespace 'GuestFlow.Application.Models.Responses' (are you missing an assembly reference?) [C:\GuestFlow\GuestFlow.Application.Tests\GuestFlow.Application.Tests.csproj]
+    4 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:02.16

@@ -147,5 +147,8 @@ namespace GuestFlow.Application.Operations.PMS
         public abstract Task<List<PMSRoomStatus>> GetRoomsStatusAsync(DateTime? date = null);
         public abstract Task<PMSFolio?> GetFolioAsync(string reservationId);
         public abstract Task<List<PMSFolio>> GetFoliosAsync(DateTime startDate, DateTime endDate);
+        
+        // Room Type Operations
+        public abstract Task<List<PMSRoomType>> GetRoomTypesAsync();
     }
 }

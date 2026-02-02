@@ -16,8 +16,10 @@ import {
   Security as SecurityIcon,
   Description as PdfIcon,
   Storage as StorageIcon,
+  Hub as HubIcon, // New icon for PMS
 } from '@mui/icons-material'
 import ContentState from '../../components/Feedback/ContentState'
+import PMSIntegrationSettings from '../../components/Settings/PMSIntegrationSettings'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -64,7 +66,7 @@ const SettingsPage = () => {
         title="Ayarlar yüklenemedi"
         description="Lütfen daha sonra tekrar deneyin."
         actionLabel="Tekrar dene"
-        onAction={() => {}}
+        onAction={() => { }}
       />
     )
   }
@@ -78,6 +80,7 @@ const SettingsPage = () => {
       <Paper>
         <Tabs value={tabValue} onChange={handleTabChange} variant="scrollable" scrollButtons="auto">
           <Tab icon={<SettingsIcon />} iconPosition="start" label="Genel" />
+          <Tab icon={<HubIcon />} iconPosition="start" label="PMS Entegrasyon" />
           <Tab icon={<EmailIcon />} iconPosition="start" label="E-posta" />
           <Tab icon={<CurrencyIcon />} iconPosition="start" label="Para Birimi" />
           <Tab icon={<PdfIcon />} iconPosition="start" label="PDF" />
@@ -100,6 +103,10 @@ const SettingsPage = () => {
         </TabPanel>
 
         <TabPanel value={tabValue} index={1}>
+          <PMSIntegrationSettings />
+        </TabPanel>
+
+        <TabPanel value={tabValue} index={2}>
           <Typography variant="h6" gutterBottom>
             E-posta Ayarları
           </Typography>
@@ -113,7 +120,7 @@ const SettingsPage = () => {
           </Grid>
         </TabPanel>
 
-        <TabPanel value={tabValue} index={2}>
+        <TabPanel value={tabValue} index={3}>
           <Typography variant="h6" gutterBottom>
             Para Birimi Ayarları
           </Typography>
@@ -127,7 +134,7 @@ const SettingsPage = () => {
           </Grid>
         </TabPanel>
 
-        <TabPanel value={tabValue} index={3}>
+        <TabPanel value={tabValue} index={4}>
           <Typography variant="h6" gutterBottom>
             PDF Ayarları
           </Typography>
@@ -141,7 +148,7 @@ const SettingsPage = () => {
           </Grid>
         </TabPanel>
 
-        <TabPanel value={tabValue} index={4}>
+        <TabPanel value={tabValue} index={5}>
           <Typography variant="h6" gutterBottom>
             Dosya Ayarları
           </Typography>
@@ -155,7 +162,7 @@ const SettingsPage = () => {
           </Grid>
         </TabPanel>
 
-        <TabPanel value={tabValue} index={5}>
+        <TabPanel value={tabValue} index={6}>
           <Typography variant="h6" gutterBottom>
             Güvenlik Ayarları
           </Typography>

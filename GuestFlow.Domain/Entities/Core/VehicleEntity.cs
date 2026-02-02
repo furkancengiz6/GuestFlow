@@ -7,8 +7,8 @@ namespace GuestFlow.Domain.Entities.Core
 {
     public class VehicleEntity : BaseEntity, IVehicle
     {
-        public string Type { get; set; }
-        public string PlateNumber { get; set; }
+        public string Type { get; set; } = string.Empty;
+        public string PlateNumber { get; set; } = string.Empty;
         public int Capacity { get; set; }
         public decimal DailyPrice { get; set; }
 

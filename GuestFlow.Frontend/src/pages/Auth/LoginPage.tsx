@@ -25,11 +25,21 @@ const LoginPage = () => {
     try {
       const bypass = window.localStorage.getItem('VITE_E2E_BYPASS')
       const storedAuth = window.localStorage.getItem('auth-storage')
-      if (bypass === 'true' || storedAuth) {
+      if (bypass === 'true') {
         navigate('/dashboard')
+        return
       }
-    } catch {
-      // ignore in non-browser environments
+
+      if (storedAuth) {
+        const parsed = JSON.parse(storedAuth)
+        // Zustand persist wraps the state in a 'state' object by default
+        const isAuth = parsed.state?.isAuthenticated || parsed.isAuthenticated
+        if (isAuth) {
+          navigate('/dashboard')
+        }
+      }
+    } catch (e) {
+      console.warn('Auth storage parsing failed:', e)
     }
   }, [navigate])
 

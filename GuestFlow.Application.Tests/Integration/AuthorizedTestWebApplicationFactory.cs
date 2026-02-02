@@ -56,7 +56,25 @@ public sealed class AuthorizedTestWebApplicationFactory : WebApplicationFactory<
             RemoveHostedServiceByImplementationType(services, "ServiceConfirmationBackgroundService");
             RemoveHostedServiceByImplementationType(services, "PaymentReminderBackgroundService");
             RemoveHostedServiceByImplementationType(services, "DailyRevenueBackgroundService");
+            RemoveHostedServiceByImplementationType(services, "PMSPollingBackgroundService");
+            RemoveHostedServiceByImplementationType(services, "SmartNotificationBackgroundService");
+            RemoveHostedServiceByImplementationType(services, "NotificationRuleBackgroundService");
+            RemoveHostedServiceByImplementationType(services, "OTAWebhookRetryBackgroundService");
+
+            // Mock Neo4j to prevent deadlocks from open connections
+            services.RemoveAll<GuestFlow.Application.Operations.Intelligence.Graph.INeo4jService>();
+            services.AddSingleton<GuestFlow.Application.Operations.Intelligence.Graph.INeo4jService, Neo4jNoOpStub>();
         });
+    }
+
+    // Stub to prevent real Neo4j connections
+    private class Neo4jNoOpStub : GuestFlow.Application.Operations.Intelligence.Graph.INeo4jService
+    {
+        public Neo4j.Driver.IDriver Driver => null!;
+        public Task<T?> ExecuteReadAsync<T>(Func<Neo4j.Driver.IAsyncQueryRunner, Task<T>> work) => Task.FromResult<T?>(default);
+        public Task<T?> ExecuteWriteAsync<T>(Func<Neo4j.Driver.IAsyncQueryRunner, Task<T>> work) => Task.FromResult<T?>(default);
+        public Task<bool> TestConnectionAsync() => Task.FromResult(true);
+        public void Dispose() { }
     }
 
     private static void RemoveHostedServiceByImplementationType(IServiceCollection services, string implementationTypeName)

@@ -56,6 +56,9 @@ namespace GuestFlow.Domain.UnitOfWork
         GuestFlow.Domain.Entities.Repositories.IRepository<GuestFlow.Domain.Entities.Intelligence.GuestBehaviorEntity> GuestBehaviors { get; }
         GuestFlow.Domain.Entities.Repositories.IRepository<GuestFlow.Domain.Entities.Intelligence.StaffBehaviorEntity> StaffBehaviors { get; }
         GuestFlow.Domain.Entities.Repositories.IRepository<GuestFlow.Domain.Entities.Intelligence.GuestStaffInteractionEntity> GuestStaffInteractions { get; }
+
+        // Finance - Pricing Rules
+        GuestFlow.Domain.Entities.Repositories.IRepository<GuestFlow.Domain.Entities.Finance.PricingRuleEntity> PricingRules { get; }
         
         // Convenience commit used throughout app
         Task CommitAsync();

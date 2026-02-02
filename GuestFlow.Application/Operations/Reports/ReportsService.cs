@@ -1,5 +1,6 @@
 using GuestFlow.Domain.Entities.Core;
 using GuestFlow.Domain.Entities.Enum;
+using GuestFlow.Domain.Entities.Operations;
 using GuestFlow.Domain.Entities.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -27,6 +28,8 @@ namespace GuestFlow.Application.Operations.Reports
         private readonly IRepository<JournalLine> _journalLineRepository;
         private readonly IRepository<CityEntity> _cityRepository;
         private readonly IRepository<PersonnelEntity> _personnelRepository;
+        private readonly IRepository<GuestReview> _reviewRepository;
+        private readonly GuestFlow.Application.Operations.Invoice.IPdfService _pdfService;
         private readonly ILogger<ReportsService> _logger;
 
         public ReportsService(
@@ -42,6 +45,8 @@ namespace GuestFlow.Application.Operations.Reports
             IRepository<JournalLine> journalLineRepository,
             IRepository<CityEntity> cityRepository,
             IRepository<PersonnelEntity> personnelRepository,
+            IRepository<GuestReview> reviewRepository,
+            GuestFlow.Application.Operations.Invoice.IPdfService pdfService,
             ILogger<ReportsService> logger)
         {
             _dailyRevenueRepository = dailyRevenueRepository;
@@ -56,6 +61,8 @@ namespace GuestFlow.Application.Operations.Reports
             _journalLineRepository = journalLineRepository;
             _cityRepository = cityRepository;
             _personnelRepository = personnelRepository;
+            _reviewRepository = reviewRepository;
+            _pdfService = pdfService;
             _logger = logger;
         }
 
@@ -1245,6 +1252,61 @@ namespace GuestFlow.Application.Operations.Reports
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Dönem bazlı KDV raporu getirilirken hata: {ex.Message}");
+                throw;
+            }
+        }
+        public async Task<string> GenerateWeeklyOperationalReportAsync(DateTime startDate, DateTime endDate)
+        {
+            try
+            {
+                // 1. Gelir verilerini topla
+                var revenueSummary = await GetRevenueSummaryAsync(startDate, endDate);
+                var revenueByCategory = new Dictionary<string, decimal>
+                {
+                    { "Transfer", revenueSummary.TransferRevenueByCurrency.Values.Sum() },
+                    { "City Tour", revenueSummary.CityTourRevenueByCurrency.Values.Sum() },
+                    { "Yacht Tour", revenueSummary.YachtTourRevenueByCurrency.Values.Sum() }
+                };
+
+                // 2. Misafir verileri
+                var newGuests = await _guestRepository.GetAll()
+                    .Where(g => g.CreatedDate >= startDate && g.CreatedDate <= endDate)
+                    .ToListAsync();
+                
+                var vipGuests = newGuests.Where(g => g.IsSpecialGuest).Count();
+
+                // 3. Memnuniyet verileri
+                var reviews = await _reviewRepository.GetAll()
+                    .Where(r => r.CreatedDate >= startDate && r.CreatedDate <= endDate)
+                    .ToListAsync();
+                
+                var avgSatisfaction = reviews.Any() ? reviews.Average(r => r.Rating) : 0.0;
+
+                // 4. Popüler destinasyonlar
+                var popularDests = await GetPopularDestinationsAsync(5);
+
+                // 5. Rapor verisini birleştir
+                var reportData = new
+                {
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    RevenueByCategory = revenueByCategory,
+                    TotalBookings = revenueSummary.TotalBookings,
+                    TransferCount = revenueSummary.TransferCount,
+                    CityTourCount = revenueSummary.CityTourCount,
+                    YachtTourCount = revenueSummary.YachtTourCount,
+                    NewGuestCount = newGuests.Count,
+                    VIPGuestCount = vipGuests,
+                    AverageSatisfaction = avgSatisfaction,
+                    PopularDestinations = popularDests
+                };
+
+                // 6. PDF Oluştur
+                return await _pdfService.GenerateWeeklyReportPdfAsync(reportData);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Haftalık operasyonel rapor oluşturulurken hata oluştu.");
                 throw;
             }
         }

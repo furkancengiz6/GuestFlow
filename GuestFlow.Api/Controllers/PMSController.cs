@@ -251,5 +251,65 @@ namespace GuestFlow.Api.Controllers
             var result = await _webhookProcessor.ProcessWebhookAsync(integrationId, eventType ?? "UNKNOWN", payloadString, signature);
             return result.Success ? Ok(result) : BadRequest(result);
         }
+
+        #region Mock PMS Webhook Simulation (Development Only)
+
+        /// <summary>
+        /// [DEV ONLY] Mock check-in webhook simüle et
+        /// </summary>
+        [HttpPost("mock/simulate-checkin/{integrationId}")]
+        [ProducesResponseType(typeof(ApiResponse<PMSWebhookPayload>), 200)]
+        public async Task<IActionResult> SimulateMockCheckIn(int integrationId, [FromServices] IMockPMSWebhookSimulator? simulator)
+        {
+            if (simulator == null)
+                return BadRequest(new ApiResponse<object> { Success = false, Message = "Mock PMS Webhook Simulator is not available. Only available in Development environment." });
+
+            var payload = await simulator.SimulateCheckInAsync(integrationId);
+            return Ok(new ApiResponse<PMSWebhookPayload> { Success = true, Data = payload, Message = "Check-in webhook simulated successfully" });
+        }
+
+        /// <summary>
+        /// [DEV ONLY] Mock check-out webhook simüle et
+        /// </summary>
+        [HttpPost("mock/simulate-checkout/{integrationId}")]
+        [ProducesResponseType(typeof(ApiResponse<PMSWebhookPayload>), 200)]
+        public async Task<IActionResult> SimulateMockCheckOut(int integrationId, [FromServices] IMockPMSWebhookSimulator? simulator)
+        {
+            if (simulator == null)
+                return BadRequest(new ApiResponse<object> { Success = false, Message = "Mock PMS Webhook Simulator is not available. Only available in Development environment." });
+
+            var payload = await simulator.SimulateCheckOutAsync(integrationId);
+            return Ok(new ApiResponse<PMSWebhookPayload> { Success = true, Data = payload, Message = "Check-out webhook simulated successfully" });
+        }
+
+        /// <summary>
+        /// [DEV ONLY] Mock yeni rezervasyon webhook simüle et
+        /// </summary>
+        [HttpPost("mock/simulate-reservation/{integrationId}")]
+        [ProducesResponseType(typeof(ApiResponse<PMSWebhookPayload>), 200)]
+        public async Task<IActionResult> SimulateMockNewReservation(int integrationId, [FromServices] IMockPMSWebhookSimulator? simulator)
+        {
+            if (simulator == null)
+                return BadRequest(new ApiResponse<object> { Success = false, Message = "Mock PMS Webhook Simulator is not available. Only available in Development environment." });
+
+            var payload = await simulator.SimulateNewReservationAsync(integrationId);
+            return Ok(new ApiResponse<PMSWebhookPayload> { Success = true, Data = payload, Message = "New reservation webhook simulated successfully" });
+        }
+
+        /// <summary>
+        /// [DEV ONLY] Mock rezervasyon iptali webhook simüle et
+        /// </summary>
+        [HttpPost("mock/simulate-cancellation/{integrationId}")]
+        [ProducesResponseType(typeof(ApiResponse<PMSWebhookPayload>), 200)]
+        public async Task<IActionResult> SimulateMockCancelReservation(int integrationId, [FromServices] IMockPMSWebhookSimulator? simulator)
+        {
+            if (simulator == null)
+                return BadRequest(new ApiResponse<object> { Success = false, Message = "Mock PMS Webhook Simulator is not available. Only available in Development environment." });
+
+            var payload = await simulator.SimulateCancelReservationAsync(integrationId);
+            return Ok(new ApiResponse<PMSWebhookPayload> { Success = true, Data = payload, Message = "Cancellation webhook simulated successfully" });
+        }
+
+        #endregion
     }
 }

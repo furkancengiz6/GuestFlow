@@ -239,6 +239,13 @@ namespace GuestFlow.Application.Operations.PMS
             }
         }
 
+        public override Task<List<PMSRoomType>> GetRoomTypesAsync()
+        {
+            // TODO: Implement actual API call to Elektraweb
+            _logger.LogWarning("GetRoomTypesAsync not implemented for Elektraweb, returning empty list.");
+            return Task.FromResult(new List<PMSRoomType>());
+        }
+
         // Mapping methods - Elektraweb API response'larını PMS model'lerine map eder
         private PMSGuestProfile MapElektrawebGuestToPMSGuest(ElektrawebGuestResponse elektrawebGuest)
         {

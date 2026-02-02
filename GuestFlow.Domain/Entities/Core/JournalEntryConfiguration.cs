@@ -42,17 +42,17 @@ namespace GuestFlow.Domain.Entities.Core
             builder.HasOne(j => j.CreatedByPersonnel)
                 .WithMany()
                 .HasForeignKey(j => j.CreatedByPersonnelId)
-                .OnDelete(DeleteBehavior.SetNull); // Set null if personnel is deleted (snapshot remains)
+                .OnDelete(DeleteBehavior.Restrict); // Changed from SetNull to avoid cycles
 
             builder.HasOne(j => j.PostedByPersonnel)
                 .WithMany()
                 .HasForeignKey(j => j.PostedByPersonnelId)
-                .OnDelete(DeleteBehavior.SetNull); // Set null if personnel is deleted (snapshot remains)
+                .OnDelete(DeleteBehavior.Restrict); // Changed from SetNull to avoid cycles
 
             builder.HasOne(j => j.ReversedByPersonnel)
                 .WithMany()
                 .HasForeignKey(j => j.ReversedByPersonnelId)
-                .OnDelete(DeleteBehavior.SetNull); // Set null if personnel is deleted (snapshot remains)
+                .OnDelete(DeleteBehavior.Restrict); // Changed from SetNull to avoid cycles
 
             // Indexes
             builder.HasIndex(j => j.PostingDate);

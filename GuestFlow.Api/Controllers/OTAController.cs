@@ -162,6 +162,14 @@ namespace GuestFlow.Api.Controllers
             return result.Success ? Ok(result) : BadRequest(result);
         }
 
+        [HttpPost("channel-manager/stop-sell")]
+        [ProducesResponseType(typeof(ApiResponse<bool>), 200)]
+        public async Task<IActionResult> BroadcastStopSell([FromQuery] int hotelId, [FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
+        {
+            var result = await _channelManagerService.BroadcastStopSellAsync(hotelId, startDate, endDate);
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
         // Reservation Mapping & Conflict Resolution Endpoints
         [HttpPost("reservations/{otaReservationId}/map/{guestFlowReservationId}")]
         [ProducesResponseType(typeof(ApiResponse<bool>), 200)]

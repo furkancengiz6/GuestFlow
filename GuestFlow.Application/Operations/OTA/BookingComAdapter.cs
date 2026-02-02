@@ -1,6 +1,7 @@
 // Copyright (c) 2025 Furkan Cengiz
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
+using GuestFlow.Application.Operations.OTA.BookingDotCom;
 using GuestFlow.Domain.Entities.Operations;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Headers;
@@ -13,12 +14,16 @@ namespace GuestFlow.Application.Operations.OTA
     /// </summary>
     public class BookingComAdapter : BaseOTAAdapter
     {
+        private readonly IBookingDotComService _bookingService;
+
         public BookingComAdapter(
             OTAIntegration integration,
             IHttpClientFactory httpClientFactory,
-            ILogger<BookingComAdapter> logger)
+            ILogger<BookingComAdapter> logger,
+            IBookingDotComService bookingService)
             : base(integration, httpClientFactory, logger)
         {
+            _bookingService = bookingService;
         }
 
         protected override void AddAuthenticationHeaders(HttpClient client)
@@ -40,24 +45,10 @@ namespace GuestFlow.Application.Operations.OTA
 
         public override async Task<bool> RefreshAccessTokenAsync()
         {
-            try
-            {
-                // Booking.com OAuth 2.0 token refresh
-                _logger.LogInformation("Refreshing Booking.com access token for integration {IntegrationId}", _integration.Id);
-                
-                // TODO: Booking.com token refresh implementation
-                // Örnek:
-                // var tokenResponse = await CallApiAsync<BookingTokenResponse>("/oauth/token", HttpMethod.Post, new { ... });
-                // _integration.AccessToken = tokenResponse.AccessToken;
-                // _integration.TokenExpiresAt = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn);
-                
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to refresh Booking.com access token");
-                return false;
-            }
+            // Booking.com integration typically uses static API keys or Basic Auth.
+            // If OAuth is used in the future, implement the token exchange here.
+            // For now, we assume the API Key configured is sufficient and valid.
+            return await Task.FromResult(true);
         }
 
         public override async Task<bool> TestConnectionAsync()
@@ -163,29 +154,30 @@ namespace GuestFlow.Application.Operations.OTA
         {
             try
             {
-                // Booking.com webhook signature validation
-                if (!string.IsNullOrEmpty(signature))
+                if (string.IsNullOrEmpty(signature))
                 {
-                    // TODO: Implement Booking.com webhook signature validation
-                    // var isValid = ValidateWebhookSignature(payload, signature, _integration.ApiSecret);
-                    // if (!isValid) return false;
+                    _logger.LogWarning("Booking.com webhook missing signature");
+                    return false;
                 }
 
-                // Parse webhook payload
-                var webhookData = JsonSerializer.Deserialize<Dictionary<string, object>>(payload, new JsonSerializerOptions
+                // Verify HMAC signature using the service
+                if (!string.IsNullOrEmpty(_integration.ApiSecret))
                 {
-                    PropertyNameCaseInsensitive = true
-                });
+                    if (!_bookingService.ValidateSignature(payload, signature, _integration.ApiSecret))
+                    {
+                         _logger.LogWarning("Invalid Booking.com webhook signature");
+                         return false;
+                    }
+                }
 
-                if (webhookData == null) return false;
+                // Parse webhook payload using the service
+                // Note: We might want to use the parsed object for something, but for now we just parse to validate JSON structure
+                var webhookData = _bookingService.ParsePayload(payload);
+                
+                _logger.LogInformation("Successfully verified and parsed Booking.com webhook");
 
-                // Process webhook based on event type
-                var eventType = webhookData.ContainsKey("eventType") ? webhookData["eventType"]?.ToString() : null;
-                
-                _logger.LogInformation("Processing Booking.com webhook: EventType={EventType}", eventType);
-                
-                // TODO: Implement webhook processing logic
-                return true;
+                // Here we would typically queue the event for processing
+                return await Task.FromResult(true);
             }
             catch (Exception ex)
             {

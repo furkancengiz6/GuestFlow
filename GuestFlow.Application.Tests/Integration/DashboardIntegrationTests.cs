@@ -46,7 +46,7 @@ public class DashboardIntegrationTests : IAsyncLifetime
             .UseInMemoryDatabase(databaseName: $"GuestFlow_Integration_{Guid.NewGuid()}")
             .Options;
 
-        _context = new GuestFlowDbContext(options);
+        _context = new GuestFlowDbContext(options, new Moq.Mock<GuestFlow.Persistence.MultiTenancy.ITenantProvider>().Object);
 
         // Create repositories
         _guestRepository = new Repository<GuestEntity>(_context);
@@ -89,7 +89,7 @@ public class DashboardIntegrationTests : IAsyncLifetime
             _invoiceRepository,
             _paymentRepository,
             _paymentStatusService,
-            loggerMock.Objectx
+            loggerMock.Object
         );
 
         // Seed test data

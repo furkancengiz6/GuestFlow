@@ -2,13 +2,14 @@ using System;
 using System.Linq;
 using System.Linq.Expressions;
 using GuestFlow.Domain.Entities.Core;
+using GuestFlow.Domain.Entities.Interfaces;
 
 namespace GuestFlow.Domain.Entities.Repositories
 {
     /// <summary>
     /// Specification pattern base implementation
     /// </summary>
-    public class Specification<TEntity> : ISpecification<TEntity> where TEntity : BaseEntity
+    public class Specification<TEntity> : ISpecification<TEntity> where TEntity : BaseEntity, ISoftDelete
     {
         public Expression<Func<TEntity, bool>>? Criteria { get; set; }
         public Expression<Func<TEntity, object>>[] Includes { get; set; } = Array.Empty<Expression<Func<TEntity, object>>>();
@@ -23,7 +24,7 @@ namespace GuestFlow.Domain.Entities.Repositories
     /// <summary>
     /// Specification builder
     /// </summary>
-    public class SpecificationBuilder<TEntity> where TEntity : BaseEntity
+    public class SpecificationBuilder<TEntity> where TEntity : BaseEntity, ISoftDelete
     {
         private readonly Specification<TEntity> _specification;
 

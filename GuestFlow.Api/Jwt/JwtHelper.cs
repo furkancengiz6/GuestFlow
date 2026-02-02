@@ -24,6 +24,7 @@ namespace GuestFlow.Api.Jwt
                 new Claim("FullName", jwtInfo.FullName), // Kullanıcının tam adını ekliyorum.
                 new Claim("Email", jwtInfo.Email), // Kullanıcının e-posta adresini ekliyorum.
                 new Claim("UserType", jwtInfo.UserType.ToString()), // Kullanıcının tipini ekliyorum.
+                new Claim("TenantId", jwtInfo.TenantId.ToString()), // Kiracı ID'sini ekliyorum.
                 new Claim(ClaimTypes.Role, jwtInfo.UserType.ToString()) // Kullanıcının rolünü ekliyorum, bu yetkilendirme için kullanılabilir.
             };
 

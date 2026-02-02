@@ -232,6 +232,7 @@ namespace GuestFlow.Api.Controllers
                     Email = user.Email,
                     FullName = user.FullName,
                     UserType = user.UserType,
+                    TenantId = user.TenantId,
                     SecretKey = _configuration["Jwt:SecretKey"]!,
                     Issuer = _configuration["Jwt:Issuer"]!,
                     Audience = _configuration["Jwt:Audience"]!,

@@ -14,7 +14,7 @@ namespace GuestFlow.Domain.Entities.Core
         /// <summary>
         /// Rezervasyon numarası (benzersiz)
         /// </summary>
-        public string ReservationNumber { get; set; }
+        public string ReservationNumber { get; set; } = string.Empty;
 
         /// <summary>
         /// Misafir ID
@@ -29,7 +29,7 @@ namespace GuestFlow.Domain.Entities.Core
         /// <summary>
         /// Rezervasyon tipi (Transfer, CityTour, YachtTour)
         /// </summary>
-        public string ServiceType { get; set; }
+        public string ServiceType { get; set; } = string.Empty;
 
         /// <summary>
         /// Servis ID (TransferId, CityTourId veya YachtTourId)
@@ -67,6 +67,21 @@ namespace GuestFlow.Domain.Entities.Core
         public string? Notes { get; set; }
 
         /// <summary>
+        /// Check-in tarihi (Otel rezervasyonları için)
+        /// </summary>
+        public DateTime? CheckInDate { get; set; }
+
+        /// <summary>
+        /// Check-out tarihi (Otel rezervasyonları için)
+        /// </summary>
+        public DateTime? CheckOutDate { get; set; }
+
+        /// <summary>
+        /// Oda Tipi ID (Otel rezervasyonları için)
+        /// </summary>
+        public int? RoomTypeId { get; set; }
+
+        /// <summary>
         /// Toplam tutar
         /// </summary>
         public decimal TotalAmount { get; set; }
@@ -77,8 +92,8 @@ namespace GuestFlow.Domain.Entities.Core
         public string Currency { get; set; } = "TRY";
 
         // Relational Properties
-        public virtual GuestEntity Guest { get; set; }
-        public virtual PersonnelEntity Personnel { get; set; }
+        public virtual GuestEntity Guest { get; set; } = null!;
+        public virtual PersonnelEntity Personnel { get; set; } = null!;
     }
 
     public class ReservationConfiguration : BaseConfiguration<ReservationEntity>

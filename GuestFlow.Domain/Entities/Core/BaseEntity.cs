@@ -2,9 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using GuestFlow.Domain.Entities.Interfaces;
 
 namespace GuestFlow.Domain.Entities.Core
 {
@@ -16,9 +16,10 @@ namespace GuestFlow.Domain.Entities.Core
     /// - Track who created, who updated, and when
     /// - Preserve historical truth at all times
     /// </summary>
-    public class BaseEntity
+    public class BaseEntity : ITenantEntity, ISoftDelete
     {
         public int Id { get; set; }
+        public int TenantId { get; set; }
         
         /// <summary>
         /// When this record was first created
@@ -64,8 +65,8 @@ namespace GuestFlow.Domain.Entities.Core
 
         public virtual void Configure(EntityTypeBuilder<TEntity> builder)
         {
-            builder.HasQueryFilter(x => !x.IsDeleted); // Soft delete filtresi
-            //bu veritabanı üzerinde yapılacak tüm sogrulamalarda ve diğer linq işlemlerinde geçerli olacak bir giltreleme yazdık. bÖYLELİKLE HİÇBİR ZAMAN BİR DAHA SOft delete atılmış verelerle uğraşmayacağız. 
+            // Query filters are now handled centrally in GuestFlowDbContext for multi-tenancy support
+            // builder.HasQueryFilter(x => !x.IsDeleted); 
             
             // Audit trail fields indexing
             builder.Property(x => x.CreatedDate).IsRequired();

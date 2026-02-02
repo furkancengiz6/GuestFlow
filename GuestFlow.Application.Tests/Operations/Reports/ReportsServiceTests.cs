@@ -14,6 +14,8 @@ using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using GuestFlow.Domain.Entities.Operations;
+using GuestFlow.Application.Operations.Invoice;
 
 namespace GuestFlow.Application.Tests.Operations.Reports;
 
@@ -31,6 +33,8 @@ public class ReportsServiceTests : TestBase
     private readonly Mock<IRepository<JournalLine>> _journalLineRepositoryMock;
     private readonly Mock<IRepository<CityEntity>> _cityRepositoryMock;
     private readonly Mock<IRepository<PersonnelEntity>> _personnelRepositoryMock;
+    private readonly Mock<IRepository<GuestReview>> _reviewRepositoryMock;
+    private readonly Mock<GuestFlow.Application.Operations.Invoice.IPdfService> _pdfServiceMock;
     private readonly Mock<ILogger<ReportsService>> _loggerMock;
     private readonly ReportsService _reportsService;
 
@@ -48,6 +52,8 @@ public class ReportsServiceTests : TestBase
         _journalLineRepositoryMock = CreateMock<IRepository<JournalLine>>();
         _cityRepositoryMock = CreateMock<IRepository<CityEntity>>();
         _personnelRepositoryMock = CreateMock<IRepository<PersonnelEntity>>();
+        _reviewRepositoryMock = CreateMock<IRepository<GuestReview>>();
+        _pdfServiceMock = new Mock<GuestFlow.Application.Operations.Invoice.IPdfService>();
         _loggerMock = CreateMock<ILogger<ReportsService>>();
 
         _reportsService = new ReportsService(
@@ -63,6 +69,8 @@ public class ReportsServiceTests : TestBase
             _journalLineRepositoryMock.Object,
             _cityRepositoryMock.Object,
             _personnelRepositoryMock.Object,
+            _reviewRepositoryMock.Object,
+            _pdfServiceMock.Object,
             _loggerMock.Object
         );
     }

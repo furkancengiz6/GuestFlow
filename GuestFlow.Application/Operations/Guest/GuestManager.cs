@@ -776,5 +776,23 @@ namespace GuestFlow.Application.Operations.Guest
                 throw;
             }
         }
+
+        public async Task<GetGuestDto?> GetGuestByCodeAsync(string code)
+        {
+            try
+            {
+                var guest = await _guestRepository.GetAll(g => g.GuestCode == code && !g.IsDeleted)
+                    .FirstOrDefaultAsync();
+
+                if (guest == null) return null;
+
+                return _mapper.Map<GetGuestDto>(guest);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting guest by code: {Code}", code);
+                return null;
+            }
+        }
     }
 }
