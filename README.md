@@ -1,98 +1,138 @@
-# GuestFlow
+# GuestFlow — Tourism Operations Intelligence Layer
 
-GuestFlow is an enterprise-grade Guest Management and Operations platform specifically designed for 5-star hotel concierge desks. It acts as the "Memory of Human Relations" for hotels, transforming interactions between guests, staff, and services into actionable intelligence.
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![.NET](https://img.shields.io/badge/.NET-8.0-512bd4.svg)](https://dotnet.microsoft.com/download/dotnet/8.0)
+[![React](https://img.shields.io/badge/React-18.2-61dafb.svg)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.2-3178c6.svg)](https://www.typescriptlang.org/)
 
-## 🌟 Key Features
+> **"GuestFlow acts as the Memory of Human Relations for 5-star hotels."**
 
-- **Comprehensive Guest Management**: VIP status tracking, preferences, and detailed history.
-- **Service & Operatons Hub**:
-  - **Transfers**: Airport/Hotel/Restaurant/City transfers with driver and vehicle assignment.
-  - **Tours**: Managed City and Yacht tours with automated scheduling.
-  - **Reservations**: Integrated restaurant bookings.
-- **Financial Integration**: Automated invoice generation (PDF), multi-currency support, and journal entry posting for accounting (ERP) systems.
-- **Enterprise Ready**:
-  - **PMS Integration**: Real-time sync with Opera Cloud and Elektraweb.
-  - **Security**: JWT-based RBAC, PII management, and comprehensive audit logging.
-  - **Monitoring**: Built-in health checks and structured logging.
+GuestFlow is an enterprise-grade Guest Management and Operations platform. Unlike traditional PMS systems that focus on transactions, GuestFlow captures the **human story** behind every interaction, transforming guest staff services into a graph-based intelligence layer.
 
-## 🛠 Tech Stack
+---
 
-### Backend
+## 🏛 Platform Ecosystem & Intelligence
 
-- **Framework**: .NET 8 (C# 11)
-- **Database**: SQL Server (EF Core 8)
-- **Reporting**: QuestPDF, ClosedXML
-- **Identity**: JWT Bearer, Role-Based Access Control
+GuestFlow follows a triple-layer data architecture to ensure both operational stability and intelligent foresight.
 
-### Frontend
-
-- **Library**: React 18 (TypeScript)
-- **Build Tool**: Vite
-- **UI Framework**: Material UI (MUI) 5
-- **State/Data**: Zustand, React Query
-
-## 📂 Project Structure
-
-```text
-GuestFlow/
-├── GuestFlow.Api/          # API Controllers and Middleware
-├── GuestFlow.Application/  # Business Logic and Services
-├── GuestFlow.Domain/       # Domain Entities and Interfaces
-├── GuestFlow.Persistence/ # Database Context and Repositories
-├── GuestFlow.Frontend/    # React Application
-└── docs/                  # Project Documentation
+```mermaid
+graph TD
+    A[Transactional Layer - MS SQL] -->|Source Data| B[Intelligence Layer - Neo4j Graph]
+    B -->|Pattern Analysis| C[Predictive Layer - AI/ML]
+    
+    subgraph "Operations"
+        A1[Guests] --> A
+        A2[Transfers] --> A
+        A3[Reservations] --> A
+    end
+    
+    subgraph "Intelligence"
+        B1[Interactions] --> B
+        B2[Sentiments] --> B
+        B3[Relationships] --> B
+    end
+    
+    subgraph "Outcomes"
+        C1[Personalized Offers] --> D[WOW Experience]
+        C2[Risk Mitigation] --> D
+        C3[Efficiency Boost] --> D
+    end
 ```
 
-## 🚀 Getting Started
+---
+
+## 🌟 Key Capabilities
+
+### 🧠 Intelligence & Relationships
+
+- **Human Relations Memory**: Tracks every touchpoint between guests and staff.
+- **Sentiment Analysis**: Automatic mood detection from communication channels.
+- **Graph Intelligence**: Maps complex relationships between guests, services, and time.
+
+### 🏨 Concierge & Front Office
+
+- **Unified Guest Profile**: 360-degree view combining PMS data and GuestFlow behavioral history.
+- **Service Hub**: Automated management of Transfers, Tours (City/Yacht), and Restaurant bookings.
+- **Real-time Monitoring**: Built-in health checks and structured logging for 99.9% uptime.
+
+### 🔌 Enterprise Integrations
+
+- **PMS Sync**: Native connectors for **Opera Cloud** and **Elektraweb**.
+- **OTA Channel Manager**: Real-time availability sync with Booking.com and Expedia.
+- **Financial Ledger**: Automated journal entries for ERP systems (SAP, Oracle, etc.).
+
+---
+
+## 🛠 Technology Stack
+
+| Category | Technology |
+| :--- | :--- |
+| **Backend** | .NET 8 (C# 11), Web API, EF Core 8 |
+| **Frontend** | React 18, TypeScript, Vite, Material UI (MUI) 5 |
+| **Intelligence** | Neo4j (Graph DB), ML.NET (Predictive) |
+| **Real-time** | SignalR, WebSocket |
+| **Reporting** | QuestPDF, ClosedXML (Excel/CSV) |
+| **Security** | JWT-based RBAC, PII Sanitization, AES-256 |
+
+---
+
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- .NET 8.0 SDK
-- Node.js (Latest LTS)
-- SQL Server
+- [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- [Node.js](https://nodejs.org/) (LTS)
+- SQL Server (LocalDB or Enterprise)
 
-### Backend Setup
+### 1. Clone & Setup Backend
 
-1. Update connection string in `appsettings.json`.
-2. Run database migrations:
+```bash
+git clone https://github.com/furkancengiz6/GuestFlow.git
+cd GuestFlow
+# Update connection string in appsettings.json if needed
+dotnet ef database update --project GuestFlow.Persistence
+dotnet run --project GuestFlow.Api
+```
 
-   ```bash
-   dotnet ef database update --project GuestFlow.Persistence
-   ```
+### 2. Setup Frontend
 
-3. Start the API:
+```bash
+cd GuestFlow.Frontend
+npm install
+npm run dev
+```
 
-   ```bash
-   dotnet run --project GuestFlow.Api
-   ```
-
-### Frontend Setup
-
-1. Navigate to `GuestFlow.Frontend`.
-2. Install dependencies:
-
-   ```bash
-   npm install
-   ```
-
-3. Start dev server:
-
-   ```bash
-   npm run dev
-   ```
+---
 
 ## 📚 Documentation
 
-For more detailed information, please refer to the files in the `docs/` directory:
+Detailed guides for various project aspects:
 
-- [API Reference](docs/API.md)
-- [Endpoints List](docs/API_ENDPOINTS.md)
-- [Technical Stack](docs/TECH_STACK.md)
-- [Deployment Guide](docs/DEPLOYMENT.md)
-- [Testing Guide](docs/TESTING.md)
+- [📖 **Vision & AI Layer**](VISION_TURIZM_INTELLIGENCE_LAYER.md)
+- [⚙️ **Technical Specifications**](docs/TECHNICAL_SPECIFICATIONS.md)
+- [🛠 **Tech Stack & Libraries**](docs/TECH_STACK.md)
+- [📡 **API Documentation**](docs/API.md)
+- [🚢 **Deployment Guide**](docs/DEPLOYMENT.md)
+- [🧪 **Testing Framework**](docs/TESTING.md)
 
-## ⚖️ License
+---
+
+## 🛣 Roadmap
+
+We are currently at **94% completion**. Key remaining focus:
+
+- [x] CRM & Concierge Core
+- [x] Financial Integration
+- [x] Graph Intelligence Layer
+- [/] Advanced AI Predictions & ML Integration
+
+See [ROADMAP.md](ROADMAP.md) for full details.
+
+---
+
+## ⚖️ License & Copyright
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-Copyright (c) 2025 Furkan Cengiz
+Copyright (c) 2025 **Furkan Cengiz**

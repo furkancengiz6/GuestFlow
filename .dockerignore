@@ -1,0 +1,25 @@
+# Docker ignore file
+node_modules
+dist
+build
+out
+bin
+obj
+.git
+.gitignore
+.dockerignore
+.vscode
+.idea
+*.swp
+*.swo
+*~
+*.log
+docker-compose.yml
+Dockerfile
+# Ignore specific large data volumes if they were accidentally placed in the repo
+sqlserver_data
+redis_data
+prometheus_data
+grafana_data
+seq_data
+nginx_logs

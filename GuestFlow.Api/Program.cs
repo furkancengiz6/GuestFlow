@@ -117,6 +117,12 @@ Log.Logger = new LoggerConfiguration()
 // Use Serilog for logging
 builder.Host.UseSerilog();
 
+// Configure background service exception behavior to not stop the host in development
+builder.Services.Configure<HostOptions>(hostOptions =>
+{
+    hostOptions.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore;
+});
+
 // Add services to the container.
 
 // AutoMapper
@@ -148,7 +154,7 @@ builder.Services.AddCors(options =>
     {
         var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
         var allowedMethods = builder.Configuration.GetSection("Cors:AllowedMethods").Get<string[]>() ?? new[] { "GET", "POST", "PUT", "DELETE", "OPTIONS" };
-        var allowedHeaders = builder.Configuration.GetSection("Cors:AllowedHeaders").Get<string[]>() ?? new[] { "Content-Type", "Authorization", "X-Requested-With" };
+        var allowedHeaders = builder.Configuration.GetSection("Cors:AllowedHeaders").Get<string[]>() ?? new[] { "Content-Type", "Authorization", "X-Requested-With", "x-signalr-user-agent" };
         var allowCredentials = builder.Configuration.GetValue<bool>("Cors:AllowCredentials", false);
         var maxAge = builder.Configuration.GetValue<int>("Cors:MaxAge", 86400);
 
@@ -376,7 +382,8 @@ if (string.IsNullOrWhiteSpace(jwtSecretKey))
     {
         // Development fallback: use a default long secret to allow local runs/tests.
         jwtSecretKey = new string('x', Math.Max(minKeyLength, 128));
-            Log.Warning("JWT SecretKey was not set; using development fallback secret. Do NOT use this in production.");
+        builder.Configuration["Jwt:SecretKey"] = jwtSecretKey;
+        Log.Warning("JWT SecretKey was not set; using development fallback secret. Do NOT use this in production.");
     }
     else
     {
@@ -390,6 +397,7 @@ if (jwtSecretKey.Length < minKeyLength)
     {
         // Extend secret to meet minimum length in development
         jwtSecretKey = jwtSecretKey.PadRight(minKeyLength, 'x');
+        builder.Configuration["Jwt:SecretKey"] = jwtSecretKey;
         Log.Warning("JWT SecretKey was shorter than minimum; padded in development.");
     }
     else

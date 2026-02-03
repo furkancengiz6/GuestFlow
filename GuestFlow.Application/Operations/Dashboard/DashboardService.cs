@@ -171,41 +171,34 @@ namespace GuestFlow.Application.Operations.Dashboard
             {
                 var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
 
-                // PERFORMANCE: Execute all count queries in parallel to reduce database round trips
-                var countTasks = new[]
-                {
-                    _guestRepository.GetAll().CountAsync(),
-                    _personnelRepository.GetAll().CountAsync(),
-                    _transferRepository.GetAll().CountAsync(),
-                    _cityTourRepository.GetAll().CountAsync(),
-                    _yachtTourRepository.GetAll().CountAsync(),
-                    _invoiceRepository.GetAll().CountAsync()
-                };
+                // PERFORMANCE: EF Core DbContext is NOT thread-safe. Run queries sequentially.
+                var totalGuestsCount = await _guestRepository.GetAll().CountAsync();
+                var totalPersonnelCount = await _personnelRepository.GetAll().CountAsync();
+                var totalTransfersCount = await _transferRepository.GetAll().CountAsync();
+                var totalCityToursCount = await _cityTourRepository.GetAll().CountAsync();
+                var totalYachtToursCount = await _yachtTourRepository.GetAll().CountAsync();
+                var totalInvoicesCount = await _invoiceRepository.GetAll().CountAsync();
 
-                var counts = await Task.WhenAll(countTasks);
-
-                // PERFORMANCE: Optimized active guests query - use UNION instead of OR with EXISTS
-                var activeGuestsQuery = await Task.WhenAll(
-                    _transferRepository.GetAll()
+                // PERFORMANCE: Run queries sequentially to avoid DbContext concurrency issues
+                var activeGuestsFromTransfers = await _transferRepository.GetAll()
                         .Where(t => t.TransferDate >= thirtyDaysAgo)
                         .Select(t => t.GuestId)
                         .Distinct()
-                        .CountAsync(),
+                        .CountAsync();
 
-                    _cityTourRepository.GetAll()
+                var activeGuestsFromCityTours = await _cityTourRepository.GetAll()
                         .Where(ct => ct.TourDate >= thirtyDaysAgo)
                         .Select(ct => ct.OwnerGuestId)
                         .Distinct()
-                        .CountAsync(),
+                        .CountAsync();
 
-                    _yachtTourRepository.GetAll()
+                var activeGuestsFromYachtTours = await _yachtTourRepository.GetAll()
                         .Where(yt => yt.TourDate >= thirtyDaysAgo)
                         .Select(yt => yt.OwnerGuestId)
                         .Distinct()
-                        .CountAsync()
-                );
+                        .CountAsync();
 
-                var activeGuests = activeGuestsQuery.Sum();
+                var activeGuests = activeGuestsFromTransfers + activeGuestsFromCityTours + activeGuestsFromYachtTours;
 
                 // REVENUE REALITY: Revenue = collected money only (from PaymentEntity)
                 // PERFORMANCE: Use indexed query for completed payments
@@ -215,13 +208,13 @@ namespace GuestFlow.Application.Operations.Dashboard
 
                 return new QuickStatsDto
                 {
-                    TotalGuests = counts[0],
+                    TotalGuests = totalGuestsCount,
                     ActiveGuests = activeGuests,
-                    TotalPersonnel = counts[1],
-                    TotalTransfers = counts[2],
-                    TotalCityTours = counts[3],
-                    TotalYachtTours = counts[4],
-                    TotalInvoices = counts[5],
+                    TotalPersonnel = totalPersonnelCount,
+                    TotalTransfers = totalTransfersCount,
+                    TotalCityTours = totalCityToursCount,
+                    TotalYachtTours = totalYachtToursCount,
+                    TotalInvoices = totalInvoicesCount,
                     TotalRevenue = totalRevenue
                 };
             }
@@ -415,70 +408,54 @@ namespace GuestFlow.Application.Operations.Dashboard
             // REVENUE REALITY: Revenue = collected money only (from PaymentEntity)
             // PERFORMANCE: Execute all queries in parallel to reduce database round trips
 
-            // Get booking counts for all services
-            var countTasks = new[]
-            {
-                _transferRepository.GetAll().CountAsync(),
-                _cityTourRepository.GetAll().CountAsync(),
-                _yachtTourRepository.GetAll().CountAsync()
-            };
+            // PERFORMANCE: EF Core DbContext is NOT thread-safe. Run queries sequentially.
+            var transferCount = await _transferRepository.GetAll().CountAsync();
+            var cityTourCount = await _cityTourRepository.GetAll().CountAsync();
+            var yachtTourCount = await _yachtTourRepository.GetAll().CountAsync();
 
-            // Get revenue sums for all services
-            var revenueTasks = new[]
-            {
-                _paymentRepository.GetAll()
+            var transferRevenue = await _paymentRepository.GetAll()
                     .Where(p => p.TransferId.HasValue && p.Status == PaymentStatus.Completed)
-                    .SumAsync(p => (decimal?)p.Amount),
+                    .SumAsync(p => (decimal?)p.Amount) ?? 0;
 
-                _paymentRepository.GetAll()
+            var cityTourRevenue = await _paymentRepository.GetAll()
                     .Where(p => p.CityTourId.HasValue && p.Status == PaymentStatus.Completed)
-                    .SumAsync(p => (decimal?)p.Amount),
+                    .SumAsync(p => (decimal?)p.Amount) ?? 0;
 
-                _paymentRepository.GetAll()
+            var yachtTourRevenue = await _paymentRepository.GetAll()
                     .Where(p => p.YachtTourId.HasValue && p.Status == PaymentStatus.Completed)
-                    .SumAsync(p => (decimal?)p.Amount)
-            };
+                    .SumAsync(p => (decimal?)p.Amount) ?? 0;
 
-            // Get average prices for all services
-            var avgPriceTasks = new[]
-            {
-                _transferRepository.GetAll()
-                    .AverageAsync(t => (decimal?)t.FinalPrice),
+            var transferAvgPrice = await _transferRepository.GetAll()
+                    .AverageAsync(t => (decimal?)t.FinalPrice) ?? 0;
 
-                _cityTourRepository.GetAll()
-                    .AverageAsync(ct => (decimal?)ct.FinalPrice),
+            var cityTourAvgPrice = await _cityTourRepository.GetAll()
+                    .AverageAsync(ct => (decimal?)ct.FinalPrice) ?? 0;
 
-                _yachtTourRepository.GetAll()
-                    .AverageAsync(yt => (decimal?)yt.FinalPrice)
-            };
-
-            // Execute all queries in parallel
-            var counts = await Task.WhenAll(countTasks);
-            var revenues = await Task.WhenAll(revenueTasks);
-            var avgPrices = await Task.WhenAll(avgPriceTasks);
+            var yachtTourAvgPrice = await _yachtTourRepository.GetAll()
+                    .AverageAsync(yt => (decimal?)yt.FinalPrice) ?? 0;
 
             var services = new List<PopularServiceDto>
             {
                 new PopularServiceDto
                 {
                     ServiceType = "Transfer",
-                    BookingCount = counts[0],
-                    TotalRevenue = revenues[0] ?? 0,
-                    AveragePrice = avgPrices[0] ?? 0
+                    BookingCount = transferCount,
+                    TotalRevenue = transferRevenue,
+                    AveragePrice = transferAvgPrice
                 },
                 new PopularServiceDto
                 {
                     ServiceType = "CityTour",
-                    BookingCount = counts[1],
-                    TotalRevenue = revenues[1] ?? 0,
-                    AveragePrice = avgPrices[1] ?? 0
+                    BookingCount = cityTourCount,
+                    TotalRevenue = cityTourRevenue,
+                    AveragePrice = cityTourAvgPrice
                 },
                 new PopularServiceDto
                 {
                     ServiceType = "YachtTour",
-                    BookingCount = counts[2],
-                    TotalRevenue = revenues[2] ?? 0,
-                    AveragePrice = avgPrices[2] ?? 0
+                    BookingCount = yachtTourCount,
+                    TotalRevenue = yachtTourRevenue,
+                    AveragePrice = yachtTourAvgPrice
                 }
             };
 

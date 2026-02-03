@@ -18,7 +18,7 @@ services:
       - guestflow-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd123!' -Q 'SELECT 1'"]
+      test: [ "CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd123!' -Q 'SELECT 1'" ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -37,7 +37,7 @@ services:
     restart: unless-stopped
     command: redis-server --appendonly yes
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -45,8 +45,8 @@ services:
   # Backend API
   api:
     build:
-      context: ./GuestFlow.Api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: GuestFlow.Api/Dockerfile
     container_name: guestflow-api
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
@@ -74,7 +74,7 @@ services:
       - guestflow-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5000/health"]
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -100,7 +100,7 @@ services:
       - guestflow-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -235,6 +235,7 @@ volumes:
   grafana_data:
   seq_data:
   nginx_logs:
+
 
 networks:
   guestflow-network:

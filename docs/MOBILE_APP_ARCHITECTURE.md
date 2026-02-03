@@ -1,68 +1,76 @@
-# GuestFlow Mobile Application Architecture (Sprint 8)
+# GuestFlow Mobile Operations Strategy (Sprint 8)
 
-## 1. Vision & Goals
+The GuestFlow Mobile App is designed as the "Operational Edge" for hotel staff, drivers, and concierge teams, providing real-time data and offline capabilities in the field.
 
-GuestFlow mobil uygulaması, otel personelinin (Concierge, Şoför, Kat Hizmetleri) operasyonel işlemleri sahada, anlık ve çevrimdışı destekle gerçekleştirmesini amaçlar.
+---
 
-## 2. Technology Stack
+## 📱 1. Vision: The Real-Time Concierge
 
-- **Framework**: React Native (Expo)
-- **Language**: TypeScript
-- **State Management**: Zustant (Lightweight ve hızlı)
-- **Data Fetching**: TanStack Query (React Query)
-- **Styling**: NativeWind (Tailwind CSS for React Native)
-- **UI Components**: React Native Paper / Tamagui
-- **Storage**: AsyncStorage + MMKV (Performans için)
-- **Navigation**: React Navigation (Native Stack)
+The mobile application extends the platform's intelligence to the point of service. Whether at an airport pickup or a hotel lobby, staff have instant access to guest preferences and operational schedules.
 
-## 3. Core Modules (Phase 1)
+---
 
-### A. Authentication
+## 🛠 2. Modern Mobile Tech Stack
 
-- JWT based login (Backend ile uyumlu)
-- Biometric auth (FaceID/Fingerprint)
-- Token refresh mechanism
+- **Framework**: React Native (Expo) - For rapid cross-platform deployment.
+- **Type Safety**: TypeScript 5+ ensuring codebase reliability.
+- **State Management**: Zustand with persistent storage middleware.
+- **Server State**: TanStack Query (React Query) for advanced caching and background synchronization.
+- **Styling**: NativeWind (Tailwind CSS) for responsive, themeable UI components.
+- **Local Database**: MMKV for high-performance key-value storage (used for offline data).
 
-### B. Daily Operations (Dashboard)
+---
 
-- "Bugünkü İşlerim" listesi
-- Yaklaşan transferler
-- Önemli notlar ve duyurular
+## 🧩 3. Core Functional Modules
 
-### C. Guest & Reservation
+### A. Real-Time Dispatch Dashboard
 
-- Misafir arama ve profil görüntüleme
-- Check-in/Check-out durum takibi
-- QR Kod okuma ile hızlı işlem
+- "My Tasks" view for drivers and guides.
+- Push notifications via Firebase Cloud Messaging (FCM).
+- Instant SignalR updates for schedule changes.
 
-### D. Communication
+### B. Biometric Identity & Security
 
-- In-app notifications
-- Tek tıkla WhatsApp/Arama başlatma
+- FaceID / TouchID integration for quick, secure staff access.
+- Secure token storage using protected keychain/keystore.
 
-## 4. Backend Integration
+### C. Digital Interaction Hub
 
-- **Base URL**: Environment bazlı (Dev/Prod)
-- **API Client**: Axios (Interceptors ile token yönetimi)
-- **Real-time**: SignalR React Native Client (Anlık operasyon güncellemeleri)
+- Integrated QR code scanner for guest identification.
+- One-tap communication (WhatsApp/Phone) via native linking.
+- Photo upload for incident reporting or voucher documentation.
 
-## 5. Folder Structure
+---
+
+## 📡 4. Systems Integration
+
+### API Strategy
+
+- **Client**: Axios with automated interceptors for JWT injection and retry logic.
+- **Sync Engine**: Optimization for low-bandwidth environments (offline-first data entry).
+
+### Event Hub
+
+- **SignalR Client**: Real-time duplex communication for operational "Critical Alerts."
+
+---
+
+## 🏗 5. Directory Blueprint
 
 ```text
 /src
-  /api          # API services & hooks
-  /assets       # İkonlar, resimler
-  /components   # Shared UI components
-  /constants    # Renkler, fontlar, config
-  /hooks        # Custom hooks
-  /navigation   # Navigation containers
-  /screens      # Sayfalar
-  /store        # Zustand stores
-  /utils        # Helper functions
+  /api          # Specialized hooks for mobile endpoints
+  /components   # Atomized UI components (Atomic Design)
+  /features     # Domain-specific modules (Auth, Transfers, Chat)
+  /navigation   # Typed Native Stack navigation
+  /store        # Global state (Zustand)
+  /theme        # Design system tokens (Colors, Spacing)
 ```
 
-## 6. Success Criteria
+---
 
-- < 1sn sayfa geçiş hızı
-- Çevrimdışı (offline) veri görüntüleme desteği
-- Push notification gecikmesi < 5sn
+## 🎯 6. Performance Benchmarks
+
+- **TTE (Time to Entry)**: < 1.5s Cold start.
+- **Sync Latency**: < 3s for operational updates via SignalR.
+- **Availability**: 100% Core data access in offline mode.

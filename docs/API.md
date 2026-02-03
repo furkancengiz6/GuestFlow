@@ -1,404 +1,124 @@
-# GuestFlow API Documentation
+# GuestFlow API Integration Guide
 
-## 📋 Genel Bilgiler
+**Base URL**: `https://api.guestflow.com/api/v1.0`  
+**API Version**: `v1.0`  
+**Format**: `application/json`
 
-GuestFlow API, otel ve seyahat operasyonlarını yönetmek için geliştirilmiş kapsamlı bir REST API'dir.
-
-- **Base URL (Production örnek)**: `https://api.guestflow.com/api/v1.0`
-- **Base URL (Local örnek)**: `http://localhost:5146/api/v1.0`
-- **Authentication**: JWT Bearer Token
-- **Token Refresh**: Refresh token **HttpOnly cookie** üzerinden; frontend `withCredentials=true` kullanır.
-- **Rate Limit**: Ortama göre değişebilir (dev/test bypass olabilir)
-- **Version**: API Versioning with URL versioning
+---
 
 ## 🔐 Authentication
 
-### Login
-```http
-POST /api/v1.0/auth/login
-Content-Type: application/json
+GuestFlow uses JWT (JSON Web Tokens) for secure communication.
 
+### 1. Obtain Access Token
+
+```http
+POST /auth/login
 {
-  "email": "admin@guestflow.com",
-  "password": "your-password"
+  "email": "staff@hotel.com",
+  "password": "secure-password"
 }
 ```
 
-**Response:**
+**Response**: `200 OK` with `{ "accessToken": "...", "refreshToken": "..." }`
+
+### 2. Authorization Header
+
+Include the access token in every subsequent request:
+`Authorization: Bearer <access_token>`
+
+---
+
+## 👥 Essential Resource: Guests
+
+### List Guests
+
+`GET /guests?pageNumber=1&pageSize=20`
+
+- **Filters**: `searchTerm`, `nationality`, `vipStatus`.
+- **Sort**: `sortBy=LastName&sortOrder=asc`.
+
+### Create Guest
+
+`POST /guests`
+
 ```json
 {
-  "success": true,
-  "data": {
-    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-  }
+  "firstName": "Alex",
+  "lastName": "Rivera",
+  "email": "alex.rivera@example.com",
+  "vipStatus": "Gold"
 }
 ```
 
-### Token Refresh
-```http
-POST /api/v1.0/auth/refresh-token
-Content-Type: application/json
+---
 
-{
-  "refreshToken": "optional-if-not-using-cookie"
-}
-```
+## 🚗 Operational Hub: Transfers
 
-> Not: Uygulama akışında refresh token çoğunlukla **cookie** ile taşınır. Bu yüzden bazı istemcilerde body boş olabilir.
+### Create Transfer
 
-## 👥 Misafir Yönetimi (Guests)
+`POST /transfers`
 
-### Misafir Listesi
-```http
-GET /api/v1.0/guests?pageNumber=1&pageSize=10&searchTerm=john&sortOrder=asc
-Authorization: Bearer <token>
-```
+- **Types**: `AirportToHotel`, `HotelToRestaurant`, `CityTour`.
+- **Payload**: Requires `guestId`, `scheduledDate`, and `pickupLocation`.
 
-**Query Parameters:**
-- `page`: Sayfa numarası (default: 1)
-- `pageSize`: Sayfa boyutu (default: 10, max: 100)
-- `search`: Arama metni (isim, email, telefon)
-- `sortBy`: Sıralama alanı
-- `sortOrder`: Sıralama yönü (asc/desc)
+### Update Status
 
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "items": [
-      {
-        "id": 1,
-        "firstName": "John",
-        "lastName": "Doe",
-        "email": "john.doe@example.com",
-        "phoneNumber": "+1234567890",
-        "nationality": "US",
-        "createdDate": "2024-01-15T10:30:00Z",
-        "isActive": true
-      }
-    ],
-    "totalCount": 150,
-    "pageNumber": 1,
-    "pageSize": 10,
-    "hasNextPage": true,
-    "hasPreviousPage": false
-  }
-}
-```
+`PATCH /transfers/{id}/status`
 
-### Misafir Ekleme
-```http
-POST /api/guests
-Authorization: Bearer <token>
-Content-Type: application/json
+- **Statuses**: `Pending`, `Confirmed`, `InTransit`, `Completed`, `Cancelled`.
 
-{
-  "firstName": "Jane",
-  "lastName": "Smith",
-  "email": "jane.smith@example.com",
-  "phoneNumber": "+1987654321",
-  "nationality": "US",
-  "dateOfBirth": "1990-05-15",
-  "passportNumber": "P123456789",
-  "specialRequests": "Vegetarian meals",
-  "emergencyContactName": "John Smith",
-  "emergencyContactPhone": "+1234567890"
-}
-```
+---
 
-### Misafir Güncelleme
-```http
-PUT /api/guests/{id}
-Authorization: Bearer <token>
-Content-Type: application/json
+## 🧾 Billing & Finance
 
-{
-  "firstName": "Jane",
-  "lastName": "Johnson",
-  "email": "jane.johnson@example.com",
-  "phoneNumber": "+1987654321",
-  "isActive": true
-}
-```
+### Generate Invoice
 
-### Misafir Detayı
-```http
-GET /api/guests/{id}
-Authorization: Bearer <token>
-```
+`POST /invoices/{id}/generate-pdf`
 
-## 🚗 Transfer Yönetimi
+- Generates a professional PDF voucher with QR code support.
 
-### Transfer Listesi
-```http
-GET /api/transfers?date=2024-01-15&status=confirmed
-Authorization: Bearer <token>
-```
+### Post to Journal
 
-**Query Parameters:**
-- `date`: Tarih (YYYY-MM-DD)
-- `status`: Durum (pending, confirmed, completed, cancelled)
-- `guestId`: Misafir ID
-- `vehicleId`: Araç ID
+`POST /journal/post`
 
-### Transfer Ekleme
-```http
-POST /api/transfers
-Authorization: Bearer <token>
-Content-Type: application/json
+- **Strict Idempotency**: Can only post an invoice once.
+- **Requirement**: Total Debit must equal Total Credit.
 
-{
-  "guestId": 1,
-  "transferType": "AirportToHotel",
-  "pickupLocation": "Istanbul Airport (IST)",
-  "dropoffLocation": "Hilton Istanbul",
-  "scheduledDate": "2024-01-20T14:30:00Z",
-  "vehicleId": 1,
-  "passengerCount": 2,
-  "specialRequests": "Child seat required",
-  "estimatedPrice": 45.00,
-  "currency": "USD"
-}
-```
+---
 
-### Transfer Durumu Güncelleme
-```http
-PATCH /api/transfers/{id}/status
-Authorization: Bearer <token>
-Content-Type: application/json
+## 🛡 Error Handling & Status Codes
 
-{
-  "status": "completed",
-  "actualPickupTime": "2024-01-20T14:35:00Z",
-  "actualDropoffTime": "2024-01-20T15:15:00Z",
-  "finalPrice": 50.00,
-  "notes": "Traffic was heavier than expected"
-}
-```
+| Code | Reason | Action |
+| :--- | :--- | :--- |
+| `200/201` | Success | Continue flow. |
+| `400` | Validation Fail | Check `details` array in response. |
+| `401` | Unauthorized | Refresh token or re-login. |
+| `403` | Forbidden | Insufficient permissions for role. |
+| `429` | Rate Limit | Implement exponential backoff. |
+| `500` | Server Error | Contact `api-support@guestflow.com`. |
 
-## 🏨 Otel Yönetimi
+### Standard Error Object
 
-### Otel Listesi
-```http
-GET /api/hotels?page=1&pageSize=10&city=Istanbul&minStars=4
-Authorization: Bearer <token>
-```
-
-### Otel Ekleme
-```http
-POST /api/hotels
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "name": "Hilton Istanbul",
-  "address": "Cumhuriyet Cd. No:50, 34367 Şişli/İstanbul",
-  "cityId": 1,
-  "starRating": 5,
-  "phoneNumber": "+90 212 315 6000",
-  "email": "info@hilton.com",
-  "website": "https://www.hilton.com",
-  "amenities": ["WiFi", "Pool", "Spa", "Fitness Center"],
-  "checkInTime": "14:00",
-  "checkOutTime": "12:00",
-  "description": "Luxury hotel in the heart of Istanbul"
-}
-```
-
-## 📧 Bildirim Yönetimi
-
-### Email Gönderme
-```http
-POST /api/emails/send
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "toEmail": "guest@example.com",
-  "subject": "Welcome to GuestFlow",
-  "template": "welcome_email",
-  "templateData": {
-    "guestName": "John Doe",
-    "checkInDate": "2024-01-20",
-    "hotelName": "Hilton Istanbul"
-  }
-}
-```
-
-### SMS Gönderme
-```http
-POST /api/sms/send
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "phoneNumber": "+1234567890",
-  "message": "Your transfer is confirmed for tomorrow at 14:30",
-  "priority": "normal"
-}
-```
-
-## 📊 Raporlama
-
-### Dashboard İstatistikleri
-```http
-GET /api/reports/dashboard?date=2024-01-15
-Authorization: Bearer <token>
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "todayTransfers": 12,
-    "todayRevenue": 1250.50,
-    "monthlyRevenue": 45250.75,
-    "pendingPayments": 5,
-    "activeGuests": 45,
-    "occupancyRate": 78.5,
-    "topDestinations": [
-      {"city": "Istanbul", "count": 15},
-      {"city": "Antalya", "count": 12}
-    ]
-  }
-}
-```
-
-### Detaylı Raporlar
-```http
-GET /api/reports/transfers?startDate=2024-01-01&endDate=2024-01-31&groupBy=month
-Authorization: Bearer <token>
-```
-
-## 📁 Dosya Yönetimi
-
-### Dosya Yükleme
-```http
-POST /api/files/upload
-Authorization: Bearer <token>
-Content-Type: multipart/form-data
-
-# Form data:
-# file: [binary file data]
-# entityType: "guest" | "transfer" | "invoice"
-# entityId: 123
-# fileType: "image" | "document" | "pdf"
-```
-
-### Dosya İndirme
-```http
-GET /api/files/{id}/download
-Authorization: Bearer <token>
-```
-
-## ⚙️ Sistem Ayarları
-
-### Bakım Modu
-```http
-PATCH /api/v1.0/settings/maintenance
-Authorization: Bearer <token> (Admin only)
-Content-Type: application/json
-
-{
-  "enabled": true,
-  "message": "System maintenance in progress"
-}
-```
-
-### Sistem Durumu
-```http
-GET /api/health
-```
-
-**Response:**
-```json
-{
-  "status": "Healthy",
-  "timestamp": "2024-01-15T10:30:00Z",
-  "version": "1.0.0",
-  "services": {
-    "database": "Healthy",
-    "redis": "Healthy",
-    "email": "Healthy"
-  }
-}
-```
-
-## 🔒 Güvenlik Özellikleri
-
-### Rate Limiting
-- **Authenticated users**: 100 requests/minute
-- **Unauthenticated users**: 10 requests/minute
-- **Login endpoint**: 5 attempts/minute
-
-### Input Validation
-- XSS protection aktif
-- SQL injection prevention
-- Input sanitization
-- Comprehensive validation rules
-
-### Audit Logging
-- Tüm CRUD işlemler loglanır
-- User activity tracking
-- Security event monitoring
-- IP address ve session tracking
-
-## 📋 Hata Kodları
-
-### Genel HTTP Status Codes
-- `200`: Başarılı
-- `201`: Oluşturuldu
-- `400`: Geçersiz istek
-- `401`: Yetkilendirme gerekli
-- `403`: Yetki yok
-- `404`: Bulunamadı
-- `429`: Çok fazla istek (Rate limit)
-- `500`: Sunucu hatası
-
-### Özel Hata Kodları
 ```json
 {
   "success": false,
   "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Validation failed",
-    "details": [
-      {
-        "field": "email",
-        "message": "Email format is invalid"
-      }
-    ]
+    "code": "ENTITY_NOT_FOUND",
+    "message": "The requested guest does not exist.",
+    "correlationId": "..."
   }
 }
 ```
-
-## 🔄 Webhook'lar (Gelecek Özellik)
-
-```http
-POST https://your-app.com/webhooks/guestflow
-X-Webhook-Signature: sha256=...
-Content-Type: application/json
-
-{
-  "event": "transfer.completed",
-  "data": {
-    "transferId": 123,
-    "guestId": 456,
-    "completedAt": "2024-01-20T15:15:00Z"
-  }
-}
-```
-
-## 📞 Destek
-
-API ile ilgili sorunlar için:
-- **Email**: api-support@guestflow.com
-- **Docs**: https://docs.guestflow.com
-- **Status Page**: https://status.guestflow.com
 
 ---
 
-**Son Güncelleme**: 15 Ocak 2026
-**API Version**: v1.0
+## 📡 Real-time Updates (SignalR)
+
+Subscribe to notifications via:
+`wss://api.guestflow.com/hubs/notifications`
+
+**Events**:
+
+- `ReceiveTransferUpdate`: Triggered when a driver is assigned.
+- `ReceiveInvoicePosted`: Triggered when an accounting entry is finalized.

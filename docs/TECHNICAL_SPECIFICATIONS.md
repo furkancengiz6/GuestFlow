@@ -1,72 +1,71 @@
-# GuestFlow: Teknik Spesifikasyonlar ve Mimari
+# GuestFlow Technical Specifications & Architecture
 
-Bu belge, GuestFlow platformunun teknolojik altyapısını, mimari kararlarını ve kullanılan kütüphaneleri detaylandırır.
-
-## 1. Teknoloji Yığını (Tech Stack)
-
-### Arka Uç (Backend)
-
-- **Framework**: .NET 8 (LTSP)
-- **Dil**: C# 12
-- **Veritabanı (RDBMS)**: Microsoft SQL Server
-- **ORM**: Entity Framework Core 8.0
-- **Veritabanı (Graph)**: Neo4j (Intelligence Layer için ilişki haritalama)
-- **Önbellekleme**: Redis (Performans ve Rate Limiting için)
-- **Gerçek Zamanlı İletişim**: ASP.NET Core SignalR (Canlı operasyon akışı)
-- **Loglama**: Serilog (Console, File ve Seq entegrasyonu)
-
-### Ön Uç (Frontend)
-
-- **Kütüphane**: React 18
-- **Build Tool**: Vite 5
-- **Dil**: TypeScript
-- **UI Framework**: Material-UI (MUI) v5
-- **Durum Yönetimi**: Zustand (Persist middleware ile)
-- **Veri Çekme**: Axios (İnterseptör tabanlı yetkilendirme yönetimi)
-- **Form Yönetimi**: React Hook Form & FluentValidation
+This document defines the high-level architecture, design patterns, and engineering principles governing the GuestFlow platform.
 
 ---
 
-## 2. Mimari Yapı
+## 🏛 1. Architectural Blueprint: N-Tier Clean Architecture
 
-GuestFlow, **N-Layered Clean Architecture** prensiplerine göre yapılandırılmıştır:
+GuestFlow is built using a decoupled, N-Layered approach to ensure maintainability, testability, and scalability.
 
-- **GuestFlow.Api**: RESTful uç noktalar, Middleware'ler ve API yapılandırması.
-- **GuestFlow.Application**: İş mantığı (Business Logic), servisler, DTO'lar ve AutoMapper eşleşmeleri.
-- **GuestFlow.Domain**: Varlıklar (Entities), arayüz tanımları ve temel iş kuralları.
-- **GuestFlow.Persistence**: EF Core DbContext, konfigürasyonlar, Repository ve UnitOfWork implementasyonları.
-- **GuestFlow.Frontend**: Modüler React bileşenleri ve modern UI katmanı.
+```mermaid
+graph TD
+    UI[Frontend: React/Vite] --> API[API: ASP.NET Core]
+    API --> APP[Application: Business Logic/CQRS]
+    APP --> DOM[Domain: Core Entities/Interfaces]
+    APP --> INF[Infrastructure: External Services/PMS]
+    APP --> PER[Persistence: EF Core/SQL/Neo4j]
+```
 
----
+### Core Layers
 
-## 3. Güvenlik ve Uyumluluk
-
-Platform, kurumsal düzeyde güvenlik standartlarını destekler:
-
-- **Yetkilendirme**: JWT (JSON Web Token) tabanlı stateless authentication.
-- **Yetki Kontrolü**: Role-Based Access Control (RBAC) ve granüler izin sistemi.
-- **Veri Koruması**:
-  - Hassas veriler için **PII (Personally Identifiable Information)** koruma servisleri.
-  - KVKK/GDPR uyumlu veri anonimleştirme desteği.
-- **Güvenlik Katmanları**:
-  - Rate Limiting (IP ve Kullanıcı tabanlı).
-  - Security Headers (CSP, HSTS).
-  - Brute-force koruması ve Audit Logging.
+- **GuestFlow.Domain**: Zero-dependency layer containing Entities, Value Objects, and Domain Exceptions.
+- **GuestFlow.Application**: Orchestration layer using **MediatR** for CQRS. Contains DTOs, Mappings, and Service interfaces.
+- **GuestFlow.Persistence**: Implements the Data Access Layer via EF Core (SQL Server) and Neo4j (Graph).
+- **GuestFlow.Infrastructure**: Handles cross-cutting concerns (Email, SMS, Storage, PMS Connectors).
+- **GuestFlow.Api**: Presentation layer providing RESTful access and SignalR hubs.
 
 ---
 
-## 4. Akıllı Özellikler (Intelligence Layer)
+## 🧠 2. The Triple-Layer Intelligence Model
 
-GuestFlow, standart bir CRM'den farklı olarak ileri seviye analitik yeteneklere sahiptir:
+Unlike traditional PMS/CRM systems, GuestFlow operates on three distinct data planes:
 
-- **Behavioral Data Collection**: Misafir ve personel davranışlarının takibi.
-- **Graph Database**: Neo4j kullanarak misafirler arası ilişkilerin ve tercihler haritasının çıkarılması.
-- **Predictive Analytics**: Geçmiş verilerden yola çıkarak gelecek operasyonel yük tahmini.
+1. **Transactional Plane (SQL Server)**:
+    - Focuses on ACID compliance for financial and booking records.
+    - Handles billing, transfers, and user management.
+2. **Relationship Plane (Neo4j)**:
+    - Models the "Memory of Human Relations."
+    - Maps nodes like `(Guest)-[LIKES]->(Activity)` or `(Staff)-[SERVED]->(Guest)`.
+    - Enables complex graph queries for VIP recognition and service recovery.
+3. **Predictive Plane (ML.NET)**:
+    - Analyzes historical trends to forecast operational demand.
+    - Performs sentiment analysis on guest communication touchpoints.
 
 ---
 
-## 5. Dağıtım ve DevOps
+## 🔐 3. Security & Data Privacy Framework
 
-- **Containerization**: Docker & Docker-Compose desteği.
-- **Orkestrasyon**: Kubernetes (k8s) konfigürasyonları hazırdır.
-- **CI/CD**: Azure DevOps hatları mevcuttur.
+### Identity & Access
+
+- **Stateless Auth**: JWT-based authentication with secure Refresh Token rotation.
+- **RBAC**: Role-Based Access Control mapped to granular application permissions.
+
+### Compliance (GDPR/KVKK)
+
+- **PII Governance**: Dedicated services for data masking and anonymization.
+- **Audit Trails**: Every CRUD operation is logged with UserID, Timestamp, and IP Context.
+- **Sanitization**: All HTML/Text input is processed via `Ganss.XSS`.
+
+---
+
+## 🚀 4. Deployment & DevOps Strategy
+
+- **Containerization**: Native Docker support for both Backend and Frontend.
+- **Orchestration**: Production-ready Kubernetes (K8s) manifests for vertical/horizontal scaling.
+- **Continuous Delivery**: Fully automated CI/CD pipelines via GitHub Actions, including automated status checks and security scans.
+- **Logging**: Structured logging via Serilog with sinks for Seq, ELK, or Azure Monitor.
+
+---
+
+*This specification represents the target state for v1.x of the GuestFlow platform.*

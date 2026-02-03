@@ -1,22 +1,21 @@
-# 🧪 GuestFlow Testing Guide
+# GuestFlow Quality Engineering & Testing Guide
 
-Bu rehber, GuestFlow projesini kapsamlı şekilde test etmek için gerekli tüm yaklaşımları ve komutları içerir.
+This comprehensive guide outlines the multi-layered testing strategy for GuestFlow, ensuring the "Tourism Operations Intelligence Layer" remains robust, secure, and high-performing.
 
-## ⚡ Hızlı Başlangıç (Önerilen)
+---
 
-### Tek komut (Windows)
+## ⚡ Quick Start: Zero-Touch Verification
+
+### Run Core Suite (Windows)
 
 ```powershell
 cd C:\GuestFlow
 .\run-tests.bat
 ```
 
-Bu komut şunları çalıştırır:
-- Backend build + backend test (`dotnet test`)
-- Frontend build
-- Frontend Jest testleri
+*This command executes Backend build, Backend unit tests, Frontend build, and Frontend Jest tests.*
 
-### E2E (Playwright) dahil etmek
+### Global Health Check (Playwright + Integration)
 
 ```powershell
 cd C:\GuestFlow
@@ -24,384 +23,112 @@ $env:RUN_E2E="true"
 .\test-all.ps1
 ```
 
-> Not: Staging/real-backend smoke testleri **opt-in**’dir (bkz. `GuestFlow.Frontend/tests/staging/`).
-
-## 🎯 Test Stratejisi
-
-GuestFlow projesi aşağıdaki test katmanlarını destekler:
-
-1. **Unit Tests** - Backend iş mantığı
-2. **Integration Tests** - API endpoints ve veritabanı
-3. **Frontend Tests** - React bileşenleri
-4. **E2E Tests** - Tam kullanıcı akışları
-5. **Performance Tests** - Yük testi
-6. **Security Tests** - Güvenlik açıkları
-7. **Docker Tests** - Container testi
-
-## 📦 1. Backend Build Testi
-
-```bash
-# Release modunda derleme
-dotnet build GuestFlow.Api --configuration Release --verbosity minimal
-
-# Başarılı ise: ✅ Backend build successful!
-# Başarısız ise: ❌ Backend build failed!
-```
-
-## 🌐 2. Frontend Build Testi
-
-```bash
-# Frontend dizinine git
-cd GuestFlow.Frontend
-
-# Production build
-npm run build
-
-# Ana dizine dön
-cd ..
-
-# Başarılı ise: ✅ Frontend build successful!
-```
-
-## 🧪 3. Unit Testler (Backend)
-
-```bash
-# Tüm unit testleri çalıştır
-dotnet test GuestFlow.Application.Tests --verbosity normal
-
-# Kod kapsamı ile birlikte
-dotnet test GuestFlow.Application.Tests --collect:"XPlat Code Coverage"
-
-# Mevcut Testler:
-# - DashboardServiceTests
-# - InMemoryCacheServiceTests
-# - InputValidationServiceTests
-# - AuthResponseSecurityTests
-```
-
-### Unit Test Yapısı:
-```
-GuestFlow.Application.Tests/
-├── Operations/
-│   ├── Caching/
-│   │   └── InMemoryCacheServiceTests.cs
-│   ├── Dashboard/
-│   │   └── DashboardServiceTests.cs
-│   └── Validation/
-│       └── InputValidationServiceTests.cs
-└── Helpers/
-    ├── TestBase.cs
-    └── TestDataBuilder.cs
-```
-
-## ⚛️ 4. Frontend Unit Testler
-
-```bash
-# Frontend dizinine git
-cd GuestFlow.Frontend
-
-# Tüm testleri çalıştır
-npm test -- --watchAll=false
-
-# Kod kapsamı raporu
-npm run test:coverage
-
-# Mevcut Testler:
-# - Auth ProtectedRoute
-# - Common ExportButton
-# - Transfers TransferForm
-# - Hooks useNotification
-# - Utils formatters & validation
-```
-
-### Frontend Test Yapısı:
-```
-GuestFlow.Frontend/src/__tests__/
-├── components/
-│   ├── Auth/
-│   ├── Common/
-│   └── Transfers/
-├── hooks/
-├── services/
-└── utils/
-```
-
-## 🔗 5. API Integration Testleri
-
-```bash
-# Backend'i başlat (test için)
-$env:JWT__SecretKey = "MySuperSecretKeyThatIsAtLeast64CharactersLongForSecurityPurposes12345678901234567890"
-dotnet run --project GuestFlow.Api --configuration Release --urls "http://localhost:5146"
-
-# Health check
-curl http://localhost:5146/health
-
-# Auth endpoint testi
-curl -X POST http://localhost:5146/api/v1.0/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"wrong"}'
-
-# Dashboard endpoint testi
-curl http://localhost:5146/api/dashboard/quick-stats \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-## 🎭 6. E2E (End-to-End) Testler
-
-```bash
-# Frontend dizinine git
-cd GuestFlow.Frontend
-
-# Tüm E2E testleri çalıştır
-npx playwright test
-
-# Headed mode (browser görünür)
-npx playwright test --headed
-
-# Belirli bir test
-npx playwright test tests/e2e/auth.spec.ts
-
-# HTML rapor
-npx playwright show-report
-```
-
-### Playwright Konfigürasyonu:
-- **Browser'lar**: Chromium, Firefox, Safari
-- **Base URL**: http://localhost:5173
-- **Video Recording**: Başarısız testlerde
-- **Screenshot**: Başarısız testlerde
-
-### Staging E2E (Real Backend) — Smoke Suite (Önerilen Go-Live Gate)
-
-Bu suite **mock API kullanmaz** ve staging ortamına karşı çalışır:
-- login → invoice detail → journal preview/post → export
-- temel CRUD smoke (API seviyesinde) (örn. Guest create/update/delete)
-
-Çalıştırma (Windows örnek):
-
-```bash
-cd GuestFlow.Frontend
-
-set E2E_BASE_URL=https://<staging-frontend>
-set E2E_API_BASE_URL=https://<staging-api>/api/v1.0
-set E2E_USER_EMAIL=<staging-e2e-user>
-set E2E_USER_PASSWORD=<staging-e2e-pass>
-set E2E_INVOICE_ID=123
-
-npm run test:e2e:staging
-```
-
-GitHub Actions (manual run):
-- Workflow: `.github/workflows/staging-e2e.yml`
-- Required repo secrets:
-  - `STAGING_FRONTEND_URL`
-  - `STAGING_API_BASE_URL`
-  - `STAGING_E2E_USER_EMAIL`
-  - `STAGING_E2E_USER_PASSWORD`
-
-## ⚡ 7. Performance Testleri
-
-```bash
-# k6 yükleme (gerekirse)
-choco install k6
-
-# Load test çalıştırma
-k6 run tests/performance/load-test.js
-
-# Özel parametrelerle
-k6 run tests/performance/load-test.js \
-  --vus 50 \
-  --duration 2m \
-  --out json=results.json
-
-# Test Senaryosu:
-# - 50 kullanıcıya kadar ramp-up
-# - 100 kullanıcıda 5 dakika sabit yük
-# - Response time < 500ms (95th percentile)
-# - Success rate > 95%
-```
-
-### Performance Test Yapısı:
-```
-tests/performance/
-└── load-test.js          # k6 script
-```
-
-## 🔒 8. Security Testleri
-
-```bash
-# Rate limiting testi
-for i in {1..15}; do
-  curl -X POST http://localhost:5146/api/v1.0/auth/login \
-    -H "Content-Type: application/json" \
-    -d '{"email":"test@example.com","password":"wrong"}'
-done
-
-# JWT olmadan erişim testi
-curl http://localhost:5146/api/dashboard/quick-stats
-# Expected: 401 Unauthorized
-
-# Geçersiz token testi
-curl http://localhost:5146/api/dashboard/quick-stats \
-  -H "Authorization: Bearer invalid_token"
-# Expected: 401 Unauthorized
-
-# SQL injection testi
-curl -X POST http://localhost:5146/api/v1.0/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin'; DROP TABLE users;--","password":"pass"}'
-# Expected: Sanitized input, no injection
-```
-
-## 🐳 9. Docker Testleri
-
-```bash
-# Docker image build
-docker build -t guestflow-test GuestFlow.Api/
-
-# Container çalıştırma
-docker run -d -p 5147:5000 --name guestflow-container guestflow-test
-
-# Health check testi
-docker exec guestflow-container curl -f http://localhost:5000/health
-
-# Log kontrolü
-docker logs guestflow-container
-
-# Temizlik
-docker stop guestflow-container
-docker rm guestflow-container
-docker rmi guestflow-test
-```
-
-## 📊 10. CI/CD Pipeline Testi
-
-```bash
-# GitHub Actions workflow (mevcut)
-# .github/workflows/ci-cd.yml
-
-# Local CI/CD simülasyonu
-dotnet restore
-dotnet build --configuration Release
-dotnet test --configuration Release
-npm install
-npm run build
-npm test
-npx playwright install
-npx playwright test
-```
-
-## 🛠️ Test Araçları ve Teknolojileri
-
-### Backend Testing:
-- **xUnit** - Test framework
-- **FluentAssertions** - Assertion library
-- **Moq** - Mocking framework
-- **coverlet** - Code coverage
-
-### Frontend Testing:
-- **Jest** - Test runner
-- **React Testing Library** - Component testing
-- **jsdom** - DOM environment
-
-### E2E Testing:
-- **Playwright** - Browser automation
-- **Multi-browser support** - Chromium, Firefox, WebKit
-
-### Performance Testing:
-- **k6** - Load testing tool
-- **Custom scenarios** - Ramp-up, steady load
-- **Thresholds** - Response time, error rate
-
-## 📋 Test Coverage Hedefleri
-
-```
-✅ Backend Unit Tests: 70%+ coverage
-✅ Frontend Unit Tests: 60%+ coverage
-✅ API Integration: Core endpoints covered
-✅ E2E Tests: Critical user flows
-✅ Performance: Load testing implemented
-✅ Security: Basic security tests
-✅ Docker: Container testing
-```
-
-## 🚀 Hızlı Test Komutları
-
-```bash
-# Tüm backend testleri
-./run-tests.bat
-
-# Sadece unit testler
-dotnet test GuestFlow.Application.Tests
-
-# Sadece frontend testler
-cd GuestFlow.Frontend && npm test
-
-# Performance testi
-k6 run tests/performance/load-test.js
-
-# E2E testler
-cd GuestFlow.Frontend && npx playwright test
-```
-
-## 📊 Test Raporları
-
-### Backend:
-- Unit test results: Console output
-- Code coverage: `coverage/` directory
-
-### Frontend:
-- Test results: Console output
-- Coverage: `coverage/lcov-report/index.html`
-
-### Performance:
-- k6 results: Console output
-- JSON export: `results.json`
-- HTML report: Auto-generated
-
-### E2E:
-- Playwright report: `playwright-report/index.html`
-- Screenshots: `test-results/` directory
-
-## 🔧 Troubleshooting
-
-### Unit Test Sorunları:
-```bash
-# Cache temizleme
-dotnet clean
-dotnet restore
-
-# Tekrar çalıştırma
-dotnet test --verbosity detailed
-```
-
-### Frontend Test Sorunları:
-```bash
-# Node modules yeniden yükleme
-rm -rf node_modules package-lock.json
-npm install
-
-# Test çalıştırma
-npm test -- --resetMocks
-```
-
-### E2E Test Sorunları:
-```bash
-# Browser yeniden yükleme
-npx playwright install
-
-# Debug mode
-npx playwright test --debug
-```
-
-## 📈 Sürekli İyileştirme
-
-1. **Test Coverage** artırın
-2. **Performance benchmark'ları** ekleyin
-3. **Visual regression testing** ekleyin
-4. **API contract testing** implement edin
-5. **Chaos engineering** testleri ekleyin
+---
+
+## 🎯 Strategic Test Pyramid
+
+| Tier | Focus | Tooling |
+| :--- | :--- | :--- |
+| **E2E / UAT** | Business Flow & UX | Playwright |
+| **Integration** | Service Interaction & API | xUnit + HttpClient |
+| **Unit (FE)** | Component Logic | Jest + RTL |
+| **Unit (BE)** | Business Rules & Logic | xUnit + Moq |
 
 ---
 
-Bu testing guide'ı kullanarak GuestFlow projesini kapsamlı şekilde test edebilirsiniz. Her test katmanı farklı bir risk alanını kapsar ve birlikte production-ready bir sistem sağlar.
+## 📦 1. Core Verification (Static & Unit)
+
+### Backend Services
+
+```bash
+dotnet build GuestFlow.Api --configuration Release
+dotnet test GuestFlow.Application.Tests --collect:"XPlat Code Coverage"
+```
+
+- **Key Suites**: Dashboard logic, validation engines, cache providers.
+- **Goal**: 70%+ Code Coverage.
+
+### Frontend Components
+
+```bash
+cd GuestFlow.Frontend
+npm run build
+npm run test:coverage
+```
+
+- **Key Suites**: Navigation guards, shared UI components, state management (Zustand).
+- **Goal**: 60%+ Code Coverage.
+
+---
+
+## 🎭 2. Integration & E2E Excellence
+
+### Playwright End-to-End
+
+```bash
+cd GuestFlow.Frontend
+npx playwright test
+```
+
+- **Scenario Discovery**: Login sequences, Transfer creation, Invoice generation flows.
+- **Visuals**: Automated screenshots and video recording on failure.
+
+### Staging Smoke Tests (Go-Live Gate)
+
+Tests against non-mocked, live staging environments to verify real-world connectivity (DB, PMS Sync, Storage).
+
+```bash
+npm run test:e2e:staging
+```
+
+---
+
+## ⚡ 3. Advanced Quality Assurance
+
+### Performance & Load (k6)
+
+Ensures the platform can handle peak holiday season traffic.
+
+```bash
+k6 run tests/performance/load-test.js --vus 100 --duration 5m
+```
+
+- **Thresholds**: 95th percentile latency < 500ms; Success rate > 99%.
+
+### Security & Compliance
+
+- **Rate Limit Verification**: Scripts to test brute-force protection on Auth endpoints.
+- **PII Sanitization Checks**: Automated verification of data masking in logs.
+- **XSS/SQLi Probes**: Input sanitization tests via `Ganss.XSS`.
+
+---
+
+## 📊 Quality Reporting & CI/CD
+
+GuestFlow utilizes **GitHub Actions** for continuous quality monitoring.
+
+- **Pipeline**: `.github/workflows/ci-cd.yml`
+- **Artifacts**:
+  - Backend Coverage (lcov)
+  - Playwright HTML Reports
+  - Performance Benchmarks
+
+---
+
+## 🔧 Troubleshooting Guides
+
+### Environment Reset
+
+```bash
+dotnet clean
+rm -rf node_modules
+npm install
+```
+
+### Playwright Debugging
+
+```bash
+npx playwright test --debug
+```
+
+*This guide ensures GuestFlow maintains a production-ready posture at all times.*

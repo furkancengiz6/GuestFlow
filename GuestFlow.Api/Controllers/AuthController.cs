@@ -217,12 +217,20 @@ namespace GuestFlow.Api.Controllers
                 }
                 else if (_twoFactorService.IsRequiredForUserType(user.UserType))
                 {
-                    // 2FA is required but not enabled - prompt user to set it up
-                    _logger.LogWarning($"2FA is required for {user.UserType} user {user.Email} but not enabled");
-                    return BadRequest(new { 
-                        message = "Bu kullanıcı tipi için 2FA zorunludur. Lütfen 2FA'yı etkinleştirin.",
-                        requiresTwoFactorSetup = true 
-                    });
+                    // In Development environment, we allow bypassing the 2FA setup prompt for a smoother demo experience
+                    if (string.Equals(_configuration["ASPNETCORE_ENVIRONMENT"], "Development", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _logger.LogInformation($"Bypassing mandatory 2FA setup for {user.UserType} user {user.Email} in Development environment.");
+                    }
+                    else
+                    {
+                        // 2FA is required but not enabled - prompt user to set it up
+                        _logger.LogWarning($"2FA is required for {user.UserType} user {user.Email} but not enabled");
+                        return BadRequest(new { 
+                            message = "Bu kullanıcı tipi için 2FA zorunludur. Lütfen 2FA'yı etkinleştirin.",
+                            requiresTwoFactorSetup = true 
+                        });
+                    }
                 }
 
                 // JWT access token oluşturmak için yapılandırma ayarlarını alıyorum.

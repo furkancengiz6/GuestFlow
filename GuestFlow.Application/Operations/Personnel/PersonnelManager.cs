@@ -115,9 +115,9 @@ namespace GuestFlow.Application.Operations.Personnel
         {
             try
             {
-                // Kullanıcıyı bul
-                var personnel = await _personnelRepository.GetAll(x => x.Email.ToLower() == login.Email.ToLower())
-                    .FirstOrDefaultAsync();
+                // Kullanıcıyı bul - Giriş aşamasında TenantId henüz belirlenmediği için filtreleri yoksayıyoruz
+        var personnel = await _personnelRepository.GetAll(x => x.Email.ToLower() == login.Email.ToLower(), includeDeleted: true)
+            .FirstOrDefaultAsync();
 
                 if (personnel == null)
                     return new ServiceMessage<PersonnelInfoDto>
@@ -211,7 +211,12 @@ namespace GuestFlow.Application.Operations.Personnel
         {
             try
             {
-                var personnelList = await _personnelRepository.GetAll()
+                // Development ortamında tüm personelleri listele (TenantId filtresini yoksay)
+                var query = string.Equals(_configuration["ASPNETCORE_ENVIRONMENT"], "Development", StringComparison.OrdinalIgnoreCase)
+                    ? _personnelRepository.GetAll(null, includeDeleted: true)
+                    : _personnelRepository.GetAll();
+
+                var personnelList = await query
                     .Select(p => new PersonnelInfoDto
                     {
                         Id = p.Id,

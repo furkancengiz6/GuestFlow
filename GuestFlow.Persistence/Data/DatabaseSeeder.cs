@@ -104,7 +104,7 @@ namespace GuestFlow.Persistence.Data
                 ("Alanya", "Türkiye")
             };
 
-            var existingCities = await _context.Cities.ToListAsync();
+            var existingCities = await _context.Cities.IgnoreQueryFilters().ToListAsync();
             var existingCityNames = existingCities.Select(c => c.CityName.ToLowerInvariant()).ToHashSet();
             
             var citiesToAdd = new List<CityEntity>();
@@ -133,7 +133,7 @@ namespace GuestFlow.Persistence.Data
             }
 
             // Tüm şehirleri veritabanından tekrar çek
-            var allCities = await _context.Cities.ToListAsync();
+            var allCities = await _context.Cities.IgnoreQueryFilters().ToListAsync();
             _logger.LogInformation($"Veritabanında toplam {allCities.Count} şehir bulundu. Şehir isimleri: {string.Join(", ", allCities.Select(c => $"'{c.CityName}' (ID: {c.Id})"))}");
             return allCities;
         }
@@ -167,7 +167,7 @@ namespace GuestFlow.Persistence.Data
                 ("Milas-Bodrum Havalimanı", "BJV", bodrum)
             };
 
-            var existingAirports = await _context.Airports.ToListAsync();
+            var existingAirports = await _context.Airports.IgnoreQueryFilters().ToListAsync();
             var existingAirportCodes = existingAirports.Select(a => a.Code.ToUpperInvariant()).ToHashSet();
             
             var airportsToAdd = new List<AirportEntity>();
@@ -197,17 +197,17 @@ namespace GuestFlow.Persistence.Data
             }
 
             // Tüm havaalanlarını veritabanından tekrar çek
-            var allAirports = await _context.Airports.ToListAsync();
+            var allAirports = await _context.Airports.IgnoreQueryFilters().ToListAsync();
             _logger.LogInformation($"Veritabanında toplam {allAirports.Count} havaalanı bulundu. Havaalanı kodları: {string.Join(", ", allAirports.Select(a => $"'{a.Code}'"))}");
             return allAirports;
         }
 
         private async Task<List<VehicleEntity>> SeedVehiclesAsync()
         {
-            if (await _context.Vehicles.AnyAsync())
+            if (await _context.Vehicles.IgnoreQueryFilters().AnyAsync())
             {
                 _logger.LogInformation("Araçlar zaten mevcut, atlanıyor.");
-                return await _context.Vehicles.ToListAsync();
+                return await _context.Vehicles.IgnoreQueryFilters().ToListAsync();
             }
 
             var vehicles = new List<VehicleEntity>
@@ -264,7 +264,9 @@ namespace GuestFlow.Persistence.Data
 
         private async Task<List<PersonnelEntity>> SeedPersonnelAsync()
         {
-            var existingPersonnel = await _context.Personnels.ToListAsync();
+            var existingPersonnel = await _context.Personnels
+                .IgnoreQueryFilters()
+                .ToListAsync();
 
             // Eğer personel varsa, şifrelerini güncelle (DataProtection key değişmiş olabilir)
             if (existingPersonnel.Any())
@@ -272,20 +274,17 @@ namespace GuestFlow.Persistence.Data
                 _logger.LogInformation("Personel zaten mevcut, şifreler güncelleniyor...");
 
                 bool hasChanges = false;
-                // Şifreleri güncelle - demo veriler için rastgele şifreler kullan
+                // Demo kullanıcılar için sabit bir şifre kullan - geliştirme ortamında kolaylık ve tutarlılık için
                 foreach (var person in existingPersonnel)
                 {
-                    // Demo verilerde şifre kontrolü yapma, her zaman rastgele şifre üret
                     if (person.Email.Contains(".demo.") || person.Email.Contains("@guestflow.local"))
                     {
-                        var newPassword = GenerateRandomPassword();
-                        person.Password = _dataProtection.Protect(newPassword);
+                        var demoPassword = "GuestFlow123!";
+                        person.Password = _dataProtection.Protect(demoPassword);
                         hasChanges = true;
-                        _logger.LogWarning($"🚨 DEMO USER PASSWORD GENERATED 🚨");
+                        _logger.LogWarning($"🚨 DEMO USER PASSWORD STABILIZED 🚨");
                         _logger.LogWarning($"Email: {person.Email}");
-                        _logger.LogWarning($"Password: {newPassword}");
-                        _logger.LogWarning($"Role: {person.UserType}");
-                        _logger.LogWarning($"Save this password to login!");
+                        _logger.LogWarning($"Password: {demoPassword}");
                     }
                 }
 
@@ -359,12 +358,11 @@ namespace GuestFlow.Persistence.Data
 
         private async Task<List<GuestEntity>> SeedGuestsAsync(List<HotelEntity> hotels)
         {
-            if (await _context.Guests.AnyAsync())
+            if (await _context.Guests.IgnoreQueryFilters().AnyAsync())
             {
                 _logger.LogInformation("Misafirler zaten mevcut, atlanıyor.");
-                return await _context.Guests.ToListAsync();
+                return await _context.Guests.IgnoreQueryFilters().ToListAsync();
             }
-
             var random = new Random();
             var guests = new List<GuestEntity>
             {
@@ -396,14 +394,14 @@ namespace GuestFlow.Persistence.Data
 
         private async Task<List<TourEntity>> SeedToursAsync(List<CityEntity> cities)
         {
-            if (await _context.Tours.AnyAsync())
+            if (await _context.Tours.IgnoreQueryFilters().AnyAsync())
             {
                 _logger.LogInformation("Turlar zaten mevcut, atlanıyor.");
-                return await _context.Tours.ToListAsync();
+                return await _context.Tours.IgnoreQueryFilters().ToListAsync();
             }
 
             // Şehirleri veritabanından tekrar çek
-            var citiesFromDb = await _context.Cities.ToListAsync();
+            var citiesFromDb = await _context.Cities.IgnoreQueryFilters().ToListAsync();
             var kapadokya = citiesFromDb.FirstOrDefault(c => c.CityName == "Kapadokya");
             var pamukkale = citiesFromDb.FirstOrDefault(c => c.CityName == "Pamukkale");
             var istanbul = citiesFromDb.FirstOrDefault(c => 
@@ -451,11 +449,12 @@ namespace GuestFlow.Persistence.Data
             List<HotelEntity> hotels,
             List<RestaurantEntity> restaurants)
         {
-            if (await _context.Transfers.AnyAsync())
+            if (await _context.Transfers.IgnoreQueryFilters().AnyAsync())
             {
                 _logger.LogInformation("Transferler zaten mevcut, atlanıyor.");
                 // Include'ları yapmadan önce null kontrolü yapıyoruz
                 var existingTransfers = await _context.Transfers
+                    .IgnoreQueryFilters()
                     .Where(t => t.PickupAddress != null && t.DropoffAddress != null)
                     .ToListAsync();
                 
@@ -481,9 +480,11 @@ namespace GuestFlow.Persistence.Data
 
             // Şehirleri ve havaalanlarını veritabanından tekrar çek (ID'lerin atandığından emin ol)
             var citiesFromDb = await _context.Cities
+                .IgnoreQueryFilters()
                 .Where(c => c.CityName != null)
                 .ToListAsync();
             var airportsFromDb = await _context.Airports
+                .IgnoreQueryFilters()
                 .Where(a => a.Code != null && a.Name != null)
                 .ToListAsync();
             
@@ -610,15 +611,15 @@ namespace GuestFlow.Persistence.Data
             List<VehicleEntity> vehicles,
             List<HotelEntity> hotels)
         {
-            if (await _context.CityTours.AnyAsync())
+            if (await _context.CityTours.IgnoreQueryFilters().AnyAsync())
             {
                 _logger.LogInformation("Şehir turları zaten mevcut, atlanıyor.");
-                return await _context.CityTours.ToListAsync();
+                return await _context.CityTours.IgnoreQueryFilters().ToListAsync();
             }
 
             // Şehirleri ve turları veritabanından tekrar çek (ID'lerin atandığından emin ol)
-            var citiesFromDb = await _context.Cities.ToListAsync();
-            var toursFromDb = await _context.Tours.Where(t => t.IsActive).ToListAsync();
+            var citiesFromDb = await _context.Cities.IgnoreQueryFilters().ToListAsync();
+            var toursFromDb = await _context.Tours.IgnoreQueryFilters().Where(t => t.IsActive).ToListAsync();
             var istanbul = citiesFromDb.FirstOrDefault(c => 
                 c.CityName.Equals("İstanbul", StringComparison.OrdinalIgnoreCase) || 
                 c.CityName.Equals("Istanbul", StringComparison.OrdinalIgnoreCase));
@@ -701,14 +702,14 @@ namespace GuestFlow.Persistence.Data
             List<CityEntity> cities,
             List<HotelEntity> hotels)
         {
-            if (await _context.YachtTours.AnyAsync())
+            if (await _context.YachtTours.IgnoreQueryFilters().AnyAsync())
             {
                 _logger.LogInformation("Yat turları zaten mevcut, atlanıyor.");
-                return await _context.YachtTours.ToListAsync();
+                return await _context.YachtTours.IgnoreQueryFilters().ToListAsync();
             }
 
             // Şehirleri veritabanından tekrar çek (ID'lerin atandığından emin ol)
-            var citiesFromDb = await _context.Cities.ToListAsync();
+            var citiesFromDb = await _context.Cities.IgnoreQueryFilters().ToListAsync();
             var bodrum = citiesFromDb.FirstOrDefault(c => c.CityName == "Bodrum");
             var fethiye = citiesFromDb.FirstOrDefault(c => c.CityName == "Fethiye");
             var marmaris = citiesFromDb.FirstOrDefault(c => c.CityName == "Marmaris");
@@ -773,10 +774,10 @@ namespace GuestFlow.Persistence.Data
             List<CityTourEntity> cityTours,
             List<YachtTourEntity> yachtTours)
         {
-            if (await _context.Invoices.AnyAsync())
+            if (await _context.Invoices.IgnoreQueryFilters().AnyAsync())
             {
                 _logger.LogInformation("Faturalar zaten mevcut, atlanıyor.");
-                return await _context.Invoices.ToListAsync();
+                return await _context.Invoices.IgnoreQueryFilters().ToListAsync();
             }
 
             var invoices = new List<InvoicesEntity>();
@@ -1042,10 +1043,10 @@ namespace GuestFlow.Persistence.Data
             List<InvoicesEntity> invoices,
             List<GuestEntity> guests)
         {
-            if (await _context.Payments.AnyAsync())
+            if (await _context.Payments.IgnoreQueryFilters().AnyAsync())
             {
                 _logger.LogInformation("Ödemeler zaten mevcut, atlanıyor.");
-                return await _context.Payments.ToListAsync();
+                return await _context.Payments.IgnoreQueryFilters().ToListAsync();
             }
 
             var payments = new List<PaymentEntity>();
@@ -1084,7 +1085,7 @@ namespace GuestFlow.Persistence.Data
 
         private async Task SeedDailyRevenuesAsync()
         {
-            if (await _context.DailyRevenues.AnyAsync())
+            if (await _context.DailyRevenues.IgnoreQueryFilters().AnyAsync())
             {
                 _logger.LogInformation("Günlük gelirler zaten mevcut, atlanıyor.");
                 return;
@@ -1114,7 +1115,7 @@ namespace GuestFlow.Persistence.Data
 
         private async Task SeedDailyNotesAsync(List<PersonnelEntity> personnel)
         {
-            if (await _context.DailyNotes.AnyAsync())
+            if (await _context.DailyNotes.IgnoreQueryFilters().AnyAsync())
             {
                 _logger.LogInformation("Günlük notlar zaten mevcut, atlanıyor.");
                 return;
@@ -1160,13 +1161,13 @@ namespace GuestFlow.Persistence.Data
 
         private async Task<List<HotelEntity>> SeedHotelsAsync(List<CityEntity> cities)
         {
-            if (await _context.Hotels.AnyAsync())
+            if (await _context.Hotels.IgnoreQueryFilters().AnyAsync())
             {
                 _logger.LogInformation("Oteller zaten mevcut, atlanıyor.");
-                return await _context.Hotels.ToListAsync();
+                return await _context.Hotels.IgnoreQueryFilters().ToListAsync();
             }
 
-            var citiesFromDb = await _context.Cities.ToListAsync();
+            var citiesFromDb = await _context.Cities.IgnoreQueryFilters().ToListAsync();
             var istanbul = citiesFromDb.FirstOrDefault(c => 
                 c.CityName.Equals("İstanbul", StringComparison.OrdinalIgnoreCase) || 
                 c.CityName.Equals("Istanbul", StringComparison.OrdinalIgnoreCase));
@@ -1266,10 +1267,10 @@ namespace GuestFlow.Persistence.Data
 
         private async Task<List<RestaurantEntity>> SeedRestaurantsAsync(List<CityEntity> cities)
         {
-            if (await _context.Restaurants.AnyAsync())
+            if (await _context.Restaurants.IgnoreQueryFilters().AnyAsync())
             {
                 _logger.LogInformation("Restoranlar zaten mevcut, atlanıyor.");
-                return await _context.Restaurants.ToListAsync();
+                return await _context.Restaurants.IgnoreQueryFilters().ToListAsync();
             }
 
             var citiesFromDb = await _context.Cities.ToListAsync();
@@ -1372,10 +1373,10 @@ namespace GuestFlow.Persistence.Data
             List<HotelEntity> hotels,
             List<VehicleEntity> vehicles)
         {
-            if (await _context.RestaurantReservations.AnyAsync())
+            if (await _context.RestaurantReservations.IgnoreQueryFilters().AnyAsync())
             {
                 _logger.LogInformation("Restoran rezervasyonları zaten mevcut, atlanıyor.");
-                return await _context.RestaurantReservations.ToListAsync();
+                return await _context.RestaurantReservations.IgnoreQueryFilters().ToListAsync();
             }
 
             var reservations = new List<RestaurantReservationEntity>();
@@ -1481,10 +1482,10 @@ namespace GuestFlow.Persistence.Data
             List<YachtTourEntity> yachtTours,
             List<RestaurantReservationEntity> restaurantReservations)
         {
-            if (await _context.Itineraries.AnyAsync())
+            if (await _context.Itineraries.IgnoreQueryFilters().AnyAsync())
             {
                 _logger.LogInformation("İtineraryler zaten mevcut, atlanıyor.");
-                return await _context.Itineraries.ToListAsync();
+                return await _context.Itineraries.IgnoreQueryFilters().ToListAsync();
             }
 
             var itineraries = new List<ItineraryEntity>();
@@ -1623,10 +1624,10 @@ namespace GuestFlow.Persistence.Data
             List<YachtTourEntity> yachtTours,
             List<RestaurantReservationEntity> restaurantReservations)
         {
-            if (await _context.ServicePackages.AnyAsync())
+            if (await _context.ServicePackages.IgnoreQueryFilters().AnyAsync())
             {
                 _logger.LogInformation("Servis paketleri zaten mevcut, atlanıyor.");
-                return await _context.ServicePackages.ToListAsync();
+                return await _context.ServicePackages.IgnoreQueryFilters().ToListAsync();
             }
 
             var packages = new List<ServicePackageEntity>();
@@ -1793,7 +1794,7 @@ namespace GuestFlow.Persistence.Data
 
         private async Task SeedGuestReviewsAsync(List<GuestEntity> guests, List<HotelEntity> hotels, List<RestaurantEntity> restaurants, List<TourEntity> tours)
         {
-            if (await _context.GuestReviews.AnyAsync())
+            if (await _context.GuestReviews.IgnoreQueryFilters().AnyAsync())
             {
                 _logger.LogInformation("Yorumlar zaten mevcut, atlanıyor.");
                 return;
@@ -1863,7 +1864,7 @@ namespace GuestFlow.Persistence.Data
 
         private async Task SeedGuestStaffInteractionsAsync(List<GuestEntity> guests, List<PersonnelEntity> personnel)
         {
-            if (await _context.GuestStaffInteractions.AnyAsync())
+            if (await _context.GuestStaffInteractions.IgnoreQueryFilters().AnyAsync())
             {
                 _logger.LogInformation("Etkileşimler zaten mevcut, atlanıyor.");
                 return;

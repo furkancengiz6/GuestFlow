@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/build-info.js",
+    "build": "vite build",
     "build:analyze": "cross-env ANALYZE=true vite build && node scripts/build-info.js && echo 'Bundle analysis available at dist/stats.html'",
     "build:staging": "cross-env VITE_ENV=staging vite build && node scripts/build-info.js",
     "build:production": "cross-env VITE_ENV=production vite build && node scripts/build-info.js",
