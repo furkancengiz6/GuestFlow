@@ -1,15 +1,15 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using GuestFlow.Domain.Events;
+using GuestFlow.Domain.Entities.Interfaces;
+using System.ComponentModel.DataAnnotations.Schema;
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-using GuestFlow.Domain.Entities.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace GuestFlow.Domain.Entities.Core
 {
     /// <summary>
-    /// Base entity with full audit traceability.
+    /// Base entity with full audit traceability and domain event support.
     /// 
     /// AUDIT TRACEABILITY (LOCKED PRODUCT DECISION):
     /// - Date changes MUST leave an operational trace
@@ -18,6 +18,15 @@ namespace GuestFlow.Domain.Entities.Core
     /// </summary>
     public class BaseEntity : ITenantEntity, ISoftDelete
     {
+        private List<IDomainEvent> _domainEvents = new();
+
+        [NotMapped]
+        public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
+
+        public void AddDomainEvent(IDomainEvent domainEvent) => _domainEvents.Add(domainEvent);
+        public void RemoveDomainEvent(IDomainEvent domainEvent) => _domainEvents.Remove(domainEvent);
+        public void ClearDomainEvents() => _domainEvents.Clear();
+
         public int Id { get; set; }
         public int TenantId { get; set; }
         

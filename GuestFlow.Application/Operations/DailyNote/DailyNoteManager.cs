@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuestFlow.Domain.Events;
 using System.Threading.Tasks;
 
 namespace GuestFlow.Application.Operations.DailyNote
@@ -63,6 +64,9 @@ namespace GuestFlow.Application.Operations.DailyNote
                     CreatedDate = DateTime.UtcNow,
                     IsDeleted = false
                 };
+
+                // Trigger Domain Event
+                dailyNoteEntity.AddDomainEvent(new DailyNoteCreatedEvent(dailyNoteEntity));
 
                 // Yeni günlük notu veritabanına ekliyorum.
                 await _dailyNoteRepository.AddAsync(dailyNoteEntity);

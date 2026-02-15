@@ -15,16 +15,12 @@ import {
   Button,
   Grid,
   Paper,
-  IconButton,
-  Tooltip,
   Alert,
   CircularProgress,
 } from '@mui/material'
 import {
   FilterList as FilterIcon,
   Refresh as RefreshIcon,
-  Today as TodayIcon,
-  LocationOn as LocationIcon,
 } from '@mui/icons-material'
 import { GoogleMap, Marker, InfoWindow, Polyline, useJsApiLoader } from '@react-google-maps/api'
 import { useMapView } from '../../hooks/useMap'
@@ -111,7 +107,7 @@ const OperationalMap: React.FC = () => {
   }
 
   const getMarkerIcon = (colorCode?: string) => {
-    const color = getMarkerColor(colorCode)
+    getMarkerColor(colorCode)
     // Return undefined to use default marker if google.maps is not available
     // The icon will be set after Google Maps loads
     return undefined
@@ -331,131 +327,131 @@ const OperationalMap: React.FC = () => {
       <Card>
         <CardContent sx={{ p: 0 }}>
           <GoogleMap
-              mapContainerStyle={mapContainerStyle}
-              center={mapCenter}
-              zoom={mapZoom}
-              options={{
-                mapTypeControl: true,
-                streetViewControl: false,
-                fullscreenControl: true,
-              }}
-            >
-              {/* Markers */}
-              {mapView?.services.map((service) => {
-                const markers: React.ReactNode[] = []
+            mapContainerStyle={mapContainerStyle}
+            center={mapCenter}
+            zoom={mapZoom}
+            options={{
+              mapTypeControl: true,
+              streetViewControl: false,
+              fullscreenControl: true,
+            }}
+          >
+            {/* Markers */}
+            {mapView?.services.map((service) => {
+              const markers: React.ReactNode[] = []
 
-                // Pickup marker
-                if (service.pickupLocation) {
-                  markers.push(
-                    <Marker
-                      key={`pickup-${service.serviceId}`}
-                      position={{
+              // Pickup marker
+              if (service.pickupLocation) {
+                markers.push(
+                  <Marker
+                    key={`pickup-${service.serviceId}`}
+                    position={{
+                      lat: service.pickupLocation.latitude,
+                      lng: service.pickupLocation.longitude,
+                    }}
+                    icon={getMarkerIcon(service.colorCode)}
+                    onClick={() => handleServiceClick(service)}
+                    title={`${service.serviceName} - Pickup`}
+                  />
+                )
+              }
+
+              // Dropoff marker
+              if (service.dropoffLocation) {
+                markers.push(
+                  <Marker
+                    key={`dropoff-${service.serviceId}`}
+                    position={{
+                      lat: service.dropoffLocation.latitude,
+                      lng: service.dropoffLocation.longitude,
+                    }}
+                    icon={getMarkerIcon(service.colorCode)}
+                    onClick={() => handleServiceClick(service)}
+                    title={`${service.serviceName} - Dropoff`}
+                  />
+                )
+              }
+
+              // Polyline between pickup and dropoff
+              if (
+                service.pickupLocation &&
+                service.dropoffLocation &&
+                service.serviceType === 'Transfer'
+              ) {
+                markers.push(
+                  <Polyline
+                    key={`line-${service.serviceId}`}
+                    path={[
+                      {
                         lat: service.pickupLocation.latitude,
                         lng: service.pickupLocation.longitude,
-                      }}
-                      icon={getMarkerIcon(service.colorCode)}
-                      onClick={() => handleServiceClick(service)}
-                      title={`${service.serviceName} - Pickup`}
-                    />
-                  )
-                }
-
-                // Dropoff marker
-                if (service.dropoffLocation) {
-                  markers.push(
-                    <Marker
-                      key={`dropoff-${service.serviceId}`}
-                      position={{
+                      },
+                      {
                         lat: service.dropoffLocation.latitude,
                         lng: service.dropoffLocation.longitude,
-                      }}
-                      icon={getMarkerIcon(service.colorCode)}
-                      onClick={() => handleServiceClick(service)}
-                      title={`${service.serviceName} - Dropoff`}
-                    />
-                  )
-                }
+                      },
+                    ]}
+                    options={{
+                      strokeColor: getMarkerColor(service.colorCode),
+                      strokeOpacity: 0.6,
+                      strokeWeight: 3,
+                    }}
+                  />
+                )
+              }
 
-                // Polyline between pickup and dropoff
-                if (
-                  service.pickupLocation &&
-                  service.dropoffLocation &&
-                  service.serviceType === 'Transfer'
-                ) {
-                  markers.push(
-                    <Polyline
-                      key={`line-${service.serviceId}`}
-                      path={[
-                        {
-                          lat: service.pickupLocation.latitude,
-                          lng: service.pickupLocation.longitude,
-                        },
-                        {
-                          lat: service.dropoffLocation.latitude,
-                          lng: service.dropoffLocation.longitude,
-                        },
-                      ]}
-                      options={{
-                        strokeColor: getMarkerColor(service.colorCode),
-                        strokeOpacity: 0.6,
-                        strokeWeight: 3,
-                      }}
-                    />
-                  )
-                }
+              return markers
+            })}
 
-                return markers
-              })}
-
-              {/* Info Window */}
-              {selectedService && selectedService.pickupLocation && (
-                <InfoWindow
-                  position={{
-                    lat: selectedService.pickupLocation.latitude,
-                    lng: selectedService.pickupLocation.longitude,
-                  }}
-                  onCloseClick={() => setSelectedService(null)}
-                >
-                  <Box sx={{ p: 1, minWidth: 200 }}>
-                    <Typography variant="subtitle2" fontWeight="bold">
-                      {selectedService.serviceName}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {selectedService.serviceType}
-                    </Typography>
+            {/* Info Window */}
+            {selectedService && selectedService.pickupLocation && (
+              <InfoWindow
+                position={{
+                  lat: selectedService.pickupLocation.latitude,
+                  lng: selectedService.pickupLocation.longitude,
+                }}
+                onCloseClick={() => setSelectedService(null)}
+              >
+                <Box sx={{ p: 1, minWidth: 200 }}>
+                  <Typography variant="subtitle2" fontWeight="bold">
+                    {selectedService.serviceName}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {selectedService.serviceType}
+                  </Typography>
+                  <Typography variant="body2">
+                    Misafir: {selectedService.guestName}
+                  </Typography>
+                  {selectedService.roomNumber && (
                     <Typography variant="body2">
-                      Misafir: {selectedService.guestName}
+                      Oda: {selectedService.roomNumber}
                     </Typography>
-                    {selectedService.roomNumber && (
-                      <Typography variant="body2">
-                        Oda: {selectedService.roomNumber}
-                      </Typography>
-                    )}
-                    <Typography variant="body2">
-                      Tarih: {format(new Date(selectedService.serviceDate), 'dd.MM.yyyy HH:mm')}
-                    </Typography>
-                    <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
-                      <Chip
-                        label={selectedService.status}
-                        size="small"
-                        color={
-                          selectedService.status === 'Completed'
-                            ? 'success'
-                            : selectedService.status === 'InProgress'
+                  )}
+                  <Typography variant="body2">
+                    Tarih: {format(new Date(selectedService.serviceDate), 'dd.MM.yyyy HH:mm')}
+                  </Typography>
+                  <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
+                    <Chip
+                      label={selectedService.status}
+                      size="small"
+                      color={
+                        selectedService.status === 'Completed'
+                          ? 'success'
+                          : selectedService.status === 'InProgress'
                             ? 'info'
                             : 'default'
-                        }
-                      />
-                      {selectedService.isUrgent && (
-                        <Chip label="Acil" size="small" color="warning" />
-                      )}
-                      {selectedService.isDelayed && (
-                        <Chip label="Gecikmeli" size="small" color="error" />
-                      )}
-                    </Box>
+                      }
+                    />
+                    {selectedService.isUrgent && (
+                      <Chip label="Acil" size="small" color="warning" />
+                    )}
+                    {selectedService.isDelayed && (
+                      <Chip label="Gecikmeli" size="small" color="error" />
+                    )}
                   </Box>
-                </InfoWindow>
-              )}
+                </Box>
+              </InfoWindow>
+            )}
           </GoogleMap>
         </CardContent>
       </Card>

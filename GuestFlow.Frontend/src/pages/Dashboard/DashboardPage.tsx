@@ -17,16 +17,12 @@ import {
   Skeleton,
   ToggleButton,
   ToggleButtonGroup,
-  Button,
-  IconButton,
 } from '@mui/material'
 import {
   People as PeopleIcon,
   DirectionsCar as TransferIcon,
   Receipt as InvoiceIcon,
   AttachMoney as MoneyIcon,
-  Visibility as VisibilityIcon,
-  Edit as EditIcon,
 } from '@mui/icons-material'
 import {
   LineChart,
@@ -74,8 +70,7 @@ const DashboardPage = () => {
     isLoading: isLoadingStats,
     error: statsError,
   } = useQuickStats()
-  const { data: recentActivities, isLoading: isLoadingActivities } =
-    useRecentActivities(5)
+  useRecentActivities(5)
   const { data: revenueChart, isLoading: isLoadingChart } =
     useRevenueChartData(revenuePeriod, revenueDays)
   const { data: upcomingBookings, isLoading: isLoadingBookings } =
@@ -599,238 +594,6 @@ const DashboardPage = () => {
           </Grid>
         </>
       )}
-    </Box>
-  )
-}
-
-// OPERATIONS DASHBOARD COMPONENT - CONCIERGE MODE
-const OperationsDashboard = ({
-  unpaidServices,
-  isLoadingUnpaid,
-  upcomingServices,
-  isLoadingUpcoming,
-}: {
-  unpaidServices: any
-  isLoadingUnpaid: boolean
-  upcomingServices: any
-  isLoadingUpcoming: boolean
-}) => {
-  return (
-    <Box>
-      {/* URGENT ACTIONS ALERT */}
-      <Alert severity="error" sx={{ mb: 3 }}>
-        <AlertTitle>🔴 ACİL EYLEMLER</AlertTitle>
-        <Typography variant="body2">Şu anda müdahale edilmesi gereken durumlar:</Typography>
-        <Box sx={{ mt: 1 }}>
-          <Typography variant="body2">• 2 transfer için onay zamanı geçmiş</Typography>
-          <Typography variant="body2">• 3 şoför atanmamış servis</Typography>
-          <Typography variant="body2">• 1 hava durumu uyarısı (Şehir Turu #123)</Typography>
-        </Box>
-      </Alert>
-
-      {/* TODAY'S SCHEDULE */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            📅 BUGÜNÜN PROGRAMI
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-            <Chip label="08:00 - Transfer: İstanbul Havalimanı" color="primary" size="small" />
-            <Chip label="10:30 - Şehir Turu: Kapadokya" color="secondary" size="small" />
-            <Chip label="14:00 - Yat Turu: Bodrum" color="success" size="small" />
-          </Box>
-        </CardContent>
-      </Card>
-
-      {/* OPERATIONAL STATUS GRID */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        {/* DRIVER STATUS */}
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                👨‍🚗 ŞOFÖR DURUMU
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="body2">Ahmet Yılmaz</Typography>
-                  <Chip label="Müsait" color="success" size="small" />
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="body2">Mehmet Kaya</Typography>
-                  <Chip label="Transfer'da" color="warning" size="small" />
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="body2">Ayşe Demir</Typography>
-                  <Chip label="Araç Bakımda" color="error" size="small" />
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* WEATHER ALERTS */}
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                ⛈️ HAVA DURUMU UYARILARI
-              </Typography>
-              <Alert severity="warning" sx={{ mb: 1 }}>
-                <Typography variant="body2">
-                  <strong>Kapadokya:</strong> Şiddetli rüzgar - Balon turları etkilenebilir
-                </Typography>
-              </Alert>
-              <Alert severity="info" sx={{ mb: 1 }}>
-                <Typography variant="body2">
-                  <strong>Bodrum:</strong> Deniz dalgalı - Yat turları için alternatif plan hazır
-                </Typography>
-              </Alert>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* CAPACITY ALERTS */}
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                ⚠️ KAPASITE UYARILARI
-              </Typography>
-              <Alert severity="error" sx={{ mb: 1 }}>
-                <Typography variant="body2">
-                  <strong>14:00 Yat Turu:</strong> 8 kişi için 6 kişilik tekne
-                </Typography>
-              </Alert>
-              <Alert severity="warning" sx={{ mb: 1 }}>
-                <Typography variant="body2">
-                  <strong>10:30 Şehir Turu:</strong> Rehber kapasitesi sınırda
-                </Typography>
-              </Alert>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* REVENUE AT RISK */}
-      {!isLoadingUnpaid && unpaidServices && unpaidServices.items && unpaidServices.items.length > 0 && (
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              💰 RİSK ALTINDAKİ GELİRLER
-            </Typography>
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Hizmet</TableCell>
-                    <TableCell>Misafir</TableCell>
-                    <TableCell>Tutar</TableCell>
-                    <TableCell>Gecikme</TableCell>
-                    <TableCell>İşlem</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {unpaidServices.items.slice(0, 5).map((item: any, index: number) => (
-                    <TableRow key={item.serviceId || index}>
-                      <TableCell>{item.serviceType}</TableCell>
-                      <TableCell>{item.guestName}</TableCell>
-                      <TableCell>{formatCurrency(item.remainingAmount)}</TableCell>
-                      <TableCell>{item.daysOverdue} gün</TableCell>
-                      <TableCell>
-                        <Button size="small" variant="outlined" color="primary">
-                          Hatırlat
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* UPCOMING SERVICES TIMELINE */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            📋 YAKLAŞAN HİZMETLER
-          </Typography>
-          {!isLoadingUpcoming && upcomingServices && upcomingServices.items ? (
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Zaman</TableCell>
-                    <TableCell>Hizmet</TableCell>
-                    <TableCell>Misafir</TableCell>
-                    <TableCell>Durum</TableCell>
-                    <TableCell>Öncelik</TableCell>
-                    <TableCell>İşlemler</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {upcomingServices.items.slice(0, 10).map((item: any) => (
-                    <TableRow key={`${item.serviceType}-${item.serviceId}`}>
-                      <TableCell>{formatDate(item.serviceDate)}</TableCell>
-                      <TableCell>{item.serviceType}</TableCell>
-                      <TableCell>{item.guestName}</TableCell>
-                      <TableCell>{item.status || 'Planlandı'}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={item.isUrgent ? 'Acil' : 'Normal'}
-                          color={item.isUrgent ? 'error' : 'default'}
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <IconButton size="small" color="primary">
-                          <VisibilityIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton size="small" color="secondary">
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          ) : (
-            <ContentState
-              state="loading"
-              skeletonLines={5}
-            />
-          )}
-        </CardContent>
-      </Card>
-
-      {/* GUEST REQUESTS */}
-      <Card>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            🎯 ÖZEL MİSAFİR İSTEKLERİ
-          </Typography>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            <Alert severity="info">
-              <Typography variant="body2">
-                <strong>VIP Transfer #456:</strong> Misafir wheelchair istiyor
-              </Typography>
-            </Alert>
-            <Alert severity="warning">
-              <Typography variant="body2">
-                <strong>Şehir Turu #789:</strong> Vegan menü gerekli
-              </Typography>
-            </Alert>
-            <Alert severity="success">
-              <Typography variant="body2">
-                <strong>Yat Turu #101:</strong> Doğum günü kutlaması için pasta
-              </Typography>
-            </Alert>
-          </Box>
-        </CardContent>
-      </Card>
     </Box>
   )
 }

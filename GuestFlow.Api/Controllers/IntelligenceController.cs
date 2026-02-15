@@ -7,6 +7,7 @@ using GuestFlow.Application.Operations.Intelligence.Relationship;
 using GuestFlow.Application.Operations.Intelligence.Behavioral;
 using GuestFlow.Application.Operations.Intelligence.Predictive;
 using GuestFlow.Application.Operations.Intelligence.Proactive;
+using GuestFlow.Domain.Entities.Intelligence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -30,19 +31,25 @@ namespace GuestFlow.Api.Controllers
         private readonly IBehavioralTrackingService _behavioralTrackingService;
         private readonly IPredictiveIntelligenceService _predictiveIntelligenceService;
         private readonly IProactiveIntelligenceService _proactiveIntelligenceService;
+        private readonly IAutomaticActionService _automaticActionService;
+        private readonly GuestFlow.Domain.UnitOfWork.IUnitOfWork _unitOfWork;
 
         public IntelligenceController(
             ISentimentAnalysisService sentimentAnalysisService,
             IRelationshipIntelligenceService relationshipIntelligenceService,
             IBehavioralTrackingService behavioralTrackingService,
             IPredictiveIntelligenceService predictiveIntelligenceService,
-            IProactiveIntelligenceService proactiveIntelligenceService)
+            IProactiveIntelligenceService proactiveIntelligenceService,
+            IAutomaticActionService automaticActionService,
+            GuestFlow.Domain.UnitOfWork.IUnitOfWork unitOfWork)
         {
             _sentimentAnalysisService = sentimentAnalysisService;
             _relationshipIntelligenceService = relationshipIntelligenceService;
             _behavioralTrackingService = behavioralTrackingService;
             _predictiveIntelligenceService = predictiveIntelligenceService;
             _proactiveIntelligenceService = proactiveIntelligenceService;
+            _automaticActionService = automaticActionService;
+            _unitOfWork = unitOfWork;
         }
 
         /// <summary>
@@ -87,7 +94,7 @@ namespace GuestFlow.Api.Controllers
         /// <summary>
         /// Find best staff matches for a guest
         /// </summary>
-        [HttpGet("guests/{guestId}/staff-matches")]
+        [HttpGet("guests/{guestId}/best-staff-matches")]
         [ProducesResponseType(typeof(ApiResponse<System.Collections.Generic.List<StaffMatchResult>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> FindBestStaffMatches(int guestId, [FromQuery] int? limit = 5)
         {
@@ -103,9 +110,27 @@ namespace GuestFlow.Api.Controllers
         }
 
         /// <summary>
+        /// Find best guest matches for a staff member
+        /// </summary>
+        [HttpGet("staff/{staffId}/best-guest-matches")]
+        [ProducesResponseType(typeof(ApiResponse<System.Collections.Generic.List<GuestMatchResult>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> FindBestGuestMatches(int staffId, [FromQuery] int? limit = 5)
+        {
+            try
+            {
+                var matches = await _relationshipIntelligenceService.FindBestGuestMatchesAsync(staffId, limit);
+                return Success(matches, "Best guest matches retrieved successfully.");
+            }
+            catch (Exception ex)
+            {
+                return Error("Failed to find guest matches.", 500, new { Error = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Find best service matches for a guest
         /// </summary>
-        [HttpGet("guests/{guestId}/service-matches")]
+        [HttpGet("guests/{guestId}/best-service-matches")]
         [ProducesResponseType(typeof(ApiResponse<System.Collections.Generic.List<ServiceMatchResult>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> FindBestServiceMatches(
             int guestId,
@@ -142,6 +167,24 @@ namespace GuestFlow.Api.Controllers
         }
 
         /// <summary>
+        /// Get guest relationship strength with staff
+        /// </summary>
+        [HttpGet("guests/{guestId}/staff/{staffId}/relationship-strength")]
+        [ProducesResponseType(typeof(ApiResponse<double>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetRelationshipStrength(int guestId, int staffId)
+        {
+            try
+            {
+                var strength = await _relationshipIntelligenceService.GetRelationshipStrengthAsync(guestId, staffId);
+                return Success(strength, "Relationship strength retrieved successfully.");
+            }
+            catch (Exception ex)
+            {
+                return Error("Failed to get relationship strength.", 500, new { Error = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Get guest preference patterns
         /// </summary>
         [HttpGet("guests/{guestId}/preference-patterns")]
@@ -174,6 +217,24 @@ namespace GuestFlow.Api.Controllers
             catch (Exception ex)
             {
                 return Error("Failed to get service recommendations.", 500, new { Error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Get guest relationship network
+        /// </summary>
+        [HttpGet("guests/{guestId}/relationship-network")]
+        [ProducesResponseType(typeof(ApiResponse<RelationshipNetwork>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetRelationshipNetwork(int guestId)
+        {
+            try
+            {
+                var network = await _relationshipIntelligenceService.GetGuestRelationshipNetworkAsync(guestId);
+                return Success(network, "Relationship network retrieved successfully.");
+            }
+            catch (Exception ex)
+            {
+                return Error("Failed to get relationship network.", 500, new { Error = ex.Message });
             }
         }
 
@@ -440,6 +501,78 @@ namespace GuestFlow.Api.Controllers
             catch (Exception ex)
             {
                 return Error("Failed to get automatic actions.", 500, new { Error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Get recent behavioral insights for a guest, optionally filtered by source (e.g., "DailyNote")
+        /// </summary>
+        [HttpGet("guests/{guestId}/behavioral-insights")]
+        [ProducesResponseType(typeof(ApiResponse<System.Collections.Generic.List<GuestFlow.Domain.Entities.Intelligence.GuestBehaviorEntity>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetRecentBehavioralInsights(int guestId, [FromQuery] string? source = null)
+        {
+            try
+            {
+                var query = _unitOfWork.GuestBehaviors.GetAll(b => b.GuestId == guestId && !b.IsDeleted);
+                if (!string.IsNullOrEmpty(source))
+                {
+                    query = query.Where(b => b.RelatedEntityType == source);
+                }
+                
+                var insights = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(
+                    query.OrderByDescending(b => b.BehaviorDate).Take(20));
+                    
+                return Success(insights, "Behavioral insights retrieved successfully.");
+            }
+            catch (Exception ex)
+            {
+                return Error("Failed to get behavioral insights.", 500, new { Error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Execute an automatic action
+        /// </summary>
+        [HttpPost("execute-action")]
+        [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> ExecuteAction([FromBody] AutomaticAction action)
+        {
+            try
+            {
+                var result = await _automaticActionService.ExecuteActionAsync(action);
+                if (result)
+                {
+                    return Success(true, "Automatic action executed successfully.");
+                }
+                else
+                {
+                    return Error("Failed to execute automatic action.", 400);
+                }
+            }
+            catch (Exception ex)
+            {
+                return Error("An error occurred while executing the automatic action.", 500, new { Error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Get action history for a specific guest
+        /// </summary>
+        [HttpGet("guests/{guestId}/history")]
+        [ProducesResponseType(typeof(ApiResponse<System.Collections.Generic.List<GuestIntelligenceActionEntity>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetActionHistory(int guestId)
+        {
+            try
+            {
+                var history = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(
+                    _unitOfWork.GuestIntelligenceActions.GetAll(a => a.GuestId == guestId)
+                    .OrderByDescending(a => a.ExecutionDate));
+                    
+                return Success(history, "Action history retrieved successfully.");
+            }
+            catch (Exception ex)
+            {
+                return Error("Failed to get action history.", 500, new { Error = ex.Message });
             }
         }
     }

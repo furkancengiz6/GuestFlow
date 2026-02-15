@@ -29,7 +29,7 @@ namespace GuestFlow.Application.Tests.Integration
             var tenantProviderMock = new Mock<GuestFlow.Persistence.MultiTenancy.ITenantProvider>();
             tenantProviderMock.Setup(x => x.TenantId).Returns(1);
 
-            _context = new GuestFlowDbContext(options, tenantProviderMock.Object);
+            _context = new GuestFlowDbContext(options, tenantProviderMock.Object, new GuestFlow.Domain.Events.NullDomainEventDispatcher());
 
             // Seed supplier
             var supplier = new Supplier

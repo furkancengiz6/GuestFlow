@@ -25,7 +25,7 @@ namespace GuestFlow.Application.Tests.Verification
                 .UseInMemoryDatabase(databaseName: "GuestFlow_Verification_" + Guid.NewGuid())
                 .Options;
 
-            using var context = new GuestFlowDbContext(options);
+            using var context = new GuestFlowDbContext(options, new Moq.Mock<GuestFlow.Persistence.MultiTenancy.ITenantProvider>().Object, new GuestFlow.Domain.Events.NullDomainEventDispatcher());
             var unitOfWork = new UnitOfWork(context);
 
             // 2. Setup Dependencies

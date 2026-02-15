@@ -18,5 +18,10 @@ namespace GuestFlow.Application.Operations.Finance.Pricing
         /// </summary>
         /// <param name="daysAhead">Number of days ahead to process (default 30).</param>
         Task PushDynamicRatesToOTAsAsync(int daysAhead = 30);
+
+        /// <summary>
+        /// Gets intelligence data for pricing, including forecasts and active rules for a date range.
+        /// </summary>
+        Task<System.Collections.Generic.List<PricingIntelligenceResult>> GetPricingIntelligenceAsync(int roomTypeId, DateTime startDate, DateTime endDate);
     }
 }

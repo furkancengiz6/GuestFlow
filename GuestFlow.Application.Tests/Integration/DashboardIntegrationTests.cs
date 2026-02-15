@@ -46,7 +46,7 @@ public class DashboardIntegrationTests : IAsyncLifetime
             .UseInMemoryDatabase(databaseName: $"GuestFlow_Integration_{Guid.NewGuid()}")
             .Options;
 
-        _context = new GuestFlowDbContext(options, new Moq.Mock<GuestFlow.Persistence.MultiTenancy.ITenantProvider>().Object);
+        _context = new GuestFlowDbContext(options, new Moq.Mock<GuestFlow.Persistence.MultiTenancy.ITenantProvider>().Object, new GuestFlow.Domain.Events.NullDomainEventDispatcher());
 
         // Create repositories
         _guestRepository = new Repository<GuestEntity>(_context);

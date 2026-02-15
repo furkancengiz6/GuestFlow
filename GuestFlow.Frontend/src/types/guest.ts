@@ -115,5 +115,7 @@ export interface GuestDetail {
   invoices: GuestInvoice[]
   timeline: GuestTimelineItem[]
   isAnonymized?: boolean
+  pmsIntegrationId?: number
+  pmsGuestId?: string
 }
 

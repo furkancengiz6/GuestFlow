@@ -4,7 +4,10 @@
 using GuestFlow.Domain.UnitOfWork;
 using GuestFlow.Application.Operations.Intelligence.Graph;
 using GuestFlow.Application.Operations.Intelligence.Behavioral;
+using GuestFlow.Application.Operations.AI;
+using GuestFlow.Application.Models.AI;
 using GuestFlow.Persistence.Context;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,6 +22,7 @@ namespace GuestFlow.Application.Operations.Intelligence.Relationship
         private readonly GuestFlowDbContext _context;
         private readonly IGraphDataService _graphDataService;
         private readonly IBehavioralTrackingService _behavioralTrackingService;
+        private readonly IAIAssistantService _aiAssistantService;
         private readonly ILogger<RelationshipIntelligenceService> _logger;
 
         public RelationshipIntelligenceService(
@@ -26,12 +30,14 @@ namespace GuestFlow.Application.Operations.Intelligence.Relationship
             GuestFlowDbContext context,
             IGraphDataService graphDataService,
             IBehavioralTrackingService behavioralTrackingService,
+            IAIAssistantService aiAssistantService,
             ILogger<RelationshipIntelligenceService> logger)
         {
             _unitOfWork = unitOfWork;
             _context = context;
             _graphDataService = graphDataService;
             _behavioralTrackingService = behavioralTrackingService;
+            _aiAssistantService = aiAssistantService;
             _logger = logger;
         }
 
@@ -39,6 +45,15 @@ namespace GuestFlow.Application.Operations.Intelligence.Relationship
         {
             try
             {
+                // Try AI-powered staff matching first
+                var aiMatches = await FindBestStaffMatchesWithAIAsync(guestId, limit);
+                if (aiMatches != null && aiMatches.Any())
+                {
+                    _logger.LogInformation("AI-Powered Staff Matching completed for GuestId={GuestId}, Found={Count}", 
+                        guestId, aiMatches.Count);
+                    return aiMatches;
+                }
+
                 // Get all interactions for this guest
                 var interactions = await _unitOfWork.GuestStaffInteractions
                     .GetAll(i => i.GuestId == guestId && !i.IsDeleted)
@@ -122,6 +137,87 @@ namespace GuestFlow.Application.Operations.Intelligence.Relationship
             {
                 _logger.LogError(ex, "Failed to find best staff matches: GuestId={GuestId}", guestId);
                 return new List<StaffMatchResult>();
+            }
+        }
+
+        public async Task<List<GuestMatchResult>> FindBestGuestMatchesAsync(int staffId, int? limit = 5)
+        {
+            try
+            {
+                // Try AI-powered guest matching first
+                var aiMatches = await FindBestGuestMatchesWithAIAsync(staffId, limit);
+                if (aiMatches != null && aiMatches.Any())
+                {
+                    _logger.LogInformation("AI-Powered Guest Matching completed for StaffId={StaffId}, Found={Count}", 
+                        staffId, aiMatches.Count);
+                    return aiMatches;
+                }
+
+                // Get all interactions for this staff member
+                var interactions = await _unitOfWork.GuestStaffInteractions
+                    .GetAll(i => i.StaffId == staffId && !i.IsDeleted)
+                    .Include(i => i.Guest)
+                    .ToListAsync();
+
+                if (!interactions.Any())
+                {
+                    return new List<GuestMatchResult>();
+                }
+
+                // Group by guest and calculate metrics
+                var guestGroups = interactions
+                    .GroupBy(i => i.GuestId)
+                    .Select(g => new
+                    {
+                        GuestId = g.Key,
+                        Guest = g.First().Guest,
+                        Interactions = g.ToList(),
+                        InteractionCount = g.Count(),
+                        AverageSatisfaction = g.Any(i => i.SatisfactionScore.HasValue) 
+                            ? g.Where(i => i.SatisfactionScore.HasValue).Average(i => i.SatisfactionScore!.Value) 
+                            : 5.0,
+                        RelationshipStrength = g.Any(i => i.RelationshipStrength.HasValue) 
+                            ? g.Where(i => i.RelationshipStrength.HasValue).Average(i => i.RelationshipStrength!.Value) 
+                            : 0.0
+                    })
+                    .ToList();
+
+                var results = new List<GuestMatchResult>();
+
+                foreach (var group in guestGroups)
+                {
+                    // Calculate compatibility score
+                    var compatibility = await _graphDataService.CalculateGuestStaffCompatibilityAsync(group.GuestId, staffId);
+                    
+                    // If graph doesn't have data, calculate from SQL data
+                    if (compatibility == 0.0)
+                    {
+                        compatibility = CalculateCompatibilityFromInteractions(group.Interactions);
+                    }
+
+                    results.Add(new GuestMatchResult
+                    {
+                        GuestId = group.GuestId,
+                        GuestName = group.Guest?.FullName ?? "Unknown",
+                        CompatibilityScore = compatibility,
+                        RelationshipStrength = group.RelationshipStrength,
+                        InteractionCount = group.InteractionCount,
+                        AverageSatisfaction = group.AverageSatisfaction > 0 ? group.AverageSatisfaction : 5.0,
+                        MatchReason = GetMatchReason(group.InteractionCount, group.AverageSatisfaction, compatibility)
+                    });
+                }
+
+                // Sort by compatibility score and return top matches
+                return results
+                    .OrderByDescending(r => r.CompatibilityScore)
+                    .ThenByDescending(r => r.AverageSatisfaction)
+                    .Take(limit ?? 5)
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to find best guest matches: StaffId={StaffId}", staffId);
+                return new List<GuestMatchResult>();
             }
         }
 
@@ -335,6 +431,15 @@ namespace GuestFlow.Application.Operations.Intelligence.Relationship
         {
             try
             {
+                // Try AI-powered service recommendations first
+                var aiRecommendations = await RecommendServicesWithAIAsync(guestId, targetDate);
+                if (aiRecommendations != null && aiRecommendations.Any())
+                {
+                    _logger.LogInformation("AI-Powered Service Recommendations completed for GuestId={GuestId}, Found={Count}", 
+                        guestId, aiRecommendations.Count);
+                    return aiRecommendations;
+                }
+
                 var recommendations = new List<ServiceRecommendation>();
 
                 // Get guest behavior patterns
@@ -405,19 +510,71 @@ namespace GuestFlow.Application.Operations.Intelligence.Relationship
             {
                 var network = new RelationshipNetwork { GuestId = guestId };
 
+                // Get guest details for the root node
+                var guest = await _unitOfWork.Guests.GetByIdAsync(guestId);
+                if (guest != null)
+                {
+                    network.GuestNode = new NetworkNode
+                    {
+                        Id = guestId.ToString(),
+                        Type = "Guest",
+                        Name = guest.FullName,
+                        Properties = new Dictionary<string, object>
+                        {
+                            { "GuestCode", guest.GuestCode ?? "" }
+                        }
+                    };
+                }
+
                 // Get relationships from graph
                 var relationships = await _graphDataService.GetGuestRelationshipsAsync(guestId);
 
                 // Build network nodes and edges
                 foreach (var relType in relationships.Keys)
                 {
-                    var rels = relationships[relType] as List<object>;
-                    if (rels != null)
+                    if (relationships[relType] is IEnumerable<dynamic> rels)
                     {
                         foreach (var rel in rels)
                         {
-                            // Add nodes and edges based on relationship type
-                            // Implementation depends on graph structure
+                            var relatedId = rel.RelatedId.ToString();
+                            var relatedType = rel.RelatedType;
+                            var node = new NetworkNode
+                            {
+                                Id = relatedId,
+                                Type = relatedType,
+                                Name = rel.RelatedName,
+                                Properties = new Dictionary<string, object>
+                                {
+                                    { "Frequency", rel.Frequency },
+                                    { "Satisfaction", rel.Satisfaction },
+                                    { "Sentiment", rel.Sentiment }
+                                }
+                            };
+
+                            // Categorize node
+                            if (relatedType == "Staff")
+                            {
+                                if (!network.StaffNodes.Any(n => n.Id == relatedId))
+                                    network.StaffNodes.Add(node);
+                            }
+                            else if (relatedType == "Service" || relatedType == "Preference")
+                            {
+                                if (!network.ServiceNodes.Any(n => n.Id == relatedId))
+                                    network.ServiceNodes.Add(node);
+                            }
+
+                            // Add edge
+                            network.Edges.Add(new NetworkEdge
+                            {
+                                SourceId = guestId.ToString(),
+                                TargetId = relatedId,
+                                RelationshipType = relType,
+                                Weight = rel.Weight,
+                                Properties = new Dictionary<string, object>
+                                {
+                                    { "Weight", rel.Weight }
+                                }
+                            });
                         }
                     }
                 }
@@ -429,6 +586,229 @@ namespace GuestFlow.Application.Operations.Intelligence.Relationship
                 _logger.LogError(ex, "Failed to get guest relationship network: GuestId={GuestId}", guestId);
                 return new RelationshipNetwork { GuestId = guestId };
             }
+        }
+
+        private async Task<List<StaffMatchResult>?> FindBestStaffMatchesWithAIAsync(int guestId, int? limit)
+        {
+            try
+            {
+                var interactions = await _unitOfWork.GuestStaffInteractions
+                    .GetAll(i => i.GuestId == guestId && !i.IsDeleted)
+                    .Include(i => i.Staff)
+                    .Take(20)
+                    .ToListAsync();
+
+                var preferences = await GetGuestPreferencePatternsAsync(guestId);
+                var behaviorPatterns = await _behavioralTrackingService.GetGuestBehaviorPatternsAsync(guestId);
+                
+                var availableStaff = await _unitOfWork.Personnels
+                    .GetAll(p => !p.IsDeleted)
+                    .Take(10)
+                    .ToListAsync();
+
+                var context = new
+                {
+                    GuestId = guestId,
+                    RecentInteractions = interactions.Select(i => new { i.StaffId, i.Staff?.FullName, i.SatisfactionScore, i.SentimentScore }),
+                    GuestPreferences = preferences,
+                    BehaviorPatterns = behaviorPatterns,
+                    AvailableStaff = availableStaff.Select(s => new { s.Id, s.FullName, s.UserType })
+                };
+
+                var prompt = $@"Analyze guest preferences and staff profiles to find the best staff-guest matches.
+                Limit: {limit ?? 5}
+                Data: {JsonSerializer.Serialize(context)}
+
+                Return a JSON object with a 'matches' array:
+                {{
+                  ""matches"": [
+                    {{
+                      ""staffId"": 1,
+                      ""staffName"": ""Name"",
+                      ""compatibilityScore"": 0.95,
+                      ""relationshipStrength"": 0.8,
+                      ""interactionCount"": 5,
+                      ""averageSatisfaction"": 9.0,
+                      ""matchReason"": ""Personality alignment and positive history""
+                    }}
+                  ]
+                }}
+                Response ONLY with the JSON block.";
+
+                var response = await _aiAssistantService.ProcessMessageAsync(new AIChatRequest
+                {
+                    Message = prompt,
+                    Metadata = new Dictionary<string, string> { { "Type", "StaffMatching" } }
+                });
+
+                if (string.IsNullOrEmpty(response?.Response)) return null;
+
+                var jsonStart = response.Response.IndexOf('{');
+                var jsonEnd = response.Response.LastIndexOf('}');
+                if (jsonStart == -1 || jsonEnd == -1) return null;
+
+                var json = response.Response.Substring(jsonStart, jsonEnd - jsonStart + 1);
+                var result = JsonSerializer.Deserialize<AIStaffMatchResult>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                
+                return result?.Matches;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "AI Staff matching failed for GuestId={GuestId}", guestId);
+                return null;
+            }
+        }
+
+        private async Task<List<GuestMatchResult>?> FindBestGuestMatchesWithAIAsync(int staffId, int? limit)
+        {
+            try
+            {
+                var interactions = await _unitOfWork.GuestStaffInteractions
+                    .GetAll(i => i.StaffId == staffId && !i.IsDeleted)
+                    .Include(i => i.Guest)
+                    .Take(20)
+                    .ToListAsync();
+
+                if (!interactions.Any()) return null;
+
+                var staff = await _unitOfWork.Personnels.GetByIdAsync(staffId);
+                
+                var context = new
+                {
+                    StaffId = staffId,
+                    StaffName = staff?.FullName,
+                    RecentInteractions = interactions.Select(i => new { 
+                        i.GuestId, 
+                        i.Guest?.FullName, 
+                        i.SatisfactionScore, 
+                        i.SentimentScore 
+                    })
+                };
+
+                var prompt = $@"Analyze staff history to find best matching guests.
+                Limit: {limit ?? 5}
+                Data: {JsonSerializer.Serialize(context)}
+
+                Return a JSON object with a 'matches' array:
+                {{
+                  ""matches"": [
+                    {{
+                      ""guestId"": 1,
+                      ""guestName"": ""Name"",
+                      ""compatibilityScore"": 0.95,
+                      ""relationshipStrength"": 0.8,
+                      ""interactionCount"": 5,
+                      ""averageSatisfaction"": 9.0,
+                      ""matchReason"": ""High satisfaction and positive sentiment""
+                    }}
+                  ]
+                }}
+                Response ONLY with the JSON block.";
+
+                var response = await _aiAssistantService.ProcessMessageAsync(new AIChatRequest
+                {
+                    Message = prompt,
+                    Metadata = new Dictionary<string, string> { { "Type", "GuestMatching" } }
+                });
+
+                if (string.IsNullOrEmpty(response?.Response)) return null;
+
+                var jsonStart = response.Response.IndexOf('{');
+                var jsonEnd = response.Response.LastIndexOf('}');
+                if (jsonStart == -1 || jsonEnd == -1) return null;
+
+                var json = response.Response.Substring(jsonStart, jsonEnd - jsonStart + 1);
+                var result = JsonSerializer.Deserialize<AIGuestMatchResult>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                
+                return result?.Matches;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "AI Guest matching failed for StaffId={StaffId}", staffId);
+                return null;
+            }
+        }
+
+        private async Task<List<ServiceRecommendation>?> RecommendServicesWithAIAsync(int guestId, DateTime? targetDate)
+        {
+            try
+            {
+                var interactions = await _unitOfWork.GuestBehaviors
+                    .GetAll(b => b.GuestId == guestId && !b.IsDeleted)
+                    .OrderByDescending(b => b.BehaviorDate)
+                    .Take(30)
+                    .ToListAsync();
+
+                var preferences = await GetGuestPreferencePatternsAsync(guestId);
+                var behaviorPatterns = await _behavioralTrackingService.GetGuestBehaviorPatternsAsync(guestId);
+                
+                var context = new
+                {
+                    GuestId = guestId,
+                    TargetDate = targetDate,
+                    TimeOfDay = targetDate.HasValue ? GetTimeOfDay(targetDate.Value) : null,
+                    Season = targetDate.HasValue ? GetSeason(targetDate.Value) : null,
+                    RecentBehaviors = interactions.Select(b => new { b.BehaviorType, b.Category, b.BehaviorValue, b.SatisfactionScore }),
+                    GuestPreferences = preferences,
+                    BehaviorPatterns = behaviorPatterns
+                };
+
+                var prompt = $@"Analyze guest data and recommend personalized services.
+                Target Date: {targetDate?.ToString("yyyy-MM-dd") ?? "Now"}
+                Data: {JsonSerializer.Serialize(context)}
+
+                Return a JSON object with a 'recommendations' array:
+                {{
+                  ""recommendations"": [
+                    {{
+                      ""serviceType"": ""Upsell"",
+                      ""serviceName"": ""Luxury Spa Treatment"",
+                      ""recommendationScore"": 0.92,
+                      ""recommendationReason"": ""Guest showed high satisfaction with relaxation services during summer."",
+                      ""recommendedDate"": ""2026-06-15T10:00:00Z"",
+                      ""context"": {{ ""type"": ""lifestyle_match"" }}
+                    }}
+                  ]
+                }}
+                Response ONLY with the JSON block.";
+
+                var response = await _aiAssistantService.ProcessMessageAsync(new AIChatRequest
+                {
+                    Message = prompt,
+                    Metadata = new Dictionary<string, string> { { "Type", "ServiceRecommendation" } }
+                });
+
+                if (string.IsNullOrEmpty(response?.Response)) return null;
+
+                var jsonStart = response.Response.IndexOf('{');
+                var jsonEnd = response.Response.LastIndexOf('}');
+                if (jsonStart == -1 || jsonEnd == -1) return null;
+
+                var json = response.Response.Substring(jsonStart, jsonEnd - jsonStart + 1);
+                var result = JsonSerializer.Deserialize<AIExtendedServiceResult>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                
+                return result?.Recommendations;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "AI Service recommendation failed for GuestId={GuestId}", guestId);
+                return null;
+            }
+        }
+
+        private class AIExtendedServiceResult
+        {
+            public List<ServiceRecommendation>? Recommendations { get; set; }
+        }
+
+        private class AIStaffMatchResult
+        {
+            public List<StaffMatchResult>? Matches { get; set; }
+        }
+
+        private class AIGuestMatchResult
+        {
+            public List<GuestMatchResult>? Matches { get; set; }
         }
 
         private double CalculateCompatibilityFromInteractions(List<Domain.Entities.Intelligence.GuestStaffInteractionEntity> interactions)
@@ -492,7 +872,7 @@ namespace GuestFlow.Application.Operations.Intelligence.Relationship
                 {
                     "Transfer" => (await _unitOfWork.Transfers.GetByIdAsync(serviceId))?.PickupAddress ?? $"Transfer #{serviceId}",
                     "CityTour" => (await _unitOfWork.CityTours.GetByIdAsync(serviceId))?.City?.CityName ?? $"City Tour #{serviceId}",
-                    "YachtTour" => $"Yacht Tour #{serviceId}",
+                    "YachtTour" => (await _unitOfWork.YachtTours.GetByIdAsync(serviceId))?.YachtName ?? $"Yacht Tour #{serviceId}",
                     "Restaurant" => (await _context.Restaurants.FindAsync(serviceId))?.RestaurantName ?? $"Restaurant #{serviceId}",
                     _ => $"{serviceType} #{serviceId}"
                 };

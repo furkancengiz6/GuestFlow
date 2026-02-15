@@ -4,6 +4,7 @@ using GuestFlow.Application.Operations.Guest.Dtos;
 using GuestFlow.Application.Operations.Notification;
 using GuestFlow.Application.Tests.Helpers;
 using GuestFlow.Domain.Entities.Core;
+using GuestFlow.Domain.Entities.Operations;
 using GuestFlow.Domain.Entities.Repositories;
 using GuestFlow.Domain.UnitOfWork;
 using Microsoft.Extensions.Logging;
@@ -27,6 +28,7 @@ public class GuestManagerTests : TestBase
     private readonly Mock<ILogger<GuestManager>> _loggerMock;
     private readonly Mock<AutoMapper.IMapper> _mapperMock;
     private readonly Mock<INotificationHubService> _notificationHubServiceMock;
+    private readonly Mock<IRepository<PMSGuestMapping>> _pmsMappingRepositoryMock;
     private readonly GuestManager _guestManager;
 
     public GuestManagerTests()
@@ -38,6 +40,7 @@ public class GuestManagerTests : TestBase
         _yachtTourRepositoryMock = CreateMock<IRepository<YachtTourEntity>>();
         _invoiceRepositoryMock = CreateMock<IRepository<InvoicesEntity>>();
         _roomAssignmentRepositoryMock = CreateMock<IRepository<RoomAssignmentEntity>>();
+        _pmsMappingRepositoryMock = CreateMock<IRepository<PMSGuestMapping>>();
         _loggerMock = CreateMock<ILogger<GuestManager>>();
         _mapperMock = CreateMock<AutoMapper.IMapper>();
         _notificationHubServiceMock = CreateMock<INotificationHubService>();
@@ -49,6 +52,7 @@ public class GuestManagerTests : TestBase
             _yachtTourRepositoryMock.Object,
             _invoiceRepositoryMock.Object,
             _roomAssignmentRepositoryMock.Object,
+            _pmsMappingRepositoryMock.Object,
             _loggerMock.Object,
             _mapperMock.Object,
             _notificationHubServiceMock.Object

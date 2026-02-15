@@ -20,6 +20,7 @@ import { revenueService, RevenueDashboard } from '../api/revenue';
 import { cacheService } from '../utils/cache';
 import { DashboardSummary, UpcomingServiceItem } from '../types/operations';
 import ForecastWidget from '../components/dashboard/ForecastWidget';
+import AIInsightsWidget from '../components/dashboard/AIInsightsWidget';
 
 const DashboardScreen = ({ navigation }: any) => {
     const theme = useTheme();
@@ -157,6 +158,9 @@ const DashboardScreen = ({ navigation }: any) => {
                 {/* Forecast Widget (Analytics) */}
                 <ForecastWidget />
 
+                {/* AI & Proactive Intelligence */}
+                <AIInsightsWidget />
+
                 {/* Revenue KPI Summary */}
                 {revenueDashboard && (
                     <Card style={styles.revenueCard} mode="elevated">
@@ -189,27 +193,6 @@ const DashboardScreen = ({ navigation }: any) => {
                         </Card.Content>
                     </Card>
                 )}
-
-                {/* AI & Trend Insights */}
-                <Card style={styles.trendCard} mode="contained">
-                    <Card.Content>
-                        <View style={styles.rowBetween}>
-                            <Title style={styles.smallTitle}>Haftalık Operasyonel Trend</Title>
-                            <Chip icon="trending-up" textStyle={{ fontSize: 10 }}>+12%</Chip>
-                        </View>
-                        <View style={styles.chartMock}>
-                            {/* Mock Bar Chart using Views */}
-                            {[40, 65, 35, 80, 55, 90, 70].map((h, i) => (
-                                <View key={i} style={[styles.bar, { height: h }]} />
-                            ))}
-                        </View>
-                        <View style={styles.chartLabels}>
-                            {['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'].map(d => (
-                                <Text key={d} variant="labelSmall" style={styles.chartLabel}>{d}</Text>
-                            ))}
-                        </View>
-                    </Card.Content>
-                </Card>
 
                 {/* VIP Activity Summary */}
                 <Card style={styles.vipSummaryCard}>

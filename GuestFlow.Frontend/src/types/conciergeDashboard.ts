@@ -65,6 +65,18 @@ export interface GuestFlowData {
   phoneNumber?: string
   isVIP: boolean
   serviceHistory: ServiceHistory[]
+  invoiceHistory: InvoiceSummary[]
+}
+
+export interface InvoiceSummary {
+  invoiceId: number
+  invoiceNumber: number
+  issueDate: string
+  totalAmount: number
+  currency: string
+  status: string
+  itemCount: number
+  pdfUrl?: string
 }
 
 export interface PMSData {

@@ -538,7 +538,7 @@ namespace GuestFlow.Persistence.Data
             var paymentMethods = new[] { PaymentMethod.Cash, PaymentMethod.CreditCard, PaymentMethod.RoomCharge, PaymentMethod.BankTransfer };
             var transferTypes = new[] { TransferType.AirportToHotel, TransferType.HotelToAirport, TransferType.HotelToRestaurant, TransferType.RestaurantToHotel, TransferType.HotelToCity, TransferType.Custom };
 
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < 250; i++)
             {
                 var guest = guests[random.Next(guests.Count)];
                 var staff = personnel.Where(p => p.UserType == UserType.Staff).ToList()[random.Next(personnel.Count(p => p.UserType == UserType.Staff))];
@@ -643,7 +643,7 @@ namespace GuestFlow.Persistence.Data
             var languages = new[] { "English", "Turkish", "German", "French", "Spanish" };
             var currencies = new[] { "TRY", "USD", "EUR" };
 
-            for (int i = 0; i < 15; i++)
+            for (int i = 0; i < 50; i++)
             {
                 var guest = guests[random.Next(guests.Count)];
                 var staff = personnel.Where(p => p.UserType == UserType.Staff).ToList()[random.Next(personnel.Count(p => p.UserType == UserType.Staff))];
@@ -726,7 +726,7 @@ namespace GuestFlow.Persistence.Data
             var currencies = new[] { "TRY", "USD", "EUR" };
             var pierNames = new[] { "Main Pier", "Yacht Club Pier", "Marina Pier", "Harbor Pier", "Port Pier" };
 
-            for (int i = 0; i < 12; i++)
+            for (int i = 0; i < 40; i++)
             {
                 var guest = guests[random.Next(guests.Count)];
                 var staff = personnel.Where(p => p.UserType == UserType.Staff).ToList()[random.Next(personnel.Count(p => p.UserType == UserType.Staff))];

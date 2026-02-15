@@ -64,5 +64,10 @@ namespace GuestFlow.Application.Operations.WhatsApp
         /// WhatsApp istatistiklerini getirir
         /// </summary>
         Task<WhatsAppStatisticsDto> GetWhatsAppStatisticsAsync(DateTime? startDate = null, DateTime? endDate = null);
+
+        /// <summary>
+        /// Webhook imzasını doğrular
+        /// </summary>
+        bool ValidateWebhookSignature(string signature, string body);
     }
 }

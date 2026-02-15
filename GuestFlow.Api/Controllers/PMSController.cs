@@ -19,11 +19,60 @@ namespace GuestFlow.Api.Controllers
     {
         private readonly IPMSIntegrationService _pmsService;
         private readonly IPMSWebhookProcessor _webhookProcessor;
+        private readonly IPMSSyncService _syncService;
 
-        public PMSController(IPMSIntegrationService pmsService, IPMSWebhookProcessor webhookProcessor)
+        public PMSController(
+            IPMSIntegrationService pmsService, 
+            IPMSWebhookProcessor webhookProcessor,
+            IPMSSyncService syncService)
         {
             _pmsService = pmsService;
             _webhookProcessor = webhookProcessor;
+            _syncService = syncService;
+        }
+
+        /// <summary>
+        /// Belirli bir misafiri PMS'den senkronize et (Manual Trigger)
+        /// </summary>
+        [HttpPost("integrations/{integrationId}/sync/guests/{pmsGuestId}")]
+        [ProducesResponseType(typeof(ApiResponse<bool>), 200)]
+        public async Task<IActionResult> SyncGuest(int integrationId, string pmsGuestId)
+        {
+            var result = await _syncService.SyncGuestByIdAsync(integrationId, pmsGuestId);
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
+        /// <summary>
+        /// Belirli bir rezervasyonu PMS'den senkronize et (Manual Trigger)
+        /// </summary>
+        [HttpPost("integrations/{integrationId}/sync/reservations/{pmsReservationId}")]
+        [ProducesResponseType(typeof(ApiResponse<bool>), 200)]
+        public async Task<IActionResult> SyncReservation(int integrationId, string pmsReservationId)
+        {
+            var result = await _syncService.SyncReservationByIdAsync(integrationId, pmsReservationId);
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
+        /// <summary>
+        /// Belirli bir odanın durumunu PMS'den senkronize et (Manual Trigger)
+        /// </summary>
+        [HttpPost("integrations/{integrationId}/sync/rooms/{roomNumber}/status")]
+        [ProducesResponseType(typeof(ApiResponse<bool>), 200)]
+        public async Task<IActionResult> SyncRoomStatus(int integrationId, string roomNumber)
+        {
+            var result = await _syncService.SyncRoomStatusByRoomNumberAsync(integrationId, roomNumber);
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
+        /// <summary>
+        /// Belirli bir folio'yu (faturayı) PMS'den senkronize et (Manual Trigger)
+        /// </summary>
+        [HttpPost("integrations/{integrationId}/sync/folios/{pmsFolioId}")]
+        [ProducesResponseType(typeof(ApiResponse<bool>), 200)]
+        public async Task<IActionResult> SyncFolio(int integrationId, string pmsFolioId)
+        {
+            var result = await _syncService.SyncFolioByIdAsync(integrationId, pmsFolioId);
+            return result.Success ? Ok(result) : BadRequest(result);
         }
 
         /// <summary>

@@ -3,6 +3,7 @@
 
 using GuestFlow.Domain.UnitOfWork;
 using GuestFlow.Application.Operations.Intelligence.Behavioral;
+using GuestFlow.Application.Operations.AI;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
@@ -17,6 +18,7 @@ namespace GuestFlow.Application.Operations.Intelligence.Sentiment
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IBehavioralTrackingService _behavioralTrackingService;
+        private readonly IAIAssistantService _aiAssistantService;
         private readonly ILogger<SentimentAnalysisService> _logger;
 
         // Basic sentiment keywords (for simple analysis)
@@ -41,10 +43,12 @@ namespace GuestFlow.Application.Operations.Intelligence.Sentiment
         public SentimentAnalysisService(
             IUnitOfWork unitOfWork,
             IBehavioralTrackingService behavioralTrackingService,
+            IAIAssistantService aiAssistantService,
             ILogger<SentimentAnalysisService> logger)
         {
             _unitOfWork = unitOfWork;
             _behavioralTrackingService = behavioralTrackingService;
+            _aiAssistantService = aiAssistantService;
             _logger = logger;
         }
 
@@ -68,7 +72,16 @@ namespace GuestFlow.Application.Operations.Intelligence.Sentiment
                     language = DetectLanguage(text);
                 }
 
-                // Simple keyword-based sentiment analysis
+                // Try AI-based analysis first
+                var aiResult = await AnalyzeWithAIAsync(text, language);
+                if (aiResult != null && aiResult.Confidence > 0.4)
+                {
+                    _logger.LogInformation("AI-Powered Sentiment analyzed: Score={Score}, Label={Label}, Confidence={Confidence}",
+                        aiResult.SentimentScore, aiResult.SentimentLabel, aiResult.Confidence);
+                    return aiResult;
+                }
+
+                // Fallback to simple keyword-based analysis
                 var sentimentScore = CalculateSentimentScore(text);
                 var sentimentLabel = GetSentimentLabel(sentimentScore);
                 var confidence = CalculateConfidence(text, sentimentScore);
@@ -84,7 +97,7 @@ namespace GuestFlow.Application.Operations.Intelligence.Sentiment
                     Emotions = ExtractEmotions(text)
                 };
 
-                _logger.LogInformation("Sentiment analyzed: Score={Score}, Label={Label}, Confidence={Confidence}",
+                _logger.LogInformation("Legacy Sentiment analyzed (Fallback): Score={Score}, Label={Label}, Confidence={Confidence}",
                     sentimentScore, sentimentLabel, confidence);
 
                 return result;
@@ -99,6 +112,73 @@ namespace GuestFlow.Application.Operations.Intelligence.Sentiment
                     Confidence = 0.0
                 };
             }
+        }
+
+        private async Task<SentimentAnalysisResult?> AnalyzeWithAIAsync(string text, string language)
+        {
+            try
+            {
+                var prompt = $@"Analyze the following guest feedback and provide a structured JSON response.
+Feedback: ""{text}""
+Language: {language}
+
+The JSON must exactly follow this format:
+{{
+  ""score"": 0.75,
+  ""label"": ""Positive"",
+  ""confidence"": 0.9,
+  ""keyPhrases"": [""excellent service"", ""clean room""],
+  ""emotions"": {{""Happiness"": 0.8, ""Satisfaction"": 0.9}}
+}}
+
+Score should be between -1.0 and 1.0. Label must be one of: Positive, Neutral, Negative.
+Response ONLY with the JSON block.";
+
+                var aiRequest = new GuestFlow.Application.Models.AI.AIChatRequest
+                {
+                    Message = prompt,
+                    Metadata = new Dictionary<string, string> { { "Type", "SentimentAnalysis" } }
+                };
+
+                var aiResponse = await _aiAssistantService.ProcessMessageAsync(aiRequest);
+                
+                if (string.IsNullOrEmpty(aiResponse?.Response)) return null;
+
+                // Simple JSON extraction in case AI adds preamble
+                var jsonStart = aiResponse.Response.IndexOf('{');
+                var jsonEnd = aiResponse.Response.LastIndexOf('}');
+                if (jsonStart == -1 || jsonEnd == -1) return null;
+
+                var json = aiResponse.Response.Substring(jsonStart, jsonEnd - jsonStart + 1);
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var rawResult = System.Text.Json.JsonSerializer.Deserialize<AISentimentResult>(json, options);
+
+                if (rawResult == null) return null;
+
+                return new SentimentAnalysisResult
+                {
+                    SentimentScore = (double)rawResult.Score,
+                    SentimentLabel = rawResult.Label,
+                    Confidence = (double)rawResult.Confidence,
+                    Language = language,
+                    KeyPhrases = rawResult.KeyPhrases ?? new List<string>(),
+                    Emotions = rawResult.Emotions?.ToDictionary(k => k.Key, v => (double)v.Value) ?? new Dictionary<string, double>()
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "AI Sentiment analysis failed, falling back to legacy.");
+                return null;
+            }
+        }
+
+        private class AISentimentResult
+        {
+            public decimal Score { get; set; }
+            public string Label { get; set; } = "Neutral";
+            public decimal Confidence { get; set; }
+            public List<string>? KeyPhrases { get; set; }
+            public Dictionary<string, decimal>? Emotions { get; set; }
         }
 
         public async Task<SentimentAnalysisResult> AnalyzeCommunicationSentimentAsync(int communicationId, string communicationType)

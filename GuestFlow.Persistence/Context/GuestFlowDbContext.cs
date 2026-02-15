@@ -2,22 +2,29 @@ using GuestFlow.Domain.Entities.Core;
 using GuestFlow.Domain.Entities.Operations;
 using GuestFlow.Domain.Entities.Intelligence;
 using GuestFlow.Domain.Entities.Finance;
+using GuestFlow.Domain.Entities.Sustainability;
 using GuestFlow.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
 using GuestFlow.Domain.Entities.Interfaces;
 using GuestFlow.Persistence.MultiTenancy;
 using System.Linq.Expressions;
 using System.Reflection;
+using GuestFlow.Domain.Events;
 
 namespace GuestFlow.Persistence.Context
 {
     public class GuestFlowDbContext : DbContext
     {
         private readonly ITenantProvider _tenantProvider;
+        private readonly IDomainEventDispatcher _dispatcher;
 
-        public GuestFlowDbContext(DbContextOptions<GuestFlowDbContext> options, ITenantProvider tenantProvider) : base(options)
+        public GuestFlowDbContext(
+            DbContextOptions<GuestFlowDbContext> options, 
+            ITenantProvider tenantProvider,
+            IDomainEventDispatcher dispatcher) : base(options)
         {
             _tenantProvider = tenantProvider;
+            _dispatcher = dispatcher;
         }
 
         public DbSet<AirportEntity> Airports => Set<AirportEntity>();
@@ -93,6 +100,11 @@ namespace GuestFlow.Persistence.Context
         public DbSet<GuestBehaviorEntity> GuestBehaviors => Set<GuestBehaviorEntity>();
         public DbSet<StaffBehaviorEntity> StaffBehaviors => Set<StaffBehaviorEntity>();
         public DbSet<GuestStaffInteractionEntity> GuestStaffInteractions => Set<GuestStaffInteractionEntity>();
+        public DbSet<OutboxEvent> OutboxEvents => Set<OutboxEvent>();
+        public DbSet<GuestIntelligenceActionEntity> GuestIntelligenceActions => Set<GuestIntelligenceActionEntity>();
+    public DbSet<GraphAuditLog> GraphAuditLogs => Set<GraphAuditLog>();
+        public DbSet<SustainabilityAction> SustainabilityActions => Set<SustainabilityAction>();
+        public DbSet<SustainabilityReward> SustainabilityRewards => Set<SustainabilityReward>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -150,6 +162,11 @@ namespace GuestFlow.Persistence.Context
             modelBuilder.ApplyConfiguration(new GuestBehaviorConfiguration());
             modelBuilder.ApplyConfiguration(new StaffBehaviorConfiguration());
             modelBuilder.ApplyConfiguration(new GuestStaffInteractionConfiguration());
+            modelBuilder.ApplyConfiguration(new GuestIntelligenceActionConfiguration());
+            
+            // Sustainability
+            modelBuilder.ApplyConfiguration(new SustainabilityActionConfiguration());
+            modelBuilder.ApplyConfiguration(new SustainabilityRewardConfiguration());
             
             // Finance - Pricing Rules
             modelBuilder.ApplyConfiguration(new PricingRuleConfiguration());
@@ -203,13 +220,35 @@ namespace GuestFlow.Persistence.Context
             ApplyGlobalFilters(modelBuilder);
         }
 
-        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
+            // Set TenantId for new entities
             foreach (var entry in ChangeTracker.Entries<ITenantEntity>().Where(e => e.State == EntityState.Added))
             {
                 entry.Entity.TenantId = _tenantProvider.TenantId;
             }
-            return base.SaveChangesAsync(cancellationToken);
+
+            // Dispatch domain events
+            var entitiesWithEvents = ChangeTracker.Entries<BaseEntity>()
+                .Select(e => e.Entity)
+                .Where(e => e.DomainEvents.Any())
+                .ToArray();
+
+            var domainEvents = entitiesWithEvents
+                .SelectMany(e => e.DomainEvents)
+                .ToList();
+
+            if (domainEvents.Any())
+            {
+                await _dispatcher.DispatchEventsAsync(domainEvents);
+                
+                foreach (var entity in entitiesWithEvents)
+                {
+                    entity.ClearDomainEvents();
+                }
+            }
+
+            return await base.SaveChangesAsync(cancellationToken);
         }
 
         private void ApplyGlobalFilters(ModelBuilder modelBuilder)

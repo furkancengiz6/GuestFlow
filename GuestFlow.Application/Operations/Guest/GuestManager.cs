@@ -8,10 +8,12 @@ using GuestFlow.Application.Operations.Guest.Dtos;
 using GuestFlow.Application.Operations.Notification;
 using GuestFlow.Application.Types;
 using GuestFlow.Domain.Entities.Core;
+using GuestFlow.Domain.Entities.Operations;
 using GuestFlow.Domain.Entities.Repositories;
 using GuestFlow.Domain.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using GuestFlow.Domain.Events;
 
 namespace GuestFlow.Application.Operations.Guest
 {
@@ -31,6 +33,7 @@ namespace GuestFlow.Application.Operations.Guest
         private readonly IMapper _mapper;
         private readonly IRepository<RoomAssignmentEntity> _roomAssignmentRepository;
         private readonly INotificationHubService _hubService;
+        private readonly IRepository<PMSGuestMapping> _pmsMappingRepository;
 
         // Constructor Bu sınıf oluşturulurken dependency buradan alıyoruz.
         public GuestManager(
@@ -41,6 +44,7 @@ namespace GuestFlow.Application.Operations.Guest
             IRepository<YachtTourEntity> yachtTourRepository,
             IRepository<InvoicesEntity> invoiceRepository,
             IRepository<RoomAssignmentEntity> roomAssignmentRepository,
+            IRepository<PMSGuestMapping> pmsMappingRepository,
             ILogger<GuestManager> logger,
             IMapper mapper,
             INotificationHubService? hubService = null)
@@ -53,6 +57,7 @@ namespace GuestFlow.Application.Operations.Guest
             _yachtTourRepository = yachtTourRepository;
             _invoiceRepository = invoiceRepository;
             _roomAssignmentRepository = roomAssignmentRepository;
+            _pmsMappingRepository = pmsMappingRepository;
             _logger = logger;
             _hubService = hubService;
         }
@@ -175,6 +180,9 @@ namespace GuestFlow.Application.Operations.Guest
                     GuestCode = guestCode,
                     IsSpecialGuest = guest.IsSpecialGuest
                 };
+
+                // Add Domain Event
+                newGuest.AddDomainEvent(new GuestCreatedEvent(newGuest));
 
                 // Yeni misafiri veritabanına ekliyoruz.
                 await _guestRepository.AddAsync(newGuest);
@@ -524,6 +532,27 @@ namespace GuestFlow.Application.Operations.Guest
                     })
                     .ToList();
 
+                // Zaman çizelgesi oluştur - EN BAŞTA TANIMLA
+                var timeline = new List<GuestTimelineItemDto>();
+
+                // Oda Konaklamaları (Room Assignments)
+                if (guest.RoomAssignments != null)
+                {
+                    foreach (var roomAssignment in guest.RoomAssignments)
+                    {
+                        timeline.Add(new GuestTimelineItemDto
+                        {
+                            Id = roomAssignment.Id,
+                            Type = "Stay",
+                            Title = $"Konaklama - Oda {roomAssignment.RoomNumber}",
+                            Description = $"{roomAssignment.Source} - {(roomAssignment.EndDate.HasValue ? $"{roomAssignment.EndDate.Value:dd.MM.yyyy} çıkışlı" : "Devam ediyor")}",
+                            Date = roomAssignment.StartDate,
+                            Status = roomAssignment.EndDate.HasValue ? "Tamamlandı" : "Aktif",
+                            CreatedDate = roomAssignment.CreatedDate
+                        });
+                    }
+                }
+
                 // Yat Turları
                 var yachtTours = guest.YachtTours
                     .OrderByDescending(yt => yt.TourDate)
@@ -557,10 +586,8 @@ namespace GuestFlow.Application.Operations.Guest
                     })
                     .ToList();
 
-                // Zaman çizelgesi oluştur
-                var timeline = new List<GuestTimelineItemDto>();
-
                 // Transferler
+
                 foreach (var transfer in guest.Transfers)
                 {
                     timeline.Add(new GuestTimelineItemDto
@@ -627,6 +654,10 @@ namespace GuestFlow.Application.Operations.Guest
                 // Zaman çizelgesini tarihe göre sırala
                 timeline = timeline.OrderByDescending(t => t.Date).ToList();
 
+                // PMS Mapping'i bul
+                var pmsMapping = await _pmsMappingRepository.GetAll(m => m.GuestFlowGuestId == id)
+                    .FirstOrDefaultAsync();
+
                 return new GuestDetailDto
                 {
                     Id = guest.Id,
@@ -636,6 +667,8 @@ namespace GuestFlow.Application.Operations.Guest
                     Nationality = guest.Nationality,
                     GuestCode = guest.GuestCode,
                     IsSpecialGuest = guest.IsSpecialGuest,
+                    PMSIntegrationId = pmsMapping?.PMSIntegrationId,
+                    PMSGuestId = pmsMapping?.PMSGuestId,
                     CreatedDate = guest.CreatedDate,
                     Statistics = statistics,
                     Transfers = transfers,

@@ -25,26 +25,24 @@ import {
   Flight as AirportIcon,
   LocationCity as CityIcon,
   DirectionsCarFilled as VehicleIcon,
-  Note as NoteIcon,
   AttachMoney as RevenueIcon,
   Payment as PaymentIcon,
   BookOnline as ReservationIcon,
   WhatsApp as WhatsAppIcon,
   Email as EmailIcon,
   Notifications as NotificationIcon,
-  Folder as FolderIcon,
   CalendarToday as CalendarIcon,
   Hotel as HotelIcon,
   Restaurant as RestaurantIcon,
   Timeline as TimelineIcon,
   CurrencyExchange as CurrencyIcon,
   Inventory as PackageIcon,
-  MeetingRoom as RoomIcon,
   SettingsApplications as RuleSettingsIcon,
   Map as MapIcon,
   Today as TodayIcon,
   Security as SecurityIcon,
   Psychology as IntelligenceIcon,
+  HealthAndSafety as HealthAndSafetyIcon,
 } from '@mui/icons-material'
 import { useAuthStore } from '../../stores/authStore'
 
@@ -119,6 +117,7 @@ const menuCategories: MenuCategory[] = [
       { text: 'Bildirim Kuralları', icon: <RuleSettingsIcon />, path: '/notification-rules', roles: ['Admin', 'Staff'] },
       { text: 'Login Audit', icon: <SecurityIcon />, path: '/security/login-audit', roles: ['Admin', 'Owner'] },
       { text: 'PII Yönetimi', icon: <SecurityIcon />, path: '/privacy', roles: ['Admin', 'Owner'] },
+      { text: 'Sistem Sağlığı', icon: <HealthAndSafetyIcon />, path: '/admin/system-health', roles: ['Admin'] },
       { text: 'Ayarlar', icon: <SettingsIcon />, path: '/settings', roles: ['Admin', 'Owner'] },
     ]
   }

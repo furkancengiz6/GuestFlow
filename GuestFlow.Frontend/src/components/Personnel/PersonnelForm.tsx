@@ -3,7 +3,6 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import {
-  Box,
   Button,
   Dialog,
   DialogActions,
@@ -24,11 +23,11 @@ const schema = z.object({
   fullName: z.string().min(2, 'Ad Soyad en az 2 karakter olmalıdır'),
   email: z.string().email('Geçerli bir e-posta adresi giriniz'),
   userType: z.string().min(1, 'Kullanıcı tipi seçiniz'),
-  password: z.string().optional().refine((val) => {
+  password: z.string().optional().refine((_val) => {
     // If we are creating (no id), password is required (e.g. min 6 chars)
     // If updating, it's optional
     return true
-  }), 
+  }),
 })
 // We'll refine the password requirement in the component based on mode
 

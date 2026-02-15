@@ -55,7 +55,13 @@ using GuestFlow.Application.Operations.Export;
 using GuestFlow.Application.Operations.Import;
 using GuestFlow.Application.Operations.Calendar;
 using GuestFlow.Application.Operations.Common;
+using GuestFlow.Application.Operations.Sustainability;
 using GuestFlow.Application.Configuration;
+using GuestFlow.Api.BackgroundServices;
+using GuestFlow.Api.Filters;
+using GuestFlow.Application.Infrastructure.Graph;
+using GuestFlow.Domain.Events;
+using GuestFlow.Application.Infrastructure.Events;
 using GuestFlow.Application.Operations.Intelligence.Graph;
 using GuestFlow.Application.Operations.Intelligence.Sentiment;
 using GuestFlow.Application.Operations.Intelligence.Relationship;
@@ -133,6 +139,7 @@ builder.Services.AddControllers(options =>
     // Global olarak ValidationActionFilter ekle
     options.Filters.Add<ValidationActionFilter>();
     options.Filters.Add<TenantFilter>();
+    options.Filters.Add<PiiMaskingActionFilter>();
 })
     .AddJsonOptions(options =>
     {
@@ -316,10 +323,11 @@ builder.Services.Configure<FileSettings>(builder.Configuration.GetSection("FileS
 builder.Services.Configure<CurrencySettings>(builder.Configuration.GetSection("CurrencySettings"));
 builder.Services.Configure<SmsSettings>(builder.Configuration.GetSection("SmsSettings"));
 builder.Services.Configure<LocalizationSettings>(builder.Configuration.GetSection("LocalizationSettings"));
-builder.Services.Configure<Neo4jSettings>(builder.Configuration.GetSection("Neo4j"));
+builder.Services.Configure<GuestFlow.Application.Configuration.Neo4jSettings>(builder.Configuration.GetSection("Neo4j"));
 builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
 builder.Services.Configure<RateLimitSettings>(builder.Configuration.GetSection("RateLimitSettings"));
 builder.Services.Configure<SecurityHeadersSettings>(builder.Configuration.GetSection("SecurityHeaders"));
+builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("PMS:Stripe"));
 
 // Memory cache for rate limiting
 builder.Services.AddMemoryCache();
@@ -469,6 +477,7 @@ builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));//generi
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<ITenantProvider, TenantProvider>();
+builder.Services.AddScoped<IStripePaymentService, StripePaymentService>();
 
 
 builder.Services.AddScoped<IVehicleService, VehicleManager>();
@@ -511,16 +520,22 @@ if (builder.Environment.IsDevelopment())
 }
 
 // Intelligence Layer - Graph Database (Neo4j)
-builder.Services.AddSingleton<INeo4jService, Neo4jService>();
+builder.Services.AddSingleton<GuestFlow.Application.Operations.Intelligence.Graph.INeo4jService, GuestFlow.Application.Operations.Intelligence.Graph.Neo4jService>();
 builder.Services.AddScoped<IGraphDataService, GraphDataService>();
+builder.Services.AddSingleton<IGraphIntelligenceService, GraphIntelligenceService>();
 builder.Services.AddScoped<IBehavioralTrackingService, BehavioralTrackingService>();
 builder.Services.AddScoped<ISentimentAnalysisService, SentimentAnalysisService>();
 builder.Services.AddScoped<IRelationshipIntelligenceService, RelationshipIntelligenceService>();
 builder.Services.AddScoped<IPredictiveIntelligenceService, PredictiveIntelligenceService>();
 builder.Services.AddScoped<IProactiveIntelligenceService, ProactiveIntelligenceService>();
+builder.Services.AddScoped<IAutomaticActionService, AutomaticActionService>();
 builder.Services.AddScoped<IPredictiveAnalyticsService, PredictiveAnalyticsService>();
+builder.Services.AddSingleton<GuestFlow.Application.Infrastructure.Graph.IGraphSyncService, GuestFlow.Application.Infrastructure.Graph.GraphSyncService>();
+builder.Services.AddSingleton<IGraphAuditService, GraphAuditService>();
+builder.Services.AddScoped<PiiMaskingActionFilter>();
 
 // AI Smart Concierge Services
+builder.Services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
 builder.Services.AddScoped<GuestFlow.Application.Operations.AI.ContextRetriever>();
 builder.Services.AddScoped<GuestFlow.Application.Operations.AI.IPIIMaskingService, GuestFlow.Application.Operations.AI.PIIMaskingService>();
 builder.Services.AddScoped<GuestFlow.Application.Operations.AI.IAICommandHandler, GuestFlow.Application.Operations.AI.AICommandHandler>();
@@ -583,10 +598,12 @@ builder.Services.AddScoped<GuestFlow.Application.Operations.Production.IProducti
 builder.Services.AddScoped<GuestFlow.Application.Operations.Production.IMigrationDriftChecker, GuestFlow.Application.Operations.Production.MigrationDriftChecker>();
 builder.Services.AddScoped<GuestFlow.Application.Operations.Production.IDependencyVulnerabilityChecker, GuestFlow.Application.Operations.Production.DependencyVulnerabilityChecker>();
 builder.Services.AddScoped<GuestFlow.Application.Operations.Production.IDatabaseBackupService, GuestFlow.Application.Operations.Production.DatabaseBackupService>();
+builder.Services.AddScoped<ICommercialStrategyService, CommercialStrategyService>();
 builder.Services.AddScoped<DailyOperationsService>();
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 builder.Services.AddScoped<IForeignKeyValidationService, ForeignKeyValidationService>();
 builder.Services.AddScoped<ICurrencyService, CurrencyService>();
+builder.Services.AddScoped<ISustainabilityService, SustainabilityService>();
 builder.Services.AddScoped<IPdfUrlService, PdfUrlService>();
 builder.Services.AddScoped<GuestFlow.Application.Operations.Tour.ITourService, GuestFlow.Application.Operations.Tour.TourService>();
 builder.Services.AddScoped<IReservationService, ReservationService>();
@@ -594,6 +611,10 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IPaymentStatusService, PaymentStatusService>();
 builder.Services.AddScoped<ISmsService, SmsService>();
 builder.Services.AddScoped<ILocalizationService, LocalizationService>();
+builder.Services.AddScoped<IDomainEventHandler<GuestReviewAddedEvent>, GuestFlow.Application.Operations.Intelligence.Sentiment.Handlers.SentimentAnalysisHandler>();
+builder.Services.AddScoped<IDomainEventHandler<GuestCreatedEvent>, GuestFlow.Application.Operations.Guest.Handlers.GuestWelcomeHandler>();
+builder.Services.AddScoped<IDomainEventHandler<ReservationCreatedEvent>, GuestFlow.Application.Operations.Reservation.Handlers.ReservationNotificationHandler>();
+builder.Services.AddScoped<IDomainEventHandler<DailyNoteCreatedEvent>, GuestFlow.Application.Operations.DailyNote.Handlers.DailyNoteIntelligenceHandler>();
 builder.Services.AddScoped<IExportService, ExportService>();
 builder.Services.AddScoped<IImportService, ImportService>();
 builder.Services.AddScoped<ICalendarService, CalendarService>();
@@ -611,6 +632,7 @@ builder.Services.AddScoped<InputValidationService>(); // SECURITY: Input validat
 builder.Services.AddScoped<DailyRevenueJob>();
 builder.Services.AddHostedService<DailyRevenueBackgroundService>(); //
 builder.Services.AddHostedService<GuestFlow.Application.Operations.OTA.OTAWebhookRetryBackgroundService>(); // OTA Webhook Retry Service
+builder.Services.AddHostedService<OutboxProcessor>();
 
 // SignalR
 builder.Services.AddSignalR(options =>

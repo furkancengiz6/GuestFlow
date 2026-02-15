@@ -80,6 +80,11 @@ namespace GuestFlow.Application.Operations.Reports
         /// Haftalık operasyonel rapor oluşturur (PDF)
         /// </summary>
         Task<string> GenerateWeeklyOperationalReportAsync(DateTime startDate, DateTime endDate);
+
+        /// <summary>
+        /// Rapor verilerini AI ile analiz eder ve içgörü döndürür
+        /// </summary>
+        Task<string> GetReportInsightsAsync(string reportType, object reportData);
     }
 }
 

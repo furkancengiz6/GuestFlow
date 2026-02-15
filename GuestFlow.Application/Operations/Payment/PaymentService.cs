@@ -120,7 +120,8 @@ namespace GuestFlow.Application.Operations.Payment
                     Amount = paymentDto.Amount,
                     Currency = paymentDto.Currency,
                     PaymentMethod = PaymentMethodHelper.FromString(paymentDto.PaymentMethod),
-                    Status = PaymentStatus.Completed, // Tahsilat kaydı = tamamlanmış ödeme
+                    Status = string.IsNullOrWhiteSpace(paymentDto.Status) ? PaymentStatus.Completed : PaymentStatusHelper.FromString(paymentDto.Status),
+                    TransactionId = paymentDto.TransactionId,
                     PaymentDate = paymentDto.PaymentDate,
                     Notes = paymentDto.Notes
                 };
@@ -711,6 +712,33 @@ namespace GuestFlow.Application.Operations.Payment
                 _logger.LogError(ex, $"Ödeme numarası oluşturulurken hata: {ex.Message}");
                 // Fallback
                 return $"PAY-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid().ToString("N").Substring(0, 8).ToUpper()}";
+            }
+        }
+        public async Task<GetPaymentDto?> GetPaymentByTransactionIdAsync(string transactionId)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(transactionId))
+                    return null;
+
+                var payment = await _paymentRepository.GetAll()
+                    .Include(p => p.Invoice)
+                    .Include(p => p.Guest)
+                    .Include(p => p.CollectedByPersonnel)
+                    .Include(p => p.Transfer)
+                    .Include(p => p.CityTour)
+                    .Include(p => p.YachtTour)
+                    .FirstOrDefaultAsync(x => x.TransactionId == transactionId && !x.IsDeleted);
+
+                if (payment == null)
+                    return null;
+
+                return _mapper.Map<GetPaymentDto>(payment);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Transaction ID bazlı ödeme getirilirken hata: {ex.Message}");
+                return null;
             }
         }
     }

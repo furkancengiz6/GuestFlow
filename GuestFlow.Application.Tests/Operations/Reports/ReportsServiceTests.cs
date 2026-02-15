@@ -1,5 +1,6 @@
 using FluentAssertions;
 using GuestFlow.Application.Operations.Reports;
+using GuestFlow.Application.Operations.AI;
 using GuestFlow.Application.Tests.Helpers;
 using GuestFlow.Domain.Entities.Core;
 using GuestFlow.Domain.Entities.Enum;
@@ -35,6 +36,7 @@ public class ReportsServiceTests : TestBase
     private readonly Mock<IRepository<PersonnelEntity>> _personnelRepositoryMock;
     private readonly Mock<IRepository<GuestReview>> _reviewRepositoryMock;
     private readonly Mock<GuestFlow.Application.Operations.Invoice.IPdfService> _pdfServiceMock;
+    private readonly Mock<IAIAssistantService> _aiAssistantServiceMock;
     private readonly Mock<ILogger<ReportsService>> _loggerMock;
     private readonly ReportsService _reportsService;
 
@@ -54,6 +56,7 @@ public class ReportsServiceTests : TestBase
         _personnelRepositoryMock = CreateMock<IRepository<PersonnelEntity>>();
         _reviewRepositoryMock = CreateMock<IRepository<GuestReview>>();
         _pdfServiceMock = new Mock<GuestFlow.Application.Operations.Invoice.IPdfService>();
+        _aiAssistantServiceMock = CreateMock<IAIAssistantService>();
         _loggerMock = CreateMock<ILogger<ReportsService>>();
 
         _reportsService = new ReportsService(
@@ -71,6 +74,7 @@ public class ReportsServiceTests : TestBase
             _personnelRepositoryMock.Object,
             _reviewRepositoryMock.Object,
             _pdfServiceMock.Object,
+            _aiAssistantServiceMock.Object,
             _loggerMock.Object
         );
     }

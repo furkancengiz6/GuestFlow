@@ -448,8 +448,7 @@ namespace GuestFlow.Application.Operations.PMS
                 var folioResponse = await _pmsIntegrationService.GetFolioAsync(integrationId, reservationId);
                 if (folioResponse.Success && folioResponse.Data != null)
                 {
-                    // Folio sync logic
-                    // TODO: Implement folio sync
+                    await SyncFolioAsync(integrationId, folioResponse.Data);
                 }
             }
             catch (Exception ex)
@@ -638,6 +637,25 @@ namespace GuestFlow.Application.Operations.PMS
             }
         }
 
+        public async Task<ApiResponse<bool>> SyncGuestByIdAsync(int integrationId, string pmsGuestId)
+        {
+            try
+            {
+                var guestResponse = await _pmsIntegrationService.GetGuestProfileAsync(integrationId, pmsGuestId);
+                if (!guestResponse.Success || guestResponse.Data == null)
+                {
+                    return ApiResponse<bool>.Fail($"Guest not found in PMS: {guestResponse.Message}");
+                }
+
+                return await SyncGuestAsync(integrationId, guestResponse.Data);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to sync guest by ID: {PMSGuestId}", pmsGuestId);
+                return ApiResponse<bool>.Fail($"Failed to sync guest: {ex.Message}");
+            }
+        }
+
         private async Task SyncGuestPreferencesAsync(int guestId, PMSGuestProfile pmsGuest, int integrationId)
         {
             try
@@ -734,6 +752,26 @@ namespace GuestFlow.Application.Operations.PMS
                             
                             if (preferencesJson.ContainsKey("preferredLanguage") && preferencesJson["preferredLanguage"] != null)
                                 existingPreferences.PreferredLanguage = preferencesJson["preferredLanguage"].ToString();
+
+                            // Miscellaneous Preferences (Map to Notes)
+                            var extraNotes = new List<string>();
+                            
+                            if (preferencesJson.ContainsKey("pillowPreference") && preferencesJson["pillowPreference"] != null)
+                                extraNotes.Add($"Pillow: {preferencesJson["pillowPreference"]}");
+
+                            if (preferencesJson.ContainsKey("newspaper") && preferencesJson["newspaper"] != null)
+                                extraNotes.Add($"Newspaper: {preferencesJson["newspaper"]}");
+
+                            if (extraNotes.Any())
+                            {
+                                var existingNotes = existingPreferences.Notes ?? string.Empty;
+                                var newNotes = string.Join(", ", extraNotes);
+                                
+                                if (!string.IsNullOrEmpty(existingNotes))
+                                    existingPreferences.Notes = $"{existingNotes} | {newNotes}";
+                                else
+                                    existingPreferences.Notes = newNotes;
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -954,6 +992,44 @@ namespace GuestFlow.Application.Operations.PMS
                         _roomAssignmentRepository.Update(existingAssignment);
                     }
                 }
+            }
+        }
+
+        public async Task<ApiResponse<bool>> SyncReservationByIdAsync(int integrationId, string pmsReservationId)
+        {
+            try
+            {
+                var reservationResponse = await _pmsIntegrationService.GetReservationAsync(integrationId, pmsReservationId);
+                if (!reservationResponse.Success || reservationResponse.Data == null)
+                {
+                    return ApiResponse<bool>.Fail($"Reservation not found in PMS: {reservationResponse.Message}");
+                }
+
+                return await SyncReservationAsync(integrationId, reservationResponse.Data);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to sync reservation by ID: {PMSReservationId}", pmsReservationId);
+                return ApiResponse<bool>.Fail($"Failed to sync reservation: {ex.Message}");
+            }
+        }
+
+        public async Task<ApiResponse<bool>> SyncRoomStatusByRoomNumberAsync(int integrationId, string roomNumber)
+        {
+            try
+            {
+                var roomStatusResponse = await _pmsIntegrationService.GetRoomStatusAsync(integrationId, roomNumber);
+                if (!roomStatusResponse.Success || roomStatusResponse.Data == null)
+                {
+                    return ApiResponse<bool>.Fail($"Room status not found in PMS: {roomStatusResponse.Message}");
+                }
+
+                return await SyncRoomStatusAsync(integrationId, roomStatusResponse.Data);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to sync room status by Number: {RoomNumber}", roomNumber);
+                return ApiResponse<bool>.Fail($"Failed to sync room status: {ex.Message}");
             }
         }
 
@@ -1282,6 +1358,25 @@ namespace GuestFlow.Application.Operations.PMS
             {
                _logger.LogError(ex, "Failed to sync folio: {FolioId}", pmsFolio.FolioId);
                return ApiResponse<bool>.Fail($"Failed to sync folio: {ex.Message}");
+            }
+        }
+
+        public async Task<ApiResponse<bool>> SyncFolioByIdAsync(int integrationId, string pmsFolioId)
+        {
+            try
+            {
+                var folioResponse = await _pmsIntegrationService.GetFolioAsync(integrationId, pmsFolioId);
+                if (!folioResponse.Success || folioResponse.Data == null)
+                {
+                    return ApiResponse<bool>.Fail($"Folio not found in PMS: {folioResponse.Message}");
+                }
+
+                return await SyncFolioAsync(integrationId, folioResponse.Data);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to sync folio by ID: {PMSFolioId}", pmsFolioId);
+                return ApiResponse<bool>.Fail($"Failed to sync folio: {ex.Message}");
             }
         }
 

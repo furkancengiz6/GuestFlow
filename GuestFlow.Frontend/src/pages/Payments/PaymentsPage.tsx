@@ -32,7 +32,7 @@ import { tr } from 'date-fns/locale'
 
 import { paymentService, CreatePaymentRequest } from '../../services/paymentService'
 import { guestService } from '../../services/guestService'
-import { PaymentMethod } from '../../types/enums'
+import { PaymentMethod, PaymentStatus, PaymentStatusLabels } from '../../types/enums'
 import { formatCurrency } from '../../utils/formatters'
 import PaymentForm from '../../components/Payments/PaymentForm'
 import ContentState from '../../components/Feedback/ContentState'
@@ -139,6 +139,23 @@ const PaymentsPage: React.FC = () => {
     }
   }
 
+  const getPaymentStatusColor = (status: PaymentStatus): 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info' => {
+    switch (status) {
+      case PaymentStatus.Pending:
+        return 'warning'
+      case PaymentStatus.Completed:
+        return 'success'
+      case PaymentStatus.Failed:
+        return 'error'
+      case PaymentStatus.Refunded:
+        return 'info'
+      case PaymentStatus.Cancelled:
+        return 'secondary'
+      default:
+        return 'primary'
+    }
+  }
+
   if (error) {
     return (
       <ContentState
@@ -239,6 +256,8 @@ const PaymentsPage: React.FC = () => {
                       <TableCell>Misafir</TableCell>
                       <TableCell>Tutar</TableCell>
                       <TableCell>Yöntem</TableCell>
+                      <TableCell>Durum</TableCell>
+                      <TableCell>İşlem ID</TableCell>
                       <TableCell>Personel</TableCell>
                       <TableCell>İlişkili Hizmet</TableCell>
                       <TableCell>Notlar</TableCell>
@@ -262,6 +281,19 @@ const PaymentsPage: React.FC = () => {
                             color={getPaymentMethodColor(payment.paymentMethod)}
                             size="small"
                           />
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={PaymentStatusLabels[payment.status]}
+                            color={getPaymentStatusColor(payment.status)}
+                            size="small"
+                            variant="outlined"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>
+                            {payment.transactionId || '-'}
+                          </Typography>
                         </TableCell>
                         <TableCell>
                           {payment.collectedByPersonnelName}

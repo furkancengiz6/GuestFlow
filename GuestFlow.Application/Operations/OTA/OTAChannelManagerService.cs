@@ -4,6 +4,7 @@
 using GuestFlow.Application.Models.Responses;
 using GuestFlow.Application.Models.Responses.PMS;
 using GuestFlow.Application.Models.Responses.PMS;
+using GuestFlow.Application;
 using GuestFlow.Application.Operations.Finance.Pricing;
 using GuestFlow.Application.Operations.PMS;
 using GuestFlow.Domain.Entities.Operations;
@@ -205,7 +206,11 @@ namespace GuestFlow.Application.Operations.OTA
                     try
                     {
                         // OTA hotel mapping'den room type ID'yi bul
-                        var otaRoomTypeId = room.RoomNumber; // TODO: OTAHotelMapping'den al
+                        var mapping = await _unitOfWork.OTAHotelMappings
+                            .GetAll(m => m.OTAIntegrationId == otaIntegrationId && m.GuestFlowRoomType == room.RoomType)
+                            .FirstOrDefaultAsync();
+
+                        var otaRoomTypeId = mapping?.OTARoomTypeId ?? room.RoomNumber; // Fallback to RoomNumber if no mapping
 
                         // Room'un o tarihte available olup olmadığını kontrol et
                         var isAvailable = room.Status == "Available" || room.Status == "Vacant";
@@ -275,7 +280,11 @@ namespace GuestFlow.Application.Operations.OTA
                     {
                         try
                         {
-                            var otaRoomTypeId = roomType.RoomTypeId; // Assuming 1:1 mapping for simple cases or handled by adapter
+                            var mapping = await _unitOfWork.OTAHotelMappings
+                                .GetAll(m => m.OTAIntegrationId == otaIntegrationId && m.GuestFlowRoomType == roomType.Name)
+                                .FirstOrDefaultAsync();
+
+                            var otaRoomTypeId = mapping?.OTARoomTypeId ?? roomType.RoomTypeId; // Fallback
                             
                             // CALCULATE DYNAMIC RATE
                             // PMS'den gelen BasePrice'ı kullanıyoruz
@@ -543,7 +552,14 @@ namespace GuestFlow.Application.Operations.OTA
                         {
                             foreach (var roomTypeId in roomTypeIds)
                             {
-                                 await adapter.UpdateAvailabilityAsync(roomTypeId, date, false);
+                                 // Lookup OTA room type mapping
+                                 var mapping = await _unitOfWork.OTAHotelMappings
+                                     .GetAll(m => m.OTAIntegrationId == ota.Id && m.GuestFlowRoomType == roomTypeId)
+                                     .FirstOrDefaultAsync();
+
+                                 var targetOtaRoomTypeId = mapping?.OTARoomTypeId ?? roomTypeId;
+
+                                 await adapter.UpdateAvailabilityAsync(targetOtaRoomTypeId, date, false);
                             }
                         }
                         successChannels++;

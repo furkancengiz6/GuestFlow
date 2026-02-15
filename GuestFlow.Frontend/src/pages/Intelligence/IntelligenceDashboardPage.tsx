@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root for full license information.
  */
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import {
   Box,
   Grid,
@@ -21,23 +21,52 @@ import {
   ListItem,
   ListItemText,
   ListItemSecondaryAction,
-  IconButton,
-  Tooltip,
   Paper,
   Divider,
+  Snackbar,
 } from '@mui/material'
 import {
-  TrendingUp,
   Warning,
   Lightbulb,
   AutoAwesome,
   Psychology,
-  PersonSearch,
   Recommend,
   NotificationsActive,
+  AttachMoney,
+  Description,
+  QueryStats,
+  Group,
+  Share,
+  Hub,
+  History as HistoryIcon
 } from '@mui/icons-material'
 import { useQuery } from '@tanstack/react-query'
-import { intelligenceService, type ProactiveRecommendation, type ProblemPreventionAlert, type PersonalizationSuggestion, type EarlyWarningSignal, type AutomaticAction } from '../../services/intelligenceService'
+import {
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  Legend,
+  ResponsiveContainer,
+  AreaChart,
+  Area
+} from 'recharts'
+import {
+  intelligenceService,
+  type ProactiveRecommendation,
+  type ProblemPreventionAlert,
+  type PersonalizationSuggestion,
+  type EarlyWarningSignal,
+  type AutomaticAction,
+  type PricingIntelligenceResult,
+  type BehavioralInsight,
+  type RelationshipNetwork,
+  type StaffMatchResult,
+  type ServiceMatchResult,
+  type GuestIntelligenceAction
+} from '../../services/intelligenceService'
+import { RelationshipNetworkGraph } from '../../components/intelligence/RelationshipNetworkGraph'
 
 interface TabPanelProps {
   children?: React.ReactNode
@@ -57,6 +86,49 @@ function TabPanel(props: TabPanelProps) {
 export default function IntelligenceDashboardPage() {
   const [selectedGuestId, setSelectedGuestId] = useState<number | null>(null)
   const [tabValue, setTabValue] = useState(0)
+  const [executingActions, setExecutingActions] = useState<Set<number>>(new Set())
+  const [notification, setNotification] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+    open: false,
+    message: '',
+    severity: 'success'
+  })
+
+  const handleCloseNotification = () => {
+    setNotification(prev => ({ ...prev, open: false }))
+  }
+
+  const handleExecuteAction = async (action: AutomaticAction, index: number) => {
+    try {
+      setExecutingActions(prev => new Set(prev).add(index))
+      const success = await intelligenceService.executeAutomaticAction(action)
+      if (success) {
+        setNotification({
+          open: true,
+          message: `${action.title} executed successfully.`,
+          severity: 'success'
+        })
+      } else {
+        setNotification({
+          open: true,
+          message: `Failed to execute ${action.title}.`,
+          severity: 'error'
+        })
+      }
+    } catch (error) {
+      setNotification({
+        open: true,
+        message: 'An error occurred during execution.',
+        severity: 'error'
+      })
+      console.error('Error executing action:', error)
+    } finally {
+      setExecutingActions(prev => {
+        const next = new Set(prev)
+        next.delete(index)
+        return next
+      })
+    }
+  }
 
   // Fetch proactive recommendations (Global or Guest-specific)
   const { data: recommendations = [], isLoading: loadingRecommendations } = useQuery({
@@ -103,6 +175,53 @@ export default function IntelligenceDashboardPage() {
       ]),
   })
 
+  // Fetch pricing intelligence
+  const { data: pricingData = [], isLoading: loadingPricing } = useQuery({
+    queryKey: ['pricingIntelligence'],
+    queryFn: () => {
+      const start = new Date().toISOString().split('T')[0]
+      const end = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      return intelligenceService.getPricingIntelligence(1, start, end) // RoomType 1 for demo
+    },
+  })
+
+  // Fetch action history
+  const { data: actionHistory = [], isLoading: loadingHistory } = useQuery({
+    queryKey: ['actionHistory', selectedGuestId],
+    queryFn: () => selectedGuestId ? intelligenceService.getActionHistory(selectedGuestId) : Promise.resolve([]),
+    enabled: !!selectedGuestId
+  })
+
+  // Fetch staff note insights
+  const { data: noteInsights = [], isLoading: loadingNoteInsights } = useQuery({
+    queryKey: ['noteInsights', selectedGuestId],
+    queryFn: () => selectedGuestId
+      ? intelligenceService.getRecentBehavioralInsights(selectedGuestId, 'DailyNote')
+      : Promise.resolve([]),
+    enabled: !!selectedGuestId
+  })
+
+  // Fetch staff matches
+  const { data: staffMatches = [], isLoading: loadingStaffMatches } = useQuery<StaffMatchResult[]>({
+    queryKey: ['staffMatches', selectedGuestId],
+    queryFn: () => selectedGuestId ? intelligenceService.findBestStaffMatches(selectedGuestId) : Promise.resolve([]),
+    enabled: !!selectedGuestId
+  })
+
+  // Fetch service matches
+  const { data: serviceMatches = [], isLoading: loadingServiceMatches } = useQuery<ServiceMatchResult[]>({
+    queryKey: ['serviceMatches', selectedGuestId],
+    queryFn: () => selectedGuestId ? intelligenceService.findBestServiceMatches(selectedGuestId) : Promise.resolve([]),
+    enabled: !!selectedGuestId
+  })
+
+  // Fetch relationship network
+  const { data: network, isLoading: loadingNetwork } = useQuery<RelationshipNetwork | null>({
+    queryKey: ['relationshipNetwork', selectedGuestId],
+    queryFn: () => selectedGuestId ? intelligenceService.getGuestRelationshipNetwork(selectedGuestId) : Promise.resolve(null),
+    enabled: !!selectedGuestId
+  })
+
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'Critical':
@@ -133,6 +252,30 @@ export default function IntelligenceDashboardPage() {
       <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
         Turizm Operasyon Intelligence Layer - Proaktif zeka ve öneriler
       </Typography>
+
+      {/* Guest Selector */}
+      <Box sx={{ mb: 4, p: 2, bgcolor: 'action.hover', borderRadius: 1, display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Typography variant="subtitle1">Select Guest ID for Personalized AI Insights:</Typography>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          {[1, 5, 12, 42].map(id => (
+            <Button
+              key={id}
+              variant={selectedGuestId === id ? "contained" : "outlined"}
+              size="small"
+              onClick={() => setSelectedGuestId(id)}
+            >
+              Guest #{id}
+            </Button>
+          ))}
+          <Button
+            variant={selectedGuestId === null ? "contained" : "outlined"}
+            size="small"
+            onClick={() => setSelectedGuestId(null)}
+          >
+            Global View
+          </Button>
+        </Box>
+      </Box>
 
       {/* Summary Cards */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
@@ -211,12 +354,16 @@ export default function IntelligenceDashboardPage() {
 
       {/* Tabs */}
       <Paper sx={{ mb: 3 }}>
-        <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)}>
-          <Tab label="Proactive Recommendations" icon={<Recommend />} iconPosition="start" />
+        <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)} variant="scrollable" scrollButtons="auto">
+          <Tab label="Recommendations" icon={<Recommend />} iconPosition="start" />
           <Tab label="Problem Prevention" icon={<Warning />} iconPosition="start" />
           <Tab label="Early Warnings" icon={<NotificationsActive />} iconPosition="start" />
           <Tab label="Personalization" icon={<Lightbulb />} iconPosition="start" />
-          <Tab label="Automatic Actions" icon={<AutoAwesome />} iconPosition="start" />
+          <Tab label="Auto Actions" icon={<AutoAwesome />} iconPosition="start" />
+          <Tab label="Action History" icon={<HistoryIcon />} iconPosition="start" />
+          <Tab label="Pricing" icon={<AttachMoney />} iconPosition="start" />
+          <Tab label="Note Analytics" icon={<Description />} iconPosition="start" />
+          <Tab label="Relationship Network" icon={<Hub />} iconPosition="start" />
         </Tabs>
 
         {/* Proactive Recommendations Tab */}
@@ -427,8 +574,15 @@ export default function IntelligenceDashboardPage() {
                   />
                   <ListItemSecondaryAction>
                     {action.canExecuteAutomatically ? (
-                      <Button variant="contained" color="primary" size="small">
-                        Execute
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        size="small"
+                        onClick={() => handleExecuteAction(action, index)}
+                        disabled={executingActions.has(index)}
+                        startIcon={executingActions.has(index) ? <CircularProgress size={16} color="inherit" /> : null}
+                      >
+                        {executingActions.has(index) ? 'Executing...' : 'Execute'}
                       </Button>
                     ) : (
                       <Button variant="outlined" size="small">
@@ -441,6 +595,368 @@ export default function IntelligenceDashboardPage() {
             </List>
           )}
         </TabPanel>
+
+        {/* Action History Tab */}
+        <TabPanel value={tabValue} index={5}>
+          {loadingHistory ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <CircularProgress />
+            </Box>
+          ) : !selectedGuestId ? (
+            <Alert severity="info">Please select a guest to view their intervention history.</Alert>
+          ) : actionHistory.length === 0 ? (
+            <Alert severity="info">No intervention history found for this guest.</Alert>
+          ) : (
+            <List>
+              {actionHistory.map((history: GuestIntelligenceAction) => (
+                <ListItem key={history.id} sx={{ mb: 2, border: 1, borderColor: 'divider', borderRadius: 1, borderLeft: 5, borderLeftColor: history.status === 'Success' ? 'success.main' : 'error.main' }}>
+                  <ListItemText
+                    primary={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                        <Typography variant="h6">{history.title}</Typography>
+                        <Chip
+                          label={history.status}
+                          color={history.status === 'Success' ? 'success' : 'error'}
+                          size="small"
+                        />
+                        <Chip
+                          label={history.isAutomatic ? 'Auto' : 'Manual'}
+                          variant="outlined"
+                          size="small"
+                        />
+                        <Typography variant="caption" color="text.secondary">
+                          {new Date(history.executionDate).toLocaleString()}
+                        </Typography>
+                      </Box>
+                    }
+                    secondary={
+                      <Box>
+                        <Typography variant="body2" sx={{ mb: 1 }}>{history.description}</Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                          Details: {history.executionDetails}
+                        </Typography>
+                      </Box>
+                    }
+                  />
+                </ListItem>
+              ))}
+            </List>
+          )}
+        </TabPanel>
+
+        {/* Pricing Intelligence Tab */}
+        <TabPanel value={tabValue} index={6}>
+          {loadingPricing ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+                <QueryStats color="primary" />
+                <Typography variant="h6">AI Price Forecasting & Occupancy</Typography>
+                <Chip label="Beta AI" size="small" color="secondary" sx={{ ml: 1 }} />
+              </Box>
+
+              <Grid container spacing={4}>
+                <Grid item xs={12} lg={8}>
+                  <Paper variant="outlined" sx={{ p: 2, height: 400 }}>
+                    <Typography variant="subtitle2" gutterBottom>Occupancy Forecast vs Price Strategy</Typography>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={pricingData}>
+                        <defs>
+                          <linearGradient id="colorOcc" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#8884d8" stopOpacity={0.1} />
+                            <stop offset="95%" stopColor="#8884d8" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="date" tickFormatter={(str) => new Date(str).toLocaleDateString(undefined, { weekday: 'short' })} />
+                        <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
+                        <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
+                        <RechartsTooltip
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              const data = payload[0].payload as PricingIntelligenceResult;
+                              return (
+                                <Box sx={{ bgcolor: 'background.paper', p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 1, boxShadow: 2 }}>
+                                  <Typography variant="subtitle2" sx={{ mb: 1 }}>{new Date(data.date).toLocaleDateString()}</Typography>
+                                  <Typography variant="body2" color="primary">Occupancy: {(data.forecastedOccupancy * 100).toFixed(0)}%</Typography>
+                                  <Typography variant="body2" color="success.main">Rate: {data.dynamicRate} TRY</Typography>
+                                  {data.ruleDetails && data.ruleDetails.length > 0 ? (
+                                    <Box sx={{ mt: 1 }}>
+                                      <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block' }}>Applied Rules:</Typography>
+                                      {data.ruleDetails.map((r, i) => (
+                                        <Typography key={i} variant="caption" sx={{ display: 'block', color: 'text.secondary' }}>
+                                          • {r.ruleName}: {r.adjustmentValue > 0 ? '+' : ''}{r.adjustmentValue}{r.adjustmentType === 'Percentage' ? '%' : ' TRY'} → {r.resultingRate} TRY
+                                        </Typography>
+                                      ))}
+                                    </Box>
+                                  ) : data.appliedRules.length > 0 && (
+                                    <Box sx={{ mt: 1 }}>
+                                      <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block' }}>Applied Rules:</Typography>
+                                      {data.appliedRules.map((r, i) => (
+                                        <Typography key={i} variant="caption" sx={{ display: 'block', color: 'text.secondary' }}>• {r}</Typography>
+                                      ))}
+                                    </Box>
+                                  )}
+                                </Box>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        <Legend />
+                        <Area
+                          yAxisId="left"
+                          type="monotone"
+                          dataKey="forecastedOccupancy"
+                          name="AI Occupancy Forecast"
+                          stroke="#8884d8"
+                          fillOpacity={1}
+                          fill="url(#colorOcc)"
+                        />
+                        <Line
+                          yAxisId="right"
+                          type="stepAfter"
+                          dataKey="dynamicRate"
+                          name="Dynamic Rate (TRY)"
+                          stroke="#82ca9d"
+                          strokeWidth={2}
+                          dot={{ r: 4 }}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </Paper>
+                </Grid>
+                <Grid item xs={12} lg={4}>
+                  <Typography variant="subtitle1" gutterBottom>Forecast Details</Typography>
+                  <List dense>
+                    {pricingData.slice(0, 5).map((point: PricingIntelligenceResult, idx: number) => (
+                      <ListItem key={idx} sx={{ mb: 1, backgroundColor: 'action.hover', borderRadius: 1 }}>
+                        <ListItemText
+                          primary={`${new Date(point.date).toLocaleDateString()} - Occupancy: ${(point.forecastedOccupancy * 100).toFixed(0)}%`}
+                          secondary={
+                            <Box>
+                              <Typography variant="caption" display="block">Rate: {point.dynamicRate} TRY</Typography>
+                              {point.isStopSell && <Chip label="STOP SELL" color="error" size="small" sx={{ mt: 0.5 }} />}
+                              <Box sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                {point.appliedRules.map((r, i) => (
+                                  <Chip
+                                    key={i}
+                                    label={r}
+                                    size="small"
+                                    color="secondary"
+                                    variant="filled"
+                                    sx={{
+                                      fontSize: '0.65rem',
+                                      bgcolor: 'secondary.light',
+                                      color: 'secondary.dark',
+                                      fontWeight: 'bold'
+                                    }}
+                                  />
+                                ))}
+                              </Box>
+                            </Box>
+                          }
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                </Grid>
+              </Grid>
+            </Box>
+          )}
+        </TabPanel>
+
+        {/* Note Analytics Tab */}
+        <TabPanel value={tabValue} index={7}>
+          {!selectedGuestId ? (
+            <Alert severity="info">Please select a guest to view AI-extracted insights from staff notes.</Alert>
+          ) : loadingNoteInsights ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <CircularProgress />
+            </Box>
+          ) : noteInsights.length === 0 ? (
+            <Alert severity="info" icon={<AutoAwesome />}>AI has not yet processed any specific behavioral patterns from staff notes for this guest.</Alert>
+          ) : (
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+                <AutoAwesome color="primary" />
+                <Typography variant="h6">Staff Note Behavioral Insights</Typography>
+              </Box>
+              <Grid container spacing={2}>
+                {noteInsights.map((insight: BehavioralInsight, idx: number) => (
+                  <Grid item xs={12} md={6} key={idx}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                          <Typography variant="subtitle1" fontWeight="bold">{insight.behaviorType}</Typography>
+                          <Chip label={insight.category} size="small" color="primary" variant="outlined" />
+                        </Box>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                          {insight.behaviorValue}
+                        </Typography>
+                        <Divider sx={{ my: 1 }} />
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Typography variant="caption" color="text.disabled">
+                            Extracted: {new Date(insight.behaviorDate).toLocaleDateString()}
+                          </Typography>
+                          {insight.sentimentScore !== null && (
+                            <Chip
+                              label={`Sentiment: ${insight.sentimentScore! > 0 ? 'Positive' : 'Negative'}`}
+                              size="small"
+                              color={insight.sentimentScore! > 0 ? 'success' : 'error'}
+                              variant="outlined"
+                            />
+                          )}
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            </Box>
+          )}
+        </TabPanel>
+
+        {/* Relationship Network Tab */}
+        <TabPanel value={tabValue} index={8}>
+          {!selectedGuestId ? (
+            <Alert severity="info">Please select a guest to view their interaction and relationship network.</Alert>
+          ) : loadingNetwork ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <CircularProgress />
+            </Box>
+          ) : !network ? (
+            <Alert severity="warning">Could not load relationship network. Ensure Neo4j sync is active.</Alert>
+          ) : (
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+                <Hub color="primary" />
+                <Typography variant="h6">Guest Relationship Network (Graph Patterns)</Typography>
+              </Box>
+
+              <Box sx={{ mb: 4 }}>
+                <RelationshipNetworkGraph network={network} />
+              </Box>
+
+              <Grid container spacing={3}>
+                {/* Guest Context */}
+                <Grid item xs={12}>
+                  <Card sx={{ bgcolor: 'primary.main', color: 'white' }}>
+                    <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Psychology sx={{ fontSize: 40 }} />
+                      <Box>
+                        <Typography variant="h5">{network.guestNode.name}</Typography>
+                        <Typography variant="body2">Network Anchor - ID: {network.guestNode.id}</Typography>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                {/* Staff Relationships */}
+                <Grid item xs={12} md={6}>
+                  <Typography variant="subtitle1" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Group fontSize="small" /> Trusted Staff Interactions
+                  </Typography>
+                  <List>
+                    {network.staffNodes.map(staff => {
+                      const edge = network.edges.find(e => e.targetId === staff.id);
+                      return (
+                        <Paper key={staff.id} variant="outlined" sx={{ mb: 1, p: 2 }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Typography variant="subtitle2">{staff.name}</Typography>
+                            <Chip label={`Strength: ${(edge?.weight || 0).toFixed(2)}`} size="small" color="success" />
+                          </Box>
+                          <Typography variant="caption" color="text.secondary">
+                            Frequency: {staff.properties?.Frequency || 0} | Sat: {staff.properties?.Satisfaction || 0}/10
+                          </Typography>
+                        </Paper>
+                      );
+                    })}
+                    {network.staffNodes.length === 0 && <Typography variant="body2" color="text.disabled">No staff interactions mapped yet.</Typography>}
+                  </List>
+                </Grid>
+
+                {/* Service/Preference Relationships */}
+                <Grid item xs={12} md={6}>
+                  <Typography variant="subtitle1" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Share fontSize="small" /> Service & Preference Ties
+                  </Typography>
+                  <List>
+                    {network.serviceNodes.map(service => {
+                      const edge = network.edges.find(e => e.targetId === service.id);
+                      return (
+                        <Paper key={service.id} variant="outlined" sx={{ mb: 1, p: 2 }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Typography variant="subtitle2">{service.name}</Typography>
+                              <Chip label={service.type} size="small" variant="outlined" />
+                            </Box>
+                            <Chip label={edge?.relationshipType} size="small" color="info" />
+                          </Box>
+                          <Typography variant="caption" color="text.secondary">
+                            Score: {service.properties?.Satisfaction || service.properties?.Sentiment || 0}
+                          </Typography>
+                        </Paper>
+                      );
+                    })}
+                    {network.serviceNodes.length === 0 && <Typography variant="body2" color="text.disabled">No service preferences discovered yet.</Typography>}
+                  </List>
+                </Grid>
+              </Grid>
+
+              <Grid container spacing={3} sx={{ mt: 2 }}>
+                {/* Staff Recommendations (From backend logic) */}
+                <Grid item xs={12} md={6}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                    <AutoAwesome color="secondary" fontSize="small" />
+                    <Typography variant="subtitle1">AI Staff Recommendations</Typography>
+                  </Box>
+                  <List>
+                    {(staffMatches || []).map((match: any, idx: number) => (
+                      <Paper key={idx} variant="outlined" sx={{ mb: 1, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box>
+                          <Typography variant="subtitle2">{match.staffName}</Typography>
+                          <Typography variant="caption" color="text.secondary">Matches: {match.interactionCount} | Avg Sat: {match.averageSatisfaction}/10</Typography>
+                        </Box>
+                        <Chip label={`${(match.compatibilityScore * 100).toFixed(0)}% Match`} color="primary" size="small" />
+                      </Paper>
+                    ))}
+                    {loadingStaffMatches && <CircularProgress size={20} />}
+                    {(!staffMatches || staffMatches.length === 0) && !loadingStaffMatches && (
+                      <Alert severity="info" sx={{ py: 0 }}>No AI staff recommendations available yet.</Alert>
+                    )}
+                  </List>
+                </Grid>
+
+                {/* Service Recommendations (From backend logic) */}
+                <Grid item xs={12} md={6}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                    <AutoAwesome color="secondary" fontSize="small" />
+                    <Typography variant="subtitle1">Service & Tour Recommendations</Typography>
+                  </Box>
+                  <List>
+                    {(serviceMatches || []).map((match: any, idx: number) => (
+                      <Paper key={idx} variant="outlined" sx={{ mb: 1, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box>
+                          <Typography variant="subtitle2">{match.serviceName}</Typography>
+                          <Typography variant="caption" color="text.secondary">{match.recommendationReason}</Typography>
+                        </Box>
+                        <Chip label={`${(match.matchScore * 100).toFixed(0)}% Score`} color="info" size="small" />
+                      </Paper>
+                    ))}
+                    {loadingServiceMatches && <CircularProgress size={20} />}
+                    {(!serviceMatches || serviceMatches.length === 0) && !loadingServiceMatches && (
+                      <Alert severity="info" sx={{ py: 0 }}>No personalized service recommendations available yet.</Alert>
+                    )}
+                  </List>
+                </Grid>
+              </Grid>
+            </Box>
+          )}
+        </TabPanel>
       </Paper>
 
       {/* Guest Selection Note */}
@@ -450,6 +966,18 @@ export default function IntelligenceDashboardPage() {
           Some features require a guest to be selected. Please select a guest from the Guests page to see personalized recommendations and suggestions.
         </Alert>
       )}
+
+      {/* Execution Feedback Notification */}
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={6000}
+        onClose={handleCloseNotification}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert onClose={handleCloseNotification} severity={notification.severity} variant="filled" sx={{ width: '100%' }}>
+          {notification.message}
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }

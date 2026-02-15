@@ -44,6 +44,11 @@ namespace GuestFlow.Application.Operations.PMS
         Task<ApiResponse<bool>> SyncGuestAsync(int integrationId, PMSGuestProfile pmsGuest);
 
         /// <summary>
+        /// ID ile misafir senkronize et (PMS'den güncel veriyi çeker ve kaydeder)
+        /// </summary>
+        Task<ApiResponse<bool>> SyncGuestByIdAsync(int integrationId, string pmsGuestId);
+
+        /// <summary>
         /// Tekil rezervasyon senkronize et (Upsert)
         /// </summary>
         Task<ApiResponse<bool>> SyncReservationAsync(int integrationId, PMSReservation pmsReservation);
@@ -54,9 +59,24 @@ namespace GuestFlow.Application.Operations.PMS
         Task<ApiResponse<bool>> SyncRoomStatusAsync(int integrationId, PMSRoomStatus pmsRoomStatus);
 
         /// <summary>
+        /// ID ile rezervasyon senkronize et (PMS'den güncel veriyi çeker ve kaydeder)
+        /// </summary>
+        Task<ApiResponse<bool>> SyncReservationByIdAsync(int integrationId, string pmsReservationId);
+
+        /// <summary>
+        /// Oda numarası ile oda durumu senkronize et (PMS'den güncel veriyi çeker ve kaydeder)
+        /// </summary>
+        Task<ApiResponse<bool>> SyncRoomStatusByRoomNumberAsync(int integrationId, string roomNumber);
+
+        /// <summary>
         /// Tekil folio senkronize et
         /// </summary>
         Task<ApiResponse<bool>> SyncFolioAsync(int integrationId, PMSFolio pmsFolio);
+
+        /// <summary>
+        /// ID ile folio senkronize et (PMS'den güncel veriyi çeker ve kaydeder)
+        /// </summary>
+        Task<ApiResponse<bool>> SyncFolioByIdAsync(int integrationId, string pmsFolioId);
 
         /// <summary>
         /// Webhook'dan gelen veriyi işle ve senkronize et

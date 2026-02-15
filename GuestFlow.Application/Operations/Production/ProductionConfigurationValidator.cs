@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Furkan Cengiz
+// Copyright (c) 2026 Furkan Cengiz
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 using GuestFlow.Application.Models.Responses;
@@ -200,6 +200,34 @@ namespace GuestFlow.Application.Operations.Production
                     else
                     {
                         result.SeedDemoDataDisabled = true;
+                    }
+
+                    // Stripe validation
+                    var stripeSecret = _configuration["Stripe:SecretKey"];
+                    var stripeWebhook = _configuration["Stripe:WebhookSecret"];
+                    if (string.IsNullOrEmpty(stripeSecret) || string.IsNullOrEmpty(stripeWebhook))
+                    {
+                        result.Issues.Add(new ValidationIssue
+                        {
+                            Category = "Secrets",
+                            Severity = "Critical",
+                            Message = "Stripe API keys are missing in production",
+                            Recommendation = "Configure Stripe:SecretKey and Stripe:WebhookSecret"
+                        });
+                    }
+
+                    // WhatsApp validation
+                    var waToken = _configuration["WhatsApp:AccessToken"];
+                    var waPhoneId = _configuration["WhatsApp:PhoneNumberId"];
+                    if (string.IsNullOrEmpty(waToken) || string.IsNullOrEmpty(waPhoneId))
+                    {
+                        result.Issues.Add(new ValidationIssue
+                        {
+                            Category = "Secrets",
+                            Severity = "Critical",
+                            Message = "Meta WhatsApp API keys are missing in production",
+                            Recommendation = "Configure WhatsApp:AccessToken and WhatsApp:PhoneNumberId"
+                        });
                     }
                 }
 

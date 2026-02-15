@@ -2,6 +2,8 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 using GuestFlow.Api.Models;
+using GuestFlow.Application;
+using GuestFlow.Application.Models;
 using GuestFlow.Application.Operations.Production;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -43,13 +45,13 @@ namespace GuestFlow.Api.Controllers
         /// Validate all production configurations
         /// </summary>
         [HttpGet("validate")]
-        [ProducesResponseType(typeof(ApiResponse<ProductionConfigurationValidationResult>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(GuestFlow.Api.Models.ApiResponse<ProductionConfigurationValidationResult>), StatusCodes.Status200OK)]
         public async Task<IActionResult> ValidateAll()
         {
             try
             {
                 var result = await _validator.ValidateAllAsync();
-                return result.Success ? Success(result.Data, "Production configuration validation completed") : Error(result.Message, 400);
+                return result.Success ? Success(result.Data, "Production configuration validation completed") : Error(result.Message, (int)result.StatusCode);
             }
             catch (Exception ex)
             {
@@ -61,7 +63,7 @@ namespace GuestFlow.Api.Controllers
         /// Validate secrets and security configurations
         /// </summary>
         [HttpGet("validate/secrets")]
-        [ProducesResponseType(typeof(ApiResponse<SecretsValidationResult>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(GuestFlow.Api.Models.ApiResponse<SecretsValidationResult>), StatusCodes.Status200OK)]
         public async Task<IActionResult> ValidateSecrets()
         {
             try
@@ -79,7 +81,7 @@ namespace GuestFlow.Api.Controllers
         /// Validate database and migration status
         /// </summary>
         [HttpGet("validate/database")]
-        [ProducesResponseType(typeof(ApiResponse<DatabaseValidationResult>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(GuestFlow.Api.Models.ApiResponse<DatabaseValidationResult>), StatusCodes.Status200OK)]
         public async Task<IActionResult> ValidateDatabase()
         {
             try
@@ -97,7 +99,7 @@ namespace GuestFlow.Api.Controllers
         /// Validate logging and monitoring configurations
         /// </summary>
         [HttpGet("validate/logging")]
-        [ProducesResponseType(typeof(ApiResponse<LoggingValidationResult>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(GuestFlow.Api.Models.ApiResponse<LoggingValidationResult>), StatusCodes.Status200OK)]
         public async Task<IActionResult> ValidateLogging()
         {
             try
@@ -115,7 +117,7 @@ namespace GuestFlow.Api.Controllers
         /// Check migration drift (pending migrations)
         /// </summary>
         [HttpGet("migrations/drift")]
-        [ProducesResponseType(typeof(ApiResponse<MigrationDriftResult>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(GuestFlow.Api.Models.ApiResponse<MigrationDriftResult>), StatusCodes.Status200OK)]
         public async Task<IActionResult> CheckMigrationDrift()
         {
             try
@@ -133,7 +135,7 @@ namespace GuestFlow.Api.Controllers
         /// List all migrations
         /// </summary>
         [HttpGet("migrations")]
-        [ProducesResponseType(typeof(ApiResponse<List<MigrationInfo>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(GuestFlow.Api.Models.ApiResponse<List<MigrationInfo>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> ListMigrations()
         {
             try
@@ -151,7 +153,7 @@ namespace GuestFlow.Api.Controllers
         /// Get last applied migration
         /// </summary>
         [HttpGet("migrations/last-applied")]
-        [ProducesResponseType(typeof(ApiResponse<MigrationInfo?>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(GuestFlow.Api.Models.ApiResponse<MigrationInfo>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetLastAppliedMigration()
         {
             try
@@ -169,7 +171,7 @@ namespace GuestFlow.Api.Controllers
         /// Check all dependencies for vulnerabilities (backend + frontend)
         /// </summary>
         [HttpGet("dependencies/vulnerabilities")]
-        [ProducesResponseType(typeof(ApiResponse<DependencyVulnerabilityResult>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(GuestFlow.Api.Models.ApiResponse<DependencyVulnerabilityResult>), StatusCodes.Status200OK)]
         public async Task<IActionResult> CheckAllDependencies()
         {
             try
@@ -187,7 +189,7 @@ namespace GuestFlow.Api.Controllers
         /// Check backend (NuGet) dependencies for vulnerabilities
         /// </summary>
         [HttpGet("dependencies/backend")]
-        [ProducesResponseType(typeof(ApiResponse<BackendVulnerabilityResult>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(GuestFlow.Api.Models.ApiResponse<BackendVulnerabilityResult>), StatusCodes.Status200OK)]
         public async Task<IActionResult> CheckBackendDependencies()
         {
             try
@@ -205,7 +207,7 @@ namespace GuestFlow.Api.Controllers
         /// Check frontend (npm) dependencies for vulnerabilities
         /// </summary>
         [HttpGet("dependencies/frontend")]
-        [ProducesResponseType(typeof(ApiResponse<FrontendVulnerabilityResult>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(GuestFlow.Api.Models.ApiResponse<FrontendVulnerabilityResult>), StatusCodes.Status200OK)]
         public async Task<IActionResult> CheckFrontendDependencies()
         {
             try
@@ -223,7 +225,7 @@ namespace GuestFlow.Api.Controllers
         /// Create database backup
         /// </summary>
         [HttpPost("backup/create")]
-        [ProducesResponseType(typeof(ApiResponse<BackupResult>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(GuestFlow.Api.Models.ApiResponse<BackupResult>), StatusCodes.Status200OK)]
         public async Task<IActionResult> CreateBackup([FromQuery] string? backupPath = null)
         {
             try
@@ -241,7 +243,7 @@ namespace GuestFlow.Api.Controllers
         /// Get last backup
         /// </summary>
         [HttpGet("backup/last")]
-        [ProducesResponseType(typeof(ApiResponse<BackupInfo?>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(GuestFlow.Api.Models.ApiResponse<BackupInfo>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetLastBackup()
         {
             try
@@ -259,7 +261,7 @@ namespace GuestFlow.Api.Controllers
         /// List all backups
         /// </summary>
         [HttpGet("backup/list")]
-        [ProducesResponseType(typeof(ApiResponse<List<BackupInfo>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(GuestFlow.Api.Models.ApiResponse<List<BackupInfo>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> ListBackups([FromQuery] int? limit = null)
         {
             try
@@ -277,7 +279,7 @@ namespace GuestFlow.Api.Controllers
         /// Restore database from backup (WARNING: Destructive operation)
         /// </summary>
         [HttpPost("backup/restore")]
-        [ProducesResponseType(typeof(ApiResponse<RestoreResult>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(GuestFlow.Api.Models.ApiResponse<RestoreResult>), StatusCodes.Status200OK)]
         public async Task<IActionResult> RestoreBackup([FromBody] RestoreBackupRequest request)
         {
             try
@@ -300,7 +302,7 @@ namespace GuestFlow.Api.Controllers
         /// Validate backup strategy
         /// </summary>
         [HttpGet("backup/validate-strategy")]
-        [ProducesResponseType(typeof(ApiResponse<BackupStrategyValidationResult>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(GuestFlow.Api.Models.ApiResponse<BackupStrategyValidationResult>), StatusCodes.Status200OK)]
         public async Task<IActionResult> ValidateBackupStrategy()
         {
             try

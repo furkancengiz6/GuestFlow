@@ -436,6 +436,44 @@ namespace GuestFlow.Api.Controllers
                 return Error("Dönem bazlı KDV raporu getirilirken bir hata oluştu.", (int)HttpStatusCode.InternalServerError);
             }
         }
+
+        /// <summary>
+        /// Dashboard verileri için AI analizi ve öneriler getirir
+        /// </summary>
+        [HttpGet("dashboard-ai-insights")]
+        public async Task<IActionResult> GetDashboardAIInsights()
+        {
+            try
+            {
+                var data = await _reportsService.GetDashboardSummaryAsync();
+                var insight = await _reportsService.GetReportInsightsAsync("DashboardSummary", data);
+                return Success(new { Insight = insight }, "Dashboard AI analizi başarıyla oluşturuldu.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Dashboard AI analizi oluşturulurken hata.");
+                return Error("AI analizi şu an yapılamıyor.");
+            }
+        }
+
+        /// <summary>
+        /// Gelir verileri için AI analizi ve tahminler getirir
+        /// </summary>
+        [HttpGet("revenue-ai-insights")]
+        public async Task<IActionResult> GetRevenueAIInsights([FromQuery] DateTime? startDate = null, [FromQuery] DateTime? endDate = null)
+        {
+            try
+            {
+                var data = await _reportsService.GetRevenueSummaryAsync(startDate, endDate);
+                var insight = await _reportsService.GetReportInsightsAsync("RevenueSummary", data);
+                return Success(new { Insight = insight }, "Gelir AI analizi başarıyla oluşturuldu.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Gelir AI analizi oluşturulurken hata.");
+                return Error("AI analizi şu an yapılamıyor.");
+            }
+        }
     }
 }
 

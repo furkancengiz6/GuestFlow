@@ -151,6 +151,7 @@ namespace GuestFlow.Application.Operations.Dashboard
         public string Currency { get; set; } = "TRY";
         public string Status { get; set; } = string.Empty;
         public int ItemCount { get; set; }
+        public string? PdfUrl { get; set; }
     }
 
     /// <summary>

@@ -6,15 +6,6 @@ import { analyticsService } from '../services/analyticsService'
 import type {
   RealTimeKpi,
   RevenueTrend,
-  SeasonalComparison,
-  YearlyGrowth,
-  GuestSegmentation,
-  ServiceDistribution,
-  CityPerformance,
-  SupplierProfitability,
-  RevenueForecast,
-  DemandForecast,
-  OptimalPrice,
 } from '../types/analytics'
 
 export const useRealTimeKpis = (date?: string) => {

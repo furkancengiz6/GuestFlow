@@ -1,0 +1,4 @@
+src/components/Payments/PaymentForm.tsx(134,43): error TS2304: Cannot find name 'useState'.
+src/components/Payments/PaymentForm.tsx(135,39): error TS2304: Cannot find name 'useState'.
+src/components/Payments/PaymentForm.tsx(197,47): error TS2304: Cannot find name 'useState'.
+src/pages/Intelligence/IntelligenceDashboardPage.tsx(610,44): error TS2304: Cannot find name 'GuestIntelligenceAction'.

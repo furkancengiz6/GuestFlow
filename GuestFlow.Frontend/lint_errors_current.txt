@@ -1,0 +1,97 @@
+﻿
+> guestflow-frontend@1.0.0 lint
+> eslint . --report-unused-disable-directives --max-warnings 0
+
+
+C:\GuestFlow\GuestFlow.Frontend\src\components\ConciergeDashboard\ConciergeDashboard.tsx
+  17:3   warning  'Alert' is defined but never used           @typescript-eslint/no-unused-vars
+  18:3   warning  'AlertTitle' is defined but never used      @typescript-eslint/no-unused-vars
+  40:15  warning  'CheckInOutItem' is defined but never used  @typescript-eslint/no-unused-vars
+  40:31  warning  'ActiveGuest' is defined but never used     @typescript-eslint/no-unused-vars
+
+C:\GuestFlow\GuestFlow.Frontend\src\components\Guests\CommunicationHistory.tsx
+  16:3  warning  'Divider' is defined but never used     @typescript-eslint/no-unused-vars
+  20:3  warning  'IconButton' is defined but never used  @typescript-eslint/no-unused-vars
+  21:3  warning  'Tooltip' is defined but never used     @typescript-eslint/no-unused-vars
+
+C:\GuestFlow\GuestFlow.Frontend\src\components\Guests\GuestPreferences.tsx
+  11:3  warning  'Divider' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\GuestFlow\GuestFlow.Frontend\src\components\Guests\UnifiedGuestProfile.tsx
+  27:14  warning  'HistoryIcon' is defined but never used              @typescript-eslint/no-unused-vars
+  28:18  warning  'MoneyIcon' is defined but never used                @typescript-eslint/no-unused-vars
+  35:38  warning  'UnifiedGuestProfileType' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\GuestFlow\GuestFlow.Frontend\src\components\Layout\Sidebar.tsx
+  28:11  warning  'NoteIcon' is defined but never used    @typescript-eslint/no-unused-vars
+  35:13  warning  'FolderIcon' is defined but never used  @typescript-eslint/no-unused-vars
+  42:18  warning  'RoomIcon' is defined but never used    @typescript-eslint/no-unused-vars
+
+C:\GuestFlow\GuestFlow.Frontend\src\components\Map\OperationalMap.tsx
+   18:3   warning  'IconButton' is defined but never used      @typescript-eslint/no-unused-vars
+   19:3   warning  'Tooltip' is defined but never used         @typescript-eslint/no-unused-vars
+   26:12  warning  'TodayIcon' is defined but never used       @typescript-eslint/no-unused-vars
+   27:17  warning  'LocationIcon' is defined but never used    @typescript-eslint/no-unused-vars
+  114:11  warning  'color' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\GuestFlow\GuestFlow.Frontend\src\components\NotificationRules\NotificationRules.tsx
+   8:3   warning  'Card' is defined but never used            @typescript-eslint/no-unused-vars
+   9:3   warning  'CardContent' is defined but never used     @typescript-eslint/no-unused-vars
+  41:17  warning  'FilterListIcon' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\GuestFlow\GuestFlow.Frontend\src\components\Personnel\PersonnelForm.tsx
+   6:3   warning  'Box' is defined but never used                                        @typescript-eslint/no-unused-vars
+  27:43  warning  'val' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\GuestFlow\GuestFlow.Frontend\src\config\env.ts
+  30:7  warning  'getRequiredEnv' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\GuestFlow\GuestFlow.Frontend\src\hooks\useAnalytics.ts
+   8:3  warning  'RevenueTrend' is defined but never used           @typescript-eslint/no-unused-vars
+   9:3  warning  'SeasonalComparison' is defined but never used     @typescript-eslint/no-unused-vars
+  10:3  warning  'YearlyGrowth' is defined but never used           @typescript-eslint/no-unused-vars
+  11:3  warning  'GuestSegmentation' is defined but never used      @typescript-eslint/no-unused-vars
+  12:3  warning  'ServiceDistribution' is defined but never used    @typescript-eslint/no-unused-vars
+  13:3  warning  'CityPerformance' is defined but never used        @typescript-eslint/no-unused-vars
+  14:3  warning  'SupplierProfitability' is defined but never used  @typescript-eslint/no-unused-vars
+  15:3  warning  'RevenueForecast' is defined but never used        @typescript-eslint/no-unused-vars
+  16:3  warning  'DemandForecast' is defined but never used         @typescript-eslint/no-unused-vars
+  17:3  warning  'OptimalPrice' is defined but never used           @typescript-eslint/no-unused-vars
+
+C:\GuestFlow\GuestFlow.Frontend\src\hooks\useNotificationRules.ts
+  9:3  warning  'RuleExecutionResult' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\GuestFlow\GuestFlow.Frontend\src\hooks\useOperations.ts
+  5:29  warning  'AssignDriverRequest' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\GuestFlow\GuestFlow.Frontend\src\hooks\useWhatsApp.ts
+   9:3  warning  'WhatsAppHistory' is defined but never used     @typescript-eslint/no-unused-vars
+  10:3  warning  'WhatsAppStatistics' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\GuestFlow\GuestFlow.Frontend\src\pages\Dashboard\DashboardPage.tsx
+   77:17  warning  'recentActivities' is assigned a value but never used     @typescript-eslint/no-unused-vars
+   77:46  warning  'isLoadingActivities' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  607:7   warning  'OperationsDashboard' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\GuestFlow\GuestFlow.Frontend\src\pages\Operations\DailyOperationsPage.tsx
+  43:10  warning  'RiskFlag' is defined but never used                  @typescript-eslint/no-unused-vars
+  46:24  warning  'setSelectedDate' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\GuestFlow\GuestFlow.Frontend\src\pages\Privacy\PrivacyManagementPage.tsx
+   4:3  warning  'Paper' is defined but never used        @typescript-eslint/no-unused-vars
+  23:3  warning  'MenuItem' is defined but never used     @typescript-eslint/no-unused-vars
+  24:3  warning  'Select' is defined but never used       @typescript-eslint/no-unused-vars
+  25:3  warning  'FormControl' is defined but never used  @typescript-eslint/no-unused-vars
+  26:3  warning  'InputLabel' is defined but never used   @typescript-eslint/no-unused-vars
+
+C:\GuestFlow\GuestFlow.Frontend\src\pages\Security\LoginAuditPage.tsx
+  66:40  warning  'statsLoading' is assigned a value but never used    @typescript-eslint/no-unused-vars
+  71:43  warning  'summaryLoading' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\GuestFlow\GuestFlow.Frontend\tests\e2e\analytics.spec.ts
+  165:11  warning  'initialRevenue' is assigned a value but never used                     @typescript-eslint/no-unused-vars
+  228:62  warning  'page' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  255:61  warning  'page' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+Ô£û 54 problems (0 errors, 54 warnings)
+

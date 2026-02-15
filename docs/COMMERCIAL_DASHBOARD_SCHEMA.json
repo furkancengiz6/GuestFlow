@@ -1,0 +1,47 @@
+{
+    "commercialDashboard": {
+        "globalStats": {
+            "qualityScore": 85.5,
+            "upsellPotential": 12500,
+            "atRiskGuests": 14
+        },
+        "revenueRecovery": [
+            {
+                "id": 101,
+                "name": "John Doe",
+                "suggestion": "Spa Treatment",
+                "probability": 0.85,
+                "reason": "Frequent spa user in last 3 stays"
+            }
+        ],
+        "frictionHeatmap": [
+            {
+                "department": "Transfer",
+                "score": 7.2,
+                "incidents": 12,
+                "status": "Warning"
+            },
+            {
+                "department": "Restaurant",
+                "score": 2.1,
+                "incidents": 3,
+                "status": "Healthy"
+            }
+        ],
+        "loyaltyCentrality": [
+            {
+                "guestId": 505,
+                "name": "Jane Smith",
+                "ltv": 15400,
+                "influence": 9.5,
+                "tier": "Diamond"
+            }
+        ]
+    }
+}
+/* 
+  FRONTEND VISUALIZATION TIPS (React/MUI):
+  1. Upsell Potential: Use a 'Data Grid' or 'Cards' with a Linear Progress bar for 'Probability'.
+  2. Friction Heatmap: A 'Radar Chart (Nivo/Recharts)' is perfect for showing scores across departments.
+  3. Loyalty: A 'Scatter Plot' where X=LTV and Y=Influence to find 'Super-Promoters'.
+*/

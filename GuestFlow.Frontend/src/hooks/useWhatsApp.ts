@@ -6,8 +6,6 @@ import { whatsAppService } from '../services/whatsAppService'
 import { useSnackbar } from 'notistack'
 import type {
   SendWhatsApp,
-  WhatsAppHistory,
-  WhatsAppStatistics,
 } from '../types/whatsApp'
 
 export const useSendWhatsApp = () => {
@@ -91,7 +89,7 @@ export const useSendTransferReminder = () => {
     onError: (error: any) => {
       enqueueSnackbar(
         error?.response?.data?.message ||
-          'Transfer hatırlatma WhatsApp mesajı gönderilemedi',
+        'Transfer hatırlatma WhatsApp mesajı gönderilemedi',
         { variant: 'error' }
       )
     },
@@ -126,7 +124,7 @@ export const useSendTourReminder = () => {
     onError: (error: any) => {
       enqueueSnackbar(
         error?.response?.data?.message ||
-          'Tur hatırlatma WhatsApp mesajı gönderilemedi',
+        'Tur hatırlatma WhatsApp mesajı gönderilemedi',
         { variant: 'error' }
       )
     },
@@ -149,7 +147,7 @@ export const useSendReservationConfirmation = () => {
     onError: (error: any) => {
       enqueueSnackbar(
         error?.response?.data?.message ||
-          'Rezervasyon onay WhatsApp mesajı gönderilemedi',
+        'Rezervasyon onay WhatsApp mesajı gönderilemedi',
         { variant: 'error' }
       )
     },

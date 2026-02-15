@@ -1,5 +1,5 @@
 import api from './api'
-import { PaymentMethod } from '../types/enums'
+import { PaymentMethod, PaymentStatus } from '../types/enums'
 
 export interface CreatePaymentRequest {
   amount: number
@@ -28,6 +28,8 @@ export interface Payment {
   collectedByPersonnelId: number
   collectedByPersonnelName: string
   notes?: string
+  status: PaymentStatus
+  transactionId?: string
   createdDate: string
 }
 
@@ -72,5 +74,17 @@ export const paymentService = {
   getPayment: async (id: number): Promise<Payment> => {
     const response = await api.get(`/payments/${id}`)
     return response.data.data
+  },
+
+  // Create Stripe Payment Intent
+  createPaymentIntent: async (data: {
+    amount: number
+    currency: string
+    paymentMethodId: string
+    guestId: number
+    invoiceId?: number
+  }): Promise<{ clientSecret: string }> => {
+    const response = await api.post('/stripe/create-payment-intent', data)
+    return response.data
   }
 }

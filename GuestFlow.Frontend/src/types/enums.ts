@@ -60,3 +60,19 @@ export const TourCategoryLabels: Record<TourCategory, string> = {
   [TourCategory.Sunset]: 'Sunset Tour'
 }
 
+export enum PaymentStatus {
+  Pending = 1,
+  Completed = 2,
+  Failed = 3,
+  Refunded = 4,
+  Cancelled = 5
+}
+
+export const PaymentStatusLabels: Record<PaymentStatus, string> = {
+  [PaymentStatus.Pending]: 'Beklemede',
+  [PaymentStatus.Completed]: 'Tamamlandı',
+  [PaymentStatus.Failed]: 'Başarısız',
+  [PaymentStatus.Refunded]: 'İade Edildi',
+  [PaymentStatus.Cancelled]: 'İptal Edildi'
+}
+

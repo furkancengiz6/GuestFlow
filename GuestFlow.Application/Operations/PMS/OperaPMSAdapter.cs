@@ -279,11 +279,30 @@ namespace GuestFlow.Application.Operations.PMS
             }
         }
 
-        public override Task<List<PMSRoomType>> GetRoomTypesAsync()
+        public override async Task<List<PMSRoomType>> GetRoomTypesAsync()
         {
-            // TODO: Implement actual API call to Opera
-            _logger.LogWarning("GetRoomTypesAsync not implemented for Opera, returning empty list.");
-            return Task.FromResult(new List<PMSRoomType>());
+            try
+            {
+                // Opera Cloud API: GET /api/v1/roomtypes
+                var endpoint = "/api/v1/roomtypes";
+                var operaRoomTypes = await CallApiAsync<List<OperaRoomTypeResponse>>(endpoint, HttpMethod.Get);
+                
+                if (operaRoomTypes == null) return new List<PMSRoomType>();
+
+                return operaRoomTypes.Select(item => new PMSRoomType
+                {
+                    RoomTypeId = item.RoomTypeCode ?? string.Empty,
+                    Name = item.Description ?? string.Empty,
+                    BasePrice = item.MinRate ?? 0,
+                    Currency = item.Currency ?? "TRY",
+                    TotalInventory = item.TotalRooms ?? 0
+                }).ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to get room types from Opera");
+                throw;
+            }
         }
 
         // Mapping methods - Opera API response'larını PMS model'lerine map eder
@@ -437,6 +456,15 @@ namespace GuestFlow.Application.Operations.PMS
             public string? Category { get; set; }
             public DateTime? TransactionDate { get; set; }
         }
+        private class OperaRoomTypeResponse
+        {
+            public string? RoomTypeCode { get; set; }
+            public string? Description { get; set; }
+            public decimal? MinRate { get; set; }
+            public string? Currency { get; set; }
+            public int? TotalRooms { get; set; }
+        }
+
         private class OperaTokenResponse
         {
             [System.Text.Json.Serialization.JsonPropertyName("access_token")]

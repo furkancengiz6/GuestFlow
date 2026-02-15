@@ -1,3 +1,5 @@
+using GuestFlow.Application.Models.AI;
+using GuestFlow.Application.Operations.AI;
 using GuestFlow.Domain.Entities.Core;
 using GuestFlow.Domain.Entities.Enum;
 using GuestFlow.Domain.Entities.Operations;
@@ -30,6 +32,7 @@ namespace GuestFlow.Application.Operations.Reports
         private readonly IRepository<PersonnelEntity> _personnelRepository;
         private readonly IRepository<GuestReview> _reviewRepository;
         private readonly GuestFlow.Application.Operations.Invoice.IPdfService _pdfService;
+        private readonly IAIAssistantService _aiAssistantService;
         private readonly ILogger<ReportsService> _logger;
 
         public ReportsService(
@@ -47,6 +50,7 @@ namespace GuestFlow.Application.Operations.Reports
             IRepository<PersonnelEntity> personnelRepository,
             IRepository<GuestReview> reviewRepository,
             GuestFlow.Application.Operations.Invoice.IPdfService pdfService,
+            IAIAssistantService aiAssistantService,
             ILogger<ReportsService> logger)
         {
             _dailyRevenueRepository = dailyRevenueRepository;
@@ -63,6 +67,7 @@ namespace GuestFlow.Application.Operations.Reports
             _personnelRepository = personnelRepository;
             _reviewRepository = reviewRepository;
             _pdfService = pdfService;
+            _aiAssistantService = aiAssistantService;
             _logger = logger;
         }
 
@@ -1301,13 +1306,43 @@ namespace GuestFlow.Application.Operations.Reports
                     PopularDestinations = popularDests
                 };
 
-                // 6. PDF Oluştur
-                return await _pdfService.GenerateWeeklyReportPdfAsync(reportData);
+                // 6. AI Insights ekle
+                string aiInsight = await GetReportInsightsAsync("WeeklyOperationalReport", reportData);
+
+                // 7. PDF Oluştur (AI özeti ile birlikte)
+                return await _pdfService.GenerateWeeklyReportPdfAsync(new { 
+                    Data = reportData, 
+                    AIInsight = aiInsight 
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Haftalık operasyonel rapor oluşturulurken hata oluştu.");
                 throw;
+            }
+        }
+
+        public async Task<string> GetReportInsightsAsync(string reportType, object reportData)
+        {
+            try
+            {
+                _logger.LogInformation("Generating AI Insights for report: {ReportType}", reportType);
+                
+                string dataJson = System.Text.Json.JsonSerializer.Serialize(reportData);
+                
+                var request = new AIChatRequest
+                {
+                    Message = $"Analyze this '{reportType}' report data and provide 3-4 professional executive insights, potential risks, and optimization opportunities. Return the results in Turkish. Data: {dataJson}",
+                    Context = $"ReportType: {reportType}\nGenerationDate: {DateTime.UtcNow}"
+                };
+
+                var response = await _aiAssistantService.ProcessMessageAsync(request);
+                return response.Response;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to generate AI report insights for {ReportType}", reportType);
+                return "Rapor analizi şu an yapılamıyor. Lütfen daha sonra tekrar deneyiniz.";
             }
         }
     }

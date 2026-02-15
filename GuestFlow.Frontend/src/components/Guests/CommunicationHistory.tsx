@@ -13,12 +13,9 @@ import {
   TableHead,
   TableRow,
   Chip,
-  Divider,
   Alert,
   AlertTitle,
   Grid,
-  IconButton,
-  Tooltip,
   Button,
   Dialog,
   DialogTitle,
@@ -54,7 +51,7 @@ const CommunicationHistory = ({ guestId }: CommunicationHistoryProps) => {
   const { data: history, isLoading, error } = useGuestCommunicationHistory(guestId)
   const sendMessageMutation = useSendMessage()
   const sendSmartNotificationMutation = useSendSmartNotification()
-  
+
   const [sendMessageOpen, setSendMessageOpen] = useState(false)
   const [smartNotificationOpen, setSmartNotificationOpen] = useState(false)
   const [messageData, setMessageData] = useState<SendMessageRequest>({

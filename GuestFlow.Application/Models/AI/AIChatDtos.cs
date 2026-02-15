@@ -7,6 +7,7 @@ namespace GuestFlow.Application.Models.AI
         public string Message { get; set; } = string.Empty;
         public int? GuestId { get; set; }
         public Dictionary<string, string>? Metadata { get; set; }
+        public string? Context { get; set; }
     }
 
     public class AIChatResponse

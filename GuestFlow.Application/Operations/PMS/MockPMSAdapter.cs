@@ -24,6 +24,55 @@ namespace GuestFlow.Application.Operations.PMS
         private static readonly string[] _roomStatuses = { "Available", "Occupied", "OutOfOrder", "Maintenance" };
         private static readonly string[] _reservationStatuses = { "Confirmed", "CheckedIn", "CheckedOut", "Cancelled" };
 
+        // Deterministic Data Store
+        private static readonly Dictionary<string, PMSGuestProfile> _knownGuests = new();
+
+        static MockPMSAdapter()
+        {
+            InitializeKnownGuests();
+        }
+
+        private static void InitializeKnownGuests()
+        {
+            // 1. VIP Guest with rich preferences
+            var vipGuest = new PMSGuestProfile
+            {
+                PMSGuestId = "MOCK-G-VIP-001",
+                FullName = "Alexander The Great",
+                Email = "alex.great@history.com",
+                PhoneNumber = "+90 555 111 2233",
+                Nationality = "Macedonia",
+                GuestCode = "VIP-001",
+                IsVIP = true,
+                RoomNumber = "501",
+                CheckInDate = DateTime.Today.AddDays(-2),
+                CheckOutDate = DateTime.Today.AddDays(5),
+                SpecialRequests = "Extra pillows, Champagne on arrival",
+                Preferences = "{\"dietaryPreferences\":\"Gluten-Free\",\"preferredRoomType\":\"High Floor\",\"bedPreference\":\"King\",\"pillowPreference\":\"Soft\",\"newspaper\":\"Financial Times\",\"interests\":\"History, Finance\"}",
+                LastUpdatedAt = DateTime.Now
+            };
+            _knownGuests.Add(vipGuest.PMSGuestId, vipGuest);
+
+            // 2. Regular Repeat Guest
+            var repeatGuest = new PMSGuestProfile
+            {
+                PMSGuestId = "MOCK-G-REG-002",
+                FullName = "Sarah Connor",
+                Email = "sarah.connor@sky.net",
+                PhoneNumber = "+1 555 999 8877",
+                Nationality = "USA",
+                GuestCode = "REG-002",
+                IsVIP = false,
+                RoomNumber = "101",
+                CheckInDate = DateTime.Today,
+                CheckOutDate = DateTime.Today.AddDays(3),
+                SpecialRequests = "Quiet room please",
+                Preferences = "{\"roomPreference\":\"Quiet\",\"prefersEmail\":true}",
+                LastUpdatedAt = DateTime.Now
+            };
+            _knownGuests.Add(repeatGuest.PMSGuestId, repeatGuest);
+        }
+
         public MockPMSAdapter(
             PMSIntegration integration,
             IHttpClientFactory httpClientFactory,
@@ -53,19 +102,28 @@ namespace GuestFlow.Application.Operations.PMS
 
         public override Task<PMSGuestProfile?> GetGuestProfileAsync(string pmsGuestId)
         {
-            _logger.LogDebug("MockPMSAdapter: Generating mock guest profile for ID: {GuestId}", pmsGuestId);
+            _logger.LogDebug("MockPMSAdapter: Fetching guest profile for ID: {GuestId}", pmsGuestId);
             
-            var guest = GenerateRandomGuestProfile(pmsGuestId);
-            return Task.FromResult<PMSGuestProfile?>(guest);
+            if (_knownGuests.TryGetValue(pmsGuestId, out var guest))
+            {
+                return Task.FromResult<PMSGuestProfile?>(guest);
+            }
+
+            var randomGuest = GenerateRandomGuestProfile(pmsGuestId);
+            return Task.FromResult<PMSGuestProfile?>(randomGuest);
         }
 
         public override Task<List<PMSGuestProfile>> GetGuestsAsync(DateTime? startDate = null, DateTime? endDate = null)
         {
             _logger.LogDebug("MockPMSAdapter: Generating mock guest list");
             
-            var count = _random.Next(5, 15);
             var guests = new List<PMSGuestProfile>();
             
+            // Always include known guests
+            guests.AddRange(_knownGuests.Values);
+
+            // Add some random guests
+            var count = _random.Next(3, 8);
             for (int i = 0; i < count; i++)
             {
                 guests.Add(GenerateRandomGuestProfile($"MOCK-G-{1000 + i}"));
@@ -86,14 +144,59 @@ namespace GuestFlow.Application.Operations.PMS
         {
             _logger.LogDebug("MockPMSAdapter: Generating mock reservations for date range: {Start} - {End}", startDate, endDate);
             
-            var count = _random.Next(3, 10);
             var reservations = new List<PMSReservation>();
+
+            // Generate history for known guests
+            foreach (var knownGuest in _knownGuests.Values)
+            {
+                // Past reservation 1
+                reservations.Add(new PMSReservation
+                {
+                    PMSReservationId = $"MOCK-R-{knownGuest.PMSGuestId}-HIST-1",
+                    PMSGuestId = knownGuest.PMSGuestId,
+                    GuestName = knownGuest.FullName,
+                    GuestEmail = knownGuest.Email,
+                    CheckInDate = DateTime.Today.AddMonths(-6), // 6 months ago
+                    CheckOutDate = DateTime.Today.AddMonths(-6).AddDays(5),
+                    RoomNumber = "PreviousRoom",
+                    RoomType = "Deluxe",
+                    GuestCount = 2,
+                    Status = "CheckedOut",
+                    TotalAmount = 1500,
+                    Currency = "EUR",
+                    CreatedAt = DateTime.Today.AddMonths(-7),
+                    LastModifiedAt = DateTime.Today.AddMonths(-6)
+                });
+
+                // Current reservation (if checked in)
+                if (knownGuest.CheckInDate.HasValue)
+                {
+                    reservations.Add(new PMSReservation
+                    {
+                        PMSReservationId = $"MOCK-R-{knownGuest.PMSGuestId}-CURR",
+                        PMSGuestId = knownGuest.PMSGuestId,
+                        GuestName = knownGuest.FullName,
+                        GuestEmail = knownGuest.Email,
+                        CheckInDate = knownGuest.CheckInDate.Value,
+                        CheckOutDate = knownGuest.CheckOutDate ?? knownGuest.CheckInDate.Value.AddDays(1),
+                        RoomNumber = knownGuest.RoomNumber,
+                        RoomType = "Suite",
+                        GuestCount = 1,
+                        Status = "CheckedIn",
+                        TotalAmount = 2000,
+                        Currency = "EUR",
+                        CreatedAt = DateTime.Today.AddDays(-10),
+                        LastModifiedAt = DateTime.Today
+                    });
+                }
+            }
             
+            // Add random reservations
+            var count = _random.Next(3, 10);
             for (int i = 0; i < count; i++)
             {
                 var reservation = GenerateRandomReservation($"MOCK-R-{2000 + i}");
-                // Adjust dates to be within the requested range
-                var dayOffset = _random.Next(0, (int)(endDate - startDate).TotalDays);
+                var dayOffset = _random.Next(0, (int)((endDate - startDate).TotalDays <= 0 ? 1 : (endDate - startDate).TotalDays));
                 reservation.CheckInDate = startDate.AddDays(dayOffset);
                 reservation.CheckOutDate = reservation.CheckInDate.AddDays(_random.Next(1, 7));
                 reservations.Add(reservation);
@@ -106,6 +209,23 @@ namespace GuestFlow.Application.Operations.PMS
         {
             _logger.LogDebug("MockPMSAdapter: Generating mock room status for: {RoomNumber}", roomNumber);
             
+            // Check if any known guest is in this room
+            var knownGuest = _knownGuests.Values.FirstOrDefault(g => g.RoomNumber == roomNumber);
+            if (knownGuest != null)
+            {
+                return Task.FromResult<PMSRoomStatus?>(new PMSRoomStatus
+                {
+                    RoomNumber = roomNumber,
+                    RoomType = "Suite",
+                    Status = "Occupied",
+                    GuestName = knownGuest.FullName,
+                    PMSGuestId = knownGuest.PMSGuestId,
+                    CheckInDate = knownGuest.CheckInDate,
+                    CheckOutDate = knownGuest.CheckOutDate,
+                    LastUpdatedAt = DateTime.Now
+                });
+            }
+
             var status = GenerateRandomRoomStatus(roomNumber);
             return Task.FromResult<PMSRoomStatus?>(status);
         }
@@ -117,31 +237,77 @@ namespace GuestFlow.Application.Operations.PMS
             var rooms = new List<PMSRoomStatus>();
             foreach (var roomNumber in _roomNumbers)
             {
-                rooms.Add(GenerateRandomRoomStatus(roomNumber));
+                // Key logic: Ensure consistency with Known Guests
+                var knownGuest = _knownGuests.Values.FirstOrDefault(g => g.RoomNumber == roomNumber);
+                if (knownGuest != null)
+                {
+                    rooms.Add(new PMSRoomStatus
+                    {
+                        RoomNumber = roomNumber,
+                        RoomType = "Suite",
+                        Status = "Occupied",
+                        GuestName = knownGuest.FullName,
+                        PMSGuestId = knownGuest.PMSGuestId,
+                        CheckInDate = knownGuest.CheckInDate,
+                        CheckOutDate = knownGuest.CheckOutDate,
+                        LastUpdatedAt = DateTime.Now
+                    });
+                }
+                else
+                {
+                    rooms.Add(GenerateRandomRoomStatus(roomNumber));
+                }
             }
             
             return Task.FromResult(rooms);
         }
 
-        public override Task<PMSFolio?> GetFolioAsync(string reservationId)
+        public override Task<PMSFolio?> GetFolioAsync(string folioId)
         {
-            _logger.LogDebug("MockPMSAdapter: Generating mock folio for reservation: {ReservationId}", reservationId);
+            _logger.LogDebug("MockPMSAdapter: Generating mock folio for ID: {FolioId}", folioId);
             
-            var folio = GenerateRandomFolio(reservationId);
-            return Task.FromResult<PMSFolio?>(folio);
+            // Deterministic testing
+            if (folioId == "MOCK-F-TEST")
+            {
+                 // Use a known guest's current reservation
+                 var knownGuest = _knownGuests["MOCK-G-REG-002"]; // Sarah Connor
+                 var reservationId = $"MOCK-R-{knownGuest.PMSGuestId}-CURR";
+                 
+                 var folio = GenerateRandomFolio(reservationId);
+                 folio.FolioId = folioId;
+                 return Task.FromResult<PMSFolio?>(folio);
+            }
+
+            var randomReservationId = $"MOCK-R-{_random.Next(2000, 3000)}";
+            var randomFolio = GenerateRandomFolio(randomReservationId);
+            return Task.FromResult<PMSFolio?>(randomFolio);
         }
 
         public override Task<List<PMSFolio>> GetFoliosAsync(DateTime startDate, DateTime endDate)
         {
             _logger.LogDebug("MockPMSAdapter: Generating mock folios for date range: {Start} - {End}", startDate, endDate);
             
-            var count = _random.Next(3, 8);
             var folios = new List<PMSFolio>();
+
+            // Generate folios for known guests
+            foreach (var knownGuest in _knownGuests.Values)
+            {
+                // Past folio
+                 folios.Add(GenerateRandomFolio($"MOCK-R-{knownGuest.PMSGuestId}-HIST-1"));
+                 
+                 // Current folio
+                 if (knownGuest.CheckInDate.HasValue)
+                 {
+                     folios.Add(GenerateRandomFolio($"MOCK-R-{knownGuest.PMSGuestId}-CURR"));
+                 }
+            }
             
+            // Random folios
+            var count = _random.Next(3, 8);
             for (int i = 0; i < count; i++)
             {
                 var folio = GenerateRandomFolio($"MOCK-R-{2000 + i}");
-                folio.FolioDate = startDate.AddDays(_random.Next(0, (int)(endDate - startDate).TotalDays));
+                folio.FolioDate = startDate.AddDays(_random.Next(0, (int)((endDate - startDate).TotalDays <= 0 ? 1 : (endDate - startDate).TotalDays)));
                 folios.Add(folio);
             }
             
@@ -196,7 +362,7 @@ namespace GuestFlow.Application.Operations.PMS
                 CheckInDate = checkIn,
                 CheckOutDate = checkOut,
                 SpecialRequests = _random.Next(10) < 3 ? "Late check-out requested" : null,
-                Preferences = _random.Next(10) < 3 ? "{\"dietaryRestrictions\":\"vegetarian\",\"roomPreference\":\"high-floor\"}" : null,
+                Preferences = _random.Next(10) < 3 ? "{\"dietaryPreferences\":\"vegetarian\",\"preferredRoomType\":\"high-floor\"}" : null,
                 LastUpdatedAt = DateTime.Now
             };
         }

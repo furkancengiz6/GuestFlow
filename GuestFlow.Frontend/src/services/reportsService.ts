@@ -99,4 +99,29 @@ export const reportsService = {
     )
     return response.data.data
   },
+
+  /**
+   * Get AI-driven insights for dashboard
+   */
+  getDashboardAIInsights: async (): Promise<string> => {
+    const response = await apiClient.get<{ success: boolean; data: { insight: string } }>(
+      '/api/v1.0/Reports/dashboard-ai-insights'
+    )
+    return response.data.data.insight
+  },
+
+  /**
+   * Get AI-driven insights for revenue reports
+   */
+  getRevenueAIInsights: async (filters?: ReportFilters): Promise<string> => {
+    const params: Record<string, string | number> = {}
+    if (filters?.startDate) params.startDate = filters.startDate
+    if (filters?.endDate) params.endDate = filters.endDate
+
+    const response = await apiClient.get<{ success: boolean; data: { insight: string } }>(
+      '/api/v1.0/Reports/revenue-ai-insights',
+      { params }
+    )
+    return response.data.data.insight
+  },
 }

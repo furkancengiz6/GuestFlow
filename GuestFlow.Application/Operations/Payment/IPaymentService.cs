@@ -78,6 +78,11 @@ namespace GuestFlow.Application.Operations.Payment
         /// Benzersiz ödeme numarası oluşturur
         /// </summary>
         Task<string> GeneratePaymentNumberAsync();
+
+        /// <summary>
+        /// İşlem ID'sine (Transaction ID) göre ödeme getirir
+        /// </summary>
+        Task<GetPaymentDto?> GetPaymentByTransactionIdAsync(string transactionId);
     }
 }
 

@@ -5,7 +5,14 @@ using GuestFlow.Application.Operations.Intelligence.Predictive;
 using GuestFlow.Application.Operations.Intelligence.Relationship;
 using GuestFlow.Application.Operations.Intelligence.Sentiment;
 using GuestFlow.Application.Operations.Intelligence.Behavioral;
+using GuestFlow.Application.Operations.AI;
+using GuestFlow.Application.Models.AI;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace GuestFlow.Application.Operations.Intelligence.Proactive
 {
@@ -18,6 +25,8 @@ namespace GuestFlow.Application.Operations.Intelligence.Proactive
         private readonly IRelationshipIntelligenceService _relationshipIntelligenceService;
         private readonly ISentimentAnalysisService _sentimentAnalysisService;
         private readonly IBehavioralTrackingService _behavioralTrackingService;
+        private readonly IAIAssistantService _aiAssistantService;
+        private readonly IAutomaticActionService _automaticActionService;
         private readonly ILogger<ProactiveIntelligenceService> _logger;
 
         public ProactiveIntelligenceService(
@@ -25,12 +34,16 @@ namespace GuestFlow.Application.Operations.Intelligence.Proactive
             IRelationshipIntelligenceService relationshipIntelligenceService,
             ISentimentAnalysisService sentimentAnalysisService,
             IBehavioralTrackingService behavioralTrackingService,
+            IAIAssistantService aiAssistantService,
+            IAutomaticActionService automaticActionService,
             ILogger<ProactiveIntelligenceService> logger)
         {
             _predictiveIntelligenceService = predictiveIntelligenceService;
             _relationshipIntelligenceService = relationshipIntelligenceService;
             _sentimentAnalysisService = sentimentAnalysisService;
             _behavioralTrackingService = behavioralTrackingService;
+            _aiAssistantService = aiAssistantService;
+            _automaticActionService = automaticActionService;
             _logger = logger;
         }
 
@@ -96,13 +109,95 @@ namespace GuestFlow.Application.Operations.Intelligence.Proactive
                     }
                 }
 
-                return recommendations.OrderByDescending(r => r.Priority).ToList();
+                var rawRecommendations = recommendations.OrderByDescending(r => r.Priority).ToList();
+                
+                // Try to refine with AI for higher quality output
+                var refined = await RefineRecommendationsWithAIAsync(guestId, rawRecommendations);
+                return refined ?? rawRecommendations;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to get proactive recommendations: GuestId={GuestId}", guestId);
                 return new List<ProactiveRecommendation>();
             }
+        }
+
+        private async Task<List<ProactiveRecommendation>?> RefineRecommendationsWithAIAsync(int guestId, List<ProactiveRecommendation> recommendations)
+        {
+            try
+            {
+                var prompt = $@"As a luxury hotel concierge manager, refine these proactive recommendations for Guest {guestId}.
+                Make the descriptions more professional and provide specific 'ImprovedAction' steps.
+                Data: {JsonSerializer.Serialize(recommendations)}
+
+                Return a JSON object:
+                {{
+                    ""refined"": [
+                        {{
+                            ""title"": ""Refined Title"",
+                            ""description"": ""Refined nuanced description"",
+                            ""recommendedAction"": ""Specific next step""
+                        }}
+                    ]
+                }}
+                Response ONLY with JSON.";
+
+                var response = await _aiAssistantService.ProcessMessageAsync(new AIChatRequest
+                {
+                    Message = prompt,
+                    Metadata = new Dictionary<string, string> { { "Type", "ProactiveRefinement" } }
+                });
+
+                if (string.IsNullOrEmpty(response?.Response)) return null;
+
+                var jsonStart = response.Response.IndexOf('{');
+                var jsonEnd = response.Response.LastIndexOf('}');
+                if (jsonStart == -1 || jsonEnd == -1) return null;
+
+                var result = JsonSerializer.Deserialize<RefinedResult>(response.Response.Substring(jsonStart, jsonEnd - jsonStart + 1), 
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                if (result?.Refined != null && result.Refined.Count == recommendations.Count)
+                {
+                    for (int i = 0; i < recommendations.Count; i++)
+                    {
+                        recommendations[i].Title = result.Refined[i].Title;
+                        recommendations[i].Description = result.Refined[i].Description;
+                        recommendations[i].RecommendedAction = result.Refined[i].RecommendedAction;
+                    }
+                    return recommendations;
+                }
+
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to refine proactive recommendations with AI.");
+                return null;
+            }
+        }
+
+        private class RefinedResult
+        {
+            public List<RefinedItem> Refined { get; set; } = new();
+        }
+
+        private class RefinedItem
+        {
+            public string Title { get; set; } = string.Empty;
+            public string Description { get; set; } = string.Empty;
+            public string RecommendedAction { get; set; } = string.Empty;
+        }
+
+        private class RefinedActionItem
+        {
+            public string Title { get; set; } = string.Empty;
+            public string Description { get; set; } = string.Empty;
+        }
+
+        private class RefinedActionResult
+        {
+            public List<RefinedActionItem> Refined { get; set; } = new();
         }
 
         public async Task<List<ProblemPreventionAlert>> GetProblemPreventionAlertsAsync(int? guestId = null)
@@ -151,13 +246,84 @@ namespace GuestFlow.Application.Operations.Intelligence.Proactive
                     }
                 }
 
-                return alerts.OrderByDescending(a => GetSeverityWeight(a.Severity)).ToList();
+                var rawAlerts = alerts.OrderByDescending(a => GetSeverityWeight(a.Severity)).ToList();
+                
+                // Try to refine with AI for higher quality output
+                var refined = await RefineAlertsWithAIAsync(guestId, rawAlerts);
+                return refined ?? rawAlerts;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to get problem prevention alerts: GuestId={GuestId}", guestId);
                 return new List<ProblemPreventionAlert>();
             }
+        }
+
+        private async Task<List<ProblemPreventionAlert>?> RefineAlertsWithAIAsync(int? guestId, List<ProblemPreventionAlert> alerts)
+        {
+            try
+            {
+                var prompt = $@"As a luxury hotel risk manager, refine these proactive problem prevention alerts. 
+                Improve the 'Title', 'Description', and provide a highly specific 'RecommendedIntervention'.
+                Data: {JsonSerializer.Serialize(alerts)}
+
+                Return a JSON object:
+                {{
+                    ""refined"": [
+                        {{
+                            ""title"": ""Refined Title"",
+                            ""description"": ""Nuanced risk description"",
+                            ""recommendedIntervention"": ""Specific actionable step""
+                        }}
+                    ]
+                }}
+                Response ONLY with JSON.";
+
+                var response = await _aiAssistantService.ProcessMessageAsync(new AIChatRequest
+                {
+                    Message = prompt,
+                    Metadata = new Dictionary<string, string> { { "Type", "AlertRefinement" } }
+                });
+
+                if (string.IsNullOrEmpty(response?.Response)) return null;
+
+                var jsonStart = response.Response.IndexOf('{');
+                var jsonEnd = response.Response.LastIndexOf('}');
+                if (jsonStart == -1 || jsonEnd == -1) return null;
+
+                var result = JsonSerializer.Deserialize<RefinedAlertResult>(response.Response.Substring(jsonStart, jsonEnd - jsonStart + 1), 
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                if (result?.Refined != null && result.Refined.Count == alerts.Count)
+                {
+                    for (int i = 0; i < alerts.Count; i++)
+                    {
+                        alerts[i].Title = result.Refined[i].Title;
+                        alerts[i].Description = result.Refined[i].Description;
+                        alerts[i].RecommendedIntervention = result.Refined[i].RecommendedIntervention;
+                    }
+                    return alerts;
+                }
+
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to refine alerts with AI.");
+                return null;
+            }
+        }
+
+        private class RefinedAlertResult
+        {
+            public List<RefinedAlertItem> Refined { get; set; } = new();
+        }
+
+        private class RefinedAlertItem
+        {
+            public string Title { get; set; } = string.Empty;
+            public string Description { get; set; } = string.Empty;
+            public string RecommendedIntervention { get; set; } = string.Empty;
         }
 
         public async Task<List<PersonalizationSuggestion>> GetPersonalizationSuggestionsAsync(int guestId)
@@ -351,7 +517,22 @@ namespace GuestFlow.Application.Operations.Intelligence.Proactive
                     });
                 }
 
-                return actions.OrderByDescending(a => a.Confidence).ToList();
+                // Refine actions with AI to make them "send-ready"
+                var refinedActions = await RefineAutomaticActionsWithAIAsync(guestId, actions);
+                if (refinedActions != null)
+                {
+                    actions = refinedActions;
+                }
+
+                var finalActions = actions.OrderByDescending(a => a.Confidence).ToList();
+
+                // Process high confidence actions automatically
+                foreach (var action in finalActions.Where(a => a.Confidence >= 0.9 && a.CanExecuteAutomatically))
+                {
+                    _ = Task.Run(() => _automaticActionService.ExecuteActionAsync(action));
+                }
+
+                return finalActions;
             }
             catch (Exception ex)
             {
@@ -384,6 +565,60 @@ namespace GuestFlow.Application.Operations.Intelligence.Proactive
                 "Low" => 1,
                 _ => 0
             };
+        }
+
+        private async Task<List<AutomaticAction>?> RefineAutomaticActionsWithAIAsync(int guestId, List<AutomaticAction> actions)
+        {
+            try
+            {
+                var prompt = $@"As an AI customer experience specialist for a luxury hotel, refine these automatic actions for Guest {guestId}.
+                For 'Message' actions, the 'Description' should be the EXACT message content to be sent to the guest via WhatsApp/SMS.
+                Make it professional, personalized, and warm. Use available context.
+                
+                Data: {JsonSerializer.Serialize(actions)}
+
+                Return a JSON object:
+                {{
+                    ""refined"": [
+                        {{
+                            ""title"": ""Refined Action Title"",
+                            ""description"": ""Personalized content or message body""
+                        }}
+                    ]
+                }}
+                Response ONLY with JSON.";
+
+                var response = await _aiAssistantService.ProcessMessageAsync(new AIChatRequest
+                {
+                    Message = prompt,
+                    Metadata = new Dictionary<string, string> { { "Type", "AutomaticActionRefinement" } }
+                });
+
+                if (string.IsNullOrEmpty(response?.Response)) return null;
+
+                var jsonStart = response.Response.IndexOf('{');
+                var jsonEnd = response.Response.LastIndexOf('}');
+                if (jsonStart == -1 || jsonEnd == -1) return null;
+
+                var result = JsonSerializer.Deserialize<RefinedActionResult>(response.Response.Substring(jsonStart, jsonEnd - jsonStart + 1),
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                if (result?.Refined != null && result.Refined.Count == actions.Count)
+                {
+                    for (int i = 0; i < actions.Count; i++)
+                    {
+                        actions[i].Title = result.Refined[i].Title;
+                        actions[i].Description = result.Refined[i].Description;
+                    }
+                    return actions;
+                }
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to refine automatic actions with AI.");
+                return null;
+            }
         }
     }
 }

@@ -445,7 +445,8 @@ namespace GuestFlow.Application.Operations.Dashboard
                         TotalAmount = i.TotalAmount,
                         Currency = i.Currency,
                         Status = i.Status.ToString(),
-                        ItemCount = i.InvoiceItems.Count(ii => !ii.IsDeleted)
+                        ItemCount = i.InvoiceItems.Count(ii => !ii.IsDeleted),
+                        PdfUrl = i.PdfUrl
                     })
                     .ToListAsync();
 

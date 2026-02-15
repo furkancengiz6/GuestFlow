@@ -6,7 +6,6 @@ import {
   Grid,
   Card,
   CardContent,
-  TextField,
   FormControl,
   InputLabel,
   Select,
@@ -26,7 +25,7 @@ import {
   Clear as ClearIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
-  Assessment as AssessmentIcon,
+  AutoAwesome as AutoAwesomeIcon,
 } from '@mui/icons-material'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
@@ -35,7 +34,7 @@ import { tr } from 'date-fns/locale'
 import { useQuery } from '@tanstack/react-query'
 import { reportsService, ReportFilters } from '../../services/reportsService'
 import { dropdownService } from '../../services/dropdownService'
-import { formatCurrency, formatDate } from '../../utils/formatters'
+import { formatCurrency } from '../../utils/formatters'
 import ContentState from '../../components/Feedback/ContentState'
 
 const ReportsPage = () => {
@@ -73,6 +72,12 @@ const ReportsPage = () => {
   const { data: personnelPerformance, isLoading: personnelLoading, error: personnelError } = useQuery({
     queryKey: ['reports', 'personnel-performance', filters],
     queryFn: () => reportsService.getPersonnelPerformance(filters),
+  })
+
+  const { data: aiInsights } = useQuery({
+    queryKey: ['reports', 'revenue-ai-insights', filters],
+    queryFn: () => reportsService.getRevenueAIInsights(filters),
+    enabled: !!revenueSummary, // Only fetch if we have data to analyze
   })
 
   const handleClearFilters = () => {
@@ -171,6 +176,27 @@ const ReportsPage = () => {
             </Grid>
           </Paper>
         </Collapse>
+
+        {/* AI Insights Section */}
+        {aiInsights && (
+          <Paper
+            sx={{
+              p: 3,
+              mb: 3,
+              background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+              borderLeft: '6px solid #1976d2',
+              borderRadius: 2
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+              <AutoAwesomeIcon sx={{ mr: 1, color: '#1976d2' }} />
+              <Typography variant="h6" color="#1565c0">AI Rapor Analizi & Öneriler</Typography>
+            </Box>
+            <Typography variant="body1" sx={{ whiteSpace: 'pre-line', color: '#37474f', fontStyle: 'italic' }}>
+              {aiInsights}
+            </Typography>
+          </Paper>
+        )}
 
         {/* Revenue Summary Cards */}
         {revenueLoading ? (

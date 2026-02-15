@@ -36,6 +36,7 @@ const ToursPage = lazyLoad(() => import('./pages/Tours/ToursPage'), 'ToursPage')
 const CityTourDetailPage = lazyLoad(() => import('./pages/Tours/CityTourDetailPage'), 'CityTourDetailPage')
 const YachtTourDetailPage = lazyLoad(() => import('./pages/Tours/YachtTourDetailPage'), 'YachtTourDetailPage')
 const PersonnelPage = lazyLoad(() => import('./pages/Personnel/PersonnelPage'), 'PersonnelPage')
+const PersonnelDetailPage = lazyLoad(() => import('./pages/Personnel/PersonnelDetailPage'), 'PersonnelDetailPage')
 const ReportsPage = lazyLoad(() => import('./pages/Reports/ReportsPage'), 'ReportsPage')
 const SettingsPage = lazyLoad(() => import('./pages/Settings/SettingsPage'), 'SettingsPage')
 const AirportsPage = lazyLoad(() => import('./pages/Airports/AirportsPage'), 'AirportsPage')
@@ -65,6 +66,7 @@ const SupplierCostsPage = lazyLoad(() => import('./pages/Suppliers/SupplierCosts
 const LoginAuditPage = lazyLoad(() => import('./pages/Security/LoginAuditPage'), 'LoginAuditPage')
 const IntelligenceDashboardPage = lazyLoad(() => import('./pages/Intelligence/IntelligenceDashboardPage'), 'IntelligenceDashboardPage')
 const PrivacyManagementPage = lazyLoad(() => import('./pages/Privacy/PrivacyManagementPage'), 'PrivacyManagementPage')
+const SystemHealthDashboard = lazyLoad(() => import('./pages/Admin/SystemHealthDashboard'), 'SystemHealthDashboard')
 
 // Loading fallback component
 const PageLoader = () => (
@@ -200,6 +202,16 @@ function App() {
                         <ProtectedRoute roles={['Admin']} fallbackPath="/dashboard">
                           <Suspense fallback={<PageLoader />}>
                             <PersonnelPage />
+                          </Suspense>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/personnel/:id"
+                      element={
+                        <ProtectedRoute roles={['Admin']} fallbackPath="/dashboard">
+                          <Suspense fallback={<PageLoader />}>
+                            <PersonnelDetailPage />
                           </Suspense>
                         </ProtectedRoute>
                       }
@@ -501,6 +513,16 @@ function App() {
                       }
                     />
                     <Route
+                      path="/admin/system-health"
+                      element={
+                        <ProtectedRoute roles={['Admin']} fallbackPath="/dashboard">
+                          <Suspense fallback={<PageLoader />}>
+                            <SystemHealthDashboard />
+                          </Suspense>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
                       path="/forbidden"
                       element={
                         <Suspense fallback={<PageLoader />}>
@@ -515,7 +537,7 @@ function App() {
             }
           />
         </Routes>
-    </BrowserRouter>
+      </BrowserRouter>
     </EnhancedErrorBoundary>
   )
 }

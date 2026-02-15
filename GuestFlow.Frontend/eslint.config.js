@@ -16,6 +16,7 @@ export default [
       '**/*.d.ts',
       'src/__tests__/**',
       'src/__mocks__/**',
+      'vite.config.ts.timestamp-*',
     ],
   },
   js.configs.recommended,

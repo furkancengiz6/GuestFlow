@@ -14,6 +14,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using GuestFlow.Domain.Events;
 
 namespace GuestFlow.Application.Operations.Reservation
 {
@@ -135,6 +136,9 @@ namespace GuestFlow.Application.Operations.Reservation
                     Currency = currency,
                     Notes = reservation.Notes
                 };
+
+                // Add Domain Event
+                reservationEntity.AddDomainEvent(new ReservationCreatedEvent(reservationEntity));
 
                 await _reservationRepository.AddAsync(reservationEntity);
                 await _unitOfWork.SaveChangesAsync();

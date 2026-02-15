@@ -10,6 +10,7 @@ using GuestFlow.Domain.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using GuestFlow.Application.Operations.Notification;
+using GuestFlow.Domain.Events;
 
 namespace GuestFlow.Application.Operations.Review;
 
@@ -54,6 +55,8 @@ public class ReviewManager : IReviewService
                 StaffRating = dto.StaffRating,
                 IsApproved = false // Requires approval by default or as per policy
             };
+
+            review.AddDomainEvent(new GuestReviewAddedEvent(review));
 
             await _reviewRepository.AddAsync(review);
             await _unitOfWork.SaveChangesAsync();

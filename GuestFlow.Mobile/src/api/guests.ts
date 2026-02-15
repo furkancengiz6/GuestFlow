@@ -16,6 +16,6 @@ export const guestService = {
 
     validateGuestQr: async (code: string) => {
         const response = await apiClient.get(`/GuestQr/validate/${code}`);
-        return response.data.data as Guest;
+        return response.data.data as { guest: Guest, aiSuggestion: string };
     }
 };

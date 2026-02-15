@@ -20,6 +20,7 @@ namespace GuestFlow.Application.Tests.Operations.Finance.Pricing
         private readonly Mock<ILogger<DynamicPricingService>> _loggerMock;
         private readonly Mock<IRepository<PricingRuleEntity>> _pricingRulesRepoMock;
         private readonly Mock<GuestFlow.Application.Operations.OTA.IOTAChannelManagerService> _channelManagerMock;
+        private readonly Mock<GuestFlow.Application.Operations.Intelligence.Predictive.IPredictiveAnalyticsService> _predictiveAnalyticsMock;
         private readonly DynamicPricingService _service;
 
         public DynamicPricingServiceTests()
@@ -28,10 +29,19 @@ namespace GuestFlow.Application.Tests.Operations.Finance.Pricing
             _loggerMock = new Mock<ILogger<DynamicPricingService>>();
             _pricingRulesRepoMock = new Mock<IRepository<PricingRuleEntity>>();
             _channelManagerMock = new Mock<GuestFlow.Application.Operations.OTA.IOTAChannelManagerService>();
+            _predictiveAnalyticsMock = new Mock<GuestFlow.Application.Operations.Intelligence.Predictive.IPredictiveAnalyticsService>();
 
             _unitOfWorkMock.Setup(u => u.PricingRules).Returns(_pricingRulesRepoMock.Object);
 
-            _service = new DynamicPricingService(_unitOfWorkMock.Object, _loggerMock.Object, _channelManagerMock.Object);
+            var serviceProviderMock = new Mock<IServiceProvider>();
+            serviceProviderMock.Setup(s => s.GetService(typeof(GuestFlow.Application.Operations.OTA.IOTAChannelManagerService)))
+                .Returns(_channelManagerMock.Object);
+
+            _service = new DynamicPricingService(
+                _unitOfWorkMock.Object, 
+                _loggerMock.Object, 
+                _predictiveAnalyticsMock.Object, 
+                serviceProviderMock.Object);
         }
 
         private void SetupPricingRules(List<PricingRuleEntity> rules)

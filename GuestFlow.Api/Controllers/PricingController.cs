@@ -47,5 +47,12 @@ namespace GuestFlow.Api.Controllers
             var result = await _pricingService.CalculateRateAsync(roomTypeId, date, baseRate);
             return Ok(result);
         }
+
+        [HttpGet("intelligence")]
+        public async Task<ActionResult<System.Collections.Generic.List<PricingIntelligenceResult>>> GetPricingIntelligence([FromQuery] int roomTypeId, [FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
+        {
+            var result = await _pricingService.GetPricingIntelligenceAsync(roomTypeId, startDate, endDate);
+            return Ok(result);
+        }
     }
 }

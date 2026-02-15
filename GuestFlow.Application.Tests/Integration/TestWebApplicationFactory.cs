@@ -54,6 +54,13 @@ public sealed class TestWebApplicationFactory : WebApplicationFactory<Program>
             RemoveHostedServiceByImplementationType(services, "ServiceConfirmationBackgroundService");
             RemoveHostedServiceByImplementationType(services, "PaymentReminderBackgroundService");
             RemoveHostedServiceByImplementationType(services, "DailyRevenueBackgroundService");
+            
+            // Add removal of other background services identified
+            RemoveHostedServiceByImplementationType(services, "PMSPollingBackgroundService");
+            RemoveHostedServiceByImplementationType(services, "SmartNotificationBackgroundService");
+            RemoveHostedServiceByImplementationType(services, "NotificationRuleBackgroundService");
+            RemoveHostedServiceByImplementationType(services, "OTAWebhookRetryBackgroundService");
+            RemoveHostedServiceByImplementationType(services, "OutboxProcessor");
         });
     }
 

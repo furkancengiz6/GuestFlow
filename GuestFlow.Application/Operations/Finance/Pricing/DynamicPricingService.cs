@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using GuestFlow.Application.Operations.Intelligence.Predictive;
 using GuestFlow.Domain.Entities.Finance;
 using GuestFlow.Domain.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
@@ -13,15 +14,18 @@ namespace GuestFlow.Application.Operations.Finance.Pricing
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<DynamicPricingService> _logger;
+        private readonly IPredictiveAnalyticsService _predictiveAnalyticsService;
         private readonly IServiceProvider _serviceProvider;
 
         public DynamicPricingService(
             IUnitOfWork unitOfWork,
             ILogger<DynamicPricingService> logger,
+            IPredictiveAnalyticsService predictiveAnalyticsService,
             IServiceProvider serviceProvider)
         {
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _predictiveAnalyticsService = predictiveAnalyticsService;
             _serviceProvider = serviceProvider;
         }
 
@@ -37,6 +41,7 @@ namespace GuestFlow.Application.Operations.Finance.Pricing
             decimal currentRate = baseRate;
             bool isStopSell = false;
             var appliedRules = new List<string>();
+            var ruleDetails = new List<AppliedRuleDetail>();
             
             // Context data
             var occupancyRate = await GetOccupancyRateAsync(roomTypeId, date);
@@ -49,19 +54,12 @@ namespace GuestFlow.Application.Operations.Finance.Pricing
                 switch (rule.RuleType)
                 {
                     case PricingRuleType.Occupancy:
-                        // ConditionValue = 0.80 (80%)
-                        // Assuming rule means "If Occupancy >= ConditionValue"
                         if (occupancyRate >= rule.ConditionValue)
                         {
                             conditionMet = true;
                         }
                         break;
                     case PricingRuleType.LeadTime:
-                        // ConditionValue = 60 (days)
-                        // Assuming rule means "If LeadTime >= ConditionValue" (Early Bird)
-                        // OR we might need separate types for EarlyBird vs LastMinute.
-                        // Let's assume ConditionValue > 10 means "Advance booking" and < 10 means "Last minute" logic?
-                        // Better: Rule specific logic.
                         if (daysUntilArrival >= rule.ConditionValue)
                         {
                             conditionMet = true;
@@ -74,16 +72,12 @@ namespace GuestFlow.Application.Operations.Finance.Pricing
                         }
                         break;
                     case PricingRuleType.Seasonality:
-                        // Simple check: Is month equal to condition value?
-                        // Or complex ranges. Let's assume ConditionValue 1-12 = Month.
                         if (date.Month == (int)rule.ConditionValue)
                         {
                             conditionMet = true;
                         }
                         break;
                     case PricingRuleType.DayOfWeek:
-                         // 0=Sunday, 1=Monday... 6=Saturday usually.
-                         // Or 1=Monday... 7=Sunday. C# DayOfWeek is Sunday=0.
                          if ((int)date.DayOfWeek == (int)rule.ConditionValue)
                          {
                              conditionMet = true;
@@ -100,10 +94,6 @@ namespace GuestFlow.Application.Operations.Finance.Pricing
                     }
                     else if (rule.AdjustmentType == PriceAdjustmentType.Percentage)
                     {
-                        // +10 means +10%. -5 means -5%.
-                        // Formula: Rate + (Rate * (Value / 100))
-                        // Or applied to BaseRate? usually compounded or applied to base.
-                        // Let's apply to *current* rate (compounded) as rules are prioritized.
                         currentRate += currentRate * (rule.AdjustmentValue / 100m);
                         appliedRules.Add($"{rule.RuleName} ({rule.AdjustmentValue}%)");
                     }
@@ -112,6 +102,15 @@ namespace GuestFlow.Application.Operations.Finance.Pricing
                         currentRate += rule.AdjustmentValue;
                         appliedRules.Add($"{rule.RuleName} ({rule.AdjustmentValue} {rule.AdjustmentValue:C})");
                     }
+
+                    ruleDetails.Add(new AppliedRuleDetail
+                    {
+                        RuleName = rule.RuleName,
+                        RuleType = rule.RuleType.ToString(),
+                        AdjustmentType = rule.AdjustmentType.ToString(),
+                        AdjustmentValue = rule.AdjustmentValue,
+                        ResultingRate = currentRate
+                    });
                     
                     if (rule.AdjustmentType != PriceAdjustmentType.StopSell)
                     {
@@ -126,7 +125,8 @@ namespace GuestFlow.Application.Operations.Finance.Pricing
                 BaseRate = baseRate,
                 FinalRate = Math.Round(currentRate, 2),
                 IsStopSell = isStopSell,
-                AppliedRules = appliedRules
+                AppliedRules = appliedRules,
+                RuleDetails = ruleDetails
             };
         }
 
@@ -210,12 +210,60 @@ namespace GuestFlow.Application.Operations.Finance.Pricing
             _logger.LogInformation("Completed dynamic rate push. Total updates: {TotalUpdates}", totalUpdates);
         }
 
+        public async Task<List<PricingIntelligenceResult>> GetPricingIntelligenceAsync(int roomTypeId, DateTime startDate, DateTime endDate)
+        {
+            _logger.LogInformation("Generating pricing intelligence for RoomType {RoomType} from {Start} to {End}", roomTypeId, startDate, endDate);
+            
+            var results = new List<PricingIntelligenceResult>();
+            var occupancyForecasts = await _predictiveAnalyticsService.PredictOccupancyAsync(startDate, endDate);
+            
+            // MVP: Using a standard base rate to demonstrate delta. 
+            // Better: Could fetch from current RatePlans if available.
+            const decimal MockBaseRate = 100m; 
+
+            for (var date = startDate.Date; date <= endDate.Date; date = date.AddDays(1))
+            {
+                var forecast = occupancyForecasts.FirstOrDefault(f => f.Date.Date == date);
+                var calculation = await CalculateRateAsync(roomTypeId, date, MockBaseRate);
+
+                results.Add(new PricingIntelligenceResult
+                {
+                    Date = date,
+                    ForecastedOccupancy = forecast?.ForecastedOccupancyRate ?? 0.5,
+                    BaseRate = MockBaseRate,
+                    DynamicRate = calculation.FinalRate,
+                    IsStopSell = calculation.IsStopSell,
+                    AppliedRules = calculation.AppliedRules,
+                    RuleDetails = calculation.RuleDetails
+                });
+            }
+
+            return results;
+        }
+
         private async Task<decimal> GetOccupancyRateAsync(int roomTypeId, DateTime date)
         {
-            // Placeholder: Retrieve real occupancy from ReservationRepository/OccupancyService
-            // For Sprint 8 MVP, we might mock this or implement a basic query.
-            // Let's assume 50% for now to unblock testing.
-            return 0.50m;
+            try
+            {
+                // Fetch AI-powered occupancy forecast for the specific date
+                var forecasts = await _predictiveAnalyticsService.PredictOccupancyAsync(date.Date, date.Date);
+                var forecast = forecasts.FirstOrDefault(f => f.Date.Date == date.Date);
+                
+                if (forecast != null)
+                {
+                    _logger.LogInformation("AI Occupancy Forecast retrieved for Date={Date}, RoomType={RoomType}, Rate={Rate}", 
+                        date.ToShortDateString(), roomTypeId, forecast.ForecastedOccupancyRate);
+                    return (decimal)forecast.ForecastedOccupancyRate;
+                }
+
+                _logger.LogWarning("No AI occupancy forecast found for {Date}. Falling back to 50%.", date.ToShortDateString());
+                return 0.50m;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching AI occupancy forecast for {Date}. Falling back to 50%.", date.ToShortDateString());
+                return 0.50m;
+            }
         }
     }
 }

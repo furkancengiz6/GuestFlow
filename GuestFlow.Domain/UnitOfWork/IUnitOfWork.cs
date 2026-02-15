@@ -28,6 +28,7 @@ namespace GuestFlow.Domain.UnitOfWork
         GuestFlow.Domain.Entities.Repositories.IRepository<GuestFlow.Domain.Entities.Core.RestaurantReservationEntity> RestaurantReservations { get; }
         GuestFlow.Domain.Entities.Repositories.IRepository<GuestFlow.Domain.Entities.Core.Supplier> Suppliers { get; }
         GuestFlow.Domain.Entities.Repositories.IRepository<GuestFlow.Domain.Entities.Operations.OTAIntegration> OTAIntegrations { get; }
+        GuestFlow.Domain.Entities.Repositories.IRepository<GuestFlow.Domain.Entities.Operations.OTAHotelMapping> OTAHotelMappings { get; }
         GuestFlow.Domain.Entities.Repositories.IRepository<GuestFlow.Domain.Entities.Operations.OTAPriceUpdate> OTAPriceUpdates { get; }
         GuestFlow.Domain.Entities.Repositories.IRepository<GuestFlow.Domain.Entities.Operations.OTAReservation> OTAReservations { get; }
         GuestFlow.Domain.Entities.Repositories.IRepository<GuestFlow.Domain.Entities.Operations.OTAWebhookLog> OTAWebhookLogs { get; }
@@ -51,11 +52,13 @@ namespace GuestFlow.Domain.UnitOfWork
         GuestFlow.Domain.Entities.Repositories.IRepository<GuestFlow.Domain.Entities.Core.PermissionEntity> Permissions { get; }
         GuestFlow.Domain.Entities.Repositories.IRepository<GuestFlow.Domain.Entities.Core.RolePermissionEntity> RolePermissions { get; }
         GuestFlow.Domain.Entities.Repositories.IRepository<GuestFlow.Domain.Entities.Core.PersonnelEntity> Personnels { get; }
+        GuestFlow.Domain.Entities.Repositories.IRepository<GuestFlow.Domain.Entities.Core.RoomAssignmentEntity> RoomAssignments { get; }
         
         // Intelligence Layer - Behavioral Data Collection
         GuestFlow.Domain.Entities.Repositories.IRepository<GuestFlow.Domain.Entities.Intelligence.GuestBehaviorEntity> GuestBehaviors { get; }
         GuestFlow.Domain.Entities.Repositories.IRepository<GuestFlow.Domain.Entities.Intelligence.StaffBehaviorEntity> StaffBehaviors { get; }
         GuestFlow.Domain.Entities.Repositories.IRepository<GuestFlow.Domain.Entities.Intelligence.GuestStaffInteractionEntity> GuestStaffInteractions { get; }
+        GuestFlow.Domain.Entities.Repositories.IRepository<GuestFlow.Domain.Entities.Intelligence.GuestIntelligenceActionEntity> GuestIntelligenceActions { get; }
 
         // Finance - Pricing Rules
         GuestFlow.Domain.Entities.Repositories.IRepository<GuestFlow.Domain.Entities.Finance.PricingRuleEntity> PricingRules { get; }

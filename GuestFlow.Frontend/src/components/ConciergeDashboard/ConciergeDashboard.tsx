@@ -14,8 +14,6 @@ import {
   Button,
   IconButton,
   Tooltip,
-  Alert,
-  AlertTitle,
 } from '@mui/material'
 import {
   Login as CheckInIcon,
@@ -37,7 +35,6 @@ import {
   useActiveGuests,
   useUpcomingServices,
 } from '../../hooks/useConciergeDashboard'
-import type { CheckInOutItem, ActiveGuest } from '../../types/conciergeDashboard'
 
 const ConciergeDashboard = () => {
   const navigate = useNavigate()
@@ -456,8 +453,8 @@ const ConciergeDashboard = () => {
                                 service.serviceType === 'Transfer'
                                   ? 'primary'
                                   : service.serviceType === 'CityTour'
-                                  ? 'secondary'
-                                  : 'success'
+                                    ? 'secondary'
+                                    : 'success'
                               }
                             />
                           </TableCell>

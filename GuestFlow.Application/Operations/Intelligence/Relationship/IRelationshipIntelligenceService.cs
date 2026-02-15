@@ -41,7 +41,27 @@ namespace GuestFlow.Application.Operations.Intelligence.Relationship
         /// <summary>
         /// Get guest relationship network (misafir ilişki ağı)
         /// </summary>
+
         Task<RelationshipNetwork> GetGuestRelationshipNetworkAsync(int guestId);
+
+        /// <summary>
+        /// Find best guest matches for a staff member (personel için en uygun misafirleri bul)
+        /// </summary>
+        Task<List<GuestMatchResult>> FindBestGuestMatchesAsync(int staffId, int? limit = 5);
+    }
+
+    /// <summary>
+    /// Guest match result
+    /// </summary>
+    public class GuestMatchResult
+    {
+        public int GuestId { get; set; }
+        public string GuestName { get; set; } = string.Empty;
+        public double CompatibilityScore { get; set; }
+        public double RelationshipStrength { get; set; }
+        public int InteractionCount { get; set; }
+        public double AverageSatisfaction { get; set; }
+        public string? MatchReason { get; set; }
     }
 
     /// <summary>
@@ -91,6 +111,7 @@ namespace GuestFlow.Application.Operations.Intelligence.Relationship
     public class RelationshipNetwork
     {
         public int GuestId { get; set; }
+        public NetworkNode? GuestNode { get; set; }
         public List<NetworkNode> StaffNodes { get; set; } = new List<NetworkNode>();
         public List<NetworkNode> ServiceNodes { get; set; } = new List<NetworkNode>();
         public List<NetworkEdge> Edges { get; set; } = new List<NetworkEdge>();

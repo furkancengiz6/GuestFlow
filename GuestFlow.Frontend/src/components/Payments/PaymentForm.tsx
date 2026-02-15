@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -24,7 +24,9 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 import { tr } from 'date-fns/locale'
 import { useQuery } from '@tanstack/react-query'
 import { dropdownService } from '../../services/dropdownService'
+import { paymentService } from '../../services/paymentService'
 import { PaymentMethod } from '../../types/enums'
+import StripePayment from './StripePayment'
 
 // Zod schema for payment creation
 const paymentSchema = z.object({
@@ -129,8 +131,33 @@ const PaymentForm = ({ open, onClose, onSubmit, preselectedService, isLoading = 
     }
   }, [preselectedService, setValue])
 
+  const [stripeSecret, setStripeSecret] = useState<string | null>(null)
+  const [stripeData, setStripeData] = useState<{ amount: number; currency: string } | null>(null)
+
   const handleFormSubmit = async (data: PaymentFormData) => {
     try {
+      if (data.paymentMethod === PaymentMethod.CreditCard) {
+        setIsLoadingState(true)
+        try {
+          const res = await paymentService.createPaymentIntent({
+            amount: data.amount,
+            currency: data.currency,
+            paymentMethodId: 'card', // Initial placeholder, Stripe Elements will handle actual PM
+            guestId: data.guestId,
+            invoiceId: data.invoiceId,
+          })
+          setStripeSecret(res.clientSecret)
+          setStripeData({ amount: data.amount, currency: data.currency })
+          return // Don't call parent onSubmit yet
+        } catch (err) {
+          console.error('Stripe initialization failed', err)
+          alert('Stripe ödeme başlatılamadı.')
+          return
+        } finally {
+          setIsLoadingState(false)
+        }
+      }
+
       const submitData = {
         ...data,
         paymentDate: data.paymentDate.toISOString(),
@@ -150,10 +177,25 @@ const PaymentForm = ({ open, onClose, onSubmit, preselectedService, isLoading = 
     }
   }
 
+  const handleStripeSuccess = (paymentIntent: any) => {
+    console.log('Stripe payment success:', paymentIntent)
+    // The backend webhook will handle the official record update.
+    // For the UI, we just close and refresh.
+    reset()
+    onClose()
+    setStripeSecret(null)
+    // We might want a toast here
+  }
+
   const handleClose = () => {
     reset()
     onClose()
+    setStripeSecret(null)
   }
+
+  // Local loading state because of async Stripe init
+  const [isLoadingState, setIsLoadingState] = useState(false)
+  const finalLoading = isLoading || isLoadingState || isSubmitting
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={tr}>
@@ -161,226 +203,238 @@ const PaymentForm = ({ open, onClose, onSubmit, preselectedService, isLoading = 
         <form onSubmit={handleSubmit(handleFormSubmit)}>
           <DialogTitle>Ödeme Ekle</DialogTitle>
           <DialogContent>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
-              {preselectedService && (
-                <Alert severity="info">
-                  Bu ödeme, seçili hizmet için oluşturulacaktır. Tutar ve para birimi önceden doldurulmuştur.
-                </Alert>
-              )}
+            {stripeSecret && stripeData ? (
+              <StripePayment
+                clientSecret={stripeSecret}
+                amount={stripeData.amount}
+                currency={stripeData.currency}
+                onSuccess={handleStripeSuccess}
+                onCancel={() => setStripeSecret(null)}
+              />
+            ) : (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
+                {preselectedService && (
+                  <Alert severity="info">
+                    Bu ödeme, seçili hizmet için oluşturulacaktır. Tutar ve para birimi önceden doldurulmuştur.
+                  </Alert>
+                )}
 
-              <Grid container spacing={2}>
-                <Grid item xs={12} md={6}>
-                  <TextField
-                    label="Ödeme Tutarı"
-                    type="number"
-                    fullWidth
-                    required
-                    {...register('amount', { valueAsNumber: true })}
-                    error={!!errors.amount}
-                    helperText={errors.amount?.message}
-                    disabled={isSubmitting || isLoading}
-                    inputProps={{ step: '0.01', min: '0.01' }}
-                  />
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                  <FormControl fullWidth required disabled={isSubmitting || isLoading}>
-                    <InputLabel>Para Birimi</InputLabel>
-                    <Controller
-                      name="currency"
-                      control={control}
-                      render={({ field }) => (
-                        <Select {...field} value={field.value || 'TRY'}>
-                          <MenuItem value="TRY">TRY - Türk Lirası</MenuItem>
-                          <MenuItem value="USD">USD - US Dollar</MenuItem>
-                          <MenuItem value="EUR">EUR - Euro</MenuItem>
-                          <MenuItem value="GBP">GBP - British Pound</MenuItem>
-                          <MenuItem value="RUB">RUB - Russian Ruble</MenuItem>
-                        </Select>
-                      )}
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      label="Ödeme Tutarı"
+                      type="number"
+                      fullWidth
+                      required
+                      {...register('amount', { valueAsNumber: true })}
+                      error={!!errors.amount}
+                      helperText={errors.amount?.message}
+                      disabled={isSubmitting || isLoading}
+                      inputProps={{ step: '0.01', min: '0.01' }}
                     />
-                  </FormControl>
-                  {errors.currency && (
-                    <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
-                      {errors.currency.message}
-                    </Typography>
-                  )}
-                </Grid>
+                  </Grid>
 
-                <Grid item xs={12} md={6}>
-                  <FormControl fullWidth required error={!!errors.paymentMethod} disabled={isSubmitting || isLoading}>
-                    <InputLabel>Ödeme Yöntemi</InputLabel>
-                    <Controller
-                      name="paymentMethod"
-                      control={control}
-                      render={({ field }) => (
-                        <Select {...field} value={field.value || PaymentMethod.Cash}>
-                          <MenuItem value={PaymentMethod.Cash}>Nakit</MenuItem>
-                          <MenuItem value={PaymentMethod.CreditCard}>Kredi Kartı</MenuItem>
-                          <MenuItem value={PaymentMethod.RoomCharge}>Odaya Charge</MenuItem>
-                          <MenuItem value={PaymentMethod.BankTransfer}>Banka Havalesi</MenuItem>
-                          <MenuItem value={PaymentMethod.Other}>Diğer</MenuItem>
-                        </Select>
-                      )}
-                    />
-                  </FormControl>
-                  {errors.paymentMethod && (
-                    <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
-                      {errors.paymentMethod.message}
-                    </Typography>
-                  )}
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                  <Controller
-                    name="paymentDate"
-                    control={control}
-                    render={({ field }) => (
-                      <DateTimePicker
-                        label="Ödeme Tarihi"
-                        value={field.value}
-                        onChange={field.onChange}
-                        slotProps={{
-                          textField: {
-                            fullWidth: true,
-                            error: !!errors.paymentDate,
-                            helperText: errors.paymentDate?.message,
-                            disabled: isSubmitting || isLoading,
-                          },
-                        }}
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth required disabled={isSubmitting || isLoading}>
+                      <InputLabel>Para Birimi</InputLabel>
+                      <Controller
+                        name="currency"
+                        control={control}
+                        render={({ field }) => (
+                          <Select {...field} value={field.value || 'TRY'}>
+                            <MenuItem value="TRY">TRY - Türk Lirası</MenuItem>
+                            <MenuItem value="USD">USD - US Dollar</MenuItem>
+                            <MenuItem value="EUR">EUR - Euro</MenuItem>
+                            <MenuItem value="GBP">GBP - British Pound</MenuItem>
+                            <MenuItem value="RUB">RUB - Russian Ruble</MenuItem>
+                          </Select>
+                        )}
                       />
+                    </FormControl>
+                    {errors.currency && (
+                      <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
+                        {errors.currency.message}
+                      </Typography>
                     )}
-                  />
-                </Grid>
+                  </Grid>
 
-                <Grid item xs={12}>
-                  <FormControl fullWidth required error={!!errors.guestId} disabled={isSubmitting || isLoading}>
-                    <InputLabel>Misafir</InputLabel>
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth required error={!!errors.paymentMethod} disabled={isSubmitting || isLoading}>
+                      <InputLabel>Ödeme Yöntemi</InputLabel>
+                      <Controller
+                        name="paymentMethod"
+                        control={control}
+                        render={({ field }) => (
+                          <Select {...field} value={field.value || PaymentMethod.Cash}>
+                            <MenuItem value={PaymentMethod.Cash}>Nakit</MenuItem>
+                            <MenuItem value={PaymentMethod.CreditCard}>Kredi Kartı</MenuItem>
+                            <MenuItem value={PaymentMethod.RoomCharge}>Odaya Charge</MenuItem>
+                            <MenuItem value={PaymentMethod.BankTransfer}>Banka Havalesi</MenuItem>
+                            <MenuItem value={PaymentMethod.Other}>Diğer</MenuItem>
+                          </Select>
+                        )}
+                      />
+                    </FormControl>
+                    {errors.paymentMethod && (
+                      <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
+                        {errors.paymentMethod.message}
+                      </Typography>
+                    )}
+                  </Grid>
+
+                  <Grid item xs={12} md={6}>
                     <Controller
-                      name="guestId"
+                      name="paymentDate"
                       control={control}
                       render={({ field }) => (
-                        <Select {...field} value={field.value || ''}>
-                          <MenuItem value="">Seçiniz</MenuItem>
-                          {guests?.map((guest) => (
-                            <MenuItem key={guest.id} value={guest.id}>
-                              {guest.fullName} ({guest.guestCode})
-                            </MenuItem>
-                          ))}
-                        </Select>
+                        <DateTimePicker
+                          label="Ödeme Tarihi"
+                          value={field.value}
+                          onChange={field.onChange}
+                          slotProps={{
+                            textField: {
+                              fullWidth: true,
+                              error: !!errors.paymentDate,
+                              helperText: errors.paymentDate?.message,
+                              disabled: isSubmitting || isLoading,
+                            },
+                          }}
+                        />
                       )}
                     />
-                  </FormControl>
-                  {errors.guestId && (
-                    <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
-                      {errors.guestId.message}
-                    </Typography>
-                  )}
-                </Grid>
+                  </Grid>
 
-                <Grid item xs={12} md={6}>
-                  <FormControl fullWidth disabled={isSubmitting || isLoading}>
-                    <InputLabel>Fatura (Opsiyonel)</InputLabel>
-                    <Controller
-                      name="invoiceId"
-                      control={control}
-                      render={({ field }) => (
-                        <Select {...field} value={field.value || ''}>
-                          <MenuItem value="">Seçiniz</MenuItem>
-                          {invoices?.map((invoice) => (
-                            <MenuItem key={invoice.id} value={invoice.id}>
-                              #{invoice.invoiceNumber} - {invoice.totalAmount} {invoice.currency}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      )}
+                  <Grid item xs={12}>
+                    <FormControl fullWidth required error={!!errors.guestId} disabled={isSubmitting || isLoading}>
+                      <InputLabel>Misafir</InputLabel>
+                      <Controller
+                        name="guestId"
+                        control={control}
+                        render={({ field }) => (
+                          <Select {...field} value={field.value || ''}>
+                            <MenuItem value="">Seçiniz</MenuItem>
+                            {guests?.map((guest) => (
+                              <MenuItem key={guest.id} value={guest.id}>
+                                {guest.fullName} ({guest.guestCode})
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        )}
+                      />
+                    </FormControl>
+                    {errors.guestId && (
+                      <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
+                        {errors.guestId.message}
+                      </Typography>
+                    )}
+                  </Grid>
+
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth disabled={isSubmitting || isLoading}>
+                      <InputLabel>Fatura (Opsiyonel)</InputLabel>
+                      <Controller
+                        name="invoiceId"
+                        control={control}
+                        render={({ field }) => (
+                          <Select {...field} value={field.value || ''}>
+                            <MenuItem value="">Seçiniz</MenuItem>
+                            {invoices?.map((invoice) => (
+                              <MenuItem key={invoice.id} value={invoice.id}>
+                                #{invoice.invoiceNumber} - {invoice.totalAmount} {invoice.currency}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        )}
+                      />
+                    </FormControl>
+                  </Grid>
+
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth disabled={isSubmitting || isLoading}>
+                      <InputLabel>Transfer (Opsiyonel)</InputLabel>
+                      <Controller
+                        name="transferId"
+                        control={control}
+                        render={({ field }) => (
+                          <Select {...field} value={field.value || ''}>
+                            <MenuItem value="">Seçiniz</MenuItem>
+                            {transfers?.map((transfer) => (
+                              <MenuItem key={transfer.id} value={transfer.id}>
+                                {transfer.pickupAddress} → {transfer.dropoffAddress}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        )}
+                      />
+                    </FormControl>
+                  </Grid>
+
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth disabled={isSubmitting || isLoading}>
+                      <InputLabel>Şehir Turu (Opsiyonel)</InputLabel>
+                      <Controller
+                        name="cityTourId"
+                        control={control}
+                        render={({ field }) => (
+                          <Select {...field} value={field.value || ''}>
+                            <MenuItem value="">Seçiniz</MenuItem>
+                            {cityTours?.map((tour) => (
+                              <MenuItem key={tour.id} value={tour.id}>
+                                {tour.tourName} - {tour.tourDate ? new Date(tour.tourDate).toLocaleDateString() : ''}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        )}
+                      />
+                    </FormControl>
+                  </Grid>
+
+                  <Grid item xs={12} md={6}>
+                    <FormControl fullWidth disabled={isSubmitting || isLoading}>
+                      <InputLabel>Yat Turu (Opsiyonel)</InputLabel>
+                      <Controller
+                        name="yachtTourId"
+                        control={control}
+                        render={({ field }) => (
+                          <Select {...field} value={field.value || ''}>
+                            <MenuItem value="">Seçiniz</MenuItem>
+                            {yachtTours?.map((tour) => (
+                              <MenuItem key={tour.id} value={tour.id}>
+                                {tour.yachtName || 'Yat'} - {tour.tourDate ? new Date(tour.tourDate).toLocaleDateString() : ''}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        )}
+                      />
+                    </FormControl>
+                  </Grid>
+
+                  <Grid item xs={12}>
+                    <TextField
+                      label="Notlar"
+                      fullWidth
+                      multiline
+                      rows={3}
+                      {...register('notes')}
+                      error={!!errors.notes}
+                      helperText={errors.notes?.message}
+                      disabled={finalLoading}
                     />
-                  </FormControl>
+                  </Grid>
                 </Grid>
-
-                <Grid item xs={12} md={6}>
-                  <FormControl fullWidth disabled={isSubmitting || isLoading}>
-                    <InputLabel>Transfer (Opsiyonel)</InputLabel>
-                    <Controller
-                      name="transferId"
-                      control={control}
-                      render={({ field }) => (
-                        <Select {...field} value={field.value || ''}>
-                          <MenuItem value="">Seçiniz</MenuItem>
-                          {transfers?.map((transfer) => (
-                            <MenuItem key={transfer.id} value={transfer.id}>
-                              {transfer.pickupAddress} → {transfer.dropoffAddress}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      )}
-                    />
-                  </FormControl>
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                  <FormControl fullWidth disabled={isSubmitting || isLoading}>
-                    <InputLabel>Şehir Turu (Opsiyonel)</InputLabel>
-                    <Controller
-                      name="cityTourId"
-                      control={control}
-                      render={({ field }) => (
-                        <Select {...field} value={field.value || ''}>
-                          <MenuItem value="">Seçiniz</MenuItem>
-                          {cityTours?.map((tour) => (
-                            <MenuItem key={tour.id} value={tour.id}>
-                              {tour.tourName} - {tour.tourDate ? new Date(tour.tourDate).toLocaleDateString() : ''}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      )}
-                    />
-                  </FormControl>
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                  <FormControl fullWidth disabled={isSubmitting || isLoading}>
-                    <InputLabel>Yat Turu (Opsiyonel)</InputLabel>
-                    <Controller
-                      name="yachtTourId"
-                      control={control}
-                      render={({ field }) => (
-                        <Select {...field} value={field.value || ''}>
-                          <MenuItem value="">Seçiniz</MenuItem>
-                          {yachtTours?.map((tour) => (
-                            <MenuItem key={tour.id} value={tour.id}>
-                              {tour.yachtName || 'Yat'} - {tour.tourDate ? new Date(tour.tourDate).toLocaleDateString() : ''}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      )}
-                    />
-                  </FormControl>
-                </Grid>
-
-                <Grid item xs={12}>
-                  <TextField
-                    label="Notlar"
-                    fullWidth
-                    multiline
-                    rows={3}
-                    {...register('notes')}
-                    error={!!errors.notes}
-                    helperText={errors.notes?.message}
-                    disabled={isSubmitting || isLoading}
-                  />
-                </Grid>
-              </Grid>
-            </Box>
+              </Box>
+            )}
           </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 2 }}>
-            <Button onClick={handleClose} disabled={isSubmitting || isLoading}>
-              İptal
-            </Button>
-            <Button type="submit" variant="contained" disabled={isSubmitting || isLoading}>
-              {isSubmitting || isLoading ? 'Kaydediliyor...' : 'Ödeme Ekle'}
-            </Button>
-          </DialogActions>
+          {!stripeSecret && (
+            <DialogActions sx={{ px: 3, pb: 2 }}>
+              <Button onClick={handleClose} disabled={finalLoading}>
+                İptal
+              </Button>
+              <Button type="submit" variant="contained" disabled={finalLoading}>
+                {finalLoading ? 'Kaydediliyor...' : 'Ödeme Ekle'}
+              </Button>
+            </DialogActions>
+          )}
         </form>
       </Dialog>
     </LocalizationProvider>

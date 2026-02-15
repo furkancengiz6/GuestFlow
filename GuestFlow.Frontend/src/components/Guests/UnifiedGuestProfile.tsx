@@ -16,6 +16,8 @@ import {
   Tab,
   Alert,
   AlertTitle,
+  Tooltip,
+  IconButton,
 } from '@mui/material'
 import {
   Person as PersonIcon,
@@ -24,15 +26,14 @@ import {
   Phone as PhoneIcon,
   Star as VIPIcon,
   Sync as SyncIcon,
-  History as HistoryIcon,
-  AttachMoney as MoneyIcon,
   CalendarToday as CalendarIcon,
+  Receipt as ReceiptIcon,
+  PictureAsPdf as PictureAsPdfIcon,
 } from '@mui/icons-material'
 import { useState } from 'react'
 import { useUnifiedGuestProfile, useGuestHistoryDashboard } from '../../hooks/useConciergeDashboard'
 import { formatDate, formatCurrency } from '../../utils/formatters'
 import ContentState from '../Feedback/ContentState'
-import type { UnifiedGuestProfile as UnifiedGuestProfileType } from '../../types/conciergeDashboard'
 import GuestPreferences from './GuestPreferences'
 import CommunicationHistory from './CommunicationHistory'
 import {
@@ -178,6 +179,7 @@ const UnifiedGuestProfile = ({ guestId }: UnifiedGuestProfileProps) => {
           <Tab label="Geçmiş & Analiz" icon={<BarChartIcon />} iconPosition="start" />
           <Tab label="Tercihler" />
           <Tab label="İletişim" icon={<MessageIcon />} iconPosition="start" />
+          <Tab label="Finansal" icon={<ReceiptIcon />} iconPosition="start" />
         </Tabs>
 
         {/* Tab Panel 0: Genel Bilgiler */}
@@ -594,6 +596,66 @@ const UnifiedGuestProfile = ({ guestId }: UnifiedGuestProfileProps) => {
         {activeTab === 5 && (
           <CardContent>
             <CommunicationHistory guestId={guestId} />
+          </CardContent>
+        )}
+
+        {/* Tab Panel 6: Finansal */}
+        {activeTab === 6 && (
+          <CardContent>
+            {profile.guestFlowData?.invoiceHistory && profile.guestFlowData.invoiceHistory.length > 0 ? (
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Fatura No</TableCell>
+                      <TableCell>Tarih</TableCell>
+                      <TableCell>Tutar</TableCell>
+                      <TableCell>Durum</TableCell>
+                      <TableCell>İşlem</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {profile.guestFlowData.invoiceHistory.map((invoice, index) => (
+                      <TableRow key={index} hover>
+                        <TableCell>
+                          #{invoice.invoiceNumber}
+                        </TableCell>
+                        <TableCell>
+                          {formatDate(invoice.issueDate)}
+                        </TableCell>
+                        <TableCell>
+                          {formatCurrency(invoice.totalAmount, invoice.currency)}
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={invoice.status}
+                            size="small"
+                            color={invoice.status === 'Paid' ? 'success' : 'warning'}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          {invoice.pdfUrl && (
+                            <Tooltip title="PDF İndir">
+                              <IconButton
+                                size="small"
+                                onClick={() => window.open(invoice.pdfUrl, '_blank')}
+                              >
+                                <PictureAsPdfIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : (
+              <Alert severity="info">
+                <AlertTitle>Fatura Bulunamadı</AlertTitle>
+                Bu misafir için henüz fatura kaydı bulunmamaktadır.
+              </Alert>
+            )}
           </CardContent>
         )}
       </Card>

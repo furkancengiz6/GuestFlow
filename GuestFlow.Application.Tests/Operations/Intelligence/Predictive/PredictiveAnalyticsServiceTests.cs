@@ -9,6 +9,8 @@ using GuestFlow.Domain.Entities.Enum;
 using GuestFlow.Domain.Entities.Operations;
 using GuestFlow.Domain.Entities.Repositories;
 using GuestFlow.Domain.UnitOfWork;
+using GuestFlow.Application.Operations.AI;
+using GuestFlow.Application.Models.AI;
 using GuestFlow.Application.Tests.Helpers;
 using MockQueryable.Moq;
 using Moq;
@@ -20,16 +22,18 @@ namespace GuestFlow.Application.Tests.Operations.Intelligence.Predictive
     {
         private readonly Mock<IUnitOfWork> _mockUnitOfWork;
         private readonly Mock<IRepository<ReservationEntity>> _mockReservationRepo;
+        private readonly Mock<IAIAssistantService> _mockAiAssistantService;
         private readonly PredictiveAnalyticsService _service;
 
         public PredictiveAnalyticsServiceTests()
         {
             _mockUnitOfWork = new Mock<IUnitOfWork>();
             _mockReservationRepo = new Mock<IRepository<ReservationEntity>>();
+            _mockAiAssistantService = new Mock<IAIAssistantService>();
 
             _mockUnitOfWork.Setup(u => u.Reservations).Returns(_mockReservationRepo.Object);
 
-            _service = new PredictiveAnalyticsService(_mockUnitOfWork.Object);
+            _service = new PredictiveAnalyticsService(_mockUnitOfWork.Object, _mockAiAssistantService.Object);
         }
 
         [Fact]

@@ -28,6 +28,9 @@ namespace GuestFlow.Domain.Entities.Core
         public bool IsSpecialGuest { get; set; } // Özel misafir mi?
         public bool IsAnonymized { get; set; } = false; // KVKK/GDPR: Veri anonymize edildi mi?
 
+        public int SustainabilityScore { get; set; } // Yeşil konaklama puanı
+        public double InfluenceScore { get; set; } // Sosyal etki skoru
+
         // Emergency contact information
         public string? EmergencyContactName { get; set; } // Who to call if guest unreachable
         public string? EmergencyContactPhone { get; set; } // Emergency contact phone
@@ -68,6 +71,9 @@ namespace GuestFlow.Domain.Entities.Core
         /// Guest preferences - oda, yemek, aktivite ve iletişim tercihleri
         /// </summary>
         public virtual GuestPreferencesEntity? Preferences { get; set; }
+
+        public virtual ICollection<Sustainability.SustainabilityAction> SustainabilityActions { get; set; } = new List<Sustainability.SustainabilityAction>();
+        public virtual ICollection<Sustainability.SustainabilityReward> SustainabilityRewards { get; set; } = new List<Sustainability.SustainabilityReward>();
     }
 
     public class GuestConfiguration : BaseConfiguration<GuestEntity>

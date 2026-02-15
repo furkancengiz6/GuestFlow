@@ -22,25 +22,11 @@ interface EnvConfig {
   sessionTimeout: number
   isDev: boolean
   googleMapsApiKey?: string
+  stripePublishableKey: string
 }
 
 /**
  * Get required environment variable (throws in production if missing)
- */
-const getRequiredEnv = (key: string): string => {
-  const value = process.env[key]
-  if (!value) {
-    const isProduction = process.env.PROD || process.env.NODE_ENV === 'production'
-    if (isProduction) {
-      throw new Error(`Required environment variable '${key}' is missing. Production builds cannot use default values.`)
-    }
-    console.warn(`Missing environment variable '${key}' - using defaults (development only)`)
-  }
-  return value || ''
-}
-
-/**
- * Get environment variable with fallback (development only)
  */
 const getEnv = (key: string, defaultValue: string = ''): string => {
   const value = process.env[key]
@@ -78,6 +64,7 @@ const getEnvNumber = (key: string, defaultValue: number = 0): number => {
 export const env: EnvConfig = {
   apiBaseUrl: getEnv('VITE_API_BASE_URL', 'http://localhost:5146/api/v1.0'),
   googleMapsApiKey: getEnv('VITE_GOOGLE_MAPS_API_KEY', ''),
+  stripePublishableKey: getEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_sample'),
   env: getEnv('VITE_ENV', 'development'),
   appName: getEnv('VITE_APP_NAME', 'GuestFlow'),
   appVersion: getEnv('VITE_APP_VERSION', '1.0.0'),

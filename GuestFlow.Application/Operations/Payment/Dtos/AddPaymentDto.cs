@@ -59,6 +59,16 @@ namespace GuestFlow.Application.Operations.Payment.Dtos
         /// Notlar
         /// </summary>
         public string? Notes { get; set; }
+
+        /// <summary>
+        /// Ödeme durumu (Pending, Completed, etc.) - Opsiyonel, varsayılan Completed (tahsilat için)
+        /// </summary>
+        public string? Status { get; set; }
+
+        /// <summary>
+        /// İşlem ID (Stripe Intent ID, Banka Ref no vb.)
+        /// </summary>
+        public string? TransactionId { get; set; }
     }
 }
 

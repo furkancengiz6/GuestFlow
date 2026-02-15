@@ -5,7 +5,7 @@
 **GuestFlow** projesi **MIT License** altında lisanslanmıştır.
 
 **Telif Hakkı Sahibi**: Furkan Cengiz  
-**Telif Hakkı Yılı**: 2025
+**Telif Hakkı Yılı**: 2026
 
 ## 📄 Lisans Dosyaları
 
@@ -23,13 +23,13 @@ Projede aşağıdaki lisans ve telif hakkı dosyaları bulunmaktadır:
 Önemli dosyalara telif hakkı header'ları eklenmiştir:
 
 ```csharp
-// Copyright (c) 2025 Furkan Cengiz
+// Copyright (c) 2026 Furkan Cengiz
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 ```
 
 ```typescript
 /**
- * Copyright (c) 2025 Furkan Cengiz
+ * Copyright (c) 2026 Furkan Cengiz
  * Licensed under the MIT License. See LICENSE file in the project root for full license information.
  */
 ```
@@ -45,6 +45,7 @@ Projede aşağıdaki lisans ve telif hakkı dosyaları bulunmaktadır:
 MIT License, yazılımı kullanma, kopyalama, değiştirme, birleştirme, yayınlama, dağıtma, alt lisanslama ve/veya satma izni verir.
 
 **Koşullar**:
+
 - Telif hakkı bildirimi ve lisans metni tüm kopyalarda bulunmalıdır
 - Yazılım "OLDUĞU GİBİ" sağlanır, hiçbir garanti verilmez
 
@@ -73,12 +74,12 @@ MIT License altında şunlar yapılabilir:
 
 Telif hakkı ile ilgili sorularınız için:
 
-- **GitHub**: https://github.com/furkancengiz6/GuestFlow
+- **GitHub**: <https://github.com/furkancengiz6/GuestFlow>
 - **Email**: [E-posta adresinizi buraya ekleyin]
 
 ## 🔄 Güncellemeler
 
-Bu dosya, lisans değişikliklerinde güncellenecektir. Son güncelleme: 2025
+Bu dosya, lisans değişikliklerinde güncellenecektir. Son güncelleme: 2026
 
 ---
 

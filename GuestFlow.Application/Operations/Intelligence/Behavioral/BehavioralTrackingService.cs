@@ -383,6 +383,33 @@ namespace GuestFlow.Application.Operations.Intelligence.Behavioral
                     await _graphDataService.CreateOrUpdateGuestPreferenceAsync(preferenceDto);
                 }
 
+                // Create service relationship if applicable
+                if (behavior.BehaviorType == "Service" && !string.IsNullOrEmpty(behavior.Category) && behavior.RelatedEntityId.HasValue)
+                {
+                    // Ensure service node exists
+                    var serviceName = behavior.BehaviorValue ?? $"{behavior.Category} #{behavior.RelatedEntityId}";
+                    await _graphDataService.CreateOrUpdateServiceNodeAsync(behavior.RelatedEntityId.Value, behavior.Category, serviceName);
+
+                    // Create USES and OCCURS_AT relationships
+                    await _graphDataService.CreateOccursAtRelationshipAsync(behavior.GuestId, behavior.RelatedEntityId.Value, behavior.BehaviorDate);
+
+                    // If satisfaction/sentiment available, create SATISFIES relationship
+                    if (behavior.SatisfactionScore.HasValue || behavior.SentimentScore.HasValue)
+                    {
+                        var satisfactionDto = new ServiceSatisfactionDto
+                        {
+                            GuestId = behavior.GuestId,
+                            ServiceId = behavior.RelatedEntityId.Value,
+                            ServiceType = behavior.Category,
+                            Satisfaction = behavior.SatisfactionScore ?? 5.0,
+                            Sentiment = behavior.SentimentScore ?? 0.0,
+                            Timestamp = behavior.BehaviorDate,
+                            Context = behavior.BehaviorValue
+                        };
+                        await _graphDataService.CreateOrUpdateServiceSatisfactionAsync(satisfactionDto);
+                    }
+                }
+
                 // Create emotion relationship if sentiment available
                 if (behavior.SentimentScore.HasValue)
                 {

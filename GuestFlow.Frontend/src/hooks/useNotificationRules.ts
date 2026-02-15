@@ -6,7 +6,7 @@ import { notificationRuleService } from '../services/notificationRuleService'
 import type {
   NotificationRule,
   UpsertNotificationRule,
-  RuleExecutionResult,
+  RuleExecutionResult as _RuleExecutionResult,
 } from '../types/notificationRule'
 
 export const useNotificationRules = (isActive?: boolean) => {

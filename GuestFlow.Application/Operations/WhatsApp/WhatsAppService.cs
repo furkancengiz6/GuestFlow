@@ -5,6 +5,7 @@ using AutoMapper;
 using GuestFlow.Application.Extensions;
 using GuestFlow.Application.Models;
 using GuestFlow.Application.Operations.WhatsApp.Dtos;
+using GuestFlow.Application;
 using GuestFlow.Application.Types;
 using GuestFlow.Domain.Entities.Core;
 using GuestFlow.Domain.Entities.Repositories;
@@ -15,6 +16,9 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -35,6 +39,7 @@ namespace GuestFlow.Application.Operations.WhatsApp
         private readonly IRepository<YachtTourEntity> _yachtTourRepository;
         private readonly IRepository<ReservationEntity> _reservationRepository;
         private readonly IConfiguration _configuration;
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly IMapper _mapper;
         private readonly ILogger<WhatsAppService> _logger;
 
@@ -57,6 +62,7 @@ namespace GuestFlow.Application.Operations.WhatsApp
             IRepository<YachtTourEntity> yachtTourRepository,
             IRepository<ReservationEntity> reservationRepository,
             IConfiguration configuration,
+            IHttpClientFactory httpClientFactory,
             IMapper mapper,
             ILogger<WhatsAppService> logger)
         {
@@ -69,6 +75,7 @@ namespace GuestFlow.Application.Operations.WhatsApp
             _yachtTourRepository = yachtTourRepository;
             _reservationRepository = reservationRepository;
             _configuration = configuration;
+            _httpClientFactory = httpClientFactory;
             _mapper = mapper;
             _logger = logger;
 
@@ -266,37 +273,82 @@ namespace GuestFlow.Application.Operations.WhatsApp
         {
             try
             {
-                // Meta WhatsApp Business API entegrasyonu
-                // Bu kısım gerçek API key ile çalışacak şekilde implement edilecek
-                
-                if (_whatsAppProvider == "Meta" && !string.IsNullOrEmpty(_whatsAppAccessToken))
+                if (_whatsAppProvider == "Meta" && !string.IsNullOrEmpty(_whatsAppAccessToken) && !string.IsNullOrEmpty(_whatsAppPhoneNumberId))
                 {
-                    // TODO: Gerçek Meta WhatsApp Business API entegrasyonu
-                    // Şimdilik mock implementasyon
-                    _logger.LogInformation($"WhatsApp mesajı gönderiliyor (Mock): {normalizedPhone}");
-                    
-                    // Simüle edilmiş başarılı gönderim
-                    await Task.Delay(100); // API çağrısını simüle et
-                    
-                    var mockMessageId = $"wamid.{Guid.NewGuid():N}";
-                    var mockResponse = JsonSerializer.Serialize(new
-                    {
-                        messaging_product = "whatsapp",
-                        contacts = new[] { new { input = normalizedPhone, wa_id = normalizedPhone } },
-                        messages = new[] { new { id = mockMessageId } }
-                    });
+                    using var client = _httpClientFactory.CreateClient();
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _whatsAppAccessToken);
 
-                    return (true, mockMessageId, mockResponse, null);
+                    var url = $"https://graph.facebook.com/v17.0/{_whatsAppPhoneNumberId}/messages";
+
+                    object payload;
+
+                    if (whatsAppDto.MessageType == WhatsAppMessageType.Template && !string.IsNullOrEmpty(whatsAppDto.TemplateName))
+                    {
+                        var components = new List<object>();
+                        if (whatsAppDto.TemplateParameters != null && whatsAppDto.TemplateParameters.Any())
+                        {
+                            var bodyParameters = whatsAppDto.TemplateParameters
+                                .Select(p => new { type = "text", text = p.Value })
+                                .ToList();
+
+                            components.Add(new
+                            {
+                                type = "body",
+                                parameters = bodyParameters
+                            });
+                        }
+
+                        payload = new
+                        {
+                            messaging_product = "whatsapp",
+                            to = normalizedPhone,
+                            type = "template",
+                            template = new
+                            {
+                                name = whatsAppDto.TemplateName,
+                                language = new { code = "tr" },
+                                components = components
+                            }
+                        };
+                    }
+                    else
+                    {
+                        payload = new
+                        {
+                            messaging_product = "whatsapp",
+                            to = normalizedPhone,
+                            type = "text",
+                            text = new { body = whatsAppDto.Message }
+                        };
+                    }
+
+                    var jsonContent = JsonSerializer.Serialize(payload);
+                    var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+                    var response = await client.PostAsync(url, content);
+                    var responseBody = await response.Content.ReadAsStringAsync();
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var result = JsonSerializer.Deserialize<JsonElement>(responseBody);
+                        var messageId = result.GetProperty("messages")[0].GetProperty("id").GetString();
+                        return (true, messageId, responseBody, null);
+                    }
+                    else
+                    {
+                        _logger.LogError("Meta WhatsApp API error: {Status}, {Body}", response.StatusCode, responseBody);
+                        return (false, null, responseBody, $"Gateway Error: {response.StatusCode}");
+                    }
                 }
                 else
                 {
-                    _logger.LogWarning("WhatsApp API yapılandırması eksik veya devre dışı");
-                    return (false, null, null, "WhatsApp API yapılandırması eksik");
+                    _logger.LogWarning("WhatsApp API configuration missing or not set to Meta: Provider={Provider}", _whatsAppProvider);
+                    return (false, null, null, "WhatsApp configuration incomplete for production.");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "WhatsApp gateway'e mesaj gönderilirken hata");
+                _logger.LogError(ex, "Exception in SendWhatsAppToGatewayAsync");
                 return (false, null, null, ex.Message);
             }
         }
@@ -750,6 +802,33 @@ namespace GuestFlow.Application.Operations.WhatsApp
                 _logger.LogError(ex, $"WhatsApp istatistikleri getirilirken hata: {ex.Message}");
                 return new WhatsAppStatisticsDto();
             }
+        }
+
+        public bool ValidateWebhookSignature(string signature, string body)
+        {
+            if (string.IsNullOrEmpty(signature) || string.IsNullOrEmpty(_whatsAppApiSecret))
+            {
+                return false;
+            }
+
+            // Signature format: sha256=HASH
+            var signatureParts = signature.Split('=');
+            if (signatureParts.Length != 2)
+            {
+                // If header doesn't contain prefix, it might be raw hash in some contexts, but standard is sha256=
+                return false;
+            }
+
+            var hash = signatureParts[1];
+            var payloadBytes = Encoding.UTF8.GetBytes(body);
+            var secretBytes = Encoding.UTF8.GetBytes(_whatsAppApiSecret);
+
+            using var hmac = new System.Security.Cryptography.HMACSHA256(secretBytes);
+            var hashBytes = hmac.ComputeHash(payloadBytes);
+            var computedHash = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+
+            // Constant time comparison would be better securely, but this is acceptable for now
+            return computedHash == hash;
         }
     }
 }

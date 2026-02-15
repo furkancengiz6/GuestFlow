@@ -493,7 +493,6 @@ namespace GuestFlow.Application.Operations.Intelligence.Graph
                     var result = await tx.RunAsync(query, new { guestId, staffId });
                     var record = await result.SingleAsync();
                     return record["compatibility"].As<double>();
-                    return record["compatibility"].As<double>();
                 });
             }
             catch (Exception ex)

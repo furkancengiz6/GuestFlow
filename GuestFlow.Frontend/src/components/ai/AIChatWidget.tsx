@@ -6,8 +6,6 @@ import {
     Typography,
     IconButton,
     TextField,
-    List,
-    ListItem,
     Avatar,
     Fade,
     CircularProgress,
@@ -20,11 +18,10 @@ import {
     SmartToy as RobotIcon,
     Close as CloseIcon,
     Send as SendIcon,
-    Person as PersonIcon,
     DeleteOutline as DeleteIcon
 } from '@mui/icons-material';
 import { useAIChat } from '../../hooks/useAIChat';
-import { ChatMessage, AIAction } from '../../types/ai';
+import { AIAction } from '../../types/ai';
 
 const StyledFab = styled(Fab)(({ theme }) => ({
     position: 'fixed',
@@ -94,9 +91,18 @@ const AIChatWidget: React.FC = () => {
     };
 
     const handleActionClick = (action: AIAction) => {
-        // In a real app, this would trigger custom logic or navigation
         console.log('Action triggered:', action);
-        sendMessage(`Bilgi talep ediyorum: ${action.description}`);
+
+        if (action.actionType === 'Navigate' && action.parameters?.screen) {
+            // In a real app with react-router-dom, we would navigate here
+            console.log(`Navigating to ${action.parameters.screen}`);
+            sendMessage(`Beni ${action.parameters.screen} ekranına yönlendirdiğin için teşekkürler.`);
+        } else if (action.actionType === 'CopyText' && action.parameters?.text) {
+            navigator.clipboard.writeText(action.parameters.text);
+            sendMessage(`"${action.parameters.text}" metnini kopyaladım.`);
+        } else {
+            sendMessage(`Bilgi talep ediyorum: ${action.description}`);
+        }
     };
 
     return (

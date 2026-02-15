@@ -1,3 +1,5 @@
+using GuestFlow.Application.Models.AI;
+using GuestFlow.Application.Operations.AI;
 using GuestFlow.Api.Models;
 using GuestFlow.Application.Operations.Guest;
 using GuestFlow.Application.Operations.Guest.Dtos;
@@ -23,11 +25,13 @@ namespace GuestFlow.Api.Controllers
     {
         private readonly IGuestService _guestService;
         private readonly INotificationService _notificationService;
+        private readonly IAIAssistantService _aiAssistantService;
 
-        public GuestQrController(IGuestService guestService, INotificationService notificationService)
+        public GuestQrController(IGuestService guestService, INotificationService notificationService, IAIAssistantService aiAssistantService)
         {
             _guestService = guestService;
             _notificationService = notificationService;
+            _aiAssistantService = aiAssistantService;
         }
 
         /// <summary>
@@ -46,6 +50,20 @@ namespace GuestFlow.Api.Controllers
                 return NotFound("Geçersiz QR kod veya misafir bulunamadı.");
             }
 
+            // AI Insight Oluştur (Personel için)
+            string aiStaffTip = "Normal VIP protokolünü uygulayın.";
+            try
+            {
+                var aiRequest = new AIChatRequest
+                {
+                    Message = $"Provide a 1-sentence personalized 'Staff Tip' for this guest: {guest.FullName}. They are VIP: {guest.IsSpecialGuest}. Consider nationality: {guest.Nationality}. Return in Turkish.",
+                    GuestId = guest.Id
+                };
+                var aiResponse = await _aiAssistantService.ProcessMessageAsync(aiRequest);
+                aiStaffTip = aiResponse.Response;
+            }
+            catch { /* Fallback to default */ }
+
             // VIP Misafir takibi için bildirim tetikle
             if (guest.IsSpecialGuest)
             {
@@ -54,14 +72,14 @@ namespace GuestFlow.Api.Controllers
                 await _notificationService.CreateAndSendNotificationAsync(new CreateNotificationDto
                 {
                     Title = "⭐ VIP MİSAFİR TARANDI",
-                    Content = $"VIP Misafir {guest.FullName}, şu an {personnelName} tarafından QR okutularak kontrol edildi. Lütfen öncelikli hizmet sağlayın.",
+                    Content = $"VIP Misafir {guest.FullName}, {personnelName} tarafından kontrol edildi. AI Önerisi: {aiStaffTip}",
                     NotificationType = "Push",
                     RelatedEntityType = "Guest",
                     RelatedEntityId = guest.Id
                 });
             }
 
-            return Success(guest, "QR kod başarıyla doğrulandı.");
+            return Success(new { Guest = guest, AISuggestion = aiStaffTip }, "QR kod başarıyla doğrulandı.");
         }
     }
 }

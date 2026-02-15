@@ -40,12 +40,12 @@ import { useSignalR } from '../../hooks/useSignalR'
 import { formatCurrency } from '../../utils/formatters'
 import { formatDate, formatDateTime } from '../../utils/formatters'
 import ContentState from '../../components/Feedback/ContentState'
-import { RiskFlag, RiskFlagSeverity, ServiceOperation } from '../../types/dailyOperations'
+import { RiskFlagSeverity, ServiceOperation } from '../../types/dailyOperations'
 
 const DailyOperationsPage = () => {
-  const [selectedDate, setSelectedDate] = useState<string | undefined>(undefined)
+  const [_selectedDate, setSelectedDate] = useState<string | undefined>(undefined)
   const [activeTab, setActiveTab] = useState(0)
-  const { data, isLoading, error, refetch } = useDailyOperations(selectedDate)
+  const { data, isLoading, error, refetch } = useDailyOperations(_selectedDate)
 
   // Dialog states
   const [assignDriverDialog, setAssignDriverDialog] = useState({ open: false, serviceId: 0, serviceType: '' })

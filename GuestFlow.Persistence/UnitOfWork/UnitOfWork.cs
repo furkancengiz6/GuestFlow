@@ -27,6 +27,7 @@ namespace GuestFlow.Persistence.UnitOfWork
         private readonly IRepository<RestaurantReservationEntity> _restaurantReservations;
         private readonly IRepository<Supplier> _suppliers;
         private readonly IRepository<OTAIntegration> _otaIntegrations;
+        private readonly IRepository<OTAHotelMapping> _otaHotelMappings;
         private readonly IRepository<OTAPriceUpdate> _otaPriceUpdates;
         private readonly IRepository<OTAReservation> _otaReservations;
         private readonly IRepository<OTAWebhookLog> _otaWebhookLogs;
@@ -54,6 +55,8 @@ namespace GuestFlow.Persistence.UnitOfWork
         private readonly IRepository<StaffBehaviorEntity> _staffBehaviors;
         private readonly IRepository<GuestStaffInteractionEntity> _guestStaffInteractions;
         private readonly IRepository<PricingRuleEntity> _pricingRules;
+        private readonly IRepository<RoomAssignmentEntity> _roomAssignments;
+        private readonly IRepository<GuestIntelligenceActionEntity> _guestIntelligenceActions;
 
         public UnitOfWork(GuestFlowDbContext context)
         {
@@ -68,6 +71,7 @@ namespace GuestFlow.Persistence.UnitOfWork
             _restaurantReservations = new Repository<RestaurantReservationEntity>(_context);
             _suppliers = new Repository<Supplier>(_context);
             _otaIntegrations = new Repository<OTAIntegration>(_context);
+            _otaHotelMappings = new Repository<OTAHotelMapping>(_context);
             _otaPriceUpdates = new Repository<OTAPriceUpdate>(_context);
             _otaReservations = new Repository<OTAReservation>(_context);
             _otaWebhookLogs = new Repository<OTAWebhookLog>(_context);
@@ -95,6 +99,8 @@ namespace GuestFlow.Persistence.UnitOfWork
             _staffBehaviors = new Repository<StaffBehaviorEntity>(_context);
             _guestStaffInteractions = new Repository<GuestStaffInteractionEntity>(_context);
             _pricingRules = new Repository<PricingRuleEntity>(_context);
+            _roomAssignments = new Repository<RoomAssignmentEntity>(_context);
+            _guestIntelligenceActions = new Repository<GuestIntelligenceActionEntity>(_context);
         }
 
         public async Task<int> SaveChangesAsync()
@@ -181,6 +187,7 @@ namespace GuestFlow.Persistence.UnitOfWork
         public IRepository<RestaurantReservationEntity> RestaurantReservations => _restaurantReservations;
         public IRepository<Supplier> Suppliers => _suppliers;
         public IRepository<OTAIntegration> OTAIntegrations => _otaIntegrations;
+        public IRepository<OTAHotelMapping> OTAHotelMappings => _otaHotelMappings;
         public IRepository<OTAPriceUpdate> OTAPriceUpdates => _otaPriceUpdates;
         public IRepository<OTAReservation> OTAReservations => _otaReservations;
         public IRepository<OTAWebhookLog> OTAWebhookLogs => _otaWebhookLogs;
@@ -208,5 +215,7 @@ namespace GuestFlow.Persistence.UnitOfWork
         public IRepository<StaffBehaviorEntity> StaffBehaviors => _staffBehaviors;
         public IRepository<GuestStaffInteractionEntity> GuestStaffInteractions => _guestStaffInteractions;
         public IRepository<PricingRuleEntity> PricingRules => _pricingRules;
+        public IRepository<RoomAssignmentEntity> RoomAssignments => _roomAssignments;
+        public IRepository<GuestIntelligenceActionEntity> GuestIntelligenceActions => _guestIntelligenceActions;
     }
 }

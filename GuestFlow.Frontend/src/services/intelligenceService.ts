@@ -57,6 +57,19 @@ export interface AutomaticAction {
   confidence: number
 }
 
+export interface GuestIntelligenceAction {
+  id: number
+  guestId: number
+  actionType: string
+  title: string
+  description: string
+  isAutomatic: boolean
+  status: string
+  executionDetails?: string
+  confidence: number
+  executionDate: string
+}
+
 export interface SentimentAnalysisResult {
   sentiment: 'Positive' | 'Neutral' | 'Negative'
   score: number
@@ -78,6 +91,38 @@ export interface ServiceMatchResult {
   serviceType: string
   matchScore: number
   recommendationReason: string
+}
+
+export interface GuestMatchResult {
+  guestId: number
+  guestName: string
+  compatibilityScore: number
+  relationshipStrength: number
+  interactionCount: number
+  averageSatisfaction: number
+  matchReason: string
+}
+
+export interface NetworkNode {
+  id: string
+  type: string
+  name: string
+  properties?: Record<string, any>
+}
+
+export interface NetworkEdge {
+  sourceId: string
+  targetId: string
+  relationshipType: string
+  weight: number
+  properties?: Record<string, any>
+}
+
+export interface RelationshipNetwork {
+  guestNode: NetworkNode
+  staffNodes: NetworkNode[]
+  serviceNodes: NetworkNode[]
+  edges: NetworkEdge[]
 }
 
 // Intelligence Service
@@ -116,9 +161,22 @@ export const intelligenceService = {
     return response.data.data
   },
 
+  getStaffBehaviorPatterns: async (staffId: number, startDate?: string, endDate?: string) => {
+    const params = new URLSearchParams()
+    if (startDate) params.append('startDate', startDate)
+    if (endDate) params.append('endDate', endDate)
+    const response = await api.get(`/api/v1/Intelligence/staff/${staffId}/behavior-patterns?${params}`)
+    return response.data.data
+  },
+
   // Relationship Intelligence
   findBestStaffMatches: async (guestId: number, limit: number = 5): Promise<StaffMatchResult[]> => {
     const response = await api.get(`/api/v1/Intelligence/guests/${guestId}/best-staff-matches?limit=${limit}`)
+    return response.data.data
+  },
+
+  findBestGuestMatches: async (staffId: number, limit: number = 5): Promise<GuestMatchResult[]> => {
+    const response = await api.get(`/api/v1/Intelligence/staff/${staffId}/best-guest-matches?limit=${limit}`)
     return response.data.data
   },
 
@@ -132,6 +190,11 @@ export const intelligenceService = {
 
   getGuestPreferencePatterns: async (guestId: number) => {
     const response = await api.get(`/api/v1/Intelligence/guests/${guestId}/preference-patterns`)
+    return response.data.data
+  },
+
+  getGuestRelationshipNetwork: async (guestId: number): Promise<RelationshipNetwork> => {
+    const response = await api.get(`/api/v1/Intelligence/guests/${guestId}/relationship-network`)
     return response.data.data
   },
 
@@ -190,4 +253,59 @@ export const intelligenceService = {
     const response = await api.get(`/api/v1/Intelligence/guests/${guestId}/automatic-actions`)
     return response.data.data
   },
+
+  // Dynamic Pricing Intelligence
+  getPricingIntelligence: async (roomTypeId: number, startDate: string, endDate: string): Promise<PricingIntelligenceResult[]> => {
+    const response = await api.get(`/api/v1/pricing/intelligence?roomTypeId=${roomTypeId}&startDate=${startDate}&endDate=${endDate}`)
+    return response.data.data
+  },
+
+  // Behavioral Insights (AI-extracted from Staff Notes)
+  getRecentBehavioralInsights: async (guestId: number, source?: string): Promise<BehavioralInsight[]> => {
+    const params = new URLSearchParams()
+    if (source) params.append('source', source)
+    const response = await api.get(`/api/v1/Intelligence/guests/${guestId}/behavioral-insights?${params}`)
+    return response.data.data
+  },
+
+  executeAutomaticAction: async (action: AutomaticAction): Promise<boolean> => {
+    const response = await api.post('/api/v1/Intelligence/execute-action', action)
+    return response.data.data
+  },
+
+  getActionHistory: async (guestId: number): Promise<GuestIntelligenceAction[]> => {
+    const response = await api.get(`/api/v1/Intelligence/guests/${guestId}/history`)
+    return response.data.data
+  },
+}
+
+export interface AppliedRuleDetail {
+  ruleName: string
+  ruleType: string
+  adjustmentType: string
+  adjustmentValue: number
+  resultingRate: number
+}
+
+export interface PricingIntelligenceResult {
+  date: string
+  forecastedOccupancy: number
+  baseRate: number
+  dynamicRate: number
+  isStopSell: boolean
+  appliedRules: string[]
+  ruleDetails: AppliedRuleDetail[]
+}
+
+export interface BehavioralInsight {
+  id: number
+  guestId: number
+  behaviorType: string
+  category?: string
+  behaviorValue?: string
+  behaviorDate: string
+  sentimentScore?: number
+  satisfactionScore?: number
+  relatedEntityType?: string
+  relatedEntityId?: number
 }

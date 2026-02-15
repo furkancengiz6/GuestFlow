@@ -7,6 +7,9 @@ using GuestFlow.Application.Operations.Intelligence.Relationship;
 using GuestFlow.Application.Operations.Intelligence.Sentiment;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
+using GuestFlow.Application.Operations.AI;
+using GuestFlow.Application.Models.AI;
+using System.Text.Json;
 
 namespace GuestFlow.Application.Operations.Intelligence.Predictive
 {
@@ -20,6 +23,7 @@ namespace GuestFlow.Application.Operations.Intelligence.Predictive
         private readonly IBehavioralTrackingService _behavioralTrackingService;
         private readonly IRelationshipIntelligenceService _relationshipIntelligenceService;
         private readonly ISentimentAnalysisService _sentimentAnalysisService;
+        private readonly IAIAssistantService _aiAssistantService;
         private readonly ILogger<PredictiveIntelligenceService> _logger;
 
         public PredictiveIntelligenceService(
@@ -27,12 +31,14 @@ namespace GuestFlow.Application.Operations.Intelligence.Predictive
             IBehavioralTrackingService behavioralTrackingService,
             IRelationshipIntelligenceService relationshipIntelligenceService,
             ISentimentAnalysisService sentimentAnalysisService,
+            IAIAssistantService aiAssistantService,
             ILogger<PredictiveIntelligenceService> logger)
         {
             _unitOfWork = unitOfWork;
             _behavioralTrackingService = behavioralTrackingService;
             _relationshipIntelligenceService = relationshipIntelligenceService;
             _sentimentAnalysisService = sentimentAnalysisService;
+            _aiAssistantService = aiAssistantService;
             _logger = logger;
         }
 
@@ -181,6 +187,15 @@ namespace GuestFlow.Application.Operations.Intelligence.Predictive
         {
             try
             {
+                // Try AI-based satisfaction prediction first
+                var aiSatisfaction = await PredictSatisfactionWithAIAsync(guestId, serviceId, serviceType);
+                if (aiSatisfaction != null)
+                {
+                    _logger.LogInformation("AI-Powered Satisfaction Prediction completed for GuestId={GuestId}, Score={Score}", 
+                        guestId, aiSatisfaction.PredictedSatisfaction);
+                    return aiSatisfaction;
+                }
+
                 var query = _unitOfWork.GuestBehaviors
                     .GetAll(b => b.GuestId == guestId && 
                                 b.SatisfactionScore.HasValue &&
@@ -260,6 +275,15 @@ namespace GuestFlow.Application.Operations.Intelligence.Predictive
         {
             try
             {
+                // Try AI-based risk prediction first
+                var aiRisks = await PredictRisksWithAIAsync(guestId);
+                if (aiRisks != null && aiRisks.Risks.Any())
+                {
+                    _logger.LogInformation("AI-Powered Risk Prediction completed for GuestId={GuestId}, RiskScore={Score}", 
+                        guestId, aiRisks.OverallRiskScore);
+                    return aiRisks;
+                }
+
                 var risks = new List<RiskFactor>();
 
                 // Dissatisfaction risk
@@ -354,6 +378,15 @@ namespace GuestFlow.Application.Operations.Intelligence.Predictive
         {
             try
             {
+                // Try AI-based opportunity detection first
+                var aiOpportunities = await DetectOpportunitiesWithAIAsync(guestId);
+                if (aiOpportunities != null && aiOpportunities.Any())
+                {
+                    _logger.LogInformation("AI-Powered Opportunity Detection completed for GuestId={GuestId}, Found={Count}", 
+                        guestId, aiOpportunities.Count);
+                    return aiOpportunities;
+                }
+
                 var opportunities = new List<OpportunityDetection>();
 
                 // Get guest behavior patterns
@@ -519,6 +552,178 @@ namespace GuestFlow.Application.Operations.Intelligence.Predictive
                     Confidence = 0.0
                 };
             }
+        }
+
+        private async Task<RiskPredictionResult?> PredictRisksWithAIAsync(int guestId)
+        {
+            try
+            {
+                var patterns = await _behavioralTrackingService.GetGuestBehaviorPatternsAsync(guestId);
+                var sentiment = await _sentimentAnalysisService.GetGuestSentimentTrendsAsync(guestId);
+                
+                var context = new
+                {
+                    GuestId = guestId,
+                    Patterns = patterns,
+                    Sentiment = sentiment
+                };
+
+                var prompt = $@"Analyze the guest data and predict potential risk factors (Dissatisfaction, Cancellation, Problem, Churn).
+Data: {JsonSerializer.Serialize(context)}
+
+The JSON must exactly follow this format:
+{{
+  ""overallRiskScore"": 0.45,
+  ""risks"": [
+    {{
+      ""riskType"": ""Dissatisfaction"",
+      ""riskScore"": 0.6,
+      ""severity"": ""Medium"",
+      ""description"": ""Detailed description of why this risk exists"",
+      ""factors"": {{ ""recent_sentiment"": -0.5 }}
+    }}
+  ]
+}}
+Response ONLY with the JSON block.";
+
+                var response = await _aiAssistantService.ProcessMessageAsync(new AIChatRequest
+                {
+                    Message = prompt,
+                    Metadata = new Dictionary<string, string> { { "Type", "RiskPrediction" } }
+                });
+
+                if (string.IsNullOrEmpty(response?.Response)) return null;
+
+                var jsonStart = response.Response.IndexOf('{');
+                var jsonEnd = response.Response.LastIndexOf('}');
+                if (jsonStart == -1 || jsonEnd == -1) return null;
+
+                var json = response.Response.Substring(jsonStart, jsonEnd - jsonStart + 1);
+                var result = JsonSerializer.Deserialize<RiskPredictionResult>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                
+                if (result != null) result.GuestId = guestId;
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "AI Risk prediction failed for GuestId={GuestId}", guestId);
+                return null;
+            }
+        }
+
+        private async Task<List<OpportunityDetection>?> DetectOpportunitiesWithAIAsync(int guestId)
+        {
+            try
+            {
+                var patterns = await _behavioralTrackingService.GetGuestBehaviorPatternsAsync(guestId);
+                var preferences = await _relationshipIntelligenceService.GetGuestPreferencePatternsAsync(guestId);
+                
+                var context = new
+                {
+                    GuestId = guestId,
+                    Patterns = patterns,
+                    Preferences = preferences
+                };
+
+                var prompt = $@"Analyze guest behavior patterns and preferences to detect growth opportunities (Upsell, CrossSell, Personalization, Loyalty).
+Data: {JsonSerializer.Serialize(context)}
+
+The JSON must exactly follow this format:
+{{
+  ""opportunities"": [
+    {{
+      ""opportunityType"": ""Upsell"",
+      ""description"": ""Detailed description of the opportunity"",
+      ""opportunityScore"": 0.85,
+      ""recommendedAction"": ""Specific action to take"",
+      ""context"": {{ ""reason"": ""High satisfaction"" }}
+    }}
+  ]
+}}
+Response ONLY with the JSON block.";
+
+                var response = await _aiAssistantService.ProcessMessageAsync(new AIChatRequest
+                {
+                    Message = prompt,
+                    Metadata = new Dictionary<string, string> { { "Type", "OpportunityDetection" } }
+                });
+
+                if (string.IsNullOrEmpty(response?.Response)) return null;
+
+                var jsonStart = response.Response.IndexOf('{');
+                var jsonEnd = response.Response.LastIndexOf('}');
+                if (jsonStart == -1 || jsonEnd == -1) return null;
+
+                var json = response.Response.Substring(jsonStart, jsonEnd - jsonStart + 1);
+                var rawResult = JsonSerializer.Deserialize<AIOpportunityResult>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                
+                return rawResult?.Opportunities;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "AI Opportunity detection failed for GuestId={GuestId}", guestId);
+                return null;
+            }
+        }
+
+        private async Task<SatisfactionPrediction?> PredictSatisfactionWithAIAsync(int guestId, int? serviceId = null, string? serviceType = null)
+        {
+            try
+            {
+                var behaviors = await _unitOfWork.GuestBehaviors
+                    .GetAll(b => b.GuestId == guestId && !b.IsDeleted)
+                    .OrderByDescending(b => b.BehaviorDate)
+                    .Take(20)
+                    .ToListAsync();
+
+                var context = new
+                {
+                    GuestId = guestId,
+                    ServiceId = serviceId,
+                    ServiceType = serviceType,
+                    RecentBehaviors = behaviors
+                };
+
+                var prompt = $@"Analyze guest data and predict satisfaction score (0-10) and risk level.
+Data: {JsonSerializer.Serialize(context)}
+
+The JSON must exactly follow this format:
+{{
+  ""predictedSatisfaction"": 8.5,
+  ""confidence"": 0.9,
+  ""riskLevel"": ""Low"",
+  ""factors"": {{ ""reason"": ""Consistent positive feedback"" }}
+}}
+Response ONLY with the JSON block.";
+
+                var response = await _aiAssistantService.ProcessMessageAsync(new AIChatRequest
+                {
+                    Message = prompt,
+                    Metadata = new Dictionary<string, string> { { "Type", "SatisfactionPrediction" } }
+                });
+
+                if (string.IsNullOrEmpty(response?.Response)) return null;
+
+                var jsonStart = response.Response.IndexOf('{');
+                var jsonEnd = response.Response.LastIndexOf('}');
+                if (jsonStart == -1 || jsonEnd == -1) return null;
+
+                var json = response.Response.Substring(jsonStart, jsonEnd - jsonStart + 1);
+                var result = JsonSerializer.Deserialize<SatisfactionPrediction>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                
+                if (result != null) result.GuestId = guestId;
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "AI Satisfaction prediction failed for GuestId={GuestId}", guestId);
+                return null;
+            }
+        }
+
+        private class AIOpportunityResult
+        {
+            public List<OpportunityDetection>? Opportunities { get; set; }
         }
 
         private double CalculateConfidence(int dataPoints)

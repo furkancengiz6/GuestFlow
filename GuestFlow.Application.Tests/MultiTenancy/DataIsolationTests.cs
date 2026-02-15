@@ -31,7 +31,7 @@ namespace GuestFlow.Application.Tests.MultiTenancy
             // Arrange
             // 1. Create Tenant 1 context and add data
             _tenantProviderMock.Setup(t => t.TenantId).Returns(1);
-            using (var context1 = new GuestFlowDbContext(_options, _tenantProviderMock.Object))
+            using (var context1 = new GuestFlowDbContext(_options, _tenantProviderMock.Object, new GuestFlow.Domain.Events.NullDomainEventDispatcher()))
             {
                 context1.Guests.Add(new GuestEntity { Name = "Tenant1 Guest", Surname = "Test", Email = "t1@test.com", IdentityNumber = "123", Nationality = "TR" });
                 await context1.SaveChangesAsync();
@@ -39,7 +39,7 @@ namespace GuestFlow.Application.Tests.MultiTenancy
 
             // 2. Create Tenant 2 context and add data
             _tenantProviderMock.Setup(t => t.TenantId).Returns(2);
-            using (var context2 = new GuestFlowDbContext(_options, _tenantProviderMock.Object))
+            using (var context2 = new GuestFlowDbContext(_options, _tenantProviderMock.Object, new GuestFlow.Domain.Events.NullDomainEventDispatcher()))
             {
                 context2.Guests.Add(new GuestEntity { Name = "Tenant2 Guest", Surname = "Test", Email = "t2@test.com", IdentityNumber = "456", Nationality = "TR" });
                 await context2.SaveChangesAsync();
@@ -48,7 +48,7 @@ namespace GuestFlow.Application.Tests.MultiTenancy
             // Act
             // 3. Switch back to Tenant 1 and query
             _tenantProviderMock.Setup(t => t.TenantId).Returns(1);
-            using (var contextQuery = new GuestFlowDbContext(_options, _tenantProviderMock.Object))
+            using (var contextQuery = new GuestFlowDbContext(_options, _tenantProviderMock.Object, new GuestFlow.Domain.Events.NullDomainEventDispatcher()))
             {
                 var guests = await contextQuery.Guests.ToListAsync();
 
@@ -65,7 +65,7 @@ namespace GuestFlow.Application.Tests.MultiTenancy
              // Arrange
             // 1. Create Tenant 1 context and add data
             _tenantProviderMock.Setup(t => t.TenantId).Returns(1);
-            using (var context1 = new GuestFlowDbContext(_options, _tenantProviderMock.Object))
+            using (var context1 = new GuestFlowDbContext(_options, _tenantProviderMock.Object, new GuestFlow.Domain.Events.NullDomainEventDispatcher()))
             {
                 context1.Guests.Add(new GuestEntity { Name = "Tenant1 Guest", Surname = "Test", Email = "t1@test.com", IdentityNumber = "123", Nationality = "TR" });
                 await context1.SaveChangesAsync();
@@ -73,7 +73,7 @@ namespace GuestFlow.Application.Tests.MultiTenancy
 
             // 2. Create Tenant 2 context and add data
             _tenantProviderMock.Setup(t => t.TenantId).Returns(2);
-            using (var context2 = new GuestFlowDbContext(_options, _tenantProviderMock.Object))
+            using (var context2 = new GuestFlowDbContext(_options, _tenantProviderMock.Object, new GuestFlow.Domain.Events.NullDomainEventDispatcher()))
             {
                 context2.Guests.Add(new GuestEntity { Name = "Tenant2 Guest", Surname = "Test", Email = "t2@test.com", IdentityNumber = "456", Nationality = "TR" });
                 await context2.SaveChangesAsync();
@@ -81,7 +81,7 @@ namespace GuestFlow.Application.Tests.MultiTenancy
 
             // Act
             // 3. Query with IgnoreQueryFilters
-            using (var contextQuery = new GuestFlowDbContext(_options, _tenantProviderMock.Object))
+            using (var contextQuery = new GuestFlowDbContext(_options, _tenantProviderMock.Object, new GuestFlow.Domain.Events.NullDomainEventDispatcher()))
             {
                 var guests = await contextQuery.Guests.IgnoreQueryFilters().ToListAsync();
 
