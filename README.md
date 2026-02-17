@@ -136,9 +136,3 @@ See [ROADMAP.md](ROADMAP.md) for full details.
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 Copyright (c) 2025 **Furkan Cengiz**
-
-
-<img width="1859" height="916" alt="{F51866EB-8310-481C-993D-05780D3F63D5}" src="https://github.com/user-attachments/assets/1026733f-7fa7-44cc-9400-622ee1be5775" />
-
----
->>>>>>> bf42cc6f1f3a981f5a15442992c2e8181e4192f4
