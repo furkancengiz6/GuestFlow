@@ -135,16 +135,8 @@ See [ROADMAP.md](ROADMAP.md) for full details.
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-<<<<<<< HEAD
-Copyright (c) 2026 **Furkan Cengiz**
-=======
 Copyright (c) 2025 **Furkan Cengiz**
 
----
-
-<img width="1898" height="1742" alt="guestflow" src="https://github.com/user-attachments/assets/f5a2be94-5337-4cc0-9b6c-e2a7cc4f8dfe" />
-
----
 
 <img width="1859" height="916" alt="{F51866EB-8310-481C-993D-05780D3F63D5}" src="https://github.com/user-attachments/assets/1026733f-7fa7-44cc-9400-622ee1be5775" />
 
