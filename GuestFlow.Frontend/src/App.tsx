@@ -51,6 +51,9 @@ const NotificationsPage = lazyLoad(() => import('./pages/Notifications/Notificat
 const NotificationRulesPage = lazyLoad(() => import('./pages/NotificationRules/NotificationRulesPage'), 'NotificationRulesPage')
 const OperationalMapPage = lazyLoad(() => import('./pages/Map/OperationalMapPage'), 'OperationalMapPage')
 const DailyOperationsPage = lazyLoad(() => import('./pages/Operations/DailyOperationsPage'), 'DailyOperationsPage')
+const HousekeepingPage = lazyLoad(() => import('./pages/Operations/HousekeepingPage'), 'HousekeepingPage')
+const MaintenancePage = lazyLoad(() => import('./pages/Operations/MaintenancePage'), 'MaintenancePage')
+const LostAndFoundPage = lazyLoad(() => import('./pages/Operations/LostAndFoundPage'), 'LostAndFoundPage')
 const FilesPage = lazyLoad(() => import('./pages/Files/FilesPage'), 'FilesPage')
 const CalendarPage = lazyLoad(() => import('./pages/Calendar/CalendarPage'), 'CalendarPage')
 const HotelsPage = lazyLoad(() => import('./pages/Hotels/HotelsPage'), 'HotelsPage')
@@ -418,6 +421,36 @@ function App() {
                         <ProtectedRoute roles={['Admin', 'Staff']} fallbackPath="/dashboard">
                           <Suspense fallback={<PageLoader />}>
                             <DailyOperationsPage />
+                          </Suspense>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/operations/housekeeping"
+                      element={
+                        <ProtectedRoute roles={['Admin', 'Staff', 'Housekeeper']} fallbackPath="/dashboard">
+                          <Suspense fallback={<PageLoader />}>
+                            <HousekeepingPage />
+                          </Suspense>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/operations/maintenance"
+                      element={
+                        <ProtectedRoute roles={['Admin', 'Staff', 'Technician']} fallbackPath="/dashboard">
+                          <Suspense fallback={<PageLoader />}>
+                            <MaintenancePage />
+                          </Suspense>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/operations/lost-and-found"
+                      element={
+                        <ProtectedRoute roles={['Admin', 'Staff', 'Housekeeper']} fallbackPath="/dashboard">
+                          <Suspense fallback={<PageLoader />}>
+                            <LostAndFoundPage />
                           </Suspense>
                         </ProtectedRoute>
                       }

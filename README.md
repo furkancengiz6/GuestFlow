@@ -7,7 +7,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-8.0-512bd4.svg)](https://dotnet.microsoft.com/download/dotnet/8.0)
 [![React](https://img.shields.io/badge/React-18.2-61dafb.svg)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.2-3178c6.svg)](https://www.typescriptlang.org/)
 
 > **"GuestFlow acts as the Memory of Human Relations for 5-star hotels."**
 
@@ -45,13 +44,30 @@ graph TD
 
 ---
 
-## 🌟 Visual Gallery
+## 🎬 Product Demo (v1.5.0 Release)
 
-### 🧠 Unified Intelligence Dashboard
-Our dashboard provides a 360-degree view of the guest journey, combining real-time sentiment analysis with relationship graph mapping. It’s designed for high-end concierge desks and operations managers.
+Experience the fluid, high-performance interface of GuestFlow v1.5.0.
 
-> [!TIP]
-> Use the **Graph Intelligence** toggle to visualize connections between guests, families, and repeated service preferences.
+![GuestFlow Product Demo](file:///C:/Users/PAVILION/.gemini/antigravity/brain/27940113-49ba-4cf2-bf14-4be79c585b6e/guestflow_product_demo_1774982305999.webp)
+
+---
+
+## 🌟 Visual Gallery (Operational Suite)
+
+### 🧹 Real-time Housekeeping Panel
+Manage room status with a clean, grid-based interface. Track cleaning progress and assignments in real-time.
+
+![Housekeeping Dashboard](file:///C:/Users/PAVILION/.gemini/antigravity/brain/27940113-49ba-4cf2-bf14-4be79c585b6e/housekeeping_dashboard_v150_1774983675962.png)
+
+### 🛠 Technical Maintenance Tracker
+Ensure technical excellence with centralized issue tracking and prompt resolution protocols.
+
+![Maintenance Tracker](file:///C:/Users/PAVILION/.gemini/antigravity/brain/27940113-49ba-4cf2-bf14-4be79c585b6e/maintenance_tracker_v150_1774983698598.png)
+
+### 📦 Lost & Found Inventory Hub
+Transform guest accidents into 'WOW' moments with automated lost item management and return tracking.
+
+![Lost & Found Hub](file:///C:/Users/PAVILION/.gemini/antigravity/brain/27940113-49ba-4cf2-bf14-4be79c585b6e/lost_and_found_hub_v150_1774983718477.png)
 
 ---
 
@@ -63,11 +79,11 @@ Our dashboard provides a 360-degree view of the guest journey, combining real-ti
 - **Sentiment Analysis**: Automatic mood detection from communication channels.
 - **Graph Intelligence**: Maps complex relationships between guests, services, and time.
 
-### 🏨 Concierge & Front Office
+### 🏨 Concierge & Operational Hub
 
 - **Unified Guest Profile**: 360-degree view combining PMS data and GuestFlow behavioral history.
-- **Service Hub**: Automated management of Transfers, Tours (City/Yacht), and Restaurant bookings.
-- **Real-time Monitoring**: Built-in health checks and structured logging for 99.9% uptime.
+- **Service Hub**: Automated management of Transfers, Tours, and Restaurant bookings.
+- **Operations Suite**: Integrated **Housekeeping**, **Maintenance**, and **Lost & Found** management.
 
 ### 🔌 Enterprise Integrations
 
@@ -82,68 +98,23 @@ Our dashboard provides a 360-degree view of the guest journey, combining real-ti
 | Category | Technology |
 | :--- | :--- |
 | **Backend** | .NET 8 (C# 11), Web API, EF Core 8 |
-| **Frontend** | React 18, TypeScript, Vite, Material UI (MUI) 5 |
-| **Intelligence** | Neo4j (Graph DB), ML.NET (Predictive) |
-| **Real-time** | SignalR, WebSocket |
-| **Reporting** | QuestPDF, ClosedXML (Excel/CSV) |
-| **Security** | JWT-based RBAC, PII Sanitization, AES-256 |
+| **Frontend** | React 18, TypeScript, Vite, Material UI 5 |
+| **Intelligence** | Neo4j (Graph DB), ML.NET (Predictive Analytics) |
+| **Deployment** | Docker, Nginx (Reverse Proxy), GitHub Actions |
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start (Dockerized)
 
-### Prerequisites
-
-- [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-- [Node.js](https://nodejs.org/) (LTS)
-- SQL Server (LocalDB or Enterprise)
-
-### 1. Clone & Setup Backend
+Ensure you have [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/) installed.
 
 ```bash
 git clone https://github.com/furkancengiz6/GuestFlow.git
 cd GuestFlow
-# Update connection string in appsettings.json if needed
-dotnet ef database update --project GuestFlow.Persistence
-dotnet run --project GuestFlow.Api
+docker-compose up -d --build
 ```
 
-### 2. Setup Frontend
-
-```bash
-cd Host GuestFlow.Frontend
-npm install
-npm run dev
-```
-
----
-
-## 📚 Documentation
-
-Detailed guides for various project aspects:
-
-- [👨‍💻 **Developer Guide (Start Here)**](docs/DEVELOPER_GUIDE.md)
-- [📖 **Vision & AI Layer**](VISION_TURIZM_INTELLIGENCE_LAYER.md)
-- [⚙️ **Technical Specifications**](docs/TECHNICAL_SPECIFICATIONS.md)
-- [🛠 **Tech Stack & Libraries**](docs/TECH_STACK.md)
-- [📡 **API Documentation**](docs/API.md)
-- [🚢 **Deployment Guide**](docs/DEPLOYMENT.md)
-- [🧪 **Testing Framework**](docs/TESTING.md)
-
----
-
-## 🛣 Roadmap
-
-We are currently at **100% completion (Stable Release)**.
-
-- [x] CRM & Concierge Core
-- [x] Financial Integration
-- [x] Graph Intelligence Layer
-- [x] Advanced AI Predictions & ML Integration
-- [x] Mobile Operations App
-- [x] OTA Multi-Channel Sync
-
-See [ROADMAP.md](ROADMAP.md) for full details.
+Access the application at `http://localhost`.
 
 ---
 

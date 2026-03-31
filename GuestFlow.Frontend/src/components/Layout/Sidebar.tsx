@@ -47,6 +47,9 @@ import {
   Nature as SustainabilityIcon,
   Rule as PricingIcon,
   Flag as FeatureFlagIcon,
+  CleaningServices as HousekeepingIcon,
+  Engineering as MaintenanceIcon,
+  Inventory2 as LostFoundIcon,
 } from '@mui/icons-material'
 import { useAuthStore } from '../../stores/authStore'
 
@@ -84,6 +87,9 @@ const menuCategories: MenuCategory[] = [
       { text: 'Rezervasyonlar', icon: <ReservationIcon />, path: '/reservations' },
       { text: 'İtineraryler', icon: <TimelineIcon />, path: '/itineraries' },
       { text: 'Günlük Operasyonlar', icon: <TodayIcon />, path: '/daily-operations', roles: ['Admin', 'Staff'] },
+      { text: 'Temizlik Paneli', icon: <HousekeepingIcon />, path: '/operations/housekeeping', roles: ['Admin', 'Staff', 'Housekeeper'] },
+      { text: 'Teknik Bakım', icon: <MaintenanceIcon />, path: '/operations/maintenance', roles: ['Admin', 'Staff', 'Technician'] },
+      { text: 'Kayıp Eşya', icon: <LostFoundIcon />, path: '/operations/lost-and-found', roles: ['Admin', 'Staff', 'Housekeeper'] },
       { text: 'Sürdürülebilirlik', icon: <SustainabilityIcon color="success" />, path: '/sustainability', roles: ['Manager', 'Admin', 'Staff'] },
     ]
   },

@@ -8,11 +8,12 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Added
 
-- **Final Project Completion**: Consolidated all core modules (CRM, Intelligence, Logistics, Finance).
-- **Mobile Edge App**: Production-ready React Native (Expo) field operations application.
-- **Predictive Analytics V2**: Advanced sentiment analysis and risk detection engine.
-- **OTA Real-time Sync**: Bi-directional availability management for Booking.com and Expedia.
+- **Operational Suite**: Integrated **Housekeeping**, **Maintenance**, and **Lost & Found** management (v1.5.0 feature).
+- **Consolidated Modules**: Finalized CRM, Intelligence, Logistics, and Financial integrations.
 - **Visual Asset Overhaul**: Premium hero images and documentation gallery.
+- **Mobile Edge App**: Production-ready React Native (Expo) app for field operations.
+- **Predictive Analytics V2**: Advanced sentiment analysis and risk detection engine.
+- **OTA Real-time Sync**: Real-time availability for Booking.com and Expedia.
 
 ### Changed
 
@@ -69,5 +70,6 @@ All notable changes to this project will be documented in this file. The format 
 
 ---
 
-### [Unreleased]
+## [Unreleased]
+
 - No pending features. Project is in Stable Maintenance mode.
