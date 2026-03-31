@@ -1,0 +1,75 @@
+name: Load Tests
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 0' # Weekly run
+
+jobs:
+  load-test:
+    runs-on: ubuntu-latest
+    
+    services:
+      redis:
+        image: redis:alpine
+        ports:
+          - 6379:6379
+      neo4j:
+        image: neo4j:latest
+        ports:
+          - 7474:7474
+          - 7687:7687
+        env:
+          NEO4J_AUTH: neo4j/GuestFlow123!
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build
+        run: dotnet build GuestFlow.sln
+
+      - name: Start API
+        run: |
+          dotnet run --project GuestFlow.Api/GuestFlow.Api.csproj --no-build &
+          echo "Waiting for API to start..."
+          # Use health/live for initial liveness detection
+          for i in {1..60}; do
+            if curl -s http://localhost:5000/health/live; then
+              echo "API Liveness check passed!"
+              # Now wait for readiness (DB seeding etc)
+              if curl -s http://localhost:5000/health/ready; then
+                 echo "API Readiness check passed! API is fully up."
+                 break
+              fi
+            fi
+            echo "Waiting... ($i)"
+            sleep 2
+          done
+        env:
+          ASPNETCORE_ENVIRONMENT: Development
+          SeedDemoData: "true"
+          ASPNETCORE_URLS: http://localhost:5000
+          DatabaseProvider: "Sqlite"
+          ConnectionStrings__DefaultConnection: "Data Source=GuestFlow_CI.db"
+          NEO4J_AUTH: neo4j/GuestFlow123!
+          Neo4j__Enabled: "true"
+          Neo4j__Uri: "bolt://localhost:7687"
+          Neo4j__Password: "GuestFlow123!"
+
+      - name: Setup K6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Run K6 Test
+        run: k6 run tests/load-tests/stress-test-dual-write.js
+        env:
+          BASE_URL: http://localhost:5000
+          K6_VUS: 10
+          K6_DURATION: 30s
+          TEST_USER: demo.admin.demo.admin@guestflow.local
+          TEST_PASSWORD: GuestFlow123!

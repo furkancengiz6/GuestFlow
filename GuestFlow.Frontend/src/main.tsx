@@ -11,6 +11,7 @@ import QueryErrorFallback from './components/Common/QueryErrorFallback'
 import GlobalLoadingIndicator from './components/Common/GlobalLoadingIndicator'
 import { createQueryClient } from './config/queryClient'
 import './i18n/config' // Initialize i18n
+import './index.css'
 import './styles/print.css'
 
 // React Query client oluştur (optimized configuration)

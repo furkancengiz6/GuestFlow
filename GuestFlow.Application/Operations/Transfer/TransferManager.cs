@@ -643,13 +643,13 @@ namespace GuestFlow.Application.Operations.Transfer
                 if (transfer == null)
                     throw new Exception("Transfer bulunamadı.");
 
+                if (transfer == null)
+                {
+                    return null;
+                }
+
                 var detail = _mapper.Map<TransferDetailDto>(transfer);
                 
-                // AutoMapper ile map edilemeyen özel alanları manuel olarak set et
-                if (transfer.Personnel != null && detail.Personnel != null)
-                {
-                    detail.Personnel.PhoneNumber = null; // PersonnelEntity'de PhoneNumber yok
-                }
                 
                 if (transfer.Vehicle != null && detail.Vehicle != null)
                 {

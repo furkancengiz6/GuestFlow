@@ -160,21 +160,53 @@ const PersonnelPage = () => {
 
   const hasActiveFilters = searchTerm || userType || startDate || endDate || sortBy
 
-  const getUserTypeLabel = (type: string) => {
-    switch (type.toLowerCase()) {
+  const getUserTypeLabel = (type: string | number) => {
+    if (type === undefined || type === null) return 'Bilinmiyor'
+    const typeStr = String(type).toLowerCase()
+    switch (typeStr) {
+      case '0':
+      case 'owner':
+        return 'Mülk Sahibi'
+      case '1':
+      case 'manager':
+        return 'Yönetici'
+      case '2':
       case 'admin':
         return 'Admin'
+      case '3':
+      case 'concierge':
+        return 'Concierge'
+      case '4':
+      case 'reception':
+        return 'Resepsiyon'
+      case '5':
       case 'staff':
         return 'Personel'
       default:
-        return type
+        return typeStr
     }
   }
 
-  const getUserTypeColor = (type: string) => {
-    switch (type.toLowerCase()) {
+  const getUserTypeColor = (type: string | number) => {
+    if (type === undefined || type === null) return 'default'
+    const typeStr = String(type).toLowerCase()
+    switch (typeStr) {
+      case '0':
+      case 'owner':
+        return 'secondary'
+      case '1':
+      case 'manager':
+        return 'warning'
+      case '2':
       case 'admin':
         return 'error'
+      case '3':
+      case 'concierge':
+        return 'info'
+      case '4':
+      case 'reception':
+        return 'success'
+      case '5':
       case 'staff':
         return 'primary'
       default:
@@ -292,18 +324,20 @@ const PersonnelPage = () => {
           <Collapse in={filtersOpen}>
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6} md={3}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Kullanıcı Tipi</InputLabel>
+                <FormControl size="small" sx={{ minWidth: 150 }}>
+                  <InputLabel id="role-filter-label">Rol Filtresi</InputLabel>
                   <Select
-                    value={userType}
-                    label="Kullanıcı Tipi"
-                    onChange={(e) => {
-                      setUserType(e.target.value)
-                      setPage(0)
-                    }}
+                    labelId="role-filter-label"
+                    value={userType || ''}
+                    label="Rol Filtresi"
+                    onChange={(e) => setUserType(e.target.value)}
                   >
-                    <MenuItem value="">Tümü</MenuItem>
+                    <MenuItem value="">Hepsi</MenuItem>
+                    <MenuItem value="Owner">Mülk Sahibi</MenuItem>
+                    <MenuItem value="Manager">Yönetici</MenuItem>
                     <MenuItem value="Admin">Admin</MenuItem>
+                    <MenuItem value="Concierge">Concierge</MenuItem>
+                    <MenuItem value="Reception">Resepsiyon</MenuItem>
                     <MenuItem value="Staff">Personel</MenuItem>
                   </Select>
                 </FormControl>

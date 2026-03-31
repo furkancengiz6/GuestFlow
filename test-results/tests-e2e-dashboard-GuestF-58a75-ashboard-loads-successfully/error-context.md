@@ -1,0 +1,11 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - progressbar [ref=e4]:
+    - img [ref=e5]
+  - generic [ref=e7]:
+    - img [ref=e9]
+    - button "Open Tanstack query devtools" [ref=e57] [cursor=pointer]:
+      - img [ref=e58]
+```

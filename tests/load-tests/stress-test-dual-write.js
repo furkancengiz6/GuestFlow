@@ -51,10 +51,10 @@ export const options = {
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:5000';
 
-// Test user credentials
+// Test user credentials - matching DatabaseSeeder defaults
 const TEST_USER = {
-    email: 'admin@guestflow.com',
-    password: 'Admin123!'
+    email: __ENV.TEST_USER || 'demo.admin.demo.admin@guestflow.local',
+    password: __ENV.TEST_PASSWORD || 'GuestFlow123!'
 };
 
 // Sample guest data pool for creating realistic check-ins
@@ -71,8 +71,8 @@ function generateGuest() {
     const lastName = randomElement(LAST_NAMES);
     return {
         fullName: `${firstName} ${lastName}`,
-        email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}${Math.floor(Math.random() * 1000)}@test.com`,
-        phoneNumber: `+90555${Math.floor(Math.random() * 10000000).toString().padStart(7, '0')}`,
+        email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}${Date.now()}${Math.floor(Math.random() * 100000)}@test.com`,
+        phoneNumber: `+90${Math.floor(Math.random() * 10000000000).toString().padStart(10, '0')}`,
         nationality: randomElement(NATIONALITIES),
         isVIP: Math.random() < 0.1, // 10% VIP guests
         roomNumber: `${Math.floor(Math.random() * 5) + 1}${(Math.floor(Math.random() * 10) + 1).toString().padStart(2, '0')}`,
@@ -95,10 +95,15 @@ export function setup() {
     });
 
     if (loginRes.status === 200) {
-        return { token: loginRes.json('data.accessToken') };
+        // API returns accessToken directly, not wrapped in data
+        const token = loginRes.json('accessToken');
+        if (!token) {
+            console.error(`Login success but token not found in body: ${loginRes.body}`);
+        }
+        return { token: token };
     }
 
-    console.error('Setup failed - login unsuccessful');
+    console.error(`Setup failed - login unsuccessful: ${loginRes.status} ${loginRes.body}`);
     return { token: null };
 }
 
@@ -127,7 +132,7 @@ export default function (data) {
 
         const success = check(createRes, {
             'guest created': (r) => r.status === 200 || r.status === 201,
-            'guest has ID': (r) => r.json('data.id') !== undefined,
+            'guest has ID': (r) => r.json('data') !== undefined && r.json('data') !== null,
             'response time acceptable': (r) => duration < 2000,
         });
 
@@ -135,7 +140,7 @@ export default function (data) {
             successfulCheckIns.add(1);
 
             // Step 2: Simulate additional graph operations (if guest created)
-            const guestId = createRes.json('data.id');
+            const guestId = createRes.json('data');
 
             // Get guest preferences (reads from graph)
             const prefRes = http.get(`${BASE_URL}/api/v1.0/Guests/${guestId}/preferences`, params);

@@ -173,7 +173,7 @@ export const transferService = {
     filters?: TransferFilters
   ): Promise<PagedTransfers> => {
     const params: any = { pageNumber, pageSize }
-    
+
     if (filters) {
       if (filters.startDate) params.startDate = filters.startDate
       if (filters.endDate) params.endDate = filters.endDate
@@ -186,10 +186,10 @@ export const transferService = {
       if (filters.sortBy) params.sortBy = filters.sortBy
       if (filters.sortOrder) params.sortOrder = filters.sortOrder
     }
-    
+
     const response = await apiClient.get('/Transfers', { params })
-    // Return the paged response object (contains { data: [...], totalCount })
-    return response.data
+    // Unwrap API envelope: response.data = { success, message, data: { data: [...], totalCount } }
+    return response.data.data
   },
 
   getTransferById: async (id: number): Promise<Transfer> => {

@@ -609,10 +609,10 @@ namespace GuestFlow.Application.Operations.Intelligence.Relationship
                 var context = new
                 {
                     GuestId = guestId,
-                    RecentInteractions = interactions.Select(i => new { i.StaffId, i.Staff?.FullName, i.SatisfactionScore, i.SentimentScore }),
+                    RecentInteractions = interactions.Select(i => new { i.StaffId, i.Staff?.FullName, i.Staff?.Department, i.SatisfactionScore, i.SentimentScore }),
                     GuestPreferences = preferences,
                     BehaviorPatterns = behaviorPatterns,
-                    AvailableStaff = availableStaff.Select(s => new { s.Id, s.FullName, s.UserType })
+                    AvailableStaff = availableStaff.Select(s => new { s.Id, s.FullName, s.UserType, s.Department })
                 };
 
                 var prompt = $@"Analyze guest preferences and staff profiles to find the best staff-guest matches.
@@ -677,6 +677,7 @@ namespace GuestFlow.Application.Operations.Intelligence.Relationship
                 {
                     StaffId = staffId,
                     StaffName = staff?.FullName,
+                    Department = staff?.Department,
                     RecentInteractions = interactions.Select(i => new { 
                         i.GuestId, 
                         i.Guest?.FullName, 

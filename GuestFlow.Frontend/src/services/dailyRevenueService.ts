@@ -46,7 +46,7 @@ export const dailyRevenueService = {
     filters?: DailyRevenueFilters
   ): Promise<PagedDailyRevenues> => {
     const params: any = { pageNumber, pageSize }
-    
+
     if (filters) {
       if (filters.startDate) params.startDate = filters.startDate
       if (filters.endDate) params.endDate = filters.endDate
@@ -54,9 +54,9 @@ export const dailyRevenueService = {
       if (filters.sortBy) params.sortBy = filters.sortBy
       if (filters.sortOrder) params.sortOrder = filters.sortOrder
     }
-    
+
     const response = await apiClient.get('/DailyRevenues', { params })
-    return response.data.data
+    return response.data.data || { data: [], totalCount: 0 }
   },
 
   getDailyRevenueById: async (id: number): Promise<DailyRevenue> => {

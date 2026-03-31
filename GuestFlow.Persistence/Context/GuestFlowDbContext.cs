@@ -10,6 +10,7 @@ using GuestFlow.Persistence.MultiTenancy;
 using System.Linq.Expressions;
 using System.Reflection;
 using GuestFlow.Domain.Events;
+using System.Text.Json;
 
 namespace GuestFlow.Persistence.Context
 {
@@ -23,8 +24,8 @@ namespace GuestFlow.Persistence.Context
             ITenantProvider tenantProvider,
             IDomainEventDispatcher dispatcher) : base(options)
         {
-            _tenantProvider = tenantProvider;
-            _dispatcher = dispatcher;
+            _tenantProvider = tenantProvider ?? throw new ArgumentNullException(nameof(tenantProvider));
+            _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         }
 
         public DbSet<AirportEntity> Airports => Set<AirportEntity>();
@@ -106,6 +107,11 @@ namespace GuestFlow.Persistence.Context
         public DbSet<SustainabilityAction> SustainabilityActions => Set<SustainabilityAction>();
         public DbSet<SustainabilityReward> SustainabilityRewards => Set<SustainabilityReward>();
 
+        // Housekeeping Management
+        public DbSet<RoomStatusEntity> RoomStatuses => Set<RoomStatusEntity>();
+        public DbSet<MaintenanceRequestEntity> MaintenanceRequests => Set<MaintenanceRequestEntity>();
+        public DbSet<LostAndFoundEntity> LostAndFoundItems => Set<LostAndFoundEntity>();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -115,7 +121,7 @@ namespace GuestFlow.Persistence.Context
             modelBuilder.Entity<JournalEntry>()
                 .HasIndex(e => e.InvoiceId)
                 .IsUnique()
-                .HasFilter("[InvoiceId] IS NOT NULL");
+                .HasFilter("InvoiceId IS NOT NULL");
 
             // Journal Entry and Line configurations
             modelBuilder.ApplyConfiguration(new JournalEntryConfiguration());
@@ -167,6 +173,11 @@ namespace GuestFlow.Persistence.Context
             // Sustainability
             modelBuilder.ApplyConfiguration(new SustainabilityActionConfiguration());
             modelBuilder.ApplyConfiguration(new SustainabilityRewardConfiguration());
+            
+            // Housekeeping Management
+            modelBuilder.ApplyConfiguration(new RoomStatusConfiguration());
+            modelBuilder.ApplyConfiguration(new MaintenanceRequestConfiguration());
+            modelBuilder.ApplyConfiguration(new LostAndFoundConfiguration());
             
             // Finance - Pricing Rules
             modelBuilder.ApplyConfiguration(new PricingRuleConfiguration());
@@ -223,12 +234,13 @@ namespace GuestFlow.Persistence.Context
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             // Set TenantId for new entities
+            var tenantId = _tenantProvider?.TenantId ?? 0;
             foreach (var entry in ChangeTracker.Entries<ITenantEntity>().Where(e => e.State == EntityState.Added))
             {
-                entry.Entity.TenantId = _tenantProvider.TenantId;
+                entry.Entity.TenantId = tenantId;
             }
 
-            // Dispatch domain events
+            // Capture domain events
             var entitiesWithEvents = ChangeTracker.Entries<BaseEntity>()
                 .Select(e => e.Entity)
                 .Where(e => e.DomainEvents.Any())
@@ -238,14 +250,23 @@ namespace GuestFlow.Persistence.Context
                 .SelectMany(e => e.DomainEvents)
                 .ToList();
 
-            if (domainEvents.Any())
+            // Convert domain events to outbox messages
+            foreach (var domainEvent in domainEvents)
             {
-                await _dispatcher.DispatchEventsAsync(domainEvents);
-                
-                foreach (var entity in entitiesWithEvents)
+                var outboxEvent = new OutboxEvent
                 {
-                    entity.ClearDomainEvents();
-                }
+                    Id = Guid.NewGuid(),
+                    EventType = domainEvent.GetType().Name,
+                    Content = JsonSerializer.Serialize(domainEvent),
+                    CreatedAtUtc = DateTime.UtcNow
+                };
+                OutboxEvents.Add(outboxEvent);
+            }
+
+            // Clear events from entities
+            foreach (var entity in entitiesWithEvents)
+            {
+                entity.ClearDomainEvents();
             }
 
             return await base.SaveChangesAsync(cancellationToken);
@@ -296,7 +317,7 @@ namespace GuestFlow.Persistence.Context
                 entity.Property(e => e.EntityType).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.EntityId).HasMaxLength(100);
                 entity.Property(e => e.ErrorMessage).HasMaxLength(2000);
-                entity.Property(e => e.SyncDetails).HasColumnType("nvarchar(max)");
+                entity.Property(e => e.SyncDetails).IsRequired(false);
                 entity.Property(e => e.SyncType).HasConversion<string>().HasMaxLength(20);
                 entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);
                 entity.HasOne(e => e.PMSIntegration)

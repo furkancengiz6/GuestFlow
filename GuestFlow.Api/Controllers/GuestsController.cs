@@ -67,7 +67,7 @@ namespace GuestFlow.Api.Controllers
         /// </code>
         /// </example>
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<GetGuestDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<int>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> AddGuest(AddGuestRequest request)

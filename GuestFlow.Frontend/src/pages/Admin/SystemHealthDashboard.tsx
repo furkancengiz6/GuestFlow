@@ -45,6 +45,28 @@ const SystemHealthDashboard: React.FC = () => {
         queryFn: systemService.getVulnerabilities
     });
 
+    // Helper component for subsystem display
+    const SubsystemCard = ({ title, status, items }: { title: string; status: 'Success' | 'Error'; items: any[] }) => (
+        <Card variant="outlined" sx={{ height: '100%' }}>
+            <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                    <Typography variant="subtitle1" fontWeight="bold">{title}</Typography>
+                    <Chip label={status} color={status === 'Success' ? 'success' : 'error'} size="small" />
+                </Box>
+                <List dense>
+                    {items.slice(0, 3).map((item, idx) => (
+                        <ListItem key={idx} sx={{ px: 0 }}>
+                            <ListItemIcon sx={{ minWidth: 28 }}>
+                                {item.success ? <CheckCircle color="success" sx={{ fontSize: 16 }} /> : <Error color="error" sx={{ fontSize: 16 }} />}
+                            </ListItemIcon>
+                            <ListItemText primary={item.name} secondary={item.status} />
+                        </ListItem>
+                    ))}
+                </List>
+            </CardContent>
+        </Card>
+    );
+
     const backupMutation = useMutation({
         mutationFn: systemService.createBackup,
         onSuccess: () => {
@@ -71,6 +93,32 @@ const SystemHealthDashboard: React.FC = () => {
                 </Box>
             </Box>
 
+            {/* Critical Subsystems */}
+            <Typography variant="h6" sx={{ mb: 2 }}>Core Subsystems</Typography>
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+                <Grid item xs={12} md={4}>
+                    <SubsystemCard
+                        title="Secrets & JWT"
+                        status={health?.secretsResult?.success ? 'Success' : 'Error'}
+                        items={health?.secretsResult?.items || []}
+                    />
+                </Grid>
+                <Grid item xs={12} md={4}>
+                    <SubsystemCard
+                        title="Database (SQL)"
+                        status={health?.databaseResult?.success ? 'Success' : 'Error'}
+                        items={health?.databaseResult?.items || []}
+                    />
+                </Grid>
+                <Grid item xs={12} md={4}>
+                    <SubsystemCard
+                        title="Logging & Monitoring"
+                        status={health?.loggingResult?.success ? 'Success' : 'Error'}
+                        items={health?.loggingResult?.items || []}
+                    />
+                </Grid>
+            </Grid>
+
             {/* Connectivity Overview */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
                 <Grid item xs={12} md={4}>
@@ -79,7 +127,7 @@ const SystemHealthDashboard: React.FC = () => {
                         subtitle="PMS, WhatsApp, Stripe"
                         icon={<CloudQueue color="primary" />}
                         success={health?.overallSuccess || false}
-                        items={health?.secretsResult.items || []}
+                        items={health?.secretsResult?.items || []}
                     />
                 </Grid>
                 <Grid item xs={12} md={4}>
@@ -87,8 +135,8 @@ const SystemHealthDashboard: React.FC = () => {
                         title="Database & Data"
                         subtitle="Persistence layer health"
                         icon={<Storage color="info" />}
-                        success={health?.databaseResult.success || false}
-                        items={health?.databaseResult.items || []}
+                        success={health?.databaseResult?.success || false}
+                        items={health?.databaseResult?.items || []}
                     />
                 </Grid>
                 <Grid item xs={12} md={4}>
@@ -96,8 +144,8 @@ const SystemHealthDashboard: React.FC = () => {
                         title="Security & Secrets"
                         subtitle="JWT, CORS, SSL"
                         icon={<Security color="secondary" />}
-                        success={health?.secretsResult.success || false}
-                        items={health?.secretsResult.items.filter(i => i.name.includes('JWT') || i.name.includes('CORS')) || []}
+                        success={health?.secretsResult?.success || false}
+                        items={health?.secretsResult?.items?.filter(i => i.name.includes('JWT') || i.name.includes('CORS')) || []}
                     />
                 </Grid>
             </Grid>
@@ -117,8 +165,8 @@ const SystemHealthDashboard: React.FC = () => {
                                 Found {vulnerabilities?.highSeverityCount} high and {vulnerabilities?.mediumSeverityCount} medium vulnerabilities.
                             </Alert>
                             <List dense>
-                                {vulnerabilities?.vulnerabilities.map((v, i) => (
-                                    <ListItem key={i} divider={i !== vulnerabilities.vulnerabilities.length - 1}>
+                                {(vulnerabilities?.vulnerabilities || []).map((v, i) => (
+                                    <ListItem key={i} divider={i !== (vulnerabilities?.vulnerabilities?.length || 0) - 1}>
                                         <ListItemText
                                             primary={`${v.packageName} @ ${v.currentVersion}`}
                                             secondary={`${v.vulnerability} - Severity: ${v.severity}`}

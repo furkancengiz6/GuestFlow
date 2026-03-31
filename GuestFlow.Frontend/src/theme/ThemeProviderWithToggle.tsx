@@ -7,18 +7,18 @@ const lightTheme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#1976d2',
-      light: '#42a5f5',
-      dark: '#1565c0',
+      main: '#5754E8',
+      light: '#7F7DED',
+      dark: '#403DBE',
     },
     secondary: {
-      main: '#dc004e',
-      light: '#e33371',
-      dark: '#9a0036',
+      main: '#FF6B6B',
+      light: '#FF8E8E',
+      dark: '#E64A19',
     },
   },
   shape: {
-    borderRadius: 8,
+    borderRadius: 12,
   },
 })
 

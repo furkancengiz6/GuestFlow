@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import {
   Box,
-  Paper,
   Table,
   TableBody,
   TableCell,
@@ -29,6 +28,8 @@ import {
   Collapse,
   FormControlLabel,
   Switch,
+  Card,
+  CardContent,
 } from '@mui/material'
 import {
   Add as AddIcon,
@@ -56,7 +57,7 @@ const RestaurantsPage = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [restaurantToDelete, setRestaurantToDelete] = useState<Restaurant | null>(null)
   const [filtersOpen, setFiltersOpen] = useState(false)
-  
+
   // Filter states
   const [searchTerm, setSearchTerm] = useState('')
   const [cityId, setCityId] = useState<number | ''>('')
@@ -194,15 +195,15 @@ const RestaurantsPage = () => {
   }
 
   return (
-    <Box>
+    <Box className="fade-in" p={3}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4">Restoranlar</Typography>
+        <Typography variant="h4" component="h1" className="premium-gradient-text" sx={{ fontWeight: 800 }}>Restoran Listesi</Typography>
         <Box>
           <Button
             variant="outlined"
             startIcon={<FilterListIcon />}
             onClick={() => setFiltersOpen(!filtersOpen)}
-            sx={{ mr: 1 }}
+            sx={{ mr: 1, borderRadius: 2 }}
           >
             Filtreler
             {filtersOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
@@ -211,6 +212,8 @@ const RestaurantsPage = () => {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => handleOpenForm()}
+            className="premium-gradient"
+            sx={{ borderRadius: 2, boxShadow: '0 4px 14px 0 rgba(0,118,255,0.39)' }}
           >
             Yeni Restoran
           </Button>
@@ -219,7 +222,7 @@ const RestaurantsPage = () => {
 
       {/* Filters */}
       <Collapse in={filtersOpen}>
-        <Paper sx={{ p: 2, mb: 2 }}>
+        <Card className="glass-panel" sx={{ p: 2, mb: 2 }}>
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} md={3}>
               <TextField
@@ -294,87 +297,89 @@ const RestaurantsPage = () => {
               </Button>
             </Grid>
           </Grid>
-        </Paper>
+        </Card>
       </Collapse>
 
       {/* Table */}
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Restoran Adı</TableCell>
-              <TableCell>Şehir</TableCell>
-              <TableCell>Adres</TableCell>
-              <TableCell>Mutfak Tipi</TableCell>
-              <TableCell>Kapasite</TableCell>
-              <TableCell>Rezervasyon</TableCell>
-              <TableCell>Telefon</TableCell>
-              <TableCell>Oluşturulma</TableCell>
-              <TableCell align="right">İşlemler</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {data?.data.length === 0 ? (
+      <Card className="glass-panel">
+        <TableContainer>
+          <Table>
+            <TableHead sx={{ bgcolor: 'rgba(0,0,0,0.02)' }}>
               <TableRow>
-                <TableCell colSpan={9} align="center">
-                  <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
-                    Restoran bulunamadı
-                  </Typography>
-                </TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Restoran Adı</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Şehir</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Adres</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Mutfak Tipi</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Kapasite</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Rezervasyon</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Telefon</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Oluşturulma</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700 }}>İşlemler</TableCell>
               </TableRow>
-            ) : (
-              data?.data.map((restaurant) => (
-                <TableRow key={restaurant.id} hover>
-                  <TableCell>{restaurant.restaurantName}</TableCell>
-                  <TableCell>{restaurant.cityName || '-'}</TableCell>
-                  <TableCell>{restaurant.address}</TableCell>
-                  <TableCell>{restaurant.cuisineType || '-'}</TableCell>
-                  <TableCell>{restaurant.capacity}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={restaurant.reservationRequired ? 'Gerekli' : 'Gerekli Değil'}
-                      size="small"
-                      color={restaurant.reservationRequired ? 'primary' : 'default'}
-                    />
-                  </TableCell>
-                  <TableCell>{restaurant.phone || '-'}</TableCell>
-                  <TableCell>{formatDate(restaurant.createdDate)}</TableCell>
-                  <TableCell align="right">
-                    <Tooltip title="Düzenle">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleOpenForm(restaurant)}
-                        color="primary"
-                      >
-                        <EditIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Sil">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleDeleteClick(restaurant)}
-                        color="error"
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Tooltip>
+            </TableHead>
+            <TableBody>
+              {data?.data.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={9} align="center">
+                    <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
+                      Restoran bulunamadı
+                    </Typography>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-        <TablePagination
-          component="div"
-          count={data?.totalCount || 0}
-          page={page}
-          onPageChange={handleChangePage}
-          rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-          rowsPerPageOptions={[5, 10, 25, 50]}
-          labelRowsPerPage="Sayfa başına:"
-        />
-      </TableContainer>
+              ) : (
+                data?.data.map((restaurant) => (
+                  <TableRow key={restaurant.id} hover>
+                    <TableCell>{restaurant.restaurantName}</TableCell>
+                    <TableCell>{restaurant.cityName || '-'}</TableCell>
+                    <TableCell>{restaurant.address}</TableCell>
+                    <TableCell>{restaurant.cuisineType || '-'}</TableCell>
+                    <TableCell>{restaurant.capacity}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={restaurant.reservationRequired ? 'Gerekli' : 'Gerekli Değil'}
+                        size="small"
+                        color={restaurant.reservationRequired ? 'primary' : 'default'}
+                      />
+                    </TableCell>
+                    <TableCell>{restaurant.phone || '-'}</TableCell>
+                    <TableCell>{formatDate(restaurant.createdDate)}</TableCell>
+                    <TableCell align="right">
+                      <Tooltip title="Düzenle">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleOpenForm(restaurant)}
+                          color="primary"
+                        >
+                          <EditIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Sil">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleDeleteClick(restaurant)}
+                          color="error"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+          <TablePagination
+            component="div"
+            count={data?.totalCount || 0}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[5, 10, 25, 50]}
+            labelRowsPerPage="Sayfa başına:"
+          />
+        </TableContainer>
+      </Card>
 
       {/* Form Dialog */}
       <RestaurantForm

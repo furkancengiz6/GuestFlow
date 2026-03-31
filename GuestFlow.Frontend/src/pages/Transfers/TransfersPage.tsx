@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { useLiveUpdates } from '../../hooks/useLiveUpdates'
 import {
   Box,
-  Paper,
   Table,
   TableBody,
   TableCell,
@@ -33,6 +32,8 @@ import {
   Switch,
   FormControlLabel,
   LinearProgress,
+  Card,
+  CardContent,
 } from '@mui/material'
 import {
   Add as AddIcon,
@@ -99,7 +100,7 @@ const TransfersPage = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [transferToDelete, setTransferToDelete] = useState<Transfer | null>(null)
   const [filtersOpen, setFiltersOpen] = useState(false)
-  
+
   // Filter states
   const [searchTerm, setSearchTerm] = useState('')
   const [startDate, setStartDate] = useState<Date | null>(null)
@@ -182,7 +183,7 @@ const TransfersPage = () => {
       queryClient.invalidateQueries({ queryKey: ['transfers'] })
       setFormOpen(false)
       notification.showSuccess('Transfer başarıyla eklendi.')
-      
+
       // Otomatik fatura indirme
       if (response.invoicePdfUrl) {
         try {
@@ -391,12 +392,11 @@ const TransfersPage = () => {
   }
 
   const hasData = data && data.data && data.data.length > 0
-
   return (
-    <Box p={3}>
+    <Box className="fade-in" p={3}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" sx={{ fontWeight: 600 }}>
-          Transferler
+        <Typography variant="h4" component="h1" className="premium-gradient-text" sx={{ fontWeight: 800 }}>
+          Transfer Yönetimi
         </Typography>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Button
@@ -451,6 +451,8 @@ const TransfersPage = () => {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => handleOpenForm()}
+            className="premium-gradient"
+            sx={{ borderRadius: 2, boxShadow: '0 4px 14px 0 rgba(0,118,255,0.39)' }}
           >
             Yeni Transfer
           </Button>
@@ -459,7 +461,7 @@ const TransfersPage = () => {
 
       {/* Search and Filter Section */}
       <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={tr}>
-        <Paper sx={{ p: 2, mb: 3 }}>
+        <Card className="glass-panel" sx={{ p: 2, mb: 3 }}>
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 2 }}>
             <TextField
               placeholder="Ara (adres, not)..."
@@ -812,7 +814,7 @@ const TransfersPage = () => {
               </Grid>
             </Grid>
           </Collapse>
-        </Paper>
+        </Card>
       </LocalizationProvider>
 
       {!hasData ? (
@@ -822,167 +824,169 @@ const TransfersPage = () => {
           description="Henüz kayıtlı transfer bulunmamaktadır."
         />
       ) : (
-        <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell padding="checkbox">
-                <Checkbox
-                  indeterminate={selectedTransfers.length > 0 && selectedTransfers.length < (data?.data?.length || 0)}
-                  checked={selectedTransfers.length === (data?.data?.length || 0) && selectedTransfers.length > 0}
-                  onChange={(e) => handleSelectAll(e.target.checked)}
-                />
-              </TableCell>
-              <TableCell><strong>Öncelik</strong></TableCell>
-              <TableCell><strong>Tarih/Saat</strong></TableCell>
-              <TableCell><strong>Misafir</strong></TableCell>
-              <TableCell><strong>Rota</strong></TableCell>
-              <TableCell><strong>Grup</strong></TableCell>
-              <TableCell><strong>Şoför</strong></TableCell>
-              <TableCell><strong>Durum</strong></TableCell>
-              <TableCell><strong>İşlemler</strong></TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {data?.data.map((transfer) => (
-              <TableRow key={transfer.id} hover>
-                <TableCell padding="checkbox">
-                  <Checkbox
-                    checked={selectedTransfers.includes(transfer.id)}
-                    onChange={(e) => handleSelectTransfer(transfer.id, e.target.checked)}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label="ACİL"
-                    color="error"
-                    size="small"
-                    sx={{ fontWeight: 'bold' }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Button
-                    variant="text"
-                    onClick={() => navigate(`/transfers/${transfer.id}`)}
-                    sx={{ textTransform: 'none', fontWeight: 500, display: 'block' }}
-                  >
-                    {formatDate(transfer.transferDate)}
-                    <Typography variant="caption" color="text.secondary" display="block">
-                      {transfer.pickupTime || 'Saat belirtilmemiş'}
-                    </Typography>
-                  </Button>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" fontWeight="medium">
-                    {transfer.guest?.fullName || 'Misafir'}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {transfer.guest?.guestCode}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2">
-                    {transfer.pickupAddress?.substring(0, 20)}...
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    → {transfer.dropoffAddress?.substring(0, 15)}...
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" fontWeight="medium">
-                    {(transfer as any).groupSize || 1} kişi
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {(transfer as any).childCount || 0} çocuk
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2">
-                    {(transfer as any).driverName || 'Atanmamış'}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {transfer.vehicleId ? `Araç #${transfer.vehicleId}` : 'Araç yok'}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={getStatusLabel(transfer.status || 'pending')}
-                    color={getStatusColor(transfer.status || 'pending') as any}
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Tooltip title="Detay">
-                      <IconButton
-                        size="small"
-                        color="primary"
-                        onClick={() => navigate(`/transfers/${transfer.id}`)}
-                      >
-                        <VisibilityIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Düzenle">
-                      <IconButton
-                        size="small"
-                        color="primary"
-                        onClick={() => handleOpenForm(transfer)}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Sil">
-                      <IconButton
-                        size="small"
+        <Card className="glass-panel">
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      indeterminate={selectedTransfers.length > 0 && selectedTransfers.length < (data?.data?.length || 0)}
+                      checked={selectedTransfers.length === (data?.data?.length || 0) && selectedTransfers.length > 0}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                    />
+                  </TableCell>
+                  <TableCell><strong>Öncelik</strong></TableCell>
+                  <TableCell><strong>Tarih/Saat</strong></TableCell>
+                  <TableCell><strong>Misafir</strong></TableCell>
+                  <TableCell><strong>Rota</strong></TableCell>
+                  <TableCell><strong>Grup</strong></TableCell>
+                  <TableCell><strong>Şoför</strong></TableCell>
+                  <TableCell><strong>Durum</strong></TableCell>
+                  <TableCell><strong>İşlemler</strong></TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {data?.data.map((transfer) => (
+                  <TableRow key={transfer.id} hover>
+                    <TableCell padding="checkbox">
+                      <Checkbox
+                        checked={selectedTransfers.includes(transfer.id)}
+                        onChange={(e) => handleSelectTransfer(transfer.id, e.target.checked)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label="ACİL"
                         color="error"
-                        onClick={() => handleDeleteClick(transfer)}
+                        size="small"
+                        sx={{ fontWeight: 'bold' }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="text"
+                        onClick={() => navigate(`/transfers/${transfer.id}`)}
+                        sx={{ textTransform: 'none', fontWeight: 500, display: 'block' }}
                       >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </Box>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        {isLoading && (
-          <Box sx={{ width: '100%', mt: 2 }}>
-            <LinearProgress />
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1, textAlign: 'center' }}>
-              Transferler yükleniyor...
-            </Typography>
-          </Box>
-        )}
+                        {formatDate(transfer.transferDate)}
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          {transfer.pickupTime || 'Saat belirtilmemiş'}
+                        </Typography>
+                      </Button>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" fontWeight="medium">
+                        {transfer.guest?.fullName || 'Misafir'}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {transfer.guest?.guestCode}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">
+                        {transfer.pickupAddress?.substring(0, 20)}...
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        → {transfer.dropoffAddress?.substring(0, 15)}...
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" fontWeight="medium">
+                        {(transfer as any).groupSize || 1} kişi
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {(transfer as any).childCount || 0} çocuk
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">
+                        {(transfer as any).driverName || 'Atanmamış'}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {transfer.vehicleId ? `Araç #${transfer.vehicleId}` : 'Araç yok'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={getStatusLabel(transfer.status || 'pending')}
+                        color={getStatusColor(transfer.status || 'pending') as any}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Tooltip title="Detay">
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => navigate(`/transfers/${transfer.id}`)}
+                          >
+                            <VisibilityIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Düzenle">
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => handleOpenForm(transfer)}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Sil">
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => handleDeleteClick(transfer)}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            {isLoading && (
+              <Box sx={{ width: '100%', mt: 2 }}>
+                <LinearProgress />
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1, textAlign: 'center' }}>
+                  Transferler yükleniyor...
+                </Typography>
+              </Box>
+            )}
 
-        <TablePagination
-          component="div"
-          count={data?.totalCount || 0}
-          page={page}
-          onPageChange={handleChangePage}
-          rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-          rowsPerPageOptions={[10, 25, 50, 100]}
-          labelRowsPerPage="Sayfa başına:"
-          labelDisplayedRows={({ from, to, count }) => {
-            if (count === 0) return '0 kayıt';
-            if (count === -1) return `${from}-${to} kayıt (toplam bilinmiyor)`;
-            return `${from}-${to} / ${count.toLocaleString()} kayıt`;
-          }}
-          showFirstButton
-          showLastButton
-        />
+            <TablePagination
+              component="div"
+              count={data?.totalCount || 0}
+              page={page}
+              onPageChange={handleChangePage}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              rowsPerPageOptions={[10, 25, 50, 100]}
+              labelRowsPerPage="Sayfa başına:"
+              labelDisplayedRows={({ from, to, count }) => {
+                if (count === 0) return '0 kayıt';
+                if (count === -1) return `${from}-${to} kayıt (toplam bilinmiyor)`;
+                return `${from}-${to} / ${count.toLocaleString()} kayıt`;
+              }}
+              showFirstButton
+              showLastButton
+            />
 
-        {/* Performance info for large datasets */}
-        {data && data.totalCount > 1000 && (
-          <Box sx={{ mt: 2, p: 2, bgcolor: 'info.main', color: 'info.contrastText', borderRadius: 1 }}>
-            <Typography variant="body2">
-              💡 {data.totalCount.toLocaleString()} kayıt arasından {((page + 1) * rowsPerPage).toLocaleString()} kayıt gösteriliyor.
-              Daha hızlı erişim için filtreleri kullanın.
-            </Typography>
-          </Box>
-        )}
-        </TableContainer>
+            {/* Performance info for large datasets */}
+            {data && data.totalCount > 1000 && (
+              <Box sx={{ mt: 2, p: 2, bgcolor: 'info.main', color: 'info.contrastText', borderRadius: 1 }}>
+                <Typography variant="body2">
+                  💡 {data.totalCount.toLocaleString()} kayıt arasından {((page + 1) * rowsPerPage).toLocaleString()} kayıt gösteriliyor.
+                  Daha hızlı erişim için filtreleri kullanın.
+                </Typography>
+              </Box>
+            )}
+          </TableContainer>
+        </Card>
       )}
 
       <TransferForm

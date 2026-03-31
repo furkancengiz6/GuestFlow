@@ -11,6 +11,7 @@ namespace GuestFlow.Domain.Entities.Core
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
         public UserType UserType { get; set; }
+        public string? Department { get; set; }
 
         // Two-Factor Authentication (2FA) - Required for Admin/Owner
         public bool TwoFactorEnabled { get; set; } = false;
@@ -34,6 +35,7 @@ namespace GuestFlow.Domain.Entities.Core
             builder.Property(p => p.FullName).HasMaxLength(200);
             builder.Property(p => p.Email).HasMaxLength(255);
             builder.Property(p => p.Password).HasMaxLength(256); // Şifrelenmiş hali için 
+            builder.Property(p => p.Department).HasMaxLength(100);
             builder.Property(p => p.TwoFactorSecret).HasMaxLength(100);
             builder.Property(p => p.TwoFactorRecoveryCodes).HasMaxLength(2000); // Encrypted recovery codes
             builder.HasIndex(p => p.Email).IsUnique();

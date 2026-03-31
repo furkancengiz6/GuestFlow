@@ -87,8 +87,10 @@ const CurrencyPage = () => {
     }
   }
 
-  const filteredCurrencies = supportedCurrencies?.filter(
-    (currency) =>
+  const currencies = Array.isArray(supportedCurrencies) ? supportedCurrencies : (supportedCurrencies as any)?.data || []
+
+  const filteredCurrencies = currencies.filter(
+    (currency: Currency) =>
       currency.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
       currency.name.toLowerCase().includes(searchTerm.toLowerCase())
   )
@@ -127,15 +129,17 @@ const CurrencyPage = () => {
               <Typography variant="h6" gutterBottom>
                 Para Birimi Ayarları
               </Typography>
-              {currencySettings && (
+              {currencySettings ? (
                 <Box sx={{ mt: 2 }}>
                   <Typography variant="body2" color="text.secondary">
-                    Varsayılan: {currencySettings.defaultCurrency}
+                    Varsayılan: {currencySettings.defaultCurrency || 'Belirlenmedi'}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                    Desteklenen: {currencySettings.supportedCurrencies.length} para birimi
+                    Desteklenen: {currencySettings.supportedCurrencies?.length || 0} para birimi
                   </Typography>
                 </Box>
+              ) : (
+                <Typography variant="body2" color="text.secondary">Ayarlar yüklenemedi.</Typography>
               )}
             </CardContent>
           </Card>

@@ -2,7 +2,7 @@ import * as signalR from '@microsoft/signalr'
 import { useAuthStore } from '../stores/authStore'
 import { env } from '../config/env'
 
-const API_BASE_URL = env.apiBaseUrl.replace('/api/v1.0', '') || 'http://localhost:5146'
+const API_BASE_URL = env.apiBaseUrl.replace(/\/api\/v\d+(\.\d+)?$/, '') || 'http://localhost:5146'
 const HUB_URL = `${API_BASE_URL}${env.signalRUrl}`
 
 class SignalRService {
@@ -21,8 +21,8 @@ class SignalRService {
     }
 
     // If connecting or reconnecting, wait for it to complete
-    if (this.connection?.state === signalR.HubConnectionState.Connecting || 
-        this.connection?.state === signalR.HubConnectionState.Reconnecting) {
+    if (this.connection?.state === signalR.HubConnectionState.Connecting ||
+      this.connection?.state === signalR.HubConnectionState.Reconnecting) {
       return
     }
 

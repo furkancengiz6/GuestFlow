@@ -18,7 +18,7 @@ export const notificationRuleService = {
       success: boolean
       data: NotificationRule[]
       message?: string
-    }>('/api/v1.0/NotificationRules', { params })
+    }>('/NotificationRules', { params })
     return response.data.data
   },
 
@@ -30,7 +30,7 @@ export const notificationRuleService = {
       success: boolean
       data: NotificationRule
       message?: string
-    }>(`/api/v1.0/NotificationRules/${id}`)
+    }>(`/NotificationRules/${id}`)
     return response.data.data
   },
 
@@ -44,7 +44,7 @@ export const notificationRuleService = {
       success: boolean
       data: NotificationRule
       message?: string
-    }>('/api/v1.0/NotificationRules', rule)
+    }>('/NotificationRules', rule)
     return response.data.data
   },
 
@@ -59,7 +59,7 @@ export const notificationRuleService = {
       success: boolean
       data: NotificationRule
       message?: string
-    }>(`/api/v1.0/NotificationRules/${id}`, rule)
+    }>(`/NotificationRules/${id}`, rule)
     return response.data.data
   },
 
@@ -71,7 +71,7 @@ export const notificationRuleService = {
       success: boolean
       data: boolean
       message?: string
-    }>(`/api/v1.0/NotificationRules/${id}`)
+    }>(`/NotificationRules/${id}`)
     return response.data.data
   },
 
@@ -83,7 +83,7 @@ export const notificationRuleService = {
       success: boolean
       data: boolean
       message?: string
-    }>(`/api/v1.0/NotificationRules/${id}/toggle`, null, {
+    }>(`/NotificationRules/${id}/toggle`, null, {
       params: { isActive },
     })
     return response.data.data
@@ -97,7 +97,7 @@ export const notificationRuleService = {
       success: boolean
       data: RuleExecutionResult
       message?: string
-    }>(`/api/v1.0/NotificationRules/${id}/execute`)
+    }>(`/NotificationRules/${id}/execute`)
     return response.data.data
   },
 }

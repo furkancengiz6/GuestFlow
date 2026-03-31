@@ -61,7 +61,7 @@ export const reportsService = {
     if (filters?.personnelId) params.personnelId = filters.personnelId
 
     const response = await apiClient.get<{ success: boolean; data: RevenueSummary }>(
-      '/api/v1.0/Reports/revenue-summary',
+      '/Reports/revenue-summary',
       { params }
     )
     return response.data.data
@@ -77,7 +77,7 @@ export const reportsService = {
     if (filters?.personnelId) params.personnelId = filters.personnelId
 
     const response = await apiClient.get<{ success: boolean; data: TransferStatistics }>(
-      '/api/v1.0/Reports/transfer-statistics',
+      '/Reports/transfer-statistics',
       { params }
     )
     return response.data.data
@@ -94,7 +94,7 @@ export const reportsService = {
     if (filters?.personnelId) params.personnelId = filters.personnelId
 
     const response = await apiClient.get<{ success: boolean; data: PersonnelPerformance[] }>(
-      '/api/v1.0/Reports/personnel-performance',
+      '/Reports/personnel-performance',
       { params }
     )
     return response.data.data
@@ -105,7 +105,7 @@ export const reportsService = {
    */
   getDashboardAIInsights: async (): Promise<string> => {
     const response = await apiClient.get<{ success: boolean; data: { insight: string } }>(
-      '/api/v1.0/Reports/dashboard-ai-insights'
+      '/Reports/dashboard-ai-insights'
     )
     return response.data.data.insight
   },
@@ -119,7 +119,7 @@ export const reportsService = {
     if (filters?.endDate) params.endDate = filters.endDate
 
     const response = await apiClient.get<{ success: boolean; data: { insight: string } }>(
-      '/api/v1.0/Reports/revenue-ai-insights',
+      '/Reports/revenue-ai-insights',
       { params }
     )
     return response.data.data.insight

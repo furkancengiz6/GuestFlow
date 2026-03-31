@@ -8,7 +8,7 @@ namespace GuestFlow.Application.Operations.Guest
 {
     public interface IGuestService
     {
-        Task<ServiceMessage> AddGuest(AddGuestDto guest);
+        Task<ServiceMessage<int>> AddGuest(AddGuestDto guest);
         Task<ServiceMessage> UpdateGuest(UpdateGuestDto guest);
         Task<ServiceMessage> DeleteGuest(int id);
         Task<GetGuestDto> GetGuestById(int id);

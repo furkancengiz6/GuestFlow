@@ -25,6 +25,9 @@ import {
   Star as VIPIcon,
   Visibility as ViewIcon,
   Sync as SyncIcon,
+  NotificationAdd as NotificationIcon,
+  Send as SendIcon,
+  Speed as QuickActionIcon,
 } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
 import { formatDate, formatTime } from '../../utils/formatters'
@@ -522,6 +525,51 @@ const ConciergeDashboard = () => {
                   description="Bugün ve yarın için planlanmış servis bulunmamaktadır."
                 />
               )}
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* Quick Actions Panel */}
+      <Grid container spacing={3} sx={{ mt: 1 }}>
+        <Grid item xs={12}>
+          <Card variant="outlined" sx={{ border: '1px dashed', borderColor: 'primary.main' }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <QuickActionIcon color="primary" sx={{ mr: 1 }} />
+                <Typography variant="h6">Hızlı İşlemler ve Bildirimler</Typography>
+              </Box>
+              <Grid container spacing={2}>
+                {[
+                  { label: 'Pre-Arrival Gönder', type: 'pre-arrival' },
+                  { label: 'Arrival Hoşgeldin', type: 'arrival' },
+                  { label: 'Stay-During Kontrol', type: 'during-stay' },
+                  { label: 'Pre-Departure Bilgi', type: 'pre-departure' },
+                  { label: 'Özel Gün Tebriği', type: 'special-occasions' },
+                ].map((action) => (
+                  <Grid item key={action.type}>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<NotificationIcon />}
+                      onClick={() => conciergeDashboardService.sendNotifications(action.type)}
+                    >
+                      {action.label}
+                    </Button>
+                  </Grid>
+                ))}
+                <Grid item>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    color="primary"
+                    startIcon={<SendIcon />}
+                    onClick={() => navigate('/whatsapp')}
+                  >
+                    Özel Mesaj Gönder
+                  </Button>
+                </Grid>
+              </Grid>
             </CardContent>
           </Card>
         </Grid>

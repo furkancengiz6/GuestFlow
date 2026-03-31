@@ -17,7 +17,9 @@ import {
   Skeleton,
   ToggleButton,
   ToggleButtonGroup,
+  Button,
 } from '@mui/material'
+import { useNavigate } from 'react-router-dom'
 import {
   People as PeopleIcon,
   DirectionsCar as TransferIcon,
@@ -58,6 +60,7 @@ import RevenueKpiCards from '../../components/Revenue/RevenueKpiCards'
 
 const DashboardPage = () => {
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const [dashboardMode, setDashboardMode] = useState<'admin' | 'operations'>('operations')
   const [revenuePeriod, setRevenuePeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily')
   const [revenueDays, setRevenueDays] = useState<number>(30)
@@ -97,7 +100,7 @@ const DashboardPage = () => {
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1">
+        <Typography variant="h4" component="h1" className="premium-gradient-text" sx={{ fontWeight: 800 }}>
           Dashboard
         </Typography>
         <ToggleButtonGroup
@@ -105,6 +108,22 @@ const DashboardPage = () => {
           exclusive
           onChange={(_, value) => value && setDashboardMode(value)}
           aria-label="dashboard mode"
+          size="small"
+          sx={{
+            bgcolor: 'background.paper',
+            borderRadius: 2,
+            p: 0.5,
+            '& .MuiToggleButton-root': {
+              border: 'none',
+              borderRadius: 1.5,
+              px: 3,
+              '&.Mui-selected': {
+                bgcolor: 'primary.main',
+                color: 'white',
+                '&:hover': { bgcolor: 'primary.dark' },
+              }
+            }
+          }}
         >
           <ToggleButton value="operations" aria-label="operations dashboard">
             Operasyon
@@ -147,7 +166,7 @@ const DashboardPage = () => {
           {/* İstatistik Kartları */}
           <Grid container spacing={3} sx={{ mb: 3 }}>
             <Grid item xs={12} sm={6} md={3}>
-              <Card>
+              <Card className="glass-panel" sx={{ transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-4px)' } }}>
                 <CardContent>
                   {isLoadingStats ? (
                     <Skeleton variant="rectangular" height={80} />
@@ -171,7 +190,7 @@ const DashboardPage = () => {
             </Grid>
 
             <Grid item xs={12} sm={6} md={3}>
-              <Card>
+              <Card className="glass-panel" sx={{ transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-4px)' } }}>
                 <CardContent>
                   {isLoadingStats ? (
                     <Skeleton variant="rectangular" height={80} />
@@ -195,7 +214,7 @@ const DashboardPage = () => {
             </Grid>
 
             <Grid item xs={12} sm={6} md={3}>
-              <Card>
+              <Card className="glass-panel" sx={{ transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-4px)' } }}>
                 <CardContent>
                   {isLoadingStats ? (
                     <Skeleton variant="rectangular" height={80} />
@@ -248,7 +267,7 @@ const DashboardPage = () => {
           {/* Gelir Grafiği ve Son Aktiviteler */}
           <Grid container spacing={3} sx={{ mb: 3 }}>
             <Grid item xs={12} md={8}>
-              <Card>
+              <Card className="glass-panel">
                 <CardContent>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                     <Typography variant="h6">
@@ -336,26 +355,47 @@ const DashboardPage = () => {
                             <TableCell>Oda</TableCell>
                             <TableCell>Şehir</TableCell>
                             <TableCell align="right">Tutar</TableCell>
+                            <TableCell>Gecikme</TableCell>
                             <TableCell>Durum</TableCell>
+                            <TableCell align="right">İşlem</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
                           {unpaidServices.items.map((item) => (
-                            <TableRow key={`${item.serviceType}-${item.serviceId}`}>
+                            <TableRow key={`${item.serviceType}-${item.serviceId}`} hover>
                               <TableCell>{item.serviceType}</TableCell>
                               <TableCell>{formatDate(item.serviceDate)}</TableCell>
-                              <TableCell>{item.guestName}</TableCell>
+                              <TableCell>
+                                <Typography variant="body2" sx={{ fontWeight: 600 }}>{item.guestName}</Typography>
+                              </TableCell>
                               <TableCell>{item.roomNumber || '-'}</TableCell>
                               <TableCell>{item.cityName || '-'}</TableCell>
-                              <TableCell align="right">
+                              <TableCell align="right" sx={{ fontWeight: 600, color: 'error.main' }}>
                                 {formatCurrency(item.amount, item.currency)}
+                              </TableCell>
+                              <TableCell>
+                                <Chip
+                                  label={`${item.daysOverdue} gün`}
+                                  color={item.daysOverdue > 7 ? "error" : "warning"}
+                                  size="small"
+                                  variant="outlined"
+                                />
                               </TableCell>
                               <TableCell>
                                 {item.status ? (
                                   <Chip label={item.status} size="small" />
                                 ) : (
-                                  <Chip label="Ödenmedi" color="warning" size="small" />
+                                  <Chip label="Ödenmedi" color="error" size="small" variant="outlined" />
                                 )}
+                              </TableCell>
+                              <TableCell align="right">
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  onClick={() => navigate(`/finance/payments?serviceId=${item.serviceId}`)}
+                                >
+                                  Öde
+                                </Button>
                               </TableCell>
                             </TableRow>
                           ))}
@@ -377,7 +417,7 @@ const DashboardPage = () => {
           {/* Yaklaşan Hizmetler */}
           <Grid container spacing={3} sx={{ mb: 3 }}>
             <Grid item xs={12}>
-              <Card>
+              <Card className="glass-panel">
                 <CardContent>
                   <Typography variant="h6" sx={{ mb: 2 }}>
                     Yaklaşan Hizmetler
@@ -435,7 +475,7 @@ const DashboardPage = () => {
           <Grid container spacing={3} sx={{ mb: 3 }}>
             {/* Hizmet Dağılımı (Pie Chart) */}
             <Grid item xs={12} md={6}>
-              <Card>
+              <Card className="glass-panel">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
                     Hizmet Dağılımı
@@ -484,7 +524,7 @@ const DashboardPage = () => {
 
             {/* Hizmet Karşılaştırması (Bar Chart) */}
             <Grid item xs={12} md={6}>
-              <Card>
+              <Card className="glass-panel">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
                     Hizmet Karşılaştırması
@@ -524,7 +564,7 @@ const DashboardPage = () => {
           {/* Yaklaşan Rezervasyonlar */}
           <Grid container spacing={3}>
             <Grid item xs={12}>
-              <Card>
+              <Card className="glass-panel">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
                     Yaklaşan Rezervasyonlar

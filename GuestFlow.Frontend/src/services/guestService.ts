@@ -39,7 +39,7 @@ export const guestService = {
     filters?: GuestFilters
   ): Promise<PagedGuests> => {
     const params: any = { pageNumber, pageSize }
-    
+
     if (filters) {
       if (filters.searchTerm) params.searchTerm = filters.searchTerm
       if (filters.nationality) params.nationality = filters.nationality
@@ -49,10 +49,10 @@ export const guestService = {
       if (filters.sortBy) params.sortBy = filters.sortBy
       if (filters.sortOrder) params.sortOrder = filters.sortOrder
     }
-    
+
     const response = await apiClient.get('/Guests', { params })
-    // Return the paged response object (contains { data: [...], totalCount })
-    return response.data
+    // Unwrap API envelope: response.data = { success, message, data: { data: [...], totalCount } }
+    return response.data.data
   },
 
   getGuestById: async (id: number): Promise<Guest> => {

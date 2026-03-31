@@ -129,7 +129,7 @@ export interface RelationshipNetwork {
 export const intelligenceService = {
   // Sentiment Analysis
   analyzeSentiment: async (text: string, language?: string): Promise<SentimentAnalysisResult> => {
-    const response = await api.post('/api/v1/Intelligence/analyze-sentiment', {
+    const response = await api.post('/Intelligence/analyze-sentiment', {
       text,
       language,
     })
@@ -140,13 +140,13 @@ export const intelligenceService = {
     const params = new URLSearchParams()
     if (startDate) params.append('startDate', startDate)
     if (endDate) params.append('endDate', endDate)
-    const response = await api.get(`/api/v1/Intelligence/guests/${guestId}/sentiment-trends?${params}`)
+    const response = await api.get(`/Intelligence/guests/${guestId}/sentiment-trends?${params}`)
     return response.data.data
   },
 
   // Behavioral Tracking
   trackGuestBehavior: async (guestId: number, behaviorType: string, data: any) => {
-    const response = await api.post(`/api/v1/Intelligence/guests/${guestId}/track-behavior`, {
+    const response = await api.post(`/Intelligence/guests/${guestId}/track-behavior`, {
       behaviorType,
       ...data,
     })
@@ -157,7 +157,7 @@ export const intelligenceService = {
     const params = new URLSearchParams()
     if (startDate) params.append('startDate', startDate)
     if (endDate) params.append('endDate', endDate)
-    const response = await api.get(`/api/v1/Intelligence/guests/${guestId}/behavior-patterns?${params}`)
+    const response = await api.get(`/Intelligence/guests/${guestId}/behavior-patterns?${params}`)
     return response.data.data
   },
 
@@ -165,18 +165,18 @@ export const intelligenceService = {
     const params = new URLSearchParams()
     if (startDate) params.append('startDate', startDate)
     if (endDate) params.append('endDate', endDate)
-    const response = await api.get(`/api/v1/Intelligence/staff/${staffId}/behavior-patterns?${params}`)
+    const response = await api.get(`/Intelligence/staff/${staffId}/behavior-patterns?${params}`)
     return response.data.data
   },
 
   // Relationship Intelligence
   findBestStaffMatches: async (guestId: number, limit: number = 5): Promise<StaffMatchResult[]> => {
-    const response = await api.get(`/api/v1/Intelligence/guests/${guestId}/best-staff-matches?limit=${limit}`)
+    const response = await api.get(`/Intelligence/guests/${guestId}/best-staff-matches?limit=${limit}`)
     return response.data.data
   },
 
   findBestGuestMatches: async (staffId: number, limit: number = 5): Promise<GuestMatchResult[]> => {
-    const response = await api.get(`/api/v1/Intelligence/staff/${staffId}/best-guest-matches?limit=${limit}`)
+    const response = await api.get(`/Intelligence/staff/${staffId}/best-guest-matches?limit=${limit}`)
     return response.data.data
   },
 
@@ -184,17 +184,17 @@ export const intelligenceService = {
     const params = new URLSearchParams()
     if (serviceType) params.append('serviceType', serviceType)
     params.append('limit', limit.toString())
-    const response = await api.get(`/api/v1/Intelligence/guests/${guestId}/best-service-matches?${params}`)
+    const response = await api.get(`/Intelligence/guests/${guestId}/best-service-matches?${params}`)
     return response.data.data
   },
 
   getGuestPreferencePatterns: async (guestId: number) => {
-    const response = await api.get(`/api/v1/Intelligence/guests/${guestId}/preference-patterns`)
+    const response = await api.get(`/Intelligence/guests/${guestId}/preference-patterns`)
     return response.data.data
   },
 
   getGuestRelationshipNetwork: async (guestId: number): Promise<RelationshipNetwork> => {
-    const response = await api.get(`/api/v1/Intelligence/guests/${guestId}/relationship-network`)
+    const response = await api.get(`/Intelligence/guests/${guestId}/relationship-network`)
     return response.data.data
   },
 
@@ -203,22 +203,22 @@ export const intelligenceService = {
     const params = new URLSearchParams()
     params.append('behaviorType', behaviorType)
     if (predictionDate) params.append('predictionDate', predictionDate)
-    const response = await api.get(`/api/v1/Intelligence/guests/${guestId}/predict-behavior?${params}`)
+    const response = await api.get(`/Intelligence/guests/${guestId}/predict-behavior?${params}`)
     return response.data.data
   },
 
   predictGuestSatisfaction: async (guestId: number) => {
-    const response = await api.get(`/api/v1/Intelligence/guests/${guestId}/predict-satisfaction`)
+    const response = await api.get(`/Intelligence/guests/${guestId}/predict-satisfaction`)
     return response.data.data
   },
 
   identifyGuestRisks: async (guestId: number) => {
-    const response = await api.get(`/api/v1/Intelligence/guests/${guestId}/identify-risks`)
+    const response = await api.get(`/Intelligence/guests/${guestId}/identify-risks`)
     return response.data.data
   },
 
   identifyGuestOpportunities: async (guestId: number) => {
-    const response = await api.get(`/api/v1/Intelligence/guests/${guestId}/detect-opportunities`)
+    const response = await api.get(`/Intelligence/guests/${guestId}/detect-opportunities`)
     return response.data.data
   },
 
@@ -226,37 +226,37 @@ export const intelligenceService = {
   getProactiveRecommendations: async (guestId: number, targetDate?: string): Promise<ProactiveRecommendation[]> => {
     const params = new URLSearchParams()
     if (targetDate) params.append('targetDate', targetDate)
-    const response = await api.get(`/api/v1/Intelligence/guests/${guestId}/proactive-recommendations?${params}`)
+    const response = await api.get(`/Intelligence/guests/${guestId}/proactive-recommendations?${params}`)
     return response.data.data
   },
 
   getProblemPreventionAlerts: async (guestId?: number): Promise<ProblemPreventionAlert[]> => {
     const params = new URLSearchParams()
     if (guestId) params.append('guestId', guestId.toString())
-    const response = await api.get(`/api/v1/Intelligence/problem-prevention-alerts?${params}`)
+    const response = await api.get(`/Intelligence/problem-prevention-alerts?${params}`)
     return response.data.data
   },
 
   getPersonalizationSuggestions: async (guestId: number): Promise<PersonalizationSuggestion[]> => {
-    const response = await api.get(`/api/v1/Intelligence/guests/${guestId}/personalization-suggestions`)
+    const response = await api.get(`/Intelligence/guests/${guestId}/personalization-suggestions`)
     return response.data.data
   },
 
   getEarlyWarningSignals: async (guestId?: number): Promise<EarlyWarningSignal[]> => {
     const params = new URLSearchParams()
     if (guestId) params.append('guestId', guestId.toString())
-    const response = await api.get(`/api/v1/Intelligence/early-warning-signals?${params}`)
+    const response = await api.get(`/Intelligence/early-warning-signals?${params}`)
     return response.data.data
   },
 
   getAutomaticActions: async (guestId: number): Promise<AutomaticAction[]> => {
-    const response = await api.get(`/api/v1/Intelligence/guests/${guestId}/automatic-actions`)
+    const response = await api.get(`/Intelligence/guests/${guestId}/automatic-actions`)
     return response.data.data
   },
 
   // Dynamic Pricing Intelligence
   getPricingIntelligence: async (roomTypeId: number, startDate: string, endDate: string): Promise<PricingIntelligenceResult[]> => {
-    const response = await api.get(`/api/v1/pricing/intelligence?roomTypeId=${roomTypeId}&startDate=${startDate}&endDate=${endDate}`)
+    const response = await api.get(`/pricing/intelligence?roomTypeId=${roomTypeId}&startDate=${startDate}&endDate=${endDate}`)
     return response.data.data
   },
 
@@ -264,17 +264,17 @@ export const intelligenceService = {
   getRecentBehavioralInsights: async (guestId: number, source?: string): Promise<BehavioralInsight[]> => {
     const params = new URLSearchParams()
     if (source) params.append('source', source)
-    const response = await api.get(`/api/v1/Intelligence/guests/${guestId}/behavioral-insights?${params}`)
+    const response = await api.get(`/Intelligence/guests/${guestId}/behavioral-insights?${params}`)
     return response.data.data
   },
 
   executeAutomaticAction: async (action: AutomaticAction): Promise<boolean> => {
-    const response = await api.post('/api/v1/Intelligence/execute-action', action)
+    const response = await api.post('/Intelligence/execute-action', action)
     return response.data.data
   },
 
   getActionHistory: async (guestId: number): Promise<GuestIntelligenceAction[]> => {
-    const response = await api.get(`/api/v1/Intelligence/guests/${guestId}/history`)
+    const response = await api.get(`/Intelligence/guests/${guestId}/history`)
     return response.data.data
   },
 }

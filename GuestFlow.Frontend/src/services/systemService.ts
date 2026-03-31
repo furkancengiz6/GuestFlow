@@ -47,22 +47,22 @@ export interface DependencyVulnerabilityResult {
 
 export const systemService = {
     validateAll: async (): Promise<ProductionConfigurationValidationResult> => {
-        const response = await api.get('/api/v1/Production/validate');
+        const response = await api.get('/Production/validate');
         return response.data.data;
     },
 
     getVulnerabilities: async (): Promise<DependencyVulnerabilityResult> => {
-        const response = await api.get('/api/v1/Production/dependencies/vulnerabilities');
+        const response = await api.get('/Production/dependencies/vulnerabilities');
         return response.data.data;
     },
 
     getMigrations: async (): Promise<any> => {
-        const response = await api.get('/api/v1/Production/migrations');
+        const response = await api.get('/Production/migrations');
         return response.data.data;
     },
 
     createBackup: async (): Promise<any> => {
-        const response = await api.post('/api/v1/Production/backup/create');
+        const response = await api.post('/Production/backup/create');
         return response.data.data;
     }
 };

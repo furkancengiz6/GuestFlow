@@ -28,24 +28,24 @@ export interface MaskRequest {
 export const privacyService = {
   // Mask PII data
   maskEmail: async (email: string): Promise<string> => {
-    const response = await apiClient.post('/api/v1.0/Privacy/mask/email', { value: email })
+    const response = await apiClient.post('/Privacy/mask/email', { value: email })
     return response.data.data
   },
 
   maskPhone: async (phone: string): Promise<string> => {
-    const response = await apiClient.post('/api/v1.0/Privacy/mask/phone', { value: phone })
+    const response = await apiClient.post('/Privacy/mask/phone', { value: phone })
     return response.data.data
   },
 
   // Anonymize guest
   anonymizeGuest: async (request: AnonymizeGuestRequest): Promise<boolean> => {
-    const response = await apiClient.post('/api/v1.0/Privacy/anonymize-guest', request)
+    const response = await apiClient.post('/Privacy/anonymize-guest', request)
     return response.data.data
   },
 
   // Delete guest data
   deleteGuest: async (request: DeleteGuestRequest): Promise<boolean> => {
-    const response = await apiClient.post('/api/v1.0/Privacy/delete-guest', request)
+    const response = await apiClient.post('/Privacy/delete-guest', request)
     return response.data.data
   },
 
@@ -59,14 +59,14 @@ export const privacyService = {
     if (startDate) params.append('startDate', startDate)
     if (endDate) params.append('endDate', endDate)
     if (guestId) params.append('guestId', guestId.toString())
-    
-    const response = await apiClient.get(`/api/v1.0/Privacy/history?${params}`)
+
+    const response = await apiClient.get(`/Privacy/history?${params}`)
     return response.data.data
   },
 
   // Check if guest is anonymized
   checkAnonymized: async (guestId: number): Promise<boolean> => {
-    const response = await apiClient.get(`/api/v1.0/Privacy/check-anonymized/${guestId}`)
+    const response = await apiClient.get(`/Privacy/check-anonymized/${guestId}`)
     return response.data.data
   },
 }

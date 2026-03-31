@@ -3,6 +3,7 @@
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using GuestFlow.Domain.Converters;
 
 namespace GuestFlow.Domain.Entities.Core
 {
@@ -113,16 +114,11 @@ namespace GuestFlow.Domain.Entities.Core
             base.Configure(builder);
 
             builder.Property(p => p.PreferredRoomType).HasMaxLength(100);
-            builder.Property(p => p.RoomSpecialRequests).HasMaxLength(500);
-            builder.Property(p => p.BedPreference).HasMaxLength(50);
-            builder.Property(p => p.SmokingPreference).HasMaxLength(50);
-            builder.Property(p => p.DietaryPreferences).HasMaxLength(200);
-            builder.Property(p => p.FoodAllergies).HasMaxLength(500);
-            builder.Property(p => p.SpecialFoodRequests).HasMaxLength(500);
-            builder.Property(p => p.ActivityPreferences).HasMaxLength(500);
-            builder.Property(p => p.Interests).HasMaxLength(500);
-            builder.Property(p => p.PreferredLanguage).HasMaxLength(50);
-            builder.Property(p => p.Notes).HasMaxLength(1000);
+            builder.Property(p => p.Notes).HasMaxLength(1000).HasConversion<EncryptedValueConverter>();
+            builder.Property(p => p.RoomSpecialRequests).HasMaxLength(500).HasConversion<EncryptedValueConverter>();
+            builder.Property(p => p.DietaryPreferences).HasMaxLength(200).HasConversion<EncryptedValueConverter>();
+            builder.Property(p => p.FoodAllergies).HasMaxLength(500).HasConversion<EncryptedValueConverter>();
+            builder.Property(p => p.SpecialFoodRequests).HasMaxLength(500).HasConversion<EncryptedValueConverter>();
             builder.Property(p => p.Source).HasMaxLength(50);
 
             // Guest ile ilişki (one-to-one)

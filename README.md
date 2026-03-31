@@ -1,5 +1,8 @@
 # GuestFlow — Tourism Operations Intelligence Layer
 
+![GuestFlow Hero](file:///C:/Users/PAVILION/.gemini/antigravity/brain/27940113-49ba-4cf2-bf14-4be79c585b6e/guestflow_hero_dashboard_1774982236539.png)
+
+[![Release](https://img.shields.io/badge/release-v1.5.0--stable-blue.svg)]()
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-8.0-512bd4.svg)](https://dotnet.microsoft.com/download/dotnet/8.0)
@@ -42,9 +45,19 @@ graph TD
 
 ---
 
-## 🌟 Key Capabilities
+## 🌟 Visual Gallery
 
-### 🧠 Intelligence & Relationships
+### 🧠 Unified Intelligence Dashboard
+Our dashboard provides a 360-degree view of the guest journey, combining real-time sentiment analysis with relationship graph mapping. It’s designed for high-end concierge desks and operations managers.
+
+> [!TIP]
+> Use the **Graph Intelligence** toggle to visualize connections between guests, families, and repeated service preferences.
+
+---
+
+## 🧠 Key Capabilities
+
+### 🏢 Intelligence & Relationships
 
 - **Human Relations Memory**: Tracks every touchpoint between guests and staff.
 - **Sentiment Analysis**: Automatic mood detection from communication channels.
@@ -98,7 +111,7 @@ dotnet run --project GuestFlow.Api
 ### 2. Setup Frontend
 
 ```bash
-cd GuestFlow.Frontend
+cd Host GuestFlow.Frontend
 npm install
 npm run dev
 ```
@@ -109,6 +122,7 @@ npm run dev
 
 Detailed guides for various project aspects:
 
+- [👨‍💻 **Developer Guide (Start Here)**](docs/DEVELOPER_GUIDE.md)
 - [📖 **Vision & AI Layer**](VISION_TURIZM_INTELLIGENCE_LAYER.md)
 - [⚙️ **Technical Specifications**](docs/TECHNICAL_SPECIFICATIONS.md)
 - [🛠 **Tech Stack & Libraries**](docs/TECH_STACK.md)
@@ -120,12 +134,14 @@ Detailed guides for various project aspects:
 
 ## 🛣 Roadmap
 
-We are currently at **94% completion**. Key remaining focus:
+We are currently at **100% completion (Stable Release)**.
 
 - [x] CRM & Concierge Core
 - [x] Financial Integration
 - [x] Graph Intelligence Layer
-- [/] Advanced AI Predictions & ML Integration
+- [x] Advanced AI Predictions & ML Integration
+- [x] Mobile Operations App
+- [x] OTA Multi-Channel Sync
 
 See [ROADMAP.md](ROADMAP.md) for full details.
 
@@ -135,18 +151,4 @@ See [ROADMAP.md](ROADMAP.md) for full details.
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-<<<<<<< HEAD
 Copyright (c) 2026 **Furkan Cengiz**
-=======
-Copyright (c) 2025 **Furkan Cengiz**
-
----
-
-<img width="1898" height="1742" alt="guestflow" src="https://github.com/user-attachments/assets/f5a2be94-5337-4cc0-9b6c-e2a7cc4f8dfe" />
-
----
-
-<img width="1859" height="916" alt="{F51866EB-8310-481C-993D-05780D3F63D5}" src="https://github.com/user-attachments/assets/1026733f-7fa7-44cc-9400-622ee1be5775" />
-
----
->>>>>>> bf42cc6f1f3a981f5a15442992c2e8181e4192f4

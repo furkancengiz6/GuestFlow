@@ -101,7 +101,9 @@ namespace GuestFlow.Application.Operations.Intelligence.Predictive
                         ["Frequency"] = frequency,
                         ["RecentFrequency"] = recentBehaviors,
                         ["AverageSatisfaction"] = behaviors.Where(b => b.SatisfactionScore.HasValue)
-                            .Average(b => b.SatisfactionScore!.Value)
+                            .Select(b => b.SatisfactionScore!.Value)
+                            .DefaultIfEmpty(0)
+                            .Average()
                     }
                 };
             }

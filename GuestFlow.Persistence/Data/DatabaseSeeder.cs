@@ -2,6 +2,7 @@ using GuestFlow.Domain.DataProtection;
 using GuestFlow.Domain.Entities.Core;
 using GuestFlow.Domain.Entities.Enum;
 using GuestFlow.Domain.Entities.Operations;
+using GuestFlow.Domain.Entities.Sustainability;
 using GuestFlow.Domain.Entities.Intelligence;
 using GuestFlow.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +16,8 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
+using GuestFlow.Persistence.MultiTenancy;
+
 namespace GuestFlow.Persistence.Data
 {
     public class DatabaseSeeder
@@ -23,17 +26,20 @@ namespace GuestFlow.Persistence.Data
         private readonly ILogger<DatabaseSeeder> _logger;
         private readonly IDataProtection _dataProtection;
         private readonly IConfiguration _configuration;
+        private readonly ITenantProvider _tenantProvider;
 
         public DatabaseSeeder(
             GuestFlowDbContext context,
             ILogger<DatabaseSeeder> logger,
             IDataProtection dataProtection,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            ITenantProvider tenantProvider)
         {
             _context = context;
             _logger = logger;
             _dataProtection = dataProtection;
             _configuration = configuration;
+            _tenantProvider = tenantProvider;
         }
 
         public async Task SeedAsync()
@@ -77,10 +83,26 @@ namespace GuestFlow.Persistence.Data
                 var payments = await SeedPaymentsAsync(invoices, guests); // PAYMENTS MUST BE LAST
                 await SeedDailyRevenuesAsync();
                 await SeedDailyNotesAsync(personnel);
-                await SeedGuestReviewsAsync(guests, hotels, restaurants, tours);
+                // 17. Housekeeping & Maintenance
+                await SeedRoomStatusesAsync(hotels, personnel);
+                await SeedMaintenanceRequestsAsync(hotels, personnel);
+
+                // 18. Optimization & Intelligence
+                await SeedGuestReviewsAsync(guests, hotels, restaurants, cityTours); // Updated params
                 await SeedGuestStaffInteractionsAsync(guests, personnel);
+                await SeedGuestBehaviorAsync(guests);
+                await SeedLostAndFoundAsync(hotels, personnel, guests);
 
                 await _context.SaveChangesAsync();
+
+                // Seed Second Tenant Data
+                await SeedSecondTenantAsync();
+
+                _logger.LogInformation("Demo veri başarıyla oluşturuldu!");
+                
+                // Seed Second Tenant Data
+                await SeedSecondTenantAsync();
+
                 _logger.LogInformation("Demo veri başarıyla oluşturuldu!");
             }
             catch (Exception ex)
@@ -295,11 +317,12 @@ namespace GuestFlow.Persistence.Data
                 return existingPersonnel;
             }
 
-            // Generate random passwords for demo users
-            var adminPassword = GenerateRandomPassword();
-            var staffPassword1 = GenerateRandomPassword();
-            var staffPassword2 = GenerateRandomPassword();
-            var staffPassword3 = GenerateRandomPassword();
+            // Use fixed password for demo/dev/test environments to facilitate easy login/automation
+            var fixedPassword = "GuestFlow123!";
+            var adminPassword = fixedPassword;
+            var staffPassword1 = fixedPassword; 
+            var staffPassword2 = fixedPassword;
+            var staffPassword3 = fixedPassword;
 
             var personnel = new List<PersonnelEntity>
             {
@@ -317,6 +340,7 @@ namespace GuestFlow.Persistence.Data
                     Email = GenerateDemoEmail("Demo Staff 1", "staff"),
                     Password = _dataProtection.Protect(staffPassword1),
                     UserType = UserType.Staff,
+                    Department = "Concierge",
                     CreatedDate = DateTime.UtcNow.AddMonths(-6)
                 },
                 new PersonnelEntity
@@ -325,6 +349,7 @@ namespace GuestFlow.Persistence.Data
                     Email = GenerateDemoEmail("Demo Staff 2", "staff"),
                     Password = _dataProtection.Protect(staffPassword2),
                     UserType = UserType.Staff,
+                    Department = "Guest Relations",
                     CreatedDate = DateTime.UtcNow.AddMonths(-5)
                 },
                 new PersonnelEntity
@@ -333,6 +358,7 @@ namespace GuestFlow.Persistence.Data
                     Email = GenerateDemoEmail("Demo Staff 3", "staff"),
                     Password = _dataProtection.Protect(staffPassword3),
                     UserType = UserType.Staff,
+                    Department = "Food & Beverage",
                     CreatedDate = DateTime.UtcNow.AddMonths(-5)
                 }
             };
@@ -363,28 +389,54 @@ namespace GuestFlow.Persistence.Data
                 _logger.LogInformation("Misafirler zaten mevcut, atlanıyor.");
                 return await _context.Guests.IgnoreQueryFilters().ToListAsync();
             }
+            
             var random = new Random();
-            var guests = new List<GuestEntity>
+            var guests = new List<GuestEntity>();
+            
+            var firstNames = new[] { "James", "Mary", "Robert", "Patricia", "John", "Jennifer", "Michael", "Linda", "David", "Elizabeth", "William", "Barbara", "Richard", "Susan", "Joseph", "Jessica", "Thomas", "Sarah", "Charles", "Karen" };
+            var lastNames = new[] { "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson", "Thomas", "Taylor", "Moore", "Jackson", "Martin" };
+            var nationalities = new[] { "USA", "UK", "Germany", "France", "Italy", "Spain", "Russia", "China", "Japan", "Brazil", "Canada", "Australia", "Netherlands", "Sweden", "Turkey" };
+
+            // Create 50 random guests
+            for (int i = 1; i <= 50; i++)
             {
-                new GuestEntity { FullName = "John Smith", Email = "john.smith@email.com", PhoneNumber = "+1-555-0101", Nationality = "USA", GuestCode = GenerateGuestCode(1), IsSpecialGuest = false, RoomNumber = "101", CheckInDate = DateTime.UtcNow.AddDays(-5), CheckOutDate = DateTime.UtcNow.AddDays(2), HotelId = hotels.Any() ? hotels[random.Next(hotels.Count)].Id : null, CreatedDate = DateTime.UtcNow.AddMonths(-3) },
-                new GuestEntity { FullName = "Emma Johnson", Email = "emma.j@email.com", PhoneNumber = "+44-20-7946-0958", Nationality = "UK", GuestCode = GenerateGuestCode(2), IsSpecialGuest = true, RoomNumber = "201", CheckInDate = DateTime.UtcNow.AddDays(-3), CheckOutDate = DateTime.UtcNow.AddDays(4), HotelId = hotels.Any() ? hotels[random.Next(hotels.Count)].Id : null, CreatedDate = DateTime.UtcNow.AddMonths(-3) },
-                new GuestEntity { FullName = "Hans Müller", Email = "hans.m@email.com", PhoneNumber = "+49-30-12345678", Nationality = "Germany", GuestCode = GenerateGuestCode(3), IsSpecialGuest = false, RoomNumber = "102", CheckInDate = DateTime.UtcNow.AddDays(-7), CheckOutDate = DateTime.UtcNow.AddDays(1), HotelId = hotels.Any() ? hotels[random.Next(hotels.Count)].Id : null, CreatedDate = DateTime.UtcNow.AddMonths(-2) },
-                new GuestEntity { FullName = "Sophie Martin", Email = "sophie.m@email.com", PhoneNumber = "+33-1-2345-6789", Nationality = "France", GuestCode = GenerateGuestCode(4), IsSpecialGuest = false, RoomNumber = "103", CheckInDate = DateTime.UtcNow.AddDays(-2), CheckOutDate = DateTime.UtcNow.AddDays(5), HotelId = hotels.Any() ? hotels[random.Next(hotels.Count)].Id : null, CreatedDate = DateTime.UtcNow.AddMonths(-2) },
-                new GuestEntity { FullName = "Marco Rossi", Email = "marco.r@email.com", PhoneNumber = "+39-02-1234-5678", Nationality = "Italy", GuestCode = GenerateGuestCode(5), IsSpecialGuest = false, RoomNumber = "104", CheckInDate = DateTime.UtcNow.AddDays(-10), CheckOutDate = DateTime.UtcNow.AddDays(-2), HotelId = hotels.Any() ? hotels[random.Next(hotels.Count)].Id : null, CreatedDate = DateTime.UtcNow.AddMonths(-2) },
-                new GuestEntity { FullName = "Anna Petrov", Email = "anna.p@email.com", PhoneNumber = "+7-495-123-4567", Nationality = "Russia", GuestCode = GenerateGuestCode(6), IsSpecialGuest = false, RoomNumber = "105", CheckInDate = DateTime.UtcNow.AddDays(-1), CheckOutDate = DateTime.UtcNow.AddDays(6), HotelId = hotels.Any() ? hotels[random.Next(hotels.Count)].Id : null, CreatedDate = DateTime.UtcNow.AddMonths(-1) },
-                new GuestEntity { FullName = "David Lee", Email = "david.l@email.com", PhoneNumber = "+86-10-1234-5678", Nationality = "China", GuestCode = GenerateGuestCode(7), IsSpecialGuest = true, RoomNumber = "301", CheckInDate = DateTime.UtcNow.AddDays(-4), CheckOutDate = DateTime.UtcNow.AddDays(3), HotelId = hotels.Any() ? hotels[random.Next(hotels.Count)].Id : null, CreatedDate = DateTime.UtcNow.AddMonths(-1) },
-                new GuestEntity { FullName = "Sarah Williams", Email = "sarah.w@email.com", PhoneNumber = "+1-555-0202", Nationality = "USA", GuestCode = GenerateGuestCode(8), IsSpecialGuest = false, RoomNumber = "106", CheckInDate = DateTime.UtcNow.AddDays(-6), CheckOutDate = DateTime.UtcNow.AddDays(1), HotelId = hotels.Any() ? hotels[random.Next(hotels.Count)].Id : null, CreatedDate = DateTime.UtcNow.AddMonths(-1) },
-                new GuestEntity { FullName = "Michael Brown", Email = "michael.b@email.com", PhoneNumber = "+1-555-0303", Nationality = "USA", GuestCode = GenerateGuestCode(9), IsSpecialGuest = false, RoomNumber = "107", CheckInDate = DateTime.UtcNow.AddDays(-8), CheckOutDate = DateTime.UtcNow.AddDays(-1), HotelId = hotels.Any() ? hotels[random.Next(hotels.Count)].Id : null, CreatedDate = DateTime.UtcNow.AddDays(-20) },
-                new GuestEntity { FullName = "Lisa Anderson", Email = "lisa.a@email.com", PhoneNumber = "+46-8-123-4567", Nationality = "Sweden", GuestCode = GenerateGuestCode(10), IsSpecialGuest = false, RoomNumber = "108", CheckInDate = DateTime.UtcNow.AddDays(-12), CheckOutDate = DateTime.UtcNow.AddDays(-5), HotelId = hotels.Any() ? hotels[random.Next(hotels.Count)].Id : null, CreatedDate = DateTime.UtcNow.AddDays(-15) },
-                new GuestEntity { FullName = "James Wilson", Email = "james.w@email.com", PhoneNumber = "+61-2-1234-5678", Nationality = "Australia", GuestCode = GenerateGuestCode(11), IsSpecialGuest = false, RoomNumber = "109", CheckInDate = DateTime.UtcNow.AddDays(-9), CheckOutDate = DateTime.UtcNow.AddDays(-3), HotelId = hotels.Any() ? hotels[random.Next(hotels.Count)].Id : null, CreatedDate = DateTime.UtcNow.AddDays(-10) },
-                new GuestEntity { FullName = "Yuki Tanaka", Email = "yuki.t@email.com", PhoneNumber = "+81-3-1234-5678", Nationality = "Japan", GuestCode = GenerateGuestCode(21), IsSpecialGuest = true, RoomNumber = "601", CheckInDate = DateTime.UtcNow.AddDays(-2), CheckOutDate = DateTime.UtcNow.AddDays(5), HotelId = hotels.Any() ? hotels[random.Next(hotels.Count)].Id : null, CreatedDate = DateTime.UtcNow.AddDays(-2) },
-                new GuestEntity { FullName = "Zoe Chen", Email = "zoe.c@email.com", PhoneNumber = "+852-2123-4567", Nationality = "Hong Kong", GuestCode = GenerateGuestCode(22), IsSpecialGuest = false, RoomNumber = "117", CheckInDate = DateTime.UtcNow.AddDays(-4), CheckOutDate = DateTime.UtcNow.AddDays(3), HotelId = hotels.Any() ? hotels[random.Next(hotels.Count)].Id : null, CreatedDate = DateTime.UtcNow.AddDays(-10) },
-                new GuestEntity { FullName = "Lars Nilson", Email = "lars.n@email.com", PhoneNumber = "+47-22-123456", Nationality = "Norway", GuestCode = GenerateGuestCode(23), IsSpecialGuest = false, RoomNumber = "118", CheckInDate = DateTime.UtcNow.AddDays(-1), CheckOutDate = DateTime.UtcNow.AddDays(6), HotelId = hotels.Any() ? hotels[random.Next(hotels.Count)].Id : null, CreatedDate = DateTime.UtcNow.AddDays(-1) },
-                new GuestEntity { FullName = "Elena Rodriguez", Email = "elena.r@email.com", PhoneNumber = "+52-55-1234-5678", Nationality = "Mexico", GuestCode = GenerateGuestCode(24), IsSpecialGuest = false, RoomNumber = "119", CheckInDate = DateTime.UtcNow.AddDays(-6), CheckOutDate = DateTime.UtcNow.AddDays(1), HotelId = hotels.Any() ? hotels[random.Next(hotels.Count)].Id : null, CreatedDate = DateTime.UtcNow.AddDays(-20) },
-                new GuestEntity { FullName = "Aarav Gupta", Email = "aarav.g@email.com", PhoneNumber = "+91-22-1234-5678", Nationality = "India", GuestCode = GenerateGuestCode(25), IsSpecialGuest = false, RoomNumber = "120", CheckInDate = DateTime.UtcNow.AddDays(0), CheckOutDate = DateTime.UtcNow.AddDays(7), HotelId = hotels.Any() ? hotels[random.Next(hotels.Count)].Id : null, CreatedDate = DateTime.UtcNow.AddDays(-5) },
-                new GuestEntity { FullName = "Isabella Silva", Email = "isabella.s@email.com", PhoneNumber = "+55-11-1234-5678", Nationality = "Brazil", GuestCode = GenerateGuestCode(26), IsSpecialGuest = true, RoomNumber = "701", CheckInDate = DateTime.UtcNow.AddDays(-3), CheckOutDate = DateTime.UtcNow.AddDays(4), HotelId = hotels.Any() ? hotels[random.Next(hotels.Count)].Id : null, CreatedDate = DateTime.UtcNow.AddDays(-3) },
-                new GuestEntity { FullName = "Alexander 'VIP' Demo", Email = "alexander.demo@guestflow.local", PhoneNumber = "+90-555-DEMO-01", Nationality = "Demo Land", GuestCode = "GF-DEMO-2026", IsSpecialGuest = true, RoomNumber = "999", CheckInDate = DateTime.UtcNow.AddDays(-2), CheckOutDate = DateTime.UtcNow.AddDays(5), HotelId = hotels.FirstOrDefault()?.Id, CreatedDate = DateTime.UtcNow.AddMonths(-1) }
-            };
+                var firstName = firstNames[random.Next(firstNames.Length)];
+                var lastName = lastNames[random.Next(lastNames.Length)];
+                var nationality = nationalities[random.Next(nationalities.Length)];
+                var isSpecial = random.Next(10) < 2; // 20% special guest
+                var checkInDate = DateTime.UtcNow.AddDays(-random.Next(1, 30));
+                
+                guests.Add(new GuestEntity 
+                { 
+                    FullName = $"{firstName} {lastName}", 
+                    Email = $"{firstName.ToLower()}.{lastName.ToLower()}{i}@example.com", 
+                    PhoneNumber = $"+{random.Next(1, 99)}-{random.Next(100, 999)}-{random.Next(1000, 9999)}", 
+                    Nationality = nationality, 
+                    GuestCode = GenerateGuestCode(i), 
+                    IsSpecialGuest = isSpecial, 
+                    RoomNumber = $"{random.Next(1, 8)}{random.Next(0, 9):D2}", 
+                    CheckInDate = checkInDate, 
+                    CheckOutDate = checkInDate.AddDays(random.Next(2, 14)), 
+                    HotelId = hotels.Any() ? hotels[random.Next(hotels.Count)].Id : null, 
+                    CreatedDate = checkInDate.AddDays(-random.Next(1, 30))
+                });
+            }
+
+            // Ensure specific demo guest exists
+            guests.Add(new GuestEntity 
+            { 
+                FullName = "Alexander 'VIP' Demo", 
+                Email = "alexander.demo@guestflow.local", 
+                PhoneNumber = "+90-555-DEMO-01", 
+                Nationality = "Demo Land", 
+                GuestCode = "GF-DEMO-2026", 
+                IsSpecialGuest = true, 
+                RoomNumber = "999", 
+                CheckInDate = DateTime.UtcNow.AddDays(-2), 
+                CheckOutDate = DateTime.UtcNow.AddDays(5), 
+                HotelId = hotels.FirstOrDefault()?.Id, 
+                CreatedDate = DateTime.UtcNow.AddMonths(-1) 
+            });
 
             await _context.Guests.AddRangeAsync(guests);
             await _context.SaveChangesAsync();
@@ -1051,8 +1103,8 @@ namespace GuestFlow.Persistence.Data
 
             var payments = new List<PaymentEntity>();
             var random = new Random();
-            var paymentMethods = new[] { PaymentMethod.CreditCard, PaymentMethod.BankTransfer, PaymentMethod.Cash };
-            var paymentStatuses = new[] { PaymentStatus.Completed, PaymentStatus.Pending, PaymentStatus.Completed, PaymentStatus.Completed }; // Çoğu tamamlanmış
+            var paymentMethods = new[] { PaymentMethod.CreditCard, PaymentMethod.BankTransfer, PaymentMethod.Cash, PaymentMethod.Stripe, PaymentMethod.PayPal };
+            var paymentStatuses = new[] { PaymentStatus.Completed, PaymentStatus.Pending, PaymentStatus.Completed, PaymentStatus.Completed, PaymentStatus.Failed, PaymentStatus.Refunded }; // Daha gerçekçi dağılım
 
             int paymentIndex = 1;
             foreach (var invoice in invoices.Take(35))
@@ -1098,7 +1150,9 @@ namespace GuestFlow.Persistence.Data
             for (int i = 0; i < 60; i++)
             {
                 var date = startDate.AddDays(i);
-                var totalRevenue = (decimal)(random.Next(50000, 200000) + random.NextDouble() * 10000);
+                // Hafta sonları daha yüksek gelir (simülasyon)
+                var multiplier = (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday) ? 1.4 : 1.0;
+                var totalRevenue = (decimal)((random.Next(50000, 200000) + random.NextDouble() * 10000) * multiplier);
 
                 revenues.Add(new DailyRevenueEntity
                 {
@@ -1792,7 +1846,7 @@ namespace GuestFlow.Persistence.Data
             return roomAssignments;
         }
 
-        private async Task SeedGuestReviewsAsync(List<GuestEntity> guests, List<HotelEntity> hotels, List<RestaurantEntity> restaurants, List<TourEntity> tours)
+        private async Task SeedGuestReviewsAsync(List<GuestEntity> guests, List<HotelEntity> hotels, List<RestaurantEntity> restaurants, List<CityTourEntity> cityTours)
         {
             if (await _context.GuestReviews.IgnoreQueryFilters().AnyAsync())
             {
@@ -1834,9 +1888,13 @@ namespace GuestFlow.Persistence.Data
                 reviews.Add(new GuestReview { 
                     GuestId = guest.Id, 
                     ServiceType = "Hotel", 
+                    ServiceId = hotel.Id,
                     Rating = sentiment == "Positive" ? random.Next(4,6) : (sentiment == "Neutral" ? random.Next(3,5) : random.Next(1,3)),
                     Comment = comments[random.Next(comments.Length)],
-                    CreatedDate = DateTime.UtcNow.AddDays(-random.Next(1, 60))
+                    CreatedDate = DateTime.UtcNow.AddDays(-random.Next(1, 60)),
+                    CleanlinessRating = random.Next(3, 6),
+                    ServiceQualityRating = random.Next(3, 6),
+                    StaffRating = random.Next(3, 6)
                 });
             }
 
@@ -1851,9 +1909,35 @@ namespace GuestFlow.Persistence.Data
                 reviews.Add(new GuestReview { 
                     GuestId = guest.Id, 
                     ServiceType = "Restaurant", 
+                    ServiceId = res.Id,
                     Rating = sentiment == "Positive" ? random.Next(4,6) : (sentiment == "Neutral" ? random.Next(3,5) : random.Next(1,3)),
                     Comment = comments[random.Next(comments.Length)],
-                    CreatedDate = DateTime.UtcNow.AddDays(-random.Next(1, 45))
+                    CreatedDate = DateTime.UtcNow.AddDays(-random.Next(1, 45)),
+                    CleanlinessRating = random.Next(3, 6),
+                    ServiceQualityRating = random.Next(3, 6),
+                    StaffRating = random.Next(3, 6)
+                });
+            }
+
+            // Seed Tour Reviews
+            foreach (var guest in guests.Skip(8).Take(5))
+            {
+                if (!cityTours.Any()) continue;
+                var tour = cityTours[random.Next(cityTours.Count)];
+                var sentiment = sentiments[random.Next(sentiments.Length)];
+                var template = reviewTemplates["Tour"];
+                var comments = sentiment == "Positive" ? template.Positive : (sentiment == "Neutral" ? template.Neutral : template.Negative);
+
+                reviews.Add(new GuestReview { 
+                    GuestId = guest.Id, 
+                    ServiceType = "CityTour", 
+                    ServiceId = tour.Id,
+                    Rating = sentiment == "Positive" ? random.Next(4,6) : (sentiment == "Neutral" ? random.Next(3,5) : random.Next(1,3)),
+                    Comment = comments[random.Next(comments.Length)],
+                    CreatedDate = DateTime.UtcNow.AddDays(-random.Next(1, 30)),
+                    CleanlinessRating = random.Next(3, 6),
+                    ServiceQualityRating = random.Next(3, 6),
+                    StaffRating = random.Next(3, 6)
                 });
             }
 
@@ -1880,14 +1964,21 @@ namespace GuestFlow.Persistence.Data
                 var guest = guests[random.Next(guests.Count)];
                 var staffMember = staff[random.Next(staff.Count)];
                 var date = DateTime.UtcNow.AddDays(-random.Next(1, 30));
+                var type = interactionTypes[random.Next(interactionTypes.Length)];
 
                 interactions.Add(new GuestStaffInteractionEntity
                 {
                     GuestId = guest.Id,
                     StaffId = staffMember.Id,
-                    InteractionType = interactionTypes[random.Next(interactionTypes.Length)],
+                    InteractionType = type,
                     SatisfactionScore = random.Next(3, 6),
                     InteractionDate = date,
+                    Context = JsonSerializer.Serialize(new { 
+                        priority = random.Next(1, 4),
+                        location = "Lobby",
+                        details = $"Simulated {type} interaction",
+                        followUpRequired = random.Next(2) == 0
+                    }),
                     CreatedDate = date
                 });
             }
@@ -1895,6 +1986,325 @@ namespace GuestFlow.Persistence.Data
             await _context.GuestStaffInteractions.AddRangeAsync(interactions);
             await _context.SaveChangesAsync();
             _logger.LogInformation($"{interactions.Count} etkileşim eklendi.");
+        }
+        private async Task SeedRoomStatusesAsync(List<HotelEntity> hotels, List<PersonnelEntity> personnel)
+        {
+            if (await _context.RoomStatuses.IgnoreQueryFilters().AnyAsync())
+            {
+                _logger.LogInformation("Oda durumları zaten mevcut, atlanıyor.");
+                return;
+            }
+
+            var roomStatuses = new List<RoomStatusEntity>();
+            var random = new Random();
+            var cleaningStatuses = Enum.GetValues(typeof(RoomCleaningStatus)).Cast<RoomCleaningStatus>().ToArray();
+            var occupancyStatuses = Enum.GetValues(typeof(RoomOccupancyStatus)).Cast<RoomOccupancyStatus>().ToArray();
+            var housekeepers = personnel.Where(p => p.UserType == UserType.Staff).ToList();
+
+            if (!housekeepers.Any())
+            {
+                _logger.LogWarning("Temizlik personeli bulunamadı, oda durumları atanmayacak.");
+                return;
+            }
+
+            foreach (var hotel in hotels)
+            {
+                // Simulate 20 rooms per hotel
+                for (int i = 101; i <= 120; i++)
+                {
+                    var housekeeper = housekeepers[random.Next(housekeepers.Count)];
+                    var status = new RoomStatusEntity
+                    {
+                        RoomNumber = i.ToString(),
+                        CleaningStatus = cleaningStatuses[random.Next(cleaningStatuses.Length)],
+                        OccupancyStatus = occupancyStatuses[random.Next(occupancyStatuses.Length)],
+                        LastCleaned = DateTime.UtcNow.AddHours(-random.Next(1, 48)),
+                        NextInspection = DateTime.UtcNow.AddHours(random.Next(1, 24)),
+                        AssignedHousekeeperId = housekeeper.Id,
+                        HotelId = hotel.Id,
+                        Notes = random.Next(10) < 3 ? "Deep cleaning required next week" : null,
+                        CreatedDate = DateTime.UtcNow.AddDays(-10)
+                    };
+                    roomStatuses.Add(status);
+                }
+            }
+
+            await _context.RoomStatuses.AddRangeAsync(roomStatuses);
+            await _context.SaveChangesAsync();
+            _logger.LogInformation($"{roomStatuses.Count} oda durumu eklendi.");
+        }
+
+        private async Task SeedMaintenanceRequestsAsync(List<HotelEntity> hotels, List<PersonnelEntity> personnel)
+        {
+            if (await _context.MaintenanceRequests.IgnoreQueryFilters().AnyAsync())
+            {
+                _logger.LogInformation("Bakım istekleri zaten mevcut, atlanıyor.");
+                return;
+            }
+
+            var requests = new List<MaintenanceRequestEntity>();
+            var random = new Random();
+            var priorities = Enum.GetValues(typeof(MaintenancePriority)).Cast<MaintenancePriority>().ToArray();
+            var statuses = Enum.GetValues(typeof(MaintenanceStatus)).Cast<MaintenanceStatus>().ToArray();
+            var staff = personnel.Where(p => p.UserType == UserType.Staff).ToList();
+
+            if (!staff.Any()) return;
+
+            var issues = new[]
+            {
+                "Air conditioning not cooling",
+                "Leaking faucet in bathroom",
+                "TV remote batteries dead",
+                "Light bulb flickering",
+                "Door lock jamming",
+                "Wi-Fi signal weak in corner",
+                "Safe validation error",
+                "Minibar not cooling"
+            };
+
+            foreach (var hotel in hotels)
+            {
+                // Create 3-8 requests per hotel
+                int requestCount = random.Next(3, 9);
+                for (int i = 0; i < requestCount; i++)
+                {
+                    var reporter = staff[random.Next(staff.Count)];
+                    var assignee = staff[random.Next(staff.Count)];
+                    var status = statuses[random.Next(statuses.Length)];
+                    var reportedDate = DateTime.UtcNow.AddDays(-random.Next(1, 14));
+                    
+                    var request = new MaintenanceRequestEntity
+                    {
+                        RoomNumber = random.Next(101, 121).ToString(),
+                        IssueDescription = issues[random.Next(issues.Length)],
+                        Priority = priorities[random.Next(priorities.Length)],
+                        Status = status,
+                        ReportedDate = reportedDate,
+                        ResolvedDate = (status.ToString() == "Completed" || status.ToString() == "Resolved") ? reportedDate.AddHours(random.Next(1, 48)) : null,
+                        ReportedByPersonnelId = reporter.Id,
+                        AssignedToPersonnelId = assignee.Id,
+                        HotelId = hotel.Id,
+                        ResolutionNotes = (status.ToString() == "Completed" || status.ToString() == "Resolved") ? "Fixed and tested." : null,
+                        CreatedDate = reportedDate
+                    };
+                    requests.Add(request);
+                }
+            }
+
+            await _context.MaintenanceRequests.AddRangeAsync(requests);
+            await _context.SaveChangesAsync();
+            _logger.LogInformation($"{requests.Count} bakım isteği eklendi.");
+        }
+        private async Task SeedSustainabilityDataAsync(List<GuestEntity> guests)
+        {
+            if (await _context.SustainabilityActions.IgnoreQueryFilters().AnyAsync())
+            {
+                _logger.LogInformation("Sürdürülebilirlik verileri zaten mevcut, atlanıyor.");
+                return;
+            }
+
+            var actions = new List<SustainabilityAction>();
+            var rewards = new List<SustainabilityReward>();
+            var random = new Random();
+            var actionTypes = Enum.GetValues(typeof(SustainabilityActionType)).Cast<SustainabilityActionType>().ToArray();
+            var descriptions = new[] { "Reused towels", "Opted out of housekeeping", "Used recycling bins", "Public transport usage", "Local food preference" };
+
+            // Actions
+            foreach (var guest in guests.Take(20))
+            {
+                int actionCount = random.Next(1, 6);
+                for (int i = 0; i < actionCount; i++)
+                {
+                    var actionDate = DateTime.UtcNow.AddDays(-random.Next(1, 30));
+                    var type = actionTypes[random.Next(actionTypes.Length)];
+                    var score = random.Next(10, 50);
+
+                    actions.Add(new SustainabilityAction
+                    {
+                        GuestId = guest.Id,
+                        ActionType = type,
+                        ActionDate = actionDate,
+                        Description = descriptions[random.Next(descriptions.Length)],
+                        ImpactScore = score,
+                        CreatedDate = actionDate
+                    });
+                }
+
+                // Rewards
+                if (random.Next(2) == 0)
+                {
+                    rewards.Add(new SustainabilityReward
+                    {
+                        GuestId = guest.Id,
+                        Title = "Eco Warrior Badge",
+                        Description = "Awarded for consistent sustainable choices",
+                        RequiredScore = 100,
+                        IsClaimed = random.Next(2) == 0,
+                        ClaimedDate = DateTime.UtcNow.AddDays(-random.Next(1, 10)),
+                        RewardCode = $"ECO{random.Next(1000, 9999)}",
+                        CreatedDate = DateTime.UtcNow.AddDays(-random.Next(30, 60))
+                    });
+                }
+            }
+
+            await _context.SustainabilityActions.AddRangeAsync(actions);
+            await _context.SustainabilityRewards.AddRangeAsync(rewards);
+            await _context.SaveChangesAsync();
+            _logger.LogInformation($"{actions.Count} sürdürülebilirlik aksiyonu ve {rewards.Count} ödül eklendi.");
+        }
+
+        private async Task SeedGuestBehaviorAsync(List<GuestEntity> guests)
+        {
+            if (await _context.GuestBehaviors.IgnoreQueryFilters().AnyAsync())
+            {
+                _logger.LogInformation("Misafir davranış verileri zaten mevcut, atlanıyor.");
+                return;
+            }
+
+            var behaviors = new List<GuestBehaviorEntity>();
+            var random = new Random();
+            var behaviorTypes = new[] { "Spending", "ServiceUsage", "Communication", "Feedback" };
+            var timesOfDay = new[] { "Morning", "Afternoon", "Evening", "Night" };
+            var daysOfWeek = new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
+
+            foreach (var guest in guests.Take(30))
+            {
+                int behaviorCount = random.Next(3, 10);
+                for (int i = 0; i < behaviorCount; i++)
+                {
+                    var behaviorDate = DateTime.UtcNow.AddDays(-random.Next(1, 60));
+                    var type = behaviorTypes[random.Next(behaviorTypes.Length)];
+                    
+                    var behavior = new GuestBehaviorEntity
+                    {
+                        GuestId = guest.Id,
+                        BehaviorType = type,
+                        Category = type == "Spending" ? "Restaurant" : (type == "ServiceUsage" ? "Spa" : "General"),
+                        BehaviorValue = JsonSerializer.Serialize(new { detail = "Simulated behavior data" }),
+                        BehaviorDate = behaviorDate,
+                        TimeOfDay = timesOfDay[random.Next(timesOfDay.Length)],
+                        DayOfWeek = daysOfWeek[random.Next(daysOfWeek.Length)],
+                        Season = "Summer",
+                        SentimentScore = random.NextDouble() * 2 - 1, // -1 to 1
+                        SatisfactionScore = random.Next(1, 11),
+                        Amount = type == "Spending" ? (decimal)random.Next(50, 500) : null,
+                        Currency = "TRY",
+                        CreatedDate = behaviorDate
+                    };
+                    behaviors.Add(behavior);
+                }
+            }
+
+            await _context.GuestBehaviors.AddRangeAsync(behaviors);
+            await _context.SaveChangesAsync();
+            _logger.LogInformation($"{behaviors.Count} misafir davranış kaydı eklendi.");
+        }
+
+        private async Task SeedLostAndFoundAsync(List<HotelEntity> hotels, List<PersonnelEntity> personnel, List<GuestEntity> guests)
+        {
+            if (await _context.LostAndFoundItems.IgnoreQueryFilters().AnyAsync())
+            {
+                _logger.LogInformation("Kayıp eşya verileri zaten mevcut, atlanıyor.");
+                return;
+            }
+
+            var items = new List<LostAndFoundEntity>();
+            var random = new Random();
+            var staff = personnel.Where(p => p.UserType == UserType.Staff).ToList();
+            var categories = new[] { "Electronics", "Jewelry", "Clothing", "Documents", "Other" };
+            var descriptions = new[] { "iPhone charger", "Gold earring", "Blue denim jacket", "Passport", "Sunglasses", "Novel book", "Kids toy car" };
+
+            if (!staff.Any()) return;
+
+            foreach (var hotel in hotels)
+            {
+                int itemCount = random.Next(3, 8);
+                for (int i = 0; i < itemCount; i++)
+                {
+                    var foundDate = DateTime.UtcNow.AddDays(-random.Next(1, 30));
+                    var isReturned = random.Next(2) == 0;
+                    var guest = random.Next(2) == 0 ? guests[random.Next(guests.Count)] : null;
+                    
+                    var item = new LostAndFoundEntity
+                    {
+                        ItemDescription = descriptions[random.Next(descriptions.Length)],
+                        RoomNumber = random.Next(101, 121).ToString(),
+                        FoundDate = foundDate,
+                        IsReturned = isReturned,
+                        ReturnedDate = isReturned ? foundDate.AddDays(random.Next(1, 5)) : null,
+                        StorageLocation = $"Cab-{random.Next(1, 10)}",
+                        ItemCategory = categories[random.Next(categories.Length)],
+                        FoundByPersonnelId = staff[random.Next(staff.Count)].Id,
+                        GuestId = guest?.Id,
+                        HotelId = hotel.Id,
+                        CreatedDate = foundDate
+                    };
+                    items.Add(item);
+                }
+            }
+
+            await _context.LostAndFoundItems.AddRangeAsync(items);
+            await _context.SaveChangesAsync();
+            _logger.LogInformation($"{items.Count} kayıp eşya kaydı eklendi.");
+        }
+
+        private async Task SeedSecondTenantAsync()
+        {
+            // Switch to Tenant 2
+            _tenantProvider.SetTenantId(2);
+
+            if (await _context.Personnels.IgnoreQueryFilters().Where(p => p.TenantId == 2).AnyAsync())
+            {
+                _logger.LogInformation("Tenant 2 verileri zaten mevcut, atlanıyor.");
+                // Reset to default tenant just in case
+                _tenantProvider.SetTenantId(1);
+                return;
+            }
+
+            _logger.LogWarning("🚨 SEEDING TENANT 2 DATA 🚨");
+
+            // Seed Tenant 2 Admin
+            var admin = new PersonnelEntity
+            {
+                FullName = "Tenant 2 Admin",
+                Email = "admin.tenant2@guestflow.local",
+                Password = _dataProtection.Protect("GuestFlow123!"),
+                UserType = UserType.Admin,
+                CreatedDate = DateTime.UtcNow,
+                TenantId = 2
+            };
+            
+            await _context.Personnels.AddAsync(admin);
+
+            // Seed Tenant 2 Guests
+            var guests = new List<GuestEntity>
+            {
+                new GuestEntity
+                {
+                    FullName = "Tenant 2 Guest A",
+                    Email = "guest.a.tenant2@example.com",
+                    Nationality = "Germany",
+                    TenantId = 2,
+                    CreatedDate = DateTime.UtcNow
+                },
+                new GuestEntity
+                {
+                    FullName = "Tenant 2 Guest B",
+                    Email = "guest.b.tenant2@example.com",
+                    Nationality = "France",
+                    TenantId = 2,
+                    CreatedDate = DateTime.UtcNow
+                }
+            };
+
+            await _context.Guests.AddRangeAsync(guests);
+            
+            await _context.SaveChangesAsync();
+            
+            _logger.LogInformation("Tenant 2 verileri (Admin + 2 Misafir) oluşturuldu.");
+            
+            // Restore default tenant
+            _tenantProvider.SetTenantId(1);
         }
     }
 }

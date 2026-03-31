@@ -31,6 +31,8 @@ import {
 } from '@mui/icons-material'
 import axios from 'axios'
 
+import { env } from '../../config/env'
+
 // Types (Move to src/types/pms.ts later)
 interface PMSIntegration {
     id: number
@@ -48,9 +50,8 @@ interface PMSIntegration {
     lastConnectionTestResult: boolean
 }
 
-// Mock API Client (Replace with your actual API client)
 const apiClient = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1.0'
+    baseURL: env.apiBaseUrl
 })
 
 const PMSIntegrationSettings = () => {

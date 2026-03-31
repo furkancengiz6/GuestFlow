@@ -24,7 +24,7 @@ export const analyticsService = {
     const response = await apiClient.get<{
       success: boolean
       data: RealTimeKpi
-    }>('/api/v1.0/Analytics/kpis/realtime', {
+    }>('/Analytics/kpis/realtime', {
       params: date ? { date } : {},
     })
     return response.data.data
@@ -42,7 +42,7 @@ export const analyticsService = {
     const response = await apiClient.get<{
       success: boolean
       data: RevenueTrend
-    }>('/api/v1.0/Analytics/revenue/trend', { params })
+    }>('/Analytics/revenue/trend', { params })
     return response.data.data
   },
 
@@ -53,7 +53,7 @@ export const analyticsService = {
     const response = await apiClient.get<{
       success: boolean
       data: SeasonalComparison
-    }>('/api/v1.0/Analytics/seasonal/comparison', {
+    }>('/Analytics/seasonal/comparison', {
       params: year ? { year } : {},
     })
     return response.data.data
@@ -66,7 +66,7 @@ export const analyticsService = {
     const response = await apiClient.get<{
       success: boolean
       data: YearlyGrowth
-    }>('/api/v1.0/Analytics/growth/yearly', {
+    }>('/Analytics/growth/yearly', {
       params: year ? { year } : {},
     })
     return response.data.data
@@ -82,7 +82,7 @@ export const analyticsService = {
     const response = await apiClient.get<{
       success: boolean
       data: GuestSegmentation
-    }>('/api/v1.0/Analytics/segmentation/guests', { params })
+    }>('/Analytics/segmentation/guests', { params })
     return response.data.data
   },
 
@@ -96,7 +96,7 @@ export const analyticsService = {
     const response = await apiClient.get<{
       success: boolean
       data: ServiceDistribution
-    }>('/api/v1.0/Analytics/distribution/services', { params })
+    }>('/Analytics/distribution/services', { params })
     return response.data.data
   },
 
@@ -110,7 +110,7 @@ export const analyticsService = {
     const response = await apiClient.get<{
       success: boolean
       data: CityPerformance
-    }>('/api/v1.0/Analytics/performance/cities', { params })
+    }>('/Analytics/performance/cities', { params })
     return response.data.data
   },
 
@@ -124,7 +124,7 @@ export const analyticsService = {
     const response = await apiClient.get<{
       success: boolean
       data: SupplierProfitability
-    }>('/api/v1.0/Analytics/profitability/suppliers', { params })
+    }>('/Analytics/profitability/suppliers', { params })
     return response.data.data
   },
 
@@ -135,7 +135,7 @@ export const analyticsService = {
     const response = await apiClient.get<{
       success: boolean
       data: RevenueForecast
-    }>('/api/v1.0/Analytics/forecast/revenue', {
+    }>('/Analytics/forecast/revenue', {
       params: { monthsAhead },
     })
     return response.data.data
@@ -152,7 +152,7 @@ export const analyticsService = {
     const response = await apiClient.get<{
       success: boolean
       data: DemandForecast
-    }>('/api/v1.0/Analytics/forecast/demand', { params })
+    }>('/Analytics/forecast/demand', { params })
     return response.data.data
   },
 
@@ -166,7 +166,7 @@ export const analyticsService = {
     const response = await apiClient.get<{
       success: boolean
       data: OptimalPrice
-    }>('/api/v1.0/Analytics/pricing/optimal', { params })
+    }>('/Analytics/pricing/optimal', { params })
     return response.data.data
   },
 }

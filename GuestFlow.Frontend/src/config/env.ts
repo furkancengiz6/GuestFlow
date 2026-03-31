@@ -62,7 +62,7 @@ const getEnvNumber = (key: string, defaultValue: number = 0): number => {
  * Environment configuration object
  */
 export const env: EnvConfig = {
-  apiBaseUrl: getEnv('VITE_API_BASE_URL', 'http://localhost:5146/api/v1.0'),
+  apiBaseUrl: getEnv('VITE_API_BASE_URL', 'http://localhost:5146/api/v1'),
   googleMapsApiKey: getEnv('VITE_GOOGLE_MAPS_API_KEY', ''),
   stripePublishableKey: getEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_sample'),
   env: getEnv('VITE_ENV', 'development'),

@@ -178,10 +178,11 @@ export default function IntelligenceDashboardPage() {
   // Fetch pricing intelligence
   const { data: pricingData = [], isLoading: loadingPricing } = useQuery({
     queryKey: ['pricingIntelligence'],
-    queryFn: () => {
+    queryFn: async () => {
       const start = new Date().toISOString().split('T')[0]
       const end = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-      return intelligenceService.getPricingIntelligence(1, start, end) // RoomType 1 for demo
+      const data = await intelligenceService.getPricingIntelligence(1, start, end) // RoomType 1 for demo
+      return data || []
     },
   })
 
@@ -379,6 +380,8 @@ export default function IntelligenceDashboardPage() {
               {recommendations.map((rec: ProactiveRecommendation, index: number) => (
                 <ListItem key={index} sx={{ mb: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
                   <ListItemText
+                    primaryTypographyProps={{ component: 'div' }}
+                    secondaryTypographyProps={{ component: 'div' }}
                     primary={
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                         <Typography variant="h6">{rec.title}</Typography>
@@ -465,6 +468,8 @@ export default function IntelligenceDashboardPage() {
               {warnings.map((warning: EarlyWarningSignal, index: number) => (
                 <ListItem key={index} sx={{ mb: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
                   <ListItemText
+                    primaryTypographyProps={{ component: 'div' }}
+                    secondaryTypographyProps={{ component: 'div' }}
                     primary={
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Typography variant="h6">{warning.message}</Typography>
@@ -477,7 +482,7 @@ export default function IntelligenceDashboardPage() {
                       </Box>
                     }
                     secondary={
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" color="text.secondary" component="div">
                         Detected: {new Date(warning.detectedAt).toLocaleString()}
                       </Typography>
                     }
@@ -501,6 +506,8 @@ export default function IntelligenceDashboardPage() {
               {suggestions.map((suggestion: PersonalizationSuggestion, index: number) => (
                 <ListItem key={index} sx={{ mb: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
                   <ListItemText
+                    primaryTypographyProps={{ component: 'div' }}
+                    secondaryTypographyProps={{ component: 'div' }}
                     primary={
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                         <Typography variant="h6">{suggestion.title}</Typography>
@@ -544,6 +551,8 @@ export default function IntelligenceDashboardPage() {
               {actions.map((action: AutomaticAction, index: number) => (
                 <ListItem key={index} sx={{ mb: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
                   <ListItemText
+                    primaryTypographyProps={{ component: 'div' }}
+                    secondaryTypographyProps={{ component: 'div' }}
                     primary={
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                         <Typography variant="h6">{action.title}</Typography>
@@ -611,6 +620,8 @@ export default function IntelligenceDashboardPage() {
               {actionHistory.map((history: GuestIntelligenceAction) => (
                 <ListItem key={history.id} sx={{ mb: 2, border: 1, borderColor: 'divider', borderRadius: 1, borderLeft: 5, borderLeftColor: history.status === 'Success' ? 'success.main' : 'error.main' }}>
                   <ListItemText
+                    primaryTypographyProps={{ component: 'div' }}
+                    secondaryTypographyProps={{ component: 'div' }}
                     primary={
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                         <Typography variant="h6">{history.title}</Typography>
@@ -676,12 +687,12 @@ export default function IntelligenceDashboardPage() {
                         <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
                         <RechartsTooltip
                           content={({ active, payload }) => {
-                            if (active && payload && payload.length) {
+                            if (active && payload && payload.length > 0 && payload[0].payload) {
                               const data = payload[0].payload as PricingIntelligenceResult;
                               return (
                                 <Box sx={{ bgcolor: 'background.paper', p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 1, boxShadow: 2 }}>
                                   <Typography variant="subtitle2" sx={{ mb: 1 }}>{new Date(data.date).toLocaleDateString()}</Typography>
-                                  <Typography variant="body2" color="primary">Occupancy: {(data.forecastedOccupancy * 100).toFixed(0)}%</Typography>
+                                  <Typography variant="body2" color="primary">Occupancy: {((data.forecastedOccupancy || 0) * 100).toFixed(0)}%</Typography>
                                   <Typography variant="body2" color="success.main">Rate: {data.dynamicRate} TRY</Typography>
                                   {data.ruleDetails && data.ruleDetails.length > 0 ? (
                                     <Box sx={{ mt: 1 }}>
@@ -692,7 +703,7 @@ export default function IntelligenceDashboardPage() {
                                         </Typography>
                                       ))}
                                     </Box>
-                                  ) : data.appliedRules.length > 0 && (
+                                  ) : data.appliedRules && data.appliedRules.length > 0 && (
                                     <Box sx={{ mt: 1 }}>
                                       <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block' }}>Applied Rules:</Typography>
                                       {data.appliedRules.map((r, i) => (

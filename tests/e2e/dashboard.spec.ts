@@ -8,8 +8,8 @@ test.describe('GuestFlow Dashboard E2E Tests', () => {
     // Login if needed (adjust selectors based on your actual login form)
     const loginForm = page.locator('form').first();
     if (await loginForm.isVisible()) {
-      await page.fill('input[type="email"]', 'admin@example.com');
-      await page.fill('input[type="password"]', 'AdminPass123!');
+      await page.fill('input[type="email"]', 'demo.admin.demo.admin@guestflow.local');
+      await page.fill('input[type="password"]', 'GuestFlow123!');
       await page.click('button[type="submit"]');
 
       // Wait for navigation to dashboard

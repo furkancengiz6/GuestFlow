@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import {
   Box,
-  Paper,
   Table,
   TableBody,
   TableCell,
@@ -20,6 +19,7 @@ import {
   DialogActions,
   TextField,
   InputAdornment,
+  Card,
 } from '@mui/material'
 import {
   Add as AddIcon,
@@ -170,7 +170,7 @@ const DailyRevenuesPage = () => {
         </Button>
       </Box>
 
-      <Paper sx={{ p: 2, mb: 3 }}>
+      <Card className="glass-panel" sx={{ p: 2, mb: 3 }}>
         <TextField
           placeholder="Ara..."
           value={searchTerm}
@@ -201,76 +201,79 @@ const DailyRevenuesPage = () => {
             ),
           }}
         />
-      </Paper>
+      </Card>
 
-      {!hasData ? (
-        <ContentState
-          state="empty"
-          title="Günlük gelir bulunamadı"
-          description="Henüz kayıtlı günlük gelir bulunmamaktadır."
-        />
-      ) : (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell><strong>Tarih</strong></TableCell>
-                <TableCell><strong>Gelir Miktarı</strong></TableCell>
-                <TableCell><strong>Para Birimi</strong></TableCell>
-                <TableCell><strong>Not</strong></TableCell>
-                <TableCell><strong>Kayıt Tarihi</strong></TableCell>
-                <TableCell><strong>İşlemler</strong></TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {data?.data.map((dailyRevenue) => (
-                <TableRow key={dailyRevenue.id} hover>
-                  <TableCell>{formatDate(dailyRevenue.revenueDate)}</TableCell>
-                  <TableCell>{formatCurrency(dailyRevenue.revenueAmount, dailyRevenue.currency)}</TableCell>
-                  <TableCell>{dailyRevenue.currency}</TableCell>
-                  <TableCell sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {dailyRevenue.note || '-'}
-                  </TableCell>
-                  <TableCell>{formatDate(dailyRevenue.createdDate)}</TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      <Tooltip title="Düzenle">
-                        <IconButton
-                          size="small"
-                          color="primary"
-                          onClick={() => handleOpenForm(dailyRevenue)}
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Sil">
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleDeleteClick(dailyRevenue)}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <TablePagination
-            component="div"
-            count={data?.totalCount || 0}
-            page={page}
-            onPageChange={handleChangePage}
-            rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            rowsPerPageOptions={[5, 10, 25, 50]}
-            labelRowsPerPage="Sayfa başına:"
-            labelDisplayedRows={({ from, to, count }) => `${from}-${to} / ${count}`}
+      {
+        !hasData ? (
+          <ContentState
+            state="empty"
+            title="Günlük gelir bulunamadı"
+            description="Henüz kayıtlı günlük gelir bulunmamaktadır."
           />
-        </TableContainer>
-      )}
+        ) : (
+          <Card className="glass-panel">
+            <TableContainer>
+              <Table>
+                <TableHead sx={{ bgcolor: 'rgba(0,0,0,0.02)' }}>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 700 }}>Tarih</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Gelir Miktarı</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Para Birimi</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Not</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>Kayıt Tarihi</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>İşlemler</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {data?.data.map((dailyRevenue) => (
+                    <TableRow key={dailyRevenue.id} hover>
+                      <TableCell>{formatDate(dailyRevenue.revenueDate)}</TableCell>
+                      <TableCell>{formatCurrency(dailyRevenue.revenueAmount, dailyRevenue.currency)}</TableCell>
+                      <TableCell>{dailyRevenue.currency}</TableCell>
+                      <TableCell sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {dailyRevenue.note || '-'}
+                      </TableCell>
+                      <TableCell>{formatDate(dailyRevenue.createdDate)}</TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <Tooltip title="Düzenle">
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => handleOpenForm(dailyRevenue)}
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Sil">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => handleDeleteClick(dailyRevenue)}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <TablePagination
+                component="div"
+                count={data?.totalCount || 0}
+                page={page}
+                onPageChange={handleChangePage}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                rowsPerPageOptions={[5, 10, 25, 50]}
+                labelRowsPerPage="Sayfa başına:"
+                labelDisplayedRows={({ from, to, count }) => `${from}-${to} / ${count}`}
+              />
+            </TableContainer>
+          </Card>
+        )}
 
       <DailyRevenueForm
         open={formOpen}

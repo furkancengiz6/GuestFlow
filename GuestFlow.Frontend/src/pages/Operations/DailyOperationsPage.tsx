@@ -43,9 +43,8 @@ import ContentState from '../../components/Feedback/ContentState'
 import { RiskFlagSeverity, ServiceOperation } from '../../types/dailyOperations'
 
 const DailyOperationsPage = () => {
-  const [_selectedDate, setSelectedDate] = useState<string | undefined>(undefined)
   const [activeTab, setActiveTab] = useState(0)
-  const { data, isLoading, error, refetch } = useDailyOperations(_selectedDate)
+  const { data, isLoading, error, refetch } = useDailyOperations(undefined)
 
   // Dialog states
   const [assignDriverDialog, setAssignDriverDialog] = useState({ open: false, serviceId: 0, serviceType: '' })

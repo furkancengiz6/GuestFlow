@@ -17,14 +17,10 @@ namespace GuestFlow.Domain.Entities.Operations
     {
         public override void Configure(EntityTypeBuilder<GuestYachtTour> builder)
         {
-            // Composite key tanımı - BaseEntity Id'yi kullanmıyoruz
             builder.HasKey(gyt => new { gyt.GuestId, gyt.YachtTourId });
 
-            // BaseEntity'den gelen property'leri override et (ignore değil)
-            builder.Property(gyt => gyt.Id).ValueGeneratedNever(); // Id'yi kullanmıyoruz
-
-            // BaseEntity'nin CreatedDate ve IsDeleted property'lerini ignore et
-            // çünkü bu junction table'da bunları kullanmıyoruz
+            // BaseEntity'den gelen junction table için gereksiz alanları yoksay
+            builder.Ignore(gyt => gyt.Id);
             builder.Ignore(gyt => gyt.CreatedDate);
             builder.Ignore(gyt => gyt.UpdatedDate);
             builder.Ignore(gyt => gyt.CreatedByPersonnelId);
@@ -45,7 +41,6 @@ namespace GuestFlow.Domain.Entities.Operations
             // Index'ler
             builder.HasIndex(gyt => gyt.GuestId);
             builder.HasIndex(gyt => gyt.YachtTourId);
-            builder.HasIndex(gyt => new { gyt.GuestId, gyt.YachtTourId });
         }
     }
 }

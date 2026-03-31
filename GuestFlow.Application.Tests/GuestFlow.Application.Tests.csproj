@@ -23,8 +23,9 @@
     <PackageReference Include="System.Text.Json" Version="8.0.5" />
     <PackageReference Include="xunit" Version="2.5.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.14" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.14" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.14" />
   </ItemGroup>
 
   <ItemGroup>
@@ -59,8 +60,10 @@
     <Compile Include="Integration\AuthorizedTestWebApplicationFactory.cs" />
     <Compile Include="Integration\TestAuthHandler.cs" />
     <Compile Include="Integration\Smoke\ApiSmokeTests.cs" />
+    <Compile Include="Integration\IntelligenceIntegrationTests.cs" />
     <Compile Include="Integration\SupplierCostIntegrationTests.cs" />
     <Compile Include="Integration\ApiSecurityIntegrationTests.cs" />
+    <Compile Include="Integration\MultiTenancyIntegrationTests.cs" />
     <Compile Include="Integration\Crud\GuestsCrudTests.cs" />
     <Compile Include="Integration\Crud\TransfersCrudTests.cs" />
     <Compile Include="Integration\Crud\CityToursCrudTests.cs" />
@@ -73,6 +76,10 @@
     <!-- Finance Tests -->
     <Compile Include="Operations\Finance\Pricing\DynamicPricingServiceTests.cs" />
     <Compile Include="Operations\Finance\Revenue\RevenueServiceTests.cs" />
+
+    <!-- Intelligence Tests -->
+    <Compile Include="Operations\Intelligence\RelationshipIntelligenceServiceTests.cs" />
+    <Compile Include="Operations\Intelligence\PredictiveIntelligenceServiceTests.cs" />
   </ItemGroup>
 
 </Project>

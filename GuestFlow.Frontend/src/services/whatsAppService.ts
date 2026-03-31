@@ -17,7 +17,7 @@ export const whatsAppService = {
       success: boolean
       data: WhatsAppHistory
       message?: string
-    }>('/api/v1.0/WhatsApp/send', data)
+    }>('/WhatsApp/send', data)
     return response.data.data
   },
 
@@ -32,7 +32,7 @@ export const whatsAppService = {
       success: boolean
       data: WhatsAppHistory
       message?: string
-    }>(`/api/v1.0/WhatsApp/transfer/${transferId}/reminder?hoursBefore=${hoursBefore}`)
+    }>(`/WhatsApp/transfer/${transferId}/reminder?hoursBefore=${hoursBefore}`)
     return response.data.data
   },
 
@@ -48,7 +48,7 @@ export const whatsAppService = {
       success: boolean
       data: WhatsAppHistory
       message?: string
-    }>(`/api/v1.0/WhatsApp/tour/${tourType}/${tourId}/reminder?hoursBefore=${hoursBefore}`)
+    }>(`/WhatsApp/tour/${tourType}/${tourId}/reminder?hoursBefore=${hoursBefore}`)
     return response.data.data
   },
 
@@ -62,7 +62,7 @@ export const whatsAppService = {
       success: boolean
       data: WhatsAppHistory
       message?: string
-    }>(`/api/v1.0/WhatsApp/reservation/${reservationId}/confirmation`)
+    }>(`/WhatsApp/reservation/${reservationId}/confirmation`)
     return response.data.data
   },
 
@@ -92,7 +92,7 @@ export const whatsAppService = {
         pageNumber: number
         pageSize: number
       }
-    }>('/api/v1.0/WhatsApp/history', null, { params })
+    }>('/WhatsApp/history', null, { params })
     return response.data.data
   },
 
@@ -105,7 +105,7 @@ export const whatsAppService = {
     const response = await apiClient.get<{
       success: boolean
       data: WhatsAppHistory[]
-    }>(`/api/v1.0/WhatsApp/guest/${guestId}`)
+    }>(`/WhatsApp/guest/${guestId}`)
     return response.data.data
   },
 
@@ -119,7 +119,7 @@ export const whatsAppService = {
     const response = await apiClient.get<{
       success: boolean
       data: WhatsAppStatistics
-    }>('/api/v1.0/WhatsApp/statistics', { params })
+    }>('/WhatsApp/statistics', { params })
     return response.data.data
   },
 }

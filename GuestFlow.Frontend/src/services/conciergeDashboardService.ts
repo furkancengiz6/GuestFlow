@@ -43,4 +43,21 @@ export const conciergeDashboardService = {
     const response = await apiClient.get(`/ConciergeDashboard/guests/${guestId}/history`)
     return response.data.data || response.data
   },
+
+  // Bildirim gönderimleri
+  sendNotifications: async (type: string, targetDate?: string): Promise<any> => {
+    const params = targetDate ? { targetDate } : {}
+    const response = await apiClient.post(`/ConciergeDashboard/notifications/${type}`, null, { params })
+    return response.data
+  },
+
+  sendCustomNotification: async (request: { guestId: number; message: string; channel: string }): Promise<any> => {
+    const response = await apiClient.post('/ConciergeDashboard/notifications/custom', request)
+    return response.data
+  },
+
+  performQuickAction: async (action: string, guestId: number): Promise<any> => {
+    const response = await apiClient.post(`/ConciergeDashboard/quick-action/${action}/${guestId}`)
+    return response.data
+  },
 }

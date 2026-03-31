@@ -2,6 +2,7 @@ using GuestFlow.Domain.Entities.Interfaces;
 using GuestFlow.Domain.Entities.Enum;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
+using GuestFlow.Domain.Converters;
 
 namespace GuestFlow.Domain.Entities.Core
 {
@@ -42,6 +43,11 @@ namespace GuestFlow.Domain.Entities.Core
         public int? VehicleId { get; set; } // Zorunlu değil
         public int? PickupCityId { get; set; } // Zorunlu değil
         public int? DropoffCityId { get; set; } // Zorunlu değil
+
+        // Hotel Relationships (Explicit FKs to resolve shadow property warnings)
+        public int? PickupHotelId { get; set; }
+        public int? DropoffHotelId { get; set; }
+
         public decimal? DiscountPercentage { get; set; }
         public decimal FinalPrice { get; set; }
         public string? Currency { get; set; } = "TRY"; // Para birimi (TRY, USD, EUR, GBP, RUB)
@@ -91,6 +97,11 @@ namespace GuestFlow.Domain.Entities.Core
         public virtual ICollection<InvoicesEntity> Invoices { get; set; } = new List<InvoicesEntity>();
         public virtual CityEntity? PickupCity { get; set; }
         public virtual CityEntity? DropoffCity { get; set; }
+        
+        // Hotel Navigation Properties
+        public virtual HotelEntity? PickupHotel { get; set; }
+        public virtual HotelEntity? DropoffHotel { get; set; }
+
         public virtual ICollection<PaymentEntity> Payments { get; set; } = new List<PaymentEntity>();
     }
 
@@ -101,7 +112,7 @@ namespace GuestFlow.Domain.Entities.Core
             base.Configure(builder);
             builder.Property(t => t.PickupAddress).HasMaxLength(500).IsRequired();
             builder.Property(t => t.DropoffAddress).HasMaxLength(500).IsRequired();
-            builder.Property(t => t.Note).HasMaxLength(1000).IsRequired(false);
+            builder.Property(t => t.Note).HasMaxLength(1000).IsRequired(false).HasConversion<EncryptedValueConverter>();
             builder.Property(t => t.Status).HasMaxLength(50).IsRequired(false);
             builder.Property(t => t.Price).HasPrecision(18, 2);
             builder.Property(t => t.DiscountPercentage).HasPrecision(5, 2);
@@ -123,25 +134,39 @@ namespace GuestFlow.Domain.Entities.Core
             builder.Property(t => t.EmergencyContactPhone).HasMaxLength(20).IsRequired(false);
             builder.Property(t => t.PrimaryContactPhone).HasMaxLength(20).IsRequired(false);
             builder.Property(t => t.SecondaryContactPhone).HasMaxLength(20).IsRequired(false);
-            builder.Property(t => t.AccessibilityRequirements).HasMaxLength(500).IsRequired(false);
-            builder.Property(t => t.SpecialHandlingNotes).HasMaxLength(1000).IsRequired(false);
-            builder.Property(t => t.ConciergeInternalNotes).HasMaxLength(1000).IsRequired(false);
-            builder.Property(t => t.GuestVisibleNotes).HasMaxLength(500).IsRequired(false);
+            builder.Property(t => t.AccessibilityRequirements).HasMaxLength(500).IsRequired(false).HasConversion<EncryptedValueConverter>();
+            builder.Property(t => t.SpecialHandlingNotes).HasMaxLength(1000).IsRequired(false).HasConversion<EncryptedValueConverter>();
+            builder.Property(t => t.ConciergeInternalNotes).HasMaxLength(1000).IsRequired(false).HasConversion<EncryptedValueConverter>();
+            builder.Property(t => t.GuestVisibleNotes).HasMaxLength(500).IsRequired(false).HasConversion<EncryptedValueConverter>();
             builder.Property(t => t.SupplierContactPhone).HasMaxLength(20).IsRequired(false);
             builder.Property(t => t.SupplierEmergencyContact).HasMaxLength(20).IsRequired(false);
-            builder.Property(t => t.TransferType).HasConversion<int>(); // Enum'u int olarak sakla
 
-            // New properties constraints
-            builder.Property(t => t.Priority).HasConversion<int>().IsRequired();
-            builder.Property(t => t.TransportMode).HasConversion<int>().IsRequired(false);
-            builder.Property(t => t.LuggageCount).IsRequired(false);
+            // Foreign Key and Navigation Properties
+            builder.HasOne(t => t.Airport)
+                .WithMany(a => a.Transfers)
+                .HasForeignKey(t => t.AirportId)
+                .OnDelete(DeleteBehavior.SetNull);
 
-            // Performance indexes for common queries
-            builder.HasIndex(t => t.TransferDate);
-            builder.HasIndex(t => t.Status);
-            builder.HasIndex(t => new { t.Status, t.TransferDate });
-            builder.HasIndex(t => new { t.DriverId, t.TransferDate });
-            builder.HasIndex(t => new { t.VehicleId, t.TransferDate });
+            builder.HasOne(t => t.Vehicle)
+                .WithMany(v => v.Transfers)
+                .HasForeignKey(t => t.VehicleId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            builder.HasOne(t => t.Personnel)
+                .WithMany(p => p.Transfers)
+                .HasForeignKey(t => t.PersonnelId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            builder.HasOne(t => t.PickupCity)
+                .WithMany(c => c.PickupTransfers)
+                .HasForeignKey(t => t.PickupCityId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasOne(t => t.DropoffCity)
+                .WithMany(c => c.DropoffTransfers)
+                .HasForeignKey(t => t.DropoffCityId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             builder.HasIndex(t => t.GuestId);
             builder.HasIndex(t => new { t.TransferDate, t.Status, t.IsDeleted });
             builder.HasIndex(t => t.Priority);
@@ -149,6 +174,22 @@ namespace GuestFlow.Domain.Entities.Core
             builder.HasIndex(t => t.TransportMode);
             builder.HasIndex(t => new { t.TransferDate, t.DriverId, t.Status });
             builder.HasIndex(t => new { t.TransferDate, t.VehicleId, t.Status });
+
+            // Configure Hotel Relationships
+            builder.HasOne(t => t.PickupHotel)
+                .WithMany(h => h.PickupTransfers)
+                .HasForeignKey(t => t.PickupHotelId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasOne(t => t.DropoffHotel)
+                .WithMany(h => h.DropoffTransfers)
+                .HasForeignKey(t => t.DropoffHotelId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasOne(t => t.Guest)
+                .WithMany(g => g.Transfers)
+                .HasForeignKey(t => t.GuestId)
+                .OnDelete(DeleteBehavior.NoAction);
 
         }
     }

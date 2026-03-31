@@ -142,7 +142,6 @@ namespace GuestFlow.Domain.Entities.Operations
                 .HasMaxLength(100);
 
             builder.Property(w => w.Payload)
-                .HasColumnType("nvarchar(max)")
                 .IsRequired();
 
             builder.Property(w => w.Signature)
@@ -155,8 +154,7 @@ namespace GuestFlow.Domain.Entities.Operations
             builder.Property(w => w.ErrorMessage)
                 .HasMaxLength(2000);
 
-            builder.Property(w => w.ErrorDetails)
-                .HasColumnType("nvarchar(max)");
+            builder.Property(l => l.ErrorDetails).IsRequired(false);
 
             builder.Property(w => w.IpAddress)
                 .HasMaxLength(50);
@@ -168,9 +166,9 @@ namespace GuestFlow.Domain.Entities.Operations
             builder.HasIndex(w => new { w.OTAIntegrationId, w.Status });
             builder.HasIndex(w => new { w.ProviderCode, w.Status });
             builder.HasIndex(w => w.NextRetryAt)
-                .HasFilter("[NextRetryAt] IS NOT NULL AND [Status] = 'Failed'");
+                .HasFilter("NextRetryAt IS NOT NULL AND Status = 'Failed'");
             builder.HasIndex(w => w.IsDeadLetter)
-                .HasFilter("[IsDeadLetter] = 1");
+                .HasFilter("IsDeadLetter = 1");
         }
     }
 }

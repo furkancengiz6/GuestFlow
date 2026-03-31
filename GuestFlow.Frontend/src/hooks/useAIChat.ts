@@ -11,7 +11,7 @@ export const useAIChat = () => {
     const connectionRef = useRef<signalR.HubConnection | null>(null);
     const { accessToken, user } = useAuthStore();
 
-    const baseUrl = env.apiBaseUrl.replace('/api/v1.0', '');
+    const baseUrl = env.apiBaseUrl.replace(/\/api\/v\d+(\.\d+)?$/, '');
     const hubUrl = `${baseUrl}/hubs/ai-chat`;
 
     useEffect(() => {

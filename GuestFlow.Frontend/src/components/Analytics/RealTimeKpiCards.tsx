@@ -9,6 +9,7 @@ import {
   Typography,
   Chip,
   LinearProgress,
+  alpha,
 } from '@mui/material'
 import {
   AttachMoney as MoneyIcon,
@@ -54,10 +55,11 @@ const RealTimeKpiCards = () => {
     <Grid container spacing={3}>
       {/* Bugünkü Gelir */}
       <Grid item xs={12} sm={6} md={3}>
-        <Card data-testid="kpi-card-today-revenue">
+        <Card sx={{ borderLeft: '4px solid', borderLeftColor: 'primary.main', position: 'relative', overflow: 'hidden' }}>
+          <Box sx={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, background: alpha('#5754E8', 0.05), borderRadius: '50%' }} />
           <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-              <Typography variant="body2" color="text.secondary">
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1, position: 'relative' }}>
+              <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Bugünkü Gelir
               </Typography>
               <MoneyIcon color="primary" />
@@ -74,10 +76,11 @@ const RealTimeKpiCards = () => {
 
       {/* Bu Ayın Geliri */}
       <Grid item xs={12} sm={6} md={3}>
-        <Card data-testid="kpi-card-month-revenue">
+        <Card sx={{ borderLeft: '4px solid', borderLeftColor: 'secondary.main', position: 'relative', overflow: 'hidden' }}>
+          <Box sx={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, background: alpha('#6366F1', 0.05), borderRadius: '50%' }} />
           <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-              <Typography variant="body2" color="text.secondary">
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1, position: 'relative' }}>
+              <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Bu Ayın Geliri
               </Typography>
               <AssessmentIcon color="primary" />
@@ -104,10 +107,11 @@ const RealTimeKpiCards = () => {
 
       {/* Net Kâr */}
       <Grid item xs={12} sm={6} md={3}>
-        <Card data-testid="kpi-card-net-profit">
+        <Card sx={{ borderLeft: '4px solid', borderLeftColor: 'success.main', position: 'relative', overflow: 'hidden' }}>
+          <Box sx={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, background: alpha('#2e7d32', 0.05), borderRadius: '50%' }} />
           <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-              <Typography variant="body2" color="text.secondary">
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1, position: 'relative' }}>
+              <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Bu Ayın Net Kârı
               </Typography>
               <MoneyIcon color="success" />
@@ -137,10 +141,11 @@ const RealTimeKpiCards = () => {
 
       {/* Ortalama Hizmet Başına Gelir */}
       <Grid item xs={12} sm={6} md={3}>
-        <Card>
+        <Card sx={{ borderLeft: '4px solid', borderLeftColor: 'info.main', position: 'relative', overflow: 'hidden' }}>
+          <Box sx={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, background: alpha('#0288d1', 0.05), borderRadius: '50%' }} />
           <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-              <Typography variant="body2" color="text.secondary">
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1, position: 'relative' }}>
+              <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Ortalama Hizmet Başına
               </Typography>
               <PercentIcon color="info" />

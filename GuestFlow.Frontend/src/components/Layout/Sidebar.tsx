@@ -43,6 +43,10 @@ import {
   Security as SecurityIcon,
   Psychology as IntelligenceIcon,
   HealthAndSafety as HealthAndSafetyIcon,
+  AutoGraph as CommercialIcon,
+  Nature as SustainabilityIcon,
+  Rule as PricingIcon,
+  Flag as FeatureFlagIcon,
 } from '@mui/icons-material'
 import { useAuthStore } from '../../stores/authStore'
 
@@ -66,6 +70,7 @@ const menuCategories: MenuCategory[] = [
     items: [
       { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
       { text: 'Intelligence', icon: <IntelligenceIcon color="primary" />, path: '/intelligence', roles: ['Admin', 'Staff'] },
+      { text: 'Commercial Dashboard', icon: <CommercialIcon color="secondary" />, path: '/commercial-dashboard', roles: ['Manager', 'Admin', 'Owner'] },
       { text: 'Operasyonel Harita', icon: <MapIcon />, path: '/operational-map' },
       { text: 'Takvim', icon: <CalendarIcon />, path: '/calendar' },
     ]
@@ -79,6 +84,7 @@ const menuCategories: MenuCategory[] = [
       { text: 'Rezervasyonlar', icon: <ReservationIcon />, path: '/reservations' },
       { text: 'İtineraryler', icon: <TimelineIcon />, path: '/itineraries' },
       { text: 'Günlük Operasyonlar', icon: <TodayIcon />, path: '/daily-operations', roles: ['Admin', 'Staff'] },
+      { text: 'Sürdürülebilirlik', icon: <SustainabilityIcon color="success" />, path: '/sustainability', roles: ['Manager', 'Admin', 'Staff'] },
     ]
   },
   {
@@ -118,6 +124,8 @@ const menuCategories: MenuCategory[] = [
       { text: 'Login Audit', icon: <SecurityIcon />, path: '/security/login-audit', roles: ['Admin', 'Owner'] },
       { text: 'PII Yönetimi', icon: <SecurityIcon />, path: '/privacy', roles: ['Admin', 'Owner'] },
       { text: 'Sistem Sağlığı', icon: <HealthAndSafetyIcon />, path: '/admin/system-health', roles: ['Admin'] },
+      { text: 'Fiyatlandırma Kuralları', icon: <PricingIcon />, path: '/admin/pricing-rules', roles: ['Admin', 'Owner'] },
+      { text: 'Feature Flagler', icon: <FeatureFlagIcon />, path: '/admin/feature-flags', roles: ['Admin'] },
       { text: 'Ayarlar', icon: <SettingsIcon />, path: '/settings', roles: ['Admin', 'Owner'] },
     ]
   }
@@ -179,13 +187,25 @@ const Sidebar = () => {
               <ListSubheader
                 sx={{
                   lineHeight: '24px',
-                  fontSize: '0.7rem',
-                  fontWeight: 700,
+                  fontSize: '0.75rem',
+                  fontWeight: 800,
                   textTransform: 'uppercase',
-                  color: 'text.secondary',
+                  color: 'primary.main',
+                  letterSpacing: '0.1em',
                   bgcolor: 'transparent',
-                  mb: 0.5,
-                  px: 2
+                  mt: 3,
+                  mb: 1,
+                  px: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  '&::after': {
+                    content: '""',
+                    flex: 1,
+                    height: '1px',
+                    background: alpha('#6366f1', 0.1),
+                    ml: 1
+                  }
                 }}
               >
                 {cat.category}
@@ -199,33 +219,72 @@ const Sidebar = () => {
                         selected={active}
                         onClick={() => navigate(item.path)}
                         sx={{
-                          borderRadius: '10px',
-                          py: 1,
+                          borderRadius: '12px',
+                          py: 1.2,
                           px: 2,
+                          mx: 1,
+                          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                           '&.Mui-selected': {
-                            backgroundColor: alpha('#6366f1', 0.08),
+                            backgroundColor: alpha('#6366f1', 0.1),
                             color: 'primary.main',
+                            '& .active-indicator': {
+                              opacity: 1,
+                              transform: 'scaleY(1)'
+                            },
                             '& .MuiListItemIcon-root': {
                               color: 'primary.main',
+                              background: alpha('#6366f1', 0.15),
                             },
                             '&:hover': {
-                              backgroundColor: alpha('#6366f1', 0.12),
+                              backgroundColor: alpha('#6366f1', 0.15),
                             },
                           },
                           '&:hover': {
-                            backgroundColor: alpha('#6366f1', 0.04),
+                            backgroundColor: alpha('#6366f1', 0.05),
+                            '& .MuiListItemIcon-root': {
+                              transform: 'translateX(2px)',
+                              color: 'primary.main'
+                            }
                           },
                         }}
                       >
-                        <ListItemIcon sx={{ minWidth: 38, color: active ? 'primary.main' : 'text.secondary' }}>
+                        <ListItemIcon
+                          sx={{
+                            minWidth: 42,
+                            height: 32,
+                            width: 32,
+                            borderRadius: '8px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            mr: 1.5,
+                            transition: 'all 0.2s',
+                            color: active ? 'primary.main' : 'text.secondary',
+                            background: active ? alpha('#6366f1', 0.1) : 'transparent',
+                          }}
+                        >
                           {item.icon}
                         </ListItemIcon>
                         <ListItemText
                           primary={item.text}
                           primaryTypographyProps={{
                             variant: 'body2',
-                            fontWeight: active ? 600 : 500,
-                            fontSize: '0.85rem'
+                            fontWeight: active ? 700 : 500,
+                            fontSize: '0.875rem'
+                          }}
+                        />
+                        <Box
+                          className="active-indicator"
+                          sx={{
+                            position: 'absolute',
+                            right: 0,
+                            width: 3,
+                            height: '60%',
+                            bgcolor: 'primary.main',
+                            borderRadius: '4px 0 0 4px',
+                            opacity: 0,
+                            transform: 'scaleY(0.5)',
+                            transition: 'all 0.3s'
                           }}
                         />
                       </ListItemButton>

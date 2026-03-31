@@ -22,6 +22,9 @@ import {
   DialogActions,
   TextField,
   InputAdornment,
+  Grid,
+  Card,
+  CardContent,
 } from '@mui/material'
 import {
   Add as AddIcon,
@@ -210,21 +213,23 @@ const ReservationsPage = () => {
   const hasData = data && data.data && data.data.length > 0
 
   return (
-    <Box p={3}>
+    <Box className="fade-in" p={3}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" sx={{ fontWeight: 600 }}>
-          Rezervasyonlar
+        <Typography variant="h4" component="h1" className="premium-gradient-text" sx={{ fontWeight: 800 }}>
+          Rezervasyon Yönetimi
         </Typography>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
-          onClick={() => handleOpenForm()}
+          onClick={() => setFormOpen(true)}
+          className="premium-gradient"
+          sx={{ borderRadius: 2, boxShadow: '0 4px 14px 0 rgba(0,118,255,0.39)' }}
         >
           Yeni Rezervasyon
         </Button>
       </Box>
 
-      <Paper sx={{ p: 2, mb: 3 }}>
+      <Card className="glass-panel" sx={{ p: 2, mb: 3 }}>
         <TextField
           placeholder="Ara (misafir, personel, durum)..."
           value={searchTerm}
@@ -255,7 +260,7 @@ const ReservationsPage = () => {
             ),
           }}
         />
-      </Paper>
+      </Card>
 
       {!hasData ? (
         <ContentState
@@ -264,109 +269,111 @@ const ReservationsPage = () => {
           description="Henüz kayıtlı rezervasyon bulunmamaktadır."
         />
       ) : (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell><strong>Rezervasyon Tarihi</strong></TableCell>
-                <TableCell><strong>Misafir</strong></TableCell>
-                <TableCell><strong>Personel</strong></TableCell>
-                <TableCell><strong>Durum</strong></TableCell>
-                <TableCell><strong>Kayıt Tarihi</strong></TableCell>
-                <TableCell><strong>İşlemler</strong></TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {data?.data.map((reservation) => (
-                <TableRow key={reservation.id} hover>
-                  <TableCell>{formatDate(reservation.reservationDate)}</TableCell>
-                  <TableCell>
-                    <Button
-                      variant="text"
-                      onClick={() => navigate(`/guests/${reservation.guestId}`)}
-                      sx={{ textTransform: 'none', fontWeight: 500 }}
-                    >
-                      {reservation.guestName || '-'}
-                    </Button>
-                  </TableCell>
-                  <TableCell>{reservation.personnelName || '-'}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={getStatusLabel(reservation.status)}
-                      color={getStatusColor(reservation.status) as any}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>{formatDate(reservation.createdDate)}</TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      <Tooltip title="Detay">
-                        <IconButton
-                          size="small"
-                          color="primary"
-                          onClick={() => navigate(`/reservations/${reservation.id}`)}
-                        >
-                          <VisibilityIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Düzenle">
-                        <IconButton
-                          size="small"
-                          color="primary"
-                          onClick={() => handleOpenForm(reservation)}
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      {reservation.status === 'Pending' && (
-                        <Tooltip title="Onayla">
-                          <IconButton
-                            size="small"
-                            color="success"
-                            onClick={() => confirmMutation.mutate(reservation.id)}
-                          >
-                            ✓
-                          </IconButton>
-                        </Tooltip>
-                      )}
-                      {reservation.status !== 'Cancelled' && (
-                        <Tooltip title="İptal Et">
-                          <IconButton
-                            size="small"
-                            color="warning"
-                            onClick={() => cancelMutation.mutate(reservation.id)}
-                          >
-                            ✕
-                          </IconButton>
-                        </Tooltip>
-                      )}
-                      <Tooltip title="Sil">
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleDeleteClick(reservation)}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </Box>
-                  </TableCell>
+        <Card className="glass-panel">
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell><strong>Rezervasyon Tarihi</strong></TableCell>
+                  <TableCell><strong>Misafir</strong></TableCell>
+                  <TableCell><strong>Personel</strong></TableCell>
+                  <TableCell><strong>Durum</strong></TableCell>
+                  <TableCell><strong>Kayıt Tarihi</strong></TableCell>
+                  <TableCell><strong>İşlemler</strong></TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <TablePagination
-            component="div"
-            count={data?.totalCount || 0}
-            page={page}
-            onPageChange={handleChangePage}
-            rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            rowsPerPageOptions={[5, 10, 25, 50]}
-            labelRowsPerPage="Sayfa başına:"
-            labelDisplayedRows={({ from, to, count }) => `${from}-${to} / ${count}`}
-          />
-        </TableContainer>
+              </TableHead>
+              <TableBody>
+                {data?.data.map((reservation) => (
+                  <TableRow key={reservation.id} hover>
+                    <TableCell>{formatDate(reservation.reservationDate)}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="text"
+                        onClick={() => navigate(`/guests/${reservation.guestId}`)}
+                        sx={{ textTransform: 'none', fontWeight: 500 }}
+                      >
+                        {reservation.guestName || '-'}
+                      </Button>
+                    </TableCell>
+                    <TableCell>{reservation.personnelName || '-'}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={getStatusLabel(reservation.status)}
+                        color={getStatusColor(reservation.status) as any}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>{formatDate(reservation.createdDate)}</TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Tooltip title="Detay">
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => navigate(`/reservations/${reservation.id}`)}
+                          >
+                            <VisibilityIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Düzenle">
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => handleOpenForm(reservation)}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        {reservation.status === 'Pending' && (
+                          <Tooltip title="Onayla">
+                            <IconButton
+                              size="small"
+                              color="success"
+                              onClick={() => confirmMutation.mutate(reservation.id)}
+                            >
+                              ✓
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        {reservation.status !== 'Cancelled' && (
+                          <Tooltip title="İptal Et">
+                            <IconButton
+                              size="small"
+                              color="warning"
+                              onClick={() => cancelMutation.mutate(reservation.id)}
+                            >
+                              ✕
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        <Tooltip title="Sil">
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => handleDeleteClick(reservation)}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <TablePagination
+              component="div"
+              count={data?.totalCount || 0}
+              page={page}
+              onPageChange={handleChangePage}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              rowsPerPageOptions={[5, 10, 25, 50]}
+              labelRowsPerPage="Sayfa başına:"
+              labelDisplayedRows={({ from, to, count }) => `${from}-${to} / ${count}`}
+            />
+          </TableContainer>
+        </Card>
       )}
 
       <ReservationForm

@@ -2,7 +2,7 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { operationsService, AssignDriverRequest as _AssignDriverRequest, RecordPaymentRequest } from '../services/operationsService'
+import { operationsService, RecordPaymentRequest } from '../services/operationsService'
 import { useNotification } from './useNotification'
 
 export const useConfirmTransfer = () => {

@@ -63,12 +63,12 @@ const LoginAuditPage = () => {
     isSuccessful: filters.isSuccessful,
   })
 
-  const { data: statistics, isLoading: _statsLoading } = useLoginAuditStatistics({
+  const { data: statistics } = useLoginAuditStatistics({
     startDate: dateRange.start.toISOString().split('T')[0],
     endDate: dateRange.end.toISOString().split('T')[0],
   })
 
-  const { data: failedSummary, isLoading: _summaryLoading } = useFailedLoginSummary({
+  const { data: failedSummary } = useFailedLoginSummary({
     startDate: dateRange.start.toISOString().split('T')[0],
     endDate: dateRange.end.toISOString().split('T')[0],
     topCount: 10,

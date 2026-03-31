@@ -67,6 +67,10 @@ const LoginAuditPage = lazyLoad(() => import('./pages/Security/LoginAuditPage'),
 const IntelligenceDashboardPage = lazyLoad(() => import('./pages/Intelligence/IntelligenceDashboardPage'), 'IntelligenceDashboardPage')
 const PrivacyManagementPage = lazyLoad(() => import('./pages/Privacy/PrivacyManagementPage'), 'PrivacyManagementPage')
 const SystemHealthDashboard = lazyLoad(() => import('./pages/Admin/SystemHealthDashboard'), 'SystemHealthDashboard')
+const CommercialDashboardPage = lazyLoad(() => import('./pages/Dashboard/CommercialDashboardPage'), 'CommercialDashboardPage')
+const SustainabilityPage = lazyLoad(() => import('./pages/Sustainability/SustainabilityPage'), 'SustainabilityPage')
+const PricingRulesPage = lazyLoad(() => import('./pages/Admin/PricingRulesPage'), 'PricingRulesPage')
+const FeatureFlagsPage = lazyLoad(() => import('./pages/Admin/FeatureFlagsPage'), 'FeatureFlagsPage')
 
 // Loading fallback component
 const PageLoader = () => (
@@ -122,6 +126,16 @@ function App() {
                         <Suspense fallback={<PageLoader />}>
                           <DashboardPage />
                         </Suspense>
+                      }
+                    />
+                    <Route
+                      path="/commercial-dashboard"
+                      element={
+                        <ProtectedRoute roles={['Manager', 'Admin', 'Owner']} fallbackPath="/dashboard">
+                          <Suspense fallback={<PageLoader />}>
+                            <CommercialDashboardPage />
+                          </Suspense>
+                        </ProtectedRoute>
                       }
                     />
                     <Route
@@ -302,6 +316,36 @@ function App() {
                         <Suspense fallback={<PageLoader />}>
                           <ReservationsPage />
                         </Suspense>
+                      }
+                    />
+                    <Route
+                      path="/sustainability"
+                      element={
+                        <ProtectedRoute roles={['Manager', 'Admin', 'Staff']} fallbackPath="/dashboard">
+                          <Suspense fallback={<PageLoader />}>
+                            <SustainabilityPage />
+                          </Suspense>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/pricing-rules"
+                      element={
+                        <ProtectedRoute roles={['Admin']} fallbackPath="/dashboard">
+                          <Suspense fallback={<PageLoader />}>
+                            <PricingRulesPage />
+                          </Suspense>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/feature-flags"
+                      element={
+                        <ProtectedRoute roles={['Admin']} fallbackPath="/dashboard">
+                          <Suspense fallback={<PageLoader />}>
+                            <FeatureFlagsPage />
+                          </Suspense>
+                        </ProtectedRoute>
                       }
                     />
                     <Route

@@ -58,7 +58,6 @@ using GuestFlow.Application.Operations.Common;
 using GuestFlow.Application.Operations.Sustainability;
 using GuestFlow.Application.Configuration;
 using GuestFlow.Api.BackgroundServices;
-using GuestFlow.Api.Filters;
 using GuestFlow.Application.Infrastructure.Graph;
 using GuestFlow.Domain.Events;
 using GuestFlow.Application.Infrastructure.Events;
@@ -102,6 +101,7 @@ using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using GuestFlow.Domain.DataProtection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -130,15 +130,19 @@ builder.Services.Configure<HostOptions>(hostOptions =>
 });
 
 // Add services to the container.
-
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+    });
 // AutoMapper
 builder.Services.AddAutoMapper(typeof(GuestFlow.Application.Mappings.MappingProfile).Assembly);
 
 builder.Services.AddControllers(options =>
 {
-    // Global olarak ValidationActionFilter ekle
     options.Filters.Add<ValidationActionFilter>();
-    options.Filters.Add<TenantFilter>();
+    // options.Filters.Add<TenantFilter>(); // REPLACED by TenantResolutionMiddleware for broader support
     options.Filters.Add<PiiMaskingActionFilter>();
 })
     .AddJsonOptions(options =>
@@ -231,15 +235,6 @@ builder.Services.AddApiVersioning(options =>
     // options.ErrorResponses = new ApiVersionErrorResponseProvider();
 });
 
-// API Version 2.0 Preview (CQRS-enabled)
-builder.Services.AddApiVersioning(options =>
-{
-    // Version 2.0 introduces CQRS patterns
-    // Commands and Queries are separate endpoints
-    // Domain events are published
-    // Enhanced validation and security
-});
-
 builder.Services.AddVersionedApiExplorer(options =>
 {
     options.GroupNameFormat = "'v'VVV";
@@ -313,7 +308,7 @@ builder.Services.AddSwaggerGen(options =>
 // Swagger'ı versiyonlama ile entegre et
 builder.Services.ConfigureOptions<ConfigureSwaggerOptions>();
 
-builder.Services.AddScoped<GuestFlow.Domain.DataProtection.IDataProtection, GuestFlow.Application.DataProtection.DataProtection>();
+builder.Services.AddSingleton<GuestFlow.Domain.DataProtection.IDataProtection, GuestFlow.Application.DataProtection.DataProtection>();
 
 // Configuration bindings (Options Pattern)
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
@@ -459,7 +454,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                     }
                 }
                 
-                return System.Threading.Tasks.Task.CompletedTask;
+                return Task.CompletedTask;
             }
         };
     });
@@ -467,7 +462,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddDbContext<GuestFlowDbContext>((serviceProvider, options) =>
 {
-    options.UseSqlServer(cs, x => x.MigrationsAssembly("GuestFlow.Persistence"));
+    var databaseProvider = builder.Configuration["DatabaseProvider"] ?? "SqlServer";
+    
+    if (databaseProvider.Equals("Sqlite", StringComparison.OrdinalIgnoreCase))
+    {
+        options.UseSqlite(cs, x => x.MigrationsAssembly("GuestFlow.Persistence"));
+    }
+    else
+    {
+        options.UseSqlServer(cs, x => x.MigrationsAssembly("GuestFlow.Persistence"));
+    }
+
     // Add audit interceptor for security logging (resolve from DI)
     var auditInterceptor = serviceProvider.GetRequiredService<GuestFlow.Persistence.Interceptors.AuditInterceptor>();
     options.AddInterceptors(auditInterceptor);
@@ -566,6 +571,7 @@ builder.Services.AddScoped<ITransferRecommendationService, TransferRecommendatio
 builder.Services.AddScoped<IAutomaticNotificationService, AutomaticNotificationService>();
 builder.Services.AddScoped<IGoogleMapsService, GoogleMapsService>();
 builder.Services.AddScoped<IQRCodeService, QRCodeService>();
+builder.Services.AddScoped<GuestFlow.Application.Operations.Housekeeping.IHousekeepingService, GuestFlow.Application.Operations.Housekeeping.HousekeepingService>();
 builder.Services.AddScoped<GuestFlow.Application.Operations.Auth.ITwoFactorService, GuestFlow.Application.Operations.Auth.TwoFactorService>();
 builder.Services.AddScoped<GuestFlow.Application.Operations.Auth.IBruteForceProtectionService, GuestFlow.Application.Operations.Auth.BruteForceProtectionService>();
 builder.Services.AddScoped<GuestFlow.Application.Operations.Auth.ILoginAuditService, GuestFlow.Application.Operations.Auth.LoginAuditService>();
@@ -646,6 +652,10 @@ Console.WriteLine("Application building completed, starting middleware configura
 
 var app = builder.Build();
 
+// Initialize DataProtectionBridge for EF Core Value Converters
+var dataProtection = app.Services.GetRequiredService<GuestFlow.Domain.DataProtection.IDataProtection>();
+DataProtectionBridge.Initialize(dataProtection);
+
 // Localization middleware
 var localizationOptions = app.Services.GetRequiredService<IOptions<RequestLocalizationOptions>>().Value;
 app.UseRequestLocalization(localizationOptions);
@@ -672,8 +682,14 @@ app.UseGlobalExceptionHandler();// Global Exception Handler Middleware'
 // CORS middleware (EN ÖNCE - Preflight request'ler için)
 app.UseCors("AllowFrontend");
 
-// Rate limiting middleware (authentication'dan önce)
+app.UseAuthentication();
+app.UseAuthorization();
+
+// Rate limiting middleware (authentication'dan sonra artik mevcut)
 app.UseMiddleware<RateLimitMiddleware>();
+
+// Multi-Tenancy Resolution (After Auth, to use TenantId claim)
+app.UseMiddleware<TenantResolutionMiddleware>();
 
 // Security middleware - order matters!
 app.UseSecurityHeaders();
@@ -682,14 +698,11 @@ app.UseHtmlSanitization();
 app.UseMantenanceMode();
 app.UseHttpsRedirection();
 
-// Response caching middleware (authentication'dan önce)
+// Response caching middleware
 app.UseResponseCaching();
 
 // Static dosyalar için (PDF'ler için)
 app.UseStaticFiles();
-
-app.UseAuthentication();
-app.UseAuthorization();
 
 app.MapControllers();
 

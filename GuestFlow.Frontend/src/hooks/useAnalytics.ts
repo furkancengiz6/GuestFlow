@@ -5,7 +5,6 @@ import { useQuery } from '@tanstack/react-query'
 import { analyticsService } from '../services/analyticsService'
 import type {
   RealTimeKpi,
-  RevenueTrend,
 } from '../types/analytics'
 
 export const useRealTimeKpis = (date?: string) => {

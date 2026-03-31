@@ -12,7 +12,7 @@ export const dailyOperationsService = {
   getDailyOperations: async (date?: string): Promise<DailyOperations> => {
     const params = date ? { date } : {}
     const response = await apiClient.get<{ success: boolean; data: DailyOperations }>(
-      '/api/v1.0/dashboard/daily-operations',
+      '/dashboard/daily-operations',
       { params }
     )
     return response.data.data

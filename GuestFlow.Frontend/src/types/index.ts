@@ -27,12 +27,17 @@ export interface LoginResponse {
   expiresIn?: number
 }
 
+import { UserType } from './enums'
+
 export interface User {
   id: number
   email: string
   fullName: string
-  role: string
+  role: string // Map to UserType label or string
+  userType: UserType
+  createdDate: string
 }
+
 
 // Guest Types
 export interface Guest {

@@ -33,8 +33,8 @@ const BASE_URL = __ENV.BASE_URL || 'http://localhost:5000';
 
 // Test user credentials (from seeded demo data)
 const TEST_USER = {
-    email: 'admin@guestflow.com',
-    password: 'Admin123!'
+    email: __ENV.TEST_USER || 'demo.admin@guestflow.local',
+    password: __ENV.TEST_PASSWORD || 'GuestFlow123!'
 };
 
 let authToken = null;

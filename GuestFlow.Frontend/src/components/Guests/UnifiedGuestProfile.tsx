@@ -42,7 +42,9 @@ import {
   TrendingUp as TrendingUpIcon,
   Hotel as HotelIcon,
   Message as MessageIcon,
+  Psychology as PsychologyIcon,
 } from '@mui/icons-material'
+import GuestIntelligenceTab from './GuestIntelligenceTab'
 
 interface UnifiedGuestProfileProps {
   guestId: number
@@ -178,6 +180,7 @@ const UnifiedGuestProfile = ({ guestId }: UnifiedGuestProfileProps) => {
           <Tab label="Hizmet Geçmişi" />
           <Tab label="Geçmiş & Analiz" icon={<BarChartIcon />} iconPosition="start" />
           <Tab label="Tercihler" />
+          <Tab label="AI Zekası & Tahminler" icon={<PsychologyIcon />} iconPosition="start" />
           <Tab label="İletişim" icon={<MessageIcon />} iconPosition="start" />
           <Tab label="Finansal" icon={<ReceiptIcon />} iconPosition="start" />
         </Tabs>
@@ -592,15 +595,22 @@ const UnifiedGuestProfile = ({ guestId }: UnifiedGuestProfileProps) => {
           </CardContent>
         )}
 
-        {/* Tab Panel 5: İletişim */}
+        {/* Tab Panel 5: AI Intelligence */}
         {activeTab === 5 && (
+          <CardContent>
+            <GuestIntelligenceTab guestId={guestId} />
+          </CardContent>
+        )}
+
+        {/* Tab Panel 6: İletişim */}
+        {activeTab === 6 && (
           <CardContent>
             <CommunicationHistory guestId={guestId} />
           </CardContent>
         )}
 
-        {/* Tab Panel 6: Finansal */}
-        {activeTab === 6 && (
+        {/* Tab Panel 7: Finansal */}
+        {activeTab === 7 && (
           <CardContent>
             {profile.guestFlowData?.invoiceHistory && profile.guestFlowData.invoiceHistory.length > 0 ? (
               <TableContainer>

@@ -1,3 +1,21 @@
+export enum UserType {
+  Owner = 0,
+  Manager = 1,
+  Admin = 2,
+  Concierge = 3,
+  Reception = 4,
+  Staff = 5
+}
+
+export const UserTypeLabels: Record<UserType, string> = {
+  [UserType.Owner]: 'Owner',
+  [UserType.Manager]: 'Manager',
+  [UserType.Admin]: 'Admin',
+  [UserType.Concierge]: 'Concierge',
+  [UserType.Reception]: 'Reception',
+  [UserType.Staff]: 'Staff'
+}
+
 export enum PaymentMethod {
   CreditCard = 1,
   BankTransfer = 2,
@@ -50,9 +68,23 @@ export const PackageTypeLabels: Record<PackageType, string> = {
   [PackageType.Custom]: 'Özel'
 }
 
+export enum ReservationStatus {
+  Pending = 1,
+  Confirmed = 2,
+  Cancelled = 3,
+  Completed = 4
+}
+
+export const ReservationStatusLabels: Record<ReservationStatus, string> = {
+  [ReservationStatus.Pending]: 'Beklemede',
+  [ReservationStatus.Confirmed]: 'Onaylandı',
+  [ReservationStatus.Cancelled]: 'İptal Edildi',
+  [ReservationStatus.Completed]: 'Tamamlandı'
+}
+
 export enum TourCategory {
-  Daily = 'Daily',
-  Sunset = 'Sunset'
+  Daily = 0,
+  Sunset = 1
 }
 
 export const TourCategoryLabels: Record<TourCategory, string> = {
@@ -75,4 +107,3 @@ export const PaymentStatusLabels: Record<PaymentStatus, string> = {
   [PaymentStatus.Refunded]: 'İade Edildi',
   [PaymentStatus.Cancelled]: 'İptal Edildi'
 }
-

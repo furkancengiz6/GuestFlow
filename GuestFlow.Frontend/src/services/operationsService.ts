@@ -21,21 +21,21 @@ export const operationsService = {
    * Transfer'i onaylar
    */
   confirmTransfer: async (transferId: number): Promise<void> => {
-    await apiClient.post(`/api/v1.0/operations/transfers/${transferId}/confirm`)
+    await apiClient.post(`/operations/transfers/${transferId}/confirm`)
   },
 
   /**
    * Transfer'i iptal eder
    */
   cancelTransfer: async (transferId: number, reason?: string): Promise<void> => {
-    await apiClient.post(`/api/v1.0/operations/transfers/${transferId}/cancel`, { reason })
+    await apiClient.post(`/operations/transfers/${transferId}/cancel`, { reason })
   },
 
   /**
    * Transfer'e şoför atar
    */
   assignDriver: async (transferId: number, personnelId: number): Promise<void> => {
-    await apiClient.post(`/api/v1.0/operations/transfers/${transferId}/assign-driver`, {
+    await apiClient.post(`/operations/transfers/${transferId}/assign-driver`, {
       personnelId,
     })
   },
@@ -48,6 +48,6 @@ export const operationsService = {
     serviceId: number,
     request: RecordPaymentRequest
   ): Promise<void> => {
-    await apiClient.post(`/api/v1.0/operations/services/${serviceType.toLowerCase()}/${serviceId}/payment`, request)
+    await apiClient.post(`/operations/services/${serviceType.toLowerCase()}/${serviceId}/payment`, request)
   },
 }

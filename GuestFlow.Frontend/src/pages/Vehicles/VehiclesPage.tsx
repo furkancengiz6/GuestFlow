@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import {
   Box,
-  Paper,
   Table,
   TableBody,
   TableCell,
@@ -20,6 +19,7 @@ import {
   DialogActions,
   TextField,
   InputAdornment,
+  Card,
 } from '@mui/material'
 import {
   Add as AddIcon,
@@ -156,52 +156,39 @@ const VehiclesPage = () => {
   const hasData = data && data.data && data.data.length > 0
 
   return (
-    <Box p={3}>
+    <Box className="fade-in" p={3}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" sx={{ fontWeight: 600 }}>
-          Araçlar
+        <Typography variant="h4" component="h1" className="premium-gradient-text" sx={{ fontWeight: 800 }}>
+          Araç Yönetimi
         </Typography>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
           onClick={() => handleOpenForm()}
+          className="premium-gradient"
+          sx={{ borderRadius: 2, boxShadow: '0 4px 14px 0 rgba(0,118,255,0.39)' }}
         >
           Yeni Araç
         </Button>
       </Box>
 
-      <Paper sx={{ p: 2, mb: 3 }}>
+      <Card className="glass-panel" sx={{ p: 2, mb: 3 }}>
         <TextField
-          placeholder="Ara (plaka, araç tipi)..."
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value)
-            setPage(0)
-          }}
-          size="small"
           fullWidth
+          placeholder="Plaka veya araç tipi ile ara..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          size="small"
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon />
+                <SearchIcon color="action" />
               </InputAdornment>
             ),
-            endAdornment: searchTerm && (
-              <InputAdornment position="end">
-                <IconButton
-                  size="small"
-                  onClick={() => {
-                    setSearchTerm('')
-                    setPage(0)
-                  }}
-                >
-                  <ClearIcon fontSize="small" />
-                </IconButton>
-              </InputAdornment>
-            ),
+            sx: { borderRadius: 3 }
           }}
         />
-      </Paper>
+      </Card>
 
       {!hasData ? (
         <ContentState
@@ -210,62 +197,64 @@ const VehiclesPage = () => {
           description="Henüz kayıtlı araç bulunmamaktadır."
         />
       ) : (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell><strong>Plaka Numarası</strong></TableCell>
-                <TableCell><strong>Araç Tipi</strong></TableCell>
-                <TableCell><strong>Kapasite</strong></TableCell>
-                <TableCell><strong>Kayıt Tarihi</strong></TableCell>
-                <TableCell><strong>İşlemler</strong></TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {data?.data.map((vehicle) => (
-                <TableRow key={vehicle.id} hover>
-                  <TableCell>{vehicle.plateNumber}</TableCell>
-                  <TableCell>{vehicle.vehicleType}</TableCell>
-                  <TableCell>{vehicle.capacity}</TableCell>
-                  <TableCell>{formatDate(vehicle.createdDate)}</TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      <Tooltip title="Düzenle">
-                        <IconButton
-                          size="small"
-                          color="primary"
-                          onClick={() => handleOpenForm(vehicle)}
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Sil">
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleDeleteClick(vehicle)}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </Box>
-                  </TableCell>
+        <Card className="glass-panel">
+          <TableContainer>
+            <Table>
+              <TableHead sx={{ bgcolor: 'rgba(0,0,0,0.02)' }}>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 700 }}>Plaka Numarası</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Araç Tipi</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Kapasite</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Kayıt Tarihi</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 700 }}>İşlemler</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <TablePagination
-            component="div"
-            count={data?.totalCount || 0}
-            page={page}
-            onPageChange={handleChangePage}
-            rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            rowsPerPageOptions={[5, 10, 25, 50]}
-            labelRowsPerPage="Sayfa başına:"
-            labelDisplayedRows={({ from, to, count }) => `${from}-${to} / ${count}`}
-          />
-        </TableContainer>
+              </TableHead>
+              <TableBody>
+                {data?.data.map((vehicle) => (
+                  <TableRow key={vehicle.id} hover>
+                    <TableCell>{vehicle.plateNumber}</TableCell>
+                    <TableCell>{vehicle.vehicleType}</TableCell>
+                    <TableCell>{vehicle.capacity}</TableCell>
+                    <TableCell>{formatDate(vehicle.createdDate)}</TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Tooltip title="Düzenle">
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => handleOpenForm(vehicle)}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Sil">
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => handleDeleteClick(vehicle)}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <TablePagination
+              component="div"
+              count={data?.totalCount || 0}
+              page={page}
+              onPageChange={handleChangePage}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              rowsPerPageOptions={[5, 10, 25, 50]}
+              labelRowsPerPage="Sayfa başına:"
+              labelDisplayedRows={({ from, to, count }) => `${from}-${to} / ${count}`}
+            />
+          </TableContainer>
+        </Card>
       )}
 
       <VehicleForm

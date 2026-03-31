@@ -3,6 +3,7 @@ using GuestFlow.Domain.Entities.Enum;
 using GuestFlow.Domain.Entities.Operations;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
+using GuestFlow.Domain.Converters;
 
 namespace GuestFlow.Domain.Entities.Core
 {
@@ -96,7 +97,6 @@ namespace GuestFlow.Domain.Entities.Core
 
         // Status and control fields
         public string Status { get; set; } = "Pending"; // Tour status
-        public bool IsDeleted { get; set; } = false; // Soft delete flag
         public bool WeatherDependent { get; set; } = false; // Can tour run in bad weather?
 
         // Internal coordination fields
@@ -122,7 +122,7 @@ namespace GuestFlow.Domain.Entities.Core
         public override void Configure(EntityTypeBuilder<YachtTourEntity> builder)
         {
             base.Configure(builder);
-            builder.Property(yt => yt.SpecialRequest).HasMaxLength(1000).IsRequired(false);
+            builder.Property(yt => yt.SpecialRequest).HasMaxLength(1000).IsRequired(false).HasConversion<EncryptedValueConverter>();
             builder.Property(yt => yt.YachtName).HasMaxLength(100).IsRequired(false);
             builder.Property(yt => yt.Price).HasPrecision(18, 2);
             builder.Property(yt => yt.DiscountPercentage).HasPrecision(5, 2);
@@ -147,24 +147,34 @@ namespace GuestFlow.Domain.Entities.Core
             builder.Property(yt => yt.EmergencyEquipment).HasMaxLength(500).IsRequired(false);
             builder.Property(yt => yt.CaptainExperience).HasMaxLength(100).IsRequired(false);
             builder.Property(yt => yt.WeatherBackupPlan).HasMaxLength(500).IsRequired(false);
-            builder.Property(yt => yt.SwimmingProficiency).HasMaxLength(100).IsRequired(false);
-            builder.Property(yt => yt.MedicalConditions).HasMaxLength(500).IsRequired(false);
-            builder.Property(yt => yt.AlcoholPolicy).HasMaxLength(200).IsRequired(false);
+            builder.Property(yt => yt.SwimmingProficiency).HasMaxLength(100).IsRequired(false).HasConversion<EncryptedValueConverter>();
+            builder.Property(yt => yt.MedicalConditions).HasMaxLength(500).IsRequired(false).HasConversion<EncryptedValueConverter>();
+            builder.Property(yt => yt.AlcoholPolicy).HasMaxLength(200).IsRequired(false).HasConversion<EncryptedValueConverter>();
             builder.Property(yt => yt.BeverageType).HasMaxLength(200).IsRequired(false);
             builder.Property(yt => yt.WaterSportsEquipment).HasMaxLength(300).IsRequired(false);
             builder.Property(yt => yt.MarinaContactName).HasMaxLength(100).IsRequired(false);
             builder.Property(yt => yt.MarinaContactPhone).HasMaxLength(20).IsRequired(false);
-            builder.Property(yt => yt.ConciergeInternalNotes).HasMaxLength(1000).IsRequired(false);
+            builder.Property(yt => yt.ConciergeInternalNotes).HasMaxLength(1000).IsRequired(false).HasConversion<EncryptedValueConverter>();
             
             builder.HasOne(yt => yt.PickupHotel)
                    .WithMany(h => h.PickupYachtTours)
                    .HasForeignKey(yt => yt.PickupHotelId)
                    .OnDelete(DeleteBehavior.SetNull);
                    
-            builder.HasOne(yt => yt.OwnerGuest)
-               .WithMany(g => g.YachtTours)
-               .HasForeignKey(yt => yt.OwnerGuestId)
-               .OnDelete(DeleteBehavior.NoAction);
+             builder.HasOne(yt => yt.OwnerGuest)
+                .WithMany(g => g.YachtTours)
+                .HasForeignKey(yt => yt.OwnerGuestId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            builder.HasOne(yt => yt.City)
+                .WithMany()
+                .HasForeignKey(yt => yt.CityId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasOne(yt => yt.Personnel)
+                .WithMany(p => p.YachtTours)
+                .HasForeignKey(yt => yt.PersonnelId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             // Performance indexes for common queries
             builder.HasIndex(yt => yt.TourDate);

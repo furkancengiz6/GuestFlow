@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using GuestFlow.Application.Extensions;
 using GuestFlow.Application.Models;
 using GuestFlow.Application.Operations.Guest.Dtos;
+using AutoMapper.QueryableExtensions;
 using GuestFlow.Application.Operations.Notification;
 using GuestFlow.Application.Types;
 using GuestFlow.Domain.Entities.Core;
@@ -63,7 +64,7 @@ namespace GuestFlow.Application.Operations.Guest
         }
 
         // Bu metod, yeni bir misafir ekliyor.
-        public async Task<ServiceMessage> AddGuest(AddGuestDto guest)
+        public async Task<ServiceMessage<int>> AddGuest(AddGuestDto guest)
         {
             try
             {
@@ -75,27 +76,27 @@ namespace GuestFlow.Application.Operations.Guest
                 {
                     // Email boş mu ya da sadece boşluklardan mı oluşuyor? Eğer öyleyse hata döndürüyoruz.
                     if (string.IsNullOrWhiteSpace(guest.Email))
-                        return new ServiceMessage { IsSuccess = false, Message = "Email alanı zorunludur." };
+                        return new ServiceMessage<int> { IsSuccess = false, Message = "Email alanı zorunludur." };
 
                     // Email'de "@" işareti var mı? Yoksa geçerli bir email değil demektir.
                     if (!guest.Email.Contains("@"))
-                        return new ServiceMessage { IsSuccess = false, Message = "Geçerli bir e-posta adresi giriniz (örneğin, user@example.com)." };
+                        return new ServiceMessage<int> { IsSuccess = false, Message = "Geçerli bir e-posta adresi giriniz (örneğin, user@example.com)." };
 
                     // Email'in uzunluğu 5'ten küçük veya 100'den büyük mü? Öyleyse hata veriyoruz.
                     if (guest.Email.Length < 5 || guest.Email.Length > 100)
-                        return new ServiceMessage { IsSuccess = false, Message = "Email 5 ila 100 karakter arasında olmalıdır." };
+                        return new ServiceMessage<int> { IsSuccess = false, Message = "Email 5 ila 100 karakter arasında olmalıdır." };
 
                     // Telefon numarası boş mu ya da sadece boşluklardan mı oluşuyor? Eğer öyleyse hata döndürüyoruz.
                     if (string.IsNullOrWhiteSpace(guest.PhoneNumber))
-                        return new ServiceMessage { IsSuccess = false, Message = "PhoneNumber alanı zorunludur." };
+                        return new ServiceMessage<int> { IsSuccess = false, Message = "PhoneNumber alanı zorunludur." };
 
                     // Telefon numarası sadece rakamlar ve "+" işaretinden mi oluşuyor? Değilse hata veriyoruz.
                     if (!guest.PhoneNumber.All(c => char.IsDigit(c) || c == '+'))
-                        return new ServiceMessage { IsSuccess = false, Message = "Telefon numarası sadece rakamlardan oluşmalıdır (örneğin, +905551234567)." };
+                        return new ServiceMessage<int> { IsSuccess = false, Message = "Telefon numarası sadece rakamlardan oluşmalıdır (örneğin, +905551234567)." };
 
                     // Telefon numarasının uzunluğu 5'ten küçük veya 20'den büyük mü? Öyleyse hata veriyoruz.
                     if (guest.PhoneNumber.Length < 5 || guest.PhoneNumber.Length > 20)
-                        return new ServiceMessage { IsSuccess = false, Message = "PhoneNumber 5 ila 20 karakter arasında olmalıdır." };
+                        return new ServiceMessage<int> { IsSuccess = false, Message = "PhoneNumber 5 ila 20 karakter arasında olmalıdır." };
                 }
 
                 // Eğer misafir özel bir misafirse IsSpecialGuest true ise, email ve telefon numarası boşsa varsayılan değerler atıyoruz.
@@ -135,7 +136,7 @@ namespace GuestFlow.Application.Operations.Guest
                     await _unitOfWork.CommitTransactionAsync();
 
                     _logger.LogInformation($"Silinmiş misafir geri getirildi: {deletedGuest.GuestCode} - {deletedGuest.FullName}");
-                    return new ServiceMessage { IsSuccess = true, Message = "Misafir başarıyla geri getirildi ve güncellendi." };
+                    return new ServiceMessage<int> { IsSuccess = true, Message = "Misafir başarıyla geri getirildi ve güncellendi.", Data = deletedGuest.Id };
                 }
 
                 // Aktif misafir kontrolü (duplicate önleme)
@@ -153,7 +154,7 @@ namespace GuestFlow.Application.Operations.Guest
                     if (activeGuest != null)
                     {
                         await _unitOfWork.RollbackTransactionAsync();
-                        return new ServiceMessage 
+                        return new ServiceMessage<int> 
                         { 
                             IsSuccess = false, 
                             Message = "Bu email veya telefon numarası ile zaten aktif bir misafir mevcut." 
@@ -168,7 +169,7 @@ namespace GuestFlow.Application.Operations.Guest
                 // Tüm kayıtları kontrol ediyoruz (silinmiş olanlar dahil) çünkü unique index tüm kayıtlar için geçerli.
                 var hasGuest = await _guestRepository.GetAll(x => x.GuestCode == guestCode, includeDeleted: true).AnyAsync();
                 if (hasGuest)
-                    return new ServiceMessage { IsSuccess = false, Message = "Bu GuestCode ile bir misafir zaten mevcut." };
+                    return new ServiceMessage<int> { IsSuccess = false, Message = "Bu GuestCode ile bir misafir zaten mevcut." };
 
                 // Yeni bir misafir nesnesi oluşturuyoruz ve DTO'dan gelen bilgileri buraya aktarıyoruz.
                 var newGuest = new GuestEntity
@@ -202,7 +203,7 @@ namespace GuestFlow.Application.Operations.Guest
                 }
 
                 // Başarı mesajı döndürüyoruz.
-                return new ServiceMessage { IsSuccess = true, Message = "Misafir başarıyla eklendi." };
+                return new ServiceMessage<int> { IsSuccess = true, Message = "Misafir başarıyla eklendi.", Data = newGuest.Id };
             }
             catch (Exception ex)
             {
@@ -217,7 +218,7 @@ namespace GuestFlow.Application.Operations.Guest
                     errorMessage += $" InnerException: {ex.InnerException.Message}";
 
                 // Hata mesajıyla birlikte başarısız bir sonuç döndürüyoruz.
-                return new ServiceMessage { IsSuccess = false, Message = errorMessage };
+                return new ServiceMessage<int> { IsSuccess = false, Message = errorMessage };
             }
         }
 
@@ -333,13 +334,15 @@ namespace GuestFlow.Application.Operations.Guest
         {
             try
             {
-                // Veritabanından misafiri ID sine göre çektik
-                var guest = await _guestRepository.GetByIdAsync(id);
+                // Optimized query using Projection
+                var guest = await _guestRepository.GetAll(x => x.Id == id)
+                    .ProjectTo<GetGuestDto>(_mapper.ConfigurationProvider)
+                    .FirstOrDefaultAsync();
+
                 if (guest == null)
                     throw new Exception("Misafir bulunamadı.");
 
-                // Misafiri bir DTO nesnesine çevirip geri döndürdik
-                return _mapper.Map<GetGuestDto>(guest);
+                return guest;
             }
             catch (Exception ex)
             {
@@ -353,9 +356,9 @@ namespace GuestFlow.Application.Operations.Guest
         {
             try
             {
-                // Veritabanından tüm misafirleri çekiyoruz ve her birini GetGuestDto ya çeviriyoruz.
-                var guests = await _guestRepository.GetAll().ToListAsync();
-                return _mapper.Map<List<GetGuestDto>>(guests);
+                return await _guestRepository.GetAll()
+                    .ProjectTo<GetGuestDto>(_mapper.ConfigurationProvider)
+                    .ToListAsync();
             }
             catch (Exception ex)
             {
@@ -383,10 +386,10 @@ namespace GuestFlow.Application.Operations.Guest
                 var guests = await query
                     .Skip((pageNumber - 1) * pageSize)
                     .Take(pageSize)
+                    .ProjectTo<GetGuestDto>(_mapper.ConfigurationProvider)
                     .ToListAsync();
 
-                var dtos = _mapper.Map<List<GetGuestDto>>(guests);
-                return new PagedResult<GetGuestDto>(dtos, totalCount, pageNumber, pageSize);
+                return new PagedResult<GetGuestDto>(guests, totalCount, pageNumber, pageSize);
             }
             catch (Exception ex)
             {
@@ -434,7 +437,8 @@ namespace GuestFlow.Application.Operations.Guest
             do
             {
                 maxNumber++;
-                newCode = $"{prefix}{maxNumber:D3}";
+                var randomSuffix = Guid.NewGuid().ToString().Substring(0, 4).ToUpper();
+                newCode = $"{prefix}{maxNumber:D3}-{randomSuffix}";
                 
                 // Bu kodun veritabanında olup olmadığını kontrol et (tüm kayıtlar dahil)
                 var exists = await _guestRepository.GetAll(null, includeDeleted: true)
@@ -814,12 +818,9 @@ namespace GuestFlow.Application.Operations.Guest
         {
             try
             {
-                var guest = await _guestRepository.GetAll(g => g.GuestCode == code && !g.IsDeleted)
+                return await _guestRepository.GetAll(g => g.GuestCode == code && !g.IsDeleted)
+                    .ProjectTo<GetGuestDto>(_mapper.ConfigurationProvider)
                     .FirstOrDefaultAsync();
-
-                if (guest == null) return null;
-
-                return _mapper.Map<GetGuestDto>(guest);
             }
             catch (Exception ex)
             {

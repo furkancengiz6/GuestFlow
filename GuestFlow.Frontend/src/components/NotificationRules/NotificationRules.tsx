@@ -5,8 +5,6 @@ import React, { useState } from 'react'
 import {
   Box,
   Button,
-  Card,
-  CardContent,
   Chip,
   Dialog,
   DialogActions,
@@ -38,7 +36,6 @@ import {
   Delete as DeleteIcon,
   PlayArrow as PlayArrowIcon,
   PowerSettingsNew as PowerSettingsNewIcon,
-  FilterList as FilterListIcon,
 } from '@mui/icons-material'
 import { useNotificationRules } from '../../hooks/useNotificationRules'
 import {

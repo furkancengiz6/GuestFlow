@@ -20,7 +20,7 @@ namespace GuestFlow.Api.Controllers
         public async Task<IActionResult> Index()
         {
             var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-            var stripeSignature = Request.Headers["Stripe-Signature"];
+            var stripeSignature = Request.Headers["Stripe-Signature"].ToString() ?? string.Empty;
 
             try
             {

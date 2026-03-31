@@ -3,6 +3,7 @@
 
 using GuestFlow.Domain.Entities.Interfaces;
 using GuestFlow.Domain.Entities.Operations;
+using GuestFlow.Domain.Entities.Intelligence;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
 
@@ -74,6 +75,10 @@ namespace GuestFlow.Domain.Entities.Core
 
         public virtual ICollection<Sustainability.SustainabilityAction> SustainabilityActions { get; set; } = new List<Sustainability.SustainabilityAction>();
         public virtual ICollection<Sustainability.SustainabilityReward> SustainabilityRewards { get; set; } = new List<Sustainability.SustainabilityReward>();
+
+        public virtual ICollection<GuestStaffInteractionEntity> Interactions { get; set; } = new List<GuestStaffInteractionEntity>();
+        public virtual ICollection<GuestBehaviorEntity> Behaviors { get; set; } = new List<GuestBehaviorEntity>();
+        public virtual ICollection<GuestReview> Reviews { get; set; } = new List<GuestReview>();
     }
 
     public class GuestConfiguration : BaseConfiguration<GuestEntity>
@@ -98,6 +103,22 @@ namespace GuestFlow.Domain.Entities.Core
                    .WithMany()
                    .HasForeignKey(g => g.HotelId)
                    .OnDelete(DeleteBehavior.SetNull);
+
+            // Intelligence Relationships
+            builder.HasMany(g => g.Interactions)
+                   .WithOne(i => i.Guest)
+                   .HasForeignKey(i => i.GuestId)
+                   .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasMany(g => g.Behaviors)
+                   .WithOne(b => b.Guest)
+                   .HasForeignKey(b => b.GuestId)
+                   .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasMany(g => g.Reviews)
+                   .WithOne(r => r.Guest)
+                   .HasForeignKey(r => r.GuestId)
+                   .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

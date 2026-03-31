@@ -60,7 +60,7 @@ const PaymentsPage: React.FC = () => {
 
   // Fetch payments with filters
   const {
-    data: payments = [],
+    data: paymentsData,
     isLoading,
     error,
   } = useQuery({
@@ -71,6 +71,8 @@ const PaymentsPage: React.FC = () => {
       endDate: filters.endDate?.toISOString().split('T')[0],
     }),
   })
+
+  const payments = Array.isArray(paymentsData) ? paymentsData : (paymentsData as any)?.data || []
 
   // Fetch dropdown data
   const { data: guests = [] } = useQuery({
@@ -168,17 +170,19 @@ const PaymentsPage: React.FC = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={tr}>
-      <Box>
+      <Box className="fade-in" p={0}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h4" component="h1">
-            Ödemeler
+          <Typography variant="h4" component="h1" className="premium-gradient-text" sx={{ fontWeight: 800 }}>
+            Ödeme Yönetimi
           </Typography>
           <Button
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => setOpenForm(true)}
+            className="premium-gradient"
+            sx={{ borderRadius: 2, boxShadow: '0 4px 14px 0 rgba(0,118,255,0.39)' }}
           >
-            Ödeme Ekle
+            Yeni Ödeme
           </Button>
         </Box>
 
@@ -231,9 +235,9 @@ const PaymentsPage: React.FC = () => {
         </Card>
 
         {/* Payments Table */}
-        <Card>
+        <Card className="glass-panel">
           <CardContent>
-            <Typography variant="h6" gutterBottom>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 700 }}>
               Ödeme Listesi
             </Typography>
 

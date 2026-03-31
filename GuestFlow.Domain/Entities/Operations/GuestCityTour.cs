@@ -17,12 +17,15 @@ namespace GuestFlow.Domain.Entities.Operations
     {
         public override void Configure(EntityTypeBuilder<GuestCityTour> builder)
         {
-            base.Configure(builder);
             builder.HasKey(gct => new { gct.GuestId, gct.CityTourId });
-            builder.Ignore(gct => gct.Id); // BaseEntity'den gelen Id'yi yok say
+            
+            // BaseEntity'den gelen junction table için gereksiz alanları yoksay
+            builder.Ignore(gct => gct.Id); 
             builder.Ignore(gct => gct.CreatedDate); 
+            builder.Ignore(gct => gct.UpdatedDate);
+            builder.Ignore(gct => gct.CreatedByPersonnelId);
+            builder.Ignore(gct => gct.UpdatedByPersonnelId);
             builder.Ignore(gct => gct.IsDeleted);
-
         }
     }
 }

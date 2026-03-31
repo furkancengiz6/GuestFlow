@@ -29,6 +29,8 @@ import {
   MenuItem,
   Grid,
   Collapse,
+  Card,
+  CardContent,
 } from '@mui/material'
 import {
   Add as AddIcon,
@@ -64,7 +66,7 @@ const GuestsPage = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [guestToDelete, setGuestToDelete] = useState<Guest | null>(null)
   const [filtersOpen, setFiltersOpen] = useState(false)
-  
+
   // Filter states
   const [searchTerm, setSearchTerm] = useState('')
   const [nationality, setNationality] = useState('')
@@ -203,12 +205,11 @@ const GuestsPage = () => {
   }
 
   const hasData = data && data.data && data.data.length > 0
-
   return (
-    <Box p={3}>
+    <Box className="fade-in" p={3}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" sx={{ fontWeight: 600 }}>
-          Misafirler
+        <Typography variant="h4" component="h1" className="premium-gradient-text" sx={{ fontWeight: 800 }}>
+          Misafir Yönetimi
         </Typography>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Button
@@ -260,7 +261,7 @@ const GuestsPage = () => {
       </Box>
 
       {/* Search and Filter Section */}
-      <Paper sx={{ p: 2, mb: 3 }}>
+      <Card className="glass-panel" sx={{ p: 2, mb: 3 }}>
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 2 }}>
           <TextField
             placeholder="Ara (isim, email, telefon, misafir kodu)..."
@@ -393,7 +394,7 @@ const GuestsPage = () => {
             )}
           </Grid>
         </Collapse>
-      </Paper>
+      </Card>
 
       {!hasData ? (
         <ContentState
@@ -402,91 +403,93 @@ const GuestsPage = () => {
           description="Henüz kayıtlı misafir bulunmamaktadır."
         />
       ) : (
-        <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell><strong>Misafir Kodu</strong></TableCell>
-              <TableCell><strong>Ad Soyad</strong></TableCell>
-              <TableCell><strong>Email</strong></TableCell>
-              <TableCell><strong>Telefon</strong></TableCell>
-              <TableCell><strong>Uyruk</strong></TableCell>
-              <TableCell><strong>Özel Misafir</strong></TableCell>
-              <TableCell><strong>Kayıt Tarihi</strong></TableCell>
-              <TableCell><strong>İşlemler</strong></TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {data?.data.map((guest) => (
-              <TableRow key={guest.id} hover>
-                <TableCell>{guest.guestCode}</TableCell>
-                <TableCell>
-                  <Button
-                    variant="text"
-                    onClick={() => navigate(`/guests/${guest.id}`)}
-                    sx={{ textTransform: 'none', fontWeight: 500 }}
-                  >
-                    {guest.fullName}
-                  </Button>
-                </TableCell>
-                <TableCell>{guest.email || '-'}</TableCell>
-                <TableCell>{guest.phoneNumber || '-'}</TableCell>
-                <TableCell>{guest.nationality}</TableCell>
-                <TableCell>
-                  {guest.isSpecialGuest ? (
-                    <Chip label="Evet" color="primary" size="small" />
-                  ) : (
-                    <Chip label="Hayır" size="small" />
-                  )}
-                </TableCell>
-                <TableCell>{formatDate(guest.createdDate)}</TableCell>
-                <TableCell>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Tooltip title="Detay">
-                      <IconButton
-                        size="small"
-                        color="primary"
+        <Card className="glass-panel">
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell><strong>Misafir Kodu</strong></TableCell>
+                  <TableCell><strong>Ad Soyad</strong></TableCell>
+                  <TableCell><strong>Email</strong></TableCell>
+                  <TableCell><strong>Telefon</strong></TableCell>
+                  <TableCell><strong>Uyruk</strong></TableCell>
+                  <TableCell><strong>Özel Misafir</strong></TableCell>
+                  <TableCell><strong>Kayıt Tarihi</strong></TableCell>
+                  <TableCell><strong>İşlemler</strong></TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {data?.data.map((guest) => (
+                  <TableRow key={guest.id} hover>
+                    <TableCell>{guest.guestCode}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="text"
                         onClick={() => navigate(`/guests/${guest.id}`)}
+                        sx={{ textTransform: 'none', fontWeight: 500 }}
                       >
-                        <VisibilityIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Düzenle">
-                      <IconButton
-                        size="small"
-                        color="primary"
-                        onClick={() => handleOpenForm(guest)}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Sil">
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => handleDeleteClick(guest)}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </Box>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        <TablePagination
-          component="div"
-          count={data?.totalCount || 0}
-          page={page}
-          onPageChange={handleChangePage}
-          rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-          rowsPerPageOptions={[5, 10, 25, 50]}
-          labelRowsPerPage="Sayfa başına:"
-          labelDisplayedRows={({ from, to, count }) => `${from}-${to} / ${count}`}
-        />
-        </TableContainer>
+                        {guest.fullName}
+                      </Button>
+                    </TableCell>
+                    <TableCell>{guest.email || '-'}</TableCell>
+                    <TableCell>{guest.phoneNumber || '-'}</TableCell>
+                    <TableCell>{guest.nationality}</TableCell>
+                    <TableCell>
+                      {guest.isSpecialGuest ? (
+                        <Chip label="Evet" color="primary" size="small" />
+                      ) : (
+                        <Chip label="Hayır" size="small" />
+                      )}
+                    </TableCell>
+                    <TableCell>{formatDate(guest.createdDate)}</TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Tooltip title="Detay">
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => navigate(`/guests/${guest.id}`)}
+                          >
+                            <VisibilityIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Düzenle">
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => handleOpenForm(guest)}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Sil">
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => handleDeleteClick(guest)}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <TablePagination
+              component="div"
+              count={data?.totalCount || 0}
+              page={page}
+              onPageChange={handleChangePage}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              rowsPerPageOptions={[5, 10, 25, 50]}
+              labelRowsPerPage="Sayfa başına:"
+              labelDisplayedRows={({ from, to, count }) => `${from}-${to} / ${count}`}
+            />
+          </TableContainer>
+        </Card>
       )}
 
       <GuestForm
@@ -523,7 +526,7 @@ const GuestsPage = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </Box >
   )
 }
 

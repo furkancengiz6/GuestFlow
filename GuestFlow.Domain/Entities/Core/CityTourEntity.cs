@@ -164,6 +164,21 @@ namespace GuestFlow.Domain.Entities.Core
                 .HasForeignKey(ct => ct.TourId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            builder.HasOne(ct => ct.City)
+                .WithMany(c => c.CityTours)
+                .HasForeignKey(ct => ct.CityId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasOne(ct => ct.Personnel)
+                .WithMany(p => p.CityTours)
+                .HasForeignKey(ct => ct.PersonnelId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            builder.HasOne(ct => ct.Vehicle)
+                .WithMany()
+                .HasForeignKey(ct => ct.VehicleId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             // Performance indexes for common queries
             builder.HasIndex(ct => ct.TourDate);
             builder.HasIndex(ct => ct.Status);

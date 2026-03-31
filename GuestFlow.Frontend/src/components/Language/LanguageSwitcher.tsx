@@ -1,4 +1,4 @@
-import { Menu, MenuItem, IconButton, Tooltip, ListItemIcon, ListItemText } from '@mui/material'
+import { Menu, MenuItem, IconButton, Tooltip, ListItemIcon, ListItemText, Box } from '@mui/material'
 import { Language as LanguageIcon } from '@mui/icons-material'
 import { useState } from 'react'
 import { useTranslation } from '../../hooks/useTranslation'
@@ -41,11 +41,37 @@ export const LanguageSwitcher = () => {
             key={lang.code}
             onClick={() => handleLanguageChange(lang.code)}
             selected={currentLanguage === lang.code}
+            sx={{
+              borderRadius: 1,
+              mx: 0.5,
+              mb: 0.5,
+              '&.Mui-selected': {
+                bgcolor: 'primary.light',
+                color: 'primary.contrastText',
+                '&:hover': { bgcolor: 'primary.main' }
+              }
+            }}
           >
             <ListItemIcon>
-              <span style={{ fontSize: '1.2rem' }}>{lang.flag}</span>
+              <Box
+                sx={{
+                  width: 24,
+                  height: 24,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '50%',
+                  fontSize: '1rem',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  border: '1px solid rgba(0,0,0,0.05)',
+                  bgcolor: 'background.paper',
+                  transform: 'scale(1.2)'
+                }}
+              >
+                {lang.flag}
+              </Box>
             </ListItemIcon>
-            <ListItemText>{lang.label}</ListItemText>
+            <ListItemText primary={lang.label} />
           </MenuItem>
         ))}
       </Menu>

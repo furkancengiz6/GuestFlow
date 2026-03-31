@@ -732,11 +732,13 @@ namespace GuestFlow.Api.Controllers
                 return;
 
             var expireDays = int.TryParse(_configuration["Jwt:RefreshTokenExpireDays"], out var days) ? days : 30;
+            var isDevelopment = _configuration["ASPNETCORE_ENVIRONMENT"] == "Development";
+            
             var cookieOptions = new CookieOptions
             {
                 HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.None,
+                Secure = !isDevelopment, // Development'da HTTPS zorunluluğunu kaldır (eğer HTTP kullanılıyorsa)
+                SameSite = isDevelopment ? SameSiteMode.Lax : SameSiteMode.None,
                 Expires = DateTime.UtcNow.AddDays(expireDays),
                 Path = "/"
             };

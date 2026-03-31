@@ -28,7 +28,17 @@ namespace GuestFlow.Domain.Entities.Enum
         /// <summary>
         /// Diğer
         /// </summary>
-        Other = 5
+        Other = 5,
+
+        /// <summary>
+        /// Stripe
+        /// </summary>
+        Stripe = 6,
+
+        /// <summary>
+        /// PayPal
+        /// </summary>
+        PayPal = 7
     }
 
     /// <summary>
@@ -48,6 +58,8 @@ namespace GuestFlow.Domain.Entities.Enum
                 PaymentMethod.Cash => "Cash",
                 PaymentMethod.RoomCharge => "RoomCharge",
                 PaymentMethod.Other => "Other",
+                PaymentMethod.Stripe => "Stripe",
+                PaymentMethod.PayPal => "PayPal",
                 _ => "Other"
             };
         }
@@ -66,6 +78,8 @@ namespace GuestFlow.Domain.Entities.Enum
                 "banktransfer" or "bank_transfer" or "transfer" or "eft" or "havale" => PaymentMethod.BankTransfer,
                 "cash" or "nakit" => PaymentMethod.Cash,
                 "roomcharge" or "room_charge" or "odaya charge" or "odaya" => PaymentMethod.RoomCharge,
+                "stripe" => PaymentMethod.Stripe,
+                "paypal" => PaymentMethod.PayPal,
                 "other" or "diğer" => PaymentMethod.Other,
                 _ => PaymentMethod.Other
             };

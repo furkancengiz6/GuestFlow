@@ -13,7 +13,7 @@ export const mapService = {
       success: boolean
       data: MapView
       message?: string
-    }>('/api/v1.0/Map/view', filter || {})
+    }>('/Map/view', filter || {})
     return response.data.data
   },
 
@@ -28,7 +28,7 @@ export const mapService = {
       success: boolean
       data: MapServiceLocation
       message?: string
-    }>(`/api/v1.0/Map/service/${serviceId}/${serviceType}`)
+    }>(`/Map/service/${serviceId}/${serviceType}`)
     return response.data.data
   },
 
@@ -44,7 +44,7 @@ export const mapService = {
       success: boolean
       data: MapLocation
       message?: string
-    }>('/api/v1.0/Map/geocode', { params })
+    }>('/Map/geocode', { params })
     return response.data.data
   },
 }

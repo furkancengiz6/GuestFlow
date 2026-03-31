@@ -72,7 +72,7 @@ const ToursPage = () => {
   const [editingYachtTour, setEditingYachtTour] = useState<YachtTour | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [tourToDelete, setTourToDelete] = useState<{ type: 'city' | 'yacht'; id: number } | null>(null)
-  
+
   // Filter states - City Tours
   const [cityTourFiltersOpen, setCityTourFiltersOpen] = useState(false)
   const [cityTourSearchTerm, setCityTourSearchTerm] = useState('')
@@ -83,7 +83,7 @@ const ToursPage = () => {
   const [cityTourPersonnelId, setCityTourPersonnelId] = useState<number | undefined>(undefined)
   const [cityTourSortBy, setCityTourSortBy] = useState('')
   const [cityTourSortOrder, setCityTourSortOrder] = useState<'asc' | 'desc'>('desc')
-  
+
   // Filter states - Yacht Tours
   const [yachtTourFiltersOpen, setYachtTourFiltersOpen] = useState(false)
   const [yachtTourSearchTerm, setYachtTourSearchTerm] = useState('')
@@ -153,7 +153,7 @@ const ToursPage = () => {
       queryClient.invalidateQueries({ queryKey: ['cityTours'] })
       setCityTourFormOpen(false)
       notification.showSuccess('Şehir turu başarıyla eklendi.')
-      
+
       // Otomatik fatura indirme
       if (response.invoicePdfUrl) {
         try {
@@ -202,7 +202,7 @@ const ToursPage = () => {
       queryClient.invalidateQueries({ queryKey: ['yachtTours'] })
       setYachtTourFormOpen(false)
       notification.showSuccess('Yat turu başarıyla eklendi.')
-      
+
       // Otomatik fatura indirme
       if (response.invoicePdfUrl) {
         try {
@@ -371,9 +371,9 @@ const ToursPage = () => {
   }
 
   return (
-    <Box p={3}>
-      <Typography variant="h4" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
-        Turlar
+    <Box className="fade-in" p={3}>
+      <Typography variant="h4" component="h1" className="premium-gradient-text" sx={{ mb: 3, fontWeight: 800 }}>
+        Tur Yönetimi
       </Typography>
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -597,9 +597,9 @@ const ToursPage = () => {
               description="Lütfen daha sonra tekrar deneyin."
               actionLabel="Tekrar dene"
               onAction={() => {
-          queryClient.refetchQueries({ queryKey: ['cityTours'] })
-          queryClient.refetchQueries({ queryKey: ['yachtTours'] })
-        }}
+                queryClient.refetchQueries({ queryKey: ['cityTours'] })
+                queryClient.refetchQueries({ queryKey: ['yachtTours'] })
+              }}
             />
           ) : !cityTours?.data || cityTours.data.length === 0 ? (
             <ContentState
@@ -635,7 +635,7 @@ const ToursPage = () => {
                         </Button>
                       </TableCell>
                       <TableCell>
-                          <Typography variant="body2" fontWeight="medium">
+                        <Typography variant="body2" fontWeight="medium">
                           {(tour as any).ownerGuest?.fullName || 'Misafir'}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
@@ -924,9 +924,9 @@ const ToursPage = () => {
               description="Lütfen daha sonra tekrar deneyin."
               actionLabel="Tekrar dene"
               onAction={() => {
-          queryClient.refetchQueries({ queryKey: ['cityTours'] })
-          queryClient.refetchQueries({ queryKey: ['yachtTours'] })
-        }}
+                queryClient.refetchQueries({ queryKey: ['cityTours'] })
+                queryClient.refetchQueries({ queryKey: ['yachtTours'] })
+              }}
             />
           ) : !yachtTours?.data || yachtTours.data.length === 0 ? (
             <ContentState
@@ -1050,7 +1050,7 @@ const ToursPage = () => {
               />
             </TableContainer>
           )}
-        </> 
+        </>
       )}
 
       <CityTourForm

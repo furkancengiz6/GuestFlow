@@ -11,7 +11,7 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: 'background.default' }}>
       <Sidebar />
       <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
         <Header />
@@ -19,11 +19,11 @@ const Layout = ({ children }: LayoutProps) => {
           component="main"
           sx={{
             flexGrow: 1,
-            p: 3,
-            backgroundColor: 'background.default',
+            p: { xs: 2, md: 3 },
+            backgroundColor: '#F1F5F9', // Slightly darker slate for better card contrast
           }}
         >
-          <Container maxWidth="xl">
+          <Container maxWidth="xl" className="animate-fade-in">
             <BreadcrumbsBar />
             {children}
           </Container>
@@ -35,4 +35,3 @@ const Layout = ({ children }: LayoutProps) => {
 }
 
 export default Layout
-

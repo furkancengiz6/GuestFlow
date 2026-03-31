@@ -5,7 +5,9 @@ using GuestFlow.Application.Operations.Payment;
 using GuestFlow.Application.Operations.Payment.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using GuestFlow.Api.Filters;
 using System;
 using System.Threading.Tasks;
 
@@ -18,6 +20,7 @@ namespace GuestFlow.Api.Controllers
     [Route("api/v{version:apiVersion}/[controller]")]
     [ApiController]
     [Authorize(Roles = "Staff,Admin")]
+    [TwoFactorRequirement]
     [Tags("Ödemeler")]
     public class PaymentsController : BaseController
     {
