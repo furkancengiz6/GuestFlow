@@ -131,6 +131,8 @@ export default function FleetClient({ yachts }: { yachts: any[] }) {
         <button 
           onClick={() => setIsFilterOpen(false)}
           className="absolute top-8 right-8 text-foreground/40 hover:text-white transition-colors"
+          title={lang === 'tr' ? 'Kapat' : 'Close'}
+          aria-label={lang === 'tr' ? 'Filtreleri Kapat' : 'Close Filters'}
         >
           <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
