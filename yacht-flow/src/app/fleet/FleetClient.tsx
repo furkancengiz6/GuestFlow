@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useLanguage } from "@/locales/LanguageContext";
 import FleetFilters from "@/app/components/FleetFilters";
+import WeatherWidget from "@/app/components/WeatherWidget";
 import { useState, useEffect } from "react";
 
 export default function FleetClient({ yachts }: { yachts: any[] }) {
@@ -17,6 +18,11 @@ export default function FleetClient({ yachts }: { yachts: any[] }) {
 
   return (
     <>
+    {/* Live Conditions - Premium Widget */}
+    <div className="mb-16 animate-reveal">
+      <WeatherWidget />
+    </div>
+
     <div className="flex flex-col lg:flex-row gap-12">
       {/* Sidebar - Desktop */}
       <aside className="hidden lg:block w-72 shrink-0 animate-reveal">
@@ -57,6 +63,7 @@ export default function FleetClient({ yachts }: { yachts: any[] }) {
                       src={yacht.imageUrl} 
                       alt={yacht.name} 
                       fill 
+                      sizes="(max-width: 768px) 100vw, 50vw"
                       className="object-cover group-hover:scale-110 transition-transform duration-1000 ease-out"
                     />
                     <div className="absolute top-6 left-6 bg-background/80 backdrop-blur-md px-4 py-1 rounded-full text-[10px] tracking-widest uppercase text-gold font-bold border border-gold/10">

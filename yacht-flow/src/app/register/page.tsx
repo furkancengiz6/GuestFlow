@@ -52,6 +52,7 @@ export default function RegisterPage() {
           src="/hero-bg.png" 
           alt="Luxury Yacht" 
           fill 
+          sizes="50vw"
           className="object-cover opacity-60"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-background via-transparent to-transparent"></div>

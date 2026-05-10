@@ -12,7 +12,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Please login to book a voyage." }, { status: 401 });
     }
 
-    const { yachtId, startDate, endDate, guests, pricePerDay, promoCode } = await req.json();
+    if (!stripe) {
+      return NextResponse.json({ error: "Payment system is not configured. Please contact support." }, { status: 503 });
+    }
+
+    const { yachtId, startDate, endDate, guests, promoCode, tourType } = await req.json();
     
     const yacht = await prisma.yacht.findUnique({
       where: { id: yachtId },
@@ -22,17 +26,42 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Yacht not found" }, { status: 404 });
     }
 
-    // Calculate total days
+    // Adjust start and end times based on tour type
     const start = new Date(startDate);
     const end = new Date(endDate);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
     
-    let totalPrice = diffDays * yacht.pricePerDay;
+    if (tourType === 'sunset') {
+      start.setHours(16, 0, 0, 0);
+      end.setHours(20, 0, 0, 0);
+    } else {
+      start.setHours(10, 0, 0, 0);
+      end.setHours(18, 0, 0, 0);
+    }
+
+    // Calculate total price based on tour type
+    let totalPrice = tourType === 'sunset' ? yacht.pricePerDay * 0.7 : yacht.pricePerDay;
 
     // Apply Promo Code discounts
     if (promoCode === "EARLY2025") totalPrice *= 0.85; // 15% off
     if (promoCode === "EXTENDED") totalPrice *= 0.80; // 20% off
+
+    // Check for existing bookings that overlap with requested dates
+    const overlappingBookings = await prisma.booking.findMany({
+      where: {
+        yachtId,
+        status: { in: ["CONFIRMED", "EXTERNAL_BLOCK"] },
+        OR: [
+          {
+            startDate: { lte: end },
+            endDate: { gte: start },
+          },
+        ],
+      },
+    });
+
+    if (overlappingBookings.length > 0) {
+      return NextResponse.json({ error: "Yacht is not available for these dates." }, { status: 400 });
+    }
 
     // 1. Create a PENDING booking in the database first
     const dbBooking = await prisma.booking.create({
@@ -55,8 +84,8 @@ export async function POST(req: Request) {
           price_data: {
             currency: "eur",
             product_data: {
-              name: `${yacht.name} - Luxury Charter`,
-              description: `Booking from ${startDate} to ${endDate} for ${guests} guests.`,
+              name: `${yacht.name} - ${tourType === 'sunset' ? 'Sunset Tour' : 'Daily Tour'}`,
+              description: `Tour on ${startDate} for ${guests} guests.`,
               images: [process.env.NEXT_PUBLIC_APP_URL + yacht.imageUrl],
             },
             unit_amount: Math.round(totalPrice * 100), // Stripe expects amounts in cents

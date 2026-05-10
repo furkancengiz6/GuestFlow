@@ -1,7 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useLanguage } from "@/locales/LanguageContext";
+import { useRouter } from "next/navigation";
 
 interface ProfileClientProps {
   user: {
@@ -18,7 +20,40 @@ interface ProfileClientProps {
 }
 
 export default function ProfileClient({ user }: ProfileClientProps) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const router = useRouter();
+  
+  const [mounted, setMounted] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [formData, setFormData] = useState({
+    name: user.name || "",
+    phoneNumber: user.phoneNumber || "",
+    companyName: user.companyName || ""
+  });
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const res = await fetch("/api/profile/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
+      });
+      if (res.ok) {
+        setIsEditing(false);
+        router.refresh();
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-background pt-32 pb-24 px-6 md:px-12">
@@ -80,33 +115,71 @@ export default function ProfileClient({ user }: ProfileClientProps) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
                 <div className="space-y-3">
                   <label className="text-[10px] uppercase tracking-[0.2em] text-foreground/40 font-bold ml-4">{t.profile.fullName}</label>
-                  <div className="w-full bg-surface-dark/50 border border-surface-border/50 rounded-2xl px-6 py-4 text-white font-light focus:border-gold/50 outline-none transition-all">
-                    {user.name}
-                  </div>
+                  {isEditing ? (
+                    <input 
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      className="w-full bg-surface-dark/50 border border-gold/50 rounded-2xl px-6 py-4 text-white font-light focus:border-gold outline-none transition-all"
+                    />
+                  ) : (
+                    <div className="w-full bg-surface-dark/50 border border-surface-border/50 rounded-2xl px-6 py-4 text-white font-light outline-none transition-all">
+                      {user.name}
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-3">
                   <label className="text-[10px] uppercase tracking-[0.2em] text-foreground/40 font-bold ml-4">{t.profile.email}</label>
-                  <div className="w-full bg-surface-dark/50 border border-surface-border/50 rounded-2xl px-6 py-4 text-white font-light focus:border-gold/50 outline-none transition-all">
-                    {user.email}
+                  <div className="w-full bg-surface-dark/50 border border-surface-border/50 rounded-2xl px-6 py-4 text-white/50 font-light outline-none transition-all cursor-not-allowed">
+                    {user.email} (Cannot be changed)
                   </div>
                 </div>
                 <div className="space-y-3">
                   <label className="text-[10px] uppercase tracking-[0.2em] text-foreground/40 font-bold ml-4">{t.profile.phone}</label>
-                  <div className="w-full bg-surface-dark/50 border border-surface-border/50 rounded-2xl px-6 py-4 text-white font-light focus:border-gold/50 outline-none transition-all placeholder:text-foreground/10">
-                    {user.phoneNumber || "---"}
-                  </div>
+                  {isEditing ? (
+                    <input 
+                      type="text"
+                      value={formData.phoneNumber}
+                      onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
+                      className="w-full bg-surface-dark/50 border border-gold/50 rounded-2xl px-6 py-4 text-white font-light focus:border-gold outline-none transition-all"
+                    />
+                  ) : (
+                    <div className="w-full bg-surface-dark/50 border border-surface-border/50 rounded-2xl px-6 py-4 text-white font-light outline-none transition-all placeholder:text-foreground/10">
+                      {user.phoneNumber || "---"}
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-3">
                   <label className="text-[10px] uppercase tracking-[0.2em] text-foreground/40 font-bold ml-4">{t.profile.company}</label>
-                  <div className="w-full bg-surface-dark/50 border border-surface-border/50 rounded-2xl px-6 py-4 text-white font-light focus:border-gold/50 outline-none transition-all placeholder:text-foreground/10">
-                    {user.companyName || "---"}
-                  </div>
+                  {isEditing ? (
+                    <input 
+                      type="text"
+                      value={formData.companyName}
+                      onChange={(e) => setFormData({...formData, companyName: e.target.value})}
+                      className="w-full bg-surface-dark/50 border border-gold/50 rounded-2xl px-6 py-4 text-white font-light focus:border-gold outline-none transition-all"
+                    />
+                  ) : (
+                    <div className="w-full bg-surface-dark/50 border border-surface-border/50 rounded-2xl px-6 py-4 text-white font-light outline-none transition-all placeholder:text-foreground/10">
+                      {user.companyName || "---"}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <button className="px-10 py-4 bg-gold text-background font-bold rounded-full text-[10px] tracking-widest uppercase shadow-2xl hover:scale-105 transition-transform">
-                {t.profile.editInfo}
-              </button>
+              {isEditing ? (
+                <div className="flex gap-4">
+                  <button onClick={handleSave} disabled={isSaving} className="px-10 py-4 bg-gold text-background font-bold rounded-full text-[10px] tracking-widest uppercase shadow-2xl hover:scale-105 transition-transform disabled:opacity-50">
+                    {isSaving ? "Saving..." : "Save Changes"}
+                  </button>
+                  <button onClick={() => setIsEditing(false)} className="px-10 py-4 bg-transparent border border-surface-border text-foreground/60 font-bold rounded-full text-[10px] tracking-widest uppercase hover:text-white transition-colors">
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => setIsEditing(true)} className="px-10 py-4 bg-gold text-background font-bold rounded-full text-[10px] tracking-widest uppercase shadow-2xl hover:scale-105 transition-transform">
+                  {t.profile.editInfo}
+                </button>
+              )}
             </div>
 
             <div className="glass p-12 rounded-[3.5rem]">
@@ -128,7 +201,11 @@ export default function ProfileClient({ user }: ProfileClientProps) {
                         <div>
                           <div className="text-white font-serif text-xl group-hover:text-gold transition-colors">{booking.yacht.name}</div>
                           <div className="text-[10px] text-foreground/40 uppercase tracking-widest">
-                            {new Date(booking.startDate).toLocaleDateString()} - {new Date(booking.endDate).toLocaleDateString()}
+                            {mounted ? (
+                              `${new Date(booking.startDate).toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US')} - ${new Date(booking.endDate).toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US')}`
+                            ) : (
+                              "..."
+                            )}
                           </div>
                         </div>
                       </div>

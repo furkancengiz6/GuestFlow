@@ -62,8 +62,11 @@ export const en = {
       noPending: "No pending approvals. The ecosystem is currently synchronized."
     },
     approveAction: "Approve Partner",
+    rejectAction: "Reject",
     processing: "Processing...",
     approveError: "Failed to approve host. Please try again.",
+    rejectError: "Failed to reject host. Please try again.",
+    confirmReject: "Are you sure you want to reject this host? Their account will be removed.",
     unexpectedError: "An unexpected error occurred."
   },
   host: {
@@ -146,6 +149,7 @@ export const en = {
       cabins: "Cabins",
       crew: "Crew Size",
       imageUrl: "Cover Image URL",
+      icalUrl: "iCal Sync URL",
       desc: "Exquisite Description",
       amenities: "Amenities (Comma separated)"
     },
@@ -154,6 +158,7 @@ export const en = {
       price: "e.g. 2500",
       length: "24m",
       imageUrl: "https://images.unsplash.com/...",
+      icalUrl: "https://calendar.google.com/calendar/ical/...",
       desc: "Describe the experience of voyaging on this vessel...",
       amenities: "WiFi, Jet Ski, Air Conditioning, Chef Service"
     },
@@ -349,8 +354,11 @@ export const tr = {
       noPending: "Bekleyen onay bulunmuyor. Ekosistem şu anda senkronize durumda."
     },
     approveAction: "Ortağı Onayla",
+    rejectAction: "Reddet",
     processing: "İşleniyor...",
     approveError: "İş ortağı onaylanamadı. Lütfen tekrar deneyin.",
+    rejectError: "İş ortağı reddedilemedi. Lütfen tekrar deneyin.",
+    confirmReject: "Bu iş ortağını reddetmek istediğinize emin misiniz? Hesap sistemden kaldırılacaktır.",
     unexpectedError: "Beklenmedik bir hata oluştu."
   },
   host: {
@@ -433,6 +441,7 @@ export const tr = {
       cabins: "Kabin Sayısı",
       crew: "Mürettebat Sayısı",
       imageUrl: "Kapak Görseli URL'si",
+      icalUrl: "iCal Takvim Linki",
       desc: "Özel Açıklama",
       amenities: "Olanaklar (Virgülle ayırın)"
     },
@@ -441,6 +450,7 @@ export const tr = {
       price: "Örn: 2500",
       length: "24m",
       imageUrl: "https://images.unsplash.com/...",
+      icalUrl: "https://www.airbnb.com.tr/calendar/ical/...",
       desc: "Bu teknedeki yolculuk deneyimini tarif edin...",
       amenities: "WiFi, Jet Ski, Klima, Şef Hizmeti"
     },

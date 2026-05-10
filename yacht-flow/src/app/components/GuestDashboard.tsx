@@ -154,7 +154,7 @@ function BookingCard({ booking }: { booking: any }) {
   return (
     <div className="glass p-6 rounded-[3rem] flex flex-col md:flex-row gap-8 items-center group hover:border-gold/30 transition-all duration-700">
       <div className="relative w-full md:w-72 aspect-video md:aspect-square rounded-[2.5rem] overflow-hidden">
-        <Image src={yacht.imageUrl || "/placeholder-yacht.png"} alt={yacht.name} fill className="object-cover group-hover:scale-110 transition-transform duration-1000" />
+        <Image src={yacht.imageUrl || "/placeholder-yacht.png"} alt={yacht.name} fill sizes="(max-width: 768px) 100vw, 288px" className="object-cover group-hover:scale-110 transition-transform duration-1000" />
       </div>
       
       <div className="flex-1 space-y-6">

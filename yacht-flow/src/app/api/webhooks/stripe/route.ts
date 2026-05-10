@@ -13,6 +13,9 @@ export async function POST(req: Request) {
   let event: Stripe.Event;
 
   try {
+    if (!stripe) {
+      return NextResponse.json({ error: "Stripe is not configured" }, { status: 503 });
+    }
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret!);
   } catch (error: any) {
     console.error(`Webhook Error: ${error.message}`);

@@ -28,8 +28,8 @@ export default function Footer() {
           <h4 className="text-xs tracking-widest uppercase text-gold mb-6">{t.footer.support}</h4>
           <ul className="space-y-4 text-sm text-foreground/70 font-light">
             <li><Link href="/#contact" className="hover:text-gold transition-colors">{t.nav.contact}</Link></li>
-            <li><Link href="/#terms" className="hover:text-gold transition-colors">Terms of Service</Link></li>
-            <li><Link href="/#privacy" className="hover:text-gold transition-colors">Privacy Policy</Link></li>
+            <li><Link href="/terms" className="hover:text-gold transition-colors">Terms of Service</Link></li>
+            <li><Link href="/privacy" className="hover:text-gold transition-colors">Privacy Policy</Link></li>
           </ul>
         </div>
         <div>

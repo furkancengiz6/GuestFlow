@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { 
       name, type, location, length, guests, cabins, crew, 
-      pricePerDay, description, imageUrl, amenities 
+      pricePerDay, description, imageUrl, amenities, icalUrl 
     } = body;
 
     // Basic Validation
@@ -34,6 +34,7 @@ export async function POST(req: Request) {
         pricePerDay: parseFloat(pricePerDay),
         description,
         imageUrl,
+        icalUrl,
         amenities: {
           connectOrCreate: (amenities ? amenities.split(',').map((a: string) => a.trim()) : []).map((name: string) => ({
             where: { name },

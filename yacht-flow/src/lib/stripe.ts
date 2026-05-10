@@ -1,10 +1,11 @@
 import Stripe from 'stripe';
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('STRIPE_SECRET_KEY is missing');
-}
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2025-01-27.acacia' as any,
-  typescript: true,
-});
+// Only initialize stripe when a real key is provided
+export const stripe = stripeSecretKey && !stripeSecretKey.startsWith('sk_test_...')
+  ? new Stripe(stripeSecretKey, {
+      apiVersion: '2025-01-27.acacia' as any,
+      typescript: true,
+    })
+  : null;

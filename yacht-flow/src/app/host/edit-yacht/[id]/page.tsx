@@ -1,14 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useLanguage } from "@/locales/LanguageContext";
+import LuxuryLoading from "@/app/components/LuxuryLoading";
 
-export default function AddYachtPage() {
+export default function EditYachtPage({ params }: { params: Promise<{ id: string }> }) {
+  const unwrappedParams = use(params);
   const { t } = useLanguage();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState("");
 
   const [formData, setFormData] = useState({
@@ -23,8 +26,34 @@ export default function AddYachtPage() {
     description: "",
     imageUrl: "",
     icalUrl: "",
-    amenities: "WiFi, Air Conditioning, Sound System",
+    amenities: "",
   });
+
+  useEffect(() => {
+    fetch(`/api/host/yachts/${unwrappedParams.id}`)
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to load yacht data");
+        return res.json();
+      })
+      .then(data => {
+        setFormData({
+          name: data.name || "",
+          type: data.type || "Motor Yacht",
+          location: data.location || "Bodrum",
+          length: data.length || "",
+          guests: data.guests?.toString() || "8",
+          cabins: data.cabins?.toString() || "4",
+          crew: data.crew?.toString() || "3",
+          pricePerDay: data.pricePerDay?.toString() || "",
+          description: data.description || "",
+          imageUrl: data.imageUrl || "",
+          icalUrl: data.icalUrl || "",
+          amenities: Array.isArray(data.amenities) ? data.amenities.map((a: any) => a.name).join(", ") : (data.amenities || ""),
+        });
+      })
+      .catch(err => setError(err.message))
+      .finally(() => setInitialLoading(false));
+  }, [unwrappedParams.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,15 +61,15 @@ export default function AddYachtPage() {
     setError("");
 
     try {
-      const res = await fetch("/api/host/yachts", {
-        method: "POST",
+      const res = await fetch(`/api/host/yachts/${unwrappedParams.id}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Failed to list vessel");
+        throw new Error(data.error || "Failed to update vessel");
       }
 
       router.push("/host?success=true");
@@ -52,18 +81,20 @@ export default function AddYachtPage() {
     }
   };
 
+  if (initialLoading) return <LuxuryLoading />;
+
   return (
     <main className="min-h-screen bg-background pt-32 pb-24 px-6 max-w-5xl mx-auto">
       <div className="mb-16">
         <Link href="/host" className="text-gold text-[10px] tracking-widest uppercase mb-6 inline-block hover:text-white transition-colors">
           {t.addYacht.back}
         </Link>
-        <div className="text-gold text-[10px] tracking-[0.4em] uppercase mb-4 font-bold">{t.addYacht.tagline}</div>
+        <div className="text-gold text-[10px] tracking-[0.4em] uppercase mb-4 font-bold">UPDATE VESSEL</div>
         <h1 className="font-serif text-5xl md:text-6xl mb-4">
-          {t.addYacht.title.split(' ')[0]} <span className="text-gold italic">{t.addYacht.title.split(' ').slice(1).join(' ')}</span>
+          Edit <span className="text-gold italic">Vessel</span>
         </h1>
         <p className="text-foreground/40 font-light max-w-xl">
-          {t.addYacht.subtitle}
+          Update the details of your vessel to keep your listing accurate.
         </p>
       </div>
 
@@ -247,7 +278,7 @@ export default function AddYachtPage() {
           disabled={loading}
           className="w-full bg-gold text-background font-bold py-6 rounded-[2rem] text-xs tracking-[0.4em] uppercase hover:bg-gold-hover transition-all shadow-2xl disabled:opacity-50 hover:scale-[1.02] active:scale-95"
         >
-          {loading ? t.addYacht.loading : t.addYacht.submit}
+          {loading ? "SAVING..." : "UPDATE VESSEL"}
         </button>
       </form>
     </main>

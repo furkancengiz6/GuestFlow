@@ -76,6 +76,7 @@ model Yacht {
   pricePerDay Float
   description String
   imageUrl    String
+  icalUrl     String?  // External iCal URL for calendar sync
   amenities   Amenity[]
 
   hostId String

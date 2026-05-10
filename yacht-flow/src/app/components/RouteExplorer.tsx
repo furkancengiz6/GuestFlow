@@ -13,10 +13,11 @@ interface Spot {
 }
 
 const SPOTS: Spot[] = [
-  { id: "aquarium", name: "Aquarium Bay", coords: { x: 20, y: 35 }, description: "Crystal clear water where you can see the seabed up to 30 meters. Perfect for snorkeling.", image: "/dest-bodrum.png" },
-  { id: "cleopatra", name: "Cleopatra Beach", coords: { x: 45, y: 60 }, description: "Famous for its unique golden sand and turquoise waters. Legend says Antony brought the sand for Cleopatra.", image: "/dest-marmaris.png" },
-  { id: "gobun", name: "Göbün Bay", coords: { x: 75, y: 40 }, description: "A hidden gem in Göcek. Protected from all winds, it's a natural harbor surrounded by pine trees.", image: "/dest-gocek.png" },
-  { id: "knidos", name: "Ancient Knidos", coords: { x: 10, y: 75 }, description: "Where the Aegean meets the Mediterranean. Explore ancient ruins while anchored in history.", image: "/dest-bodrum.png" },
+  { id: "aquarium", name: "Aquarium Bay", coords: { x: 35, y: 45 }, description: "Crystal clear water where you can see the seabed up to 30 meters. A must-visit for every Bodrum voyage.", image: "/dest-bodrum.png" },
+  { id: "orak", name: "Orak Island", coords: { x: 75, y: 55 }, description: "Known as the Maldives of Bodrum. Its white sands and deep blue water provide an unforgettable swimming experience.", image: "/dest-bodrum.png" },
+  { id: "karaada", name: "Karaada (Black Island)", coords: { x: 50, y: 35 }, description: "Famous for its healing mineral springs and mud baths. A perfect stop for wellness enthusiasts.", image: "/hero-bg.png" },
+  { id: "gümüşlük", name: "Gümüşlük", coords: { x: 15, y: 25 }, description: "A bohemian fishing village built on the ruins of ancient Myndos. Famous for its sunset and seafood.", image: "/dest-gocek.png" },
+  { id: "bitez", name: "Bitez Bay", coords: { x: 25, y: 50 }, description: "Known for its tangerine groves and calm waters. Ideal for water sports and morning swims.", image: "/dest-marmaris.png" },
 ];
 
 export default function RouteExplorer() {
@@ -85,7 +86,7 @@ export default function RouteExplorer() {
       <div className="w-full lg:w-[450px] bg-surface p-12 flex flex-col justify-between border-l border-surface-border">
         <div className="animate-reveal" key={selectedSpot.id}>
           <div className="relative aspect-video w-full rounded-2xl overflow-hidden mb-8 shadow-xl">
-            <Image src={selectedSpot.image} alt={selectedSpot.name} fill className="object-cover" />
+            <Image src={selectedSpot.image} alt={selectedSpot.name} fill sizes="450px" className="object-cover" />
           </div>
           <h4 className="text-4xl font-serif text-white mb-4">{selectedSpot.name}</h4>
           <p className="text-foreground/50 font-light leading-relaxed mb-8">

@@ -20,11 +20,12 @@ export default function Home() {
     <main className="min-h-screen bg-background">
       {/* Cinematic Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-32 pb-24">
-        <div className="absolute inset-0 z-0 scale-110" style={{ transform: `translateY(${(typeof window !== 'undefined' ? scrollY : 0) * 0.3}px) scale(1.1)` }}>
+        <div className="absolute inset-0 z-0 scale-110" style={{ transform: `translateY(${scrollY * 0.3}px) scale(1.1)` }}>
           <Image
             src="/hero-bg.png"
             alt="Luxury superyacht"
             fill
+            sizes="100vw"
             className="object-cover opacity-50"
             priority
           />
@@ -47,7 +48,7 @@ export default function Home() {
           </p>
           
           {/* Advanced Search Widget */}
-          <div className="glass p-2 md:p-2 rounded-[1.5rem] md:rounded-[2.5rem] flex flex-col md:flex-row gap-1 md:gap-2 max-w-5xl mx-auto animate-reveal opacity-0 stagger-3 shadow-2xl mx-4">
+          <div className="glass p-2 md:p-2 rounded-[1.5rem] md:rounded-[2.5rem] flex flex-col md:flex-row gap-1 md:gap-2 max-w-5xl mx-auto animate-reveal opacity-0 stagger-3 shadow-2xl">
             <div className="flex-[1.5] flex flex-col text-left px-6 md:px-8 py-3 md:py-4 border-b md:border-b-0 md:border-r border-surface-border group hover:bg-white/5 transition-colors rounded-t-[1.5rem] md:rounded-l-[2rem] md:rounded-tr-none">
               <span className="text-[9px] md:text-[10px] tracking-widest text-gold uppercase mb-1 md:mb-2 font-bold">{t.hero.search.location}</span>
               <select title={t.hero.search.location} className="bg-transparent text-base md:text-lg text-foreground outline-none appearance-none cursor-pointer font-serif">
@@ -102,7 +103,7 @@ export default function Home() {
             { name: "Marmaris", img: "/dest-marmaris.png", desc: "Emerald green forests meeting deep blue waters." }
           ].map((dest, i) => (
             <Link key={i} href={`/fleet?location=${dest.name}`} className="group relative aspect-[3/4.5] rounded-[3rem] overflow-hidden shadow-2xl transform transition-all duration-700 hover:-translate-y-4 cursor-pointer">
-              <Image src={dest.img} alt={dest.name} fill className="object-cover group-hover:scale-110 transition-transform duration-1000" />
+              <Image src={dest.img} alt={dest.name} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover group-hover:scale-110 transition-transform duration-1000" />
               <div className="absolute inset-0 bg-gradient-to-t from-background via-background/10 to-transparent z-10"></div>
               <div className="absolute inset-0 border-[0.5px] border-white/10 rounded-[3rem] m-4 z-0"></div>
               
@@ -170,6 +171,7 @@ export default function Home() {
                 src="/experience.png"
                 alt="People enjoying yacht experience"
                 fill
+                sizes="(max-width: 768px) 100vw, 50vw"
                 className="object-cover group-hover:scale-105 transition-transform duration-1000"
               />
               <div className="absolute inset-0 bg-gold/10 mix-blend-overlay"></div>
@@ -266,9 +268,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Trust & Policy Section (Placeholder Targets) */}
-      <section id="terms" className="hidden"></section>
-      <section id="privacy" className="hidden"></section>
+
     </main>
   );
 }

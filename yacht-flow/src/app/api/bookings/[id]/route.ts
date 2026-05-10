@@ -25,3 +25,27 @@ export async function GET(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+export async function PUT(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await req.json();
+    const { services, specialNotes } = body;
+
+    const updatedBooking = await prisma.booking.update({
+      where: { id },
+      data: {
+        services: services ? JSON.stringify(services) : null,
+        specialNotes: specialNotes || null,
+      },
+    });
+
+    return NextResponse.json(updatedBooking);
+  } catch (error: any) {
+    console.error("Update Booking Error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}

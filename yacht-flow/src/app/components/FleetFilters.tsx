@@ -42,7 +42,7 @@ export default function FleetFilters() {
           value={filters.location}
           onChange={(e) => updateFilters({ location: e.target.value })}
           title={t.filters.locationLabel}
-          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-foreground outline-none focus:border-gold transition-all appearance-none"
+          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-foreground outline-none focus:border-gold transition-all"
         >
           <option value="">{t.filters.locations.all}</option>
           <option value="Bodrum">{t.filters.locations.bodrum}</option>
@@ -90,7 +90,7 @@ export default function FleetFilters() {
           value={filters.sort}
           onChange={(e) => updateFilters({ sort: e.target.value })}
           title={t.filters.sortLabel}
-          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-foreground outline-none focus:border-gold transition-all appearance-none"
+          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-foreground outline-none focus:border-gold transition-all"
         >
           <option value="newest">{t.filters.sortOptions.newest}</option>
           <option value="price-asc">{t.filters.sortOptions.priceAsc}</option>

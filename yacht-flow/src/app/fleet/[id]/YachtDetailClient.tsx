@@ -57,6 +57,7 @@ export default function YachtDetailClient({ yacht }: YachtDetailClientProps) {
             src={yacht.imageUrl} 
             alt={yacht.name} 
             fill 
+            sizes="100vw"
             className="object-cover opacity-80 animate-reveal"
             priority
           />

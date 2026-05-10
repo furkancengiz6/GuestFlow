@@ -86,6 +86,13 @@ export default function HostDashboard({ user }: HostDashboardProps) {
             {activeTab === 'fleet' && <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gold"></div>}
           </button>
           <button 
+            onClick={() => setActiveTab("bookings")}
+            className={`text-[10px] tracking-[0.3em] uppercase font-bold transition-all pb-4 relative ${activeTab === 'bookings' ? 'text-gold' : 'text-foreground/40 hover:text-white'}`}
+          >
+            {lang === 'tr' ? 'REZERVASYONLAR & İSTEKLER' : 'BOOKINGS & REQUESTS'}
+            {activeTab === 'bookings' && <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gold"></div>}
+          </button>
+          <button 
             onClick={() => setActiveTab("reviews")}
             className={`text-[10px] tracking-[0.3em] uppercase font-bold transition-all pb-4 relative ${activeTab === 'reviews' ? 'text-gold' : 'text-foreground/40 hover:text-white'}`}
           >
@@ -105,7 +112,7 @@ export default function HostDashboard({ user }: HostDashboardProps) {
               {yachts.length > 0 ? yachts.map((yacht: any) => (
                 <div key={yacht.id} className="glass p-6 rounded-[3rem] flex flex-col md:flex-row gap-8 items-center group hover:border-gold/30 transition-all duration-700">
                   <div className="relative w-full md:w-72 aspect-video md:aspect-square rounded-[2.5rem] overflow-hidden">
-                    <Image src={yacht.imageUrl || "/placeholder-yacht.png"} alt={yacht.name} fill className="object-cover group-hover:scale-110 transition-transform duration-1000" />
+                    <Image src={yacht.imageUrl || "/placeholder-yacht.png"} alt={yacht.name} fill sizes="(max-width: 768px) 100vw, 288px" className="object-cover group-hover:scale-110 transition-transform duration-1000" />
                   </div>
                   
                   <div className="flex-1 space-y-6">
@@ -144,9 +151,9 @@ export default function HostDashboard({ user }: HostDashboardProps) {
                       <Link href={`/fleet/${yacht.id}`} className="flex-1 py-4 bg-white/5 border border-white/10 hover:border-gold rounded-2xl text-[10px] tracking-widest uppercase font-bold transition-all text-center">
                         {t.host.dashboard.fleet.viewListing}
                       </Link>
-                      <button className="flex-1 py-4 bg-white/5 border border-white/10 hover:border-gold rounded-2xl text-[10px] tracking-widest uppercase font-bold transition-all">
+                      <Link href={`/host/edit-yacht/${yacht.id}`} className="flex-1 py-4 bg-white/5 border border-white/10 hover:border-gold rounded-2xl text-[10px] tracking-widest uppercase font-bold transition-all text-center">
                         {t.host.dashboard.fleet.editVessel}
-                      </button>
+                      </Link>
                     </div>
                   </div>
                 </div>
@@ -160,6 +167,63 @@ export default function HostDashboard({ user }: HostDashboardProps) {
                   <Link href="/host/add-yacht" className="bg-gold text-background px-12 py-5 rounded-full text-[10px] tracking-widest uppercase font-bold hover:scale-105 transition-transform inline-block">
                     {t.host.dashboard.fleet.addFirst}
                   </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : activeTab === "bookings" ? (
+          <div className="space-y-12 animate-reveal">
+            <h2 className="font-serif text-3xl mb-12 flex items-center gap-4">
+              {lang === 'tr' ? 'Aktif' : 'Active'} <span className="text-gold italic">{lang === 'tr' ? 'Rezervasyonlar' : 'Bookings'}</span>
+              <span className="h-[1px] flex-1 bg-surface-border/20"></span>
+            </h2>
+
+            <div className="grid grid-cols-1 gap-8">
+              {yachts.flatMap((y: any) => (y.bookings || []).map((b: any) => ({ ...b, yachtName: y.name }))).length > 0 ? (
+                yachts.flatMap((y: any) => (y.bookings || []).map((b: any) => ({ ...b, yachtName: y.name }))).map((booking: any) => (
+                  <div key={booking.id} className="glass p-8 rounded-[3rem] border border-gold/10">
+                    <div className="flex flex-col md:flex-row justify-between items-start gap-8">
+                      <div>
+                        <div className="text-[10px] text-gold uppercase tracking-[0.2em] font-bold mb-2">{booking.yachtName}</div>
+                        <h3 className="text-2xl font-serif text-white mb-4">
+                          {mounted ? new Date(booking.startDate).toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US') : ''} - {mounted ? new Date(booking.endDate).toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US') : ''}
+                        </h3>
+                        <div className="flex gap-4 items-center">
+                          <span className="px-3 py-1 rounded-full text-[9px] tracking-widest uppercase font-bold bg-gold/10 text-gold border border-gold/20">
+                            {booking.status}
+                          </span>
+                          <span className="text-sm text-foreground/60">Guests: {booking.guestCount}</span>
+                        </div>
+                      </div>
+                      <div className="bg-surface-dark p-6 rounded-3xl border border-surface-border w-full md:w-96">
+                        <h4 className="text-[10px] tracking-widest uppercase text-gold font-bold mb-4">{lang === 'tr' ? 'MİSAFİR TALEPLERİ (KONSİYERJ)' : 'GUEST REQUESTS (CONCIERGE)'}</h4>
+                        {booking.services ? (
+                          <ul className="text-sm text-foreground/80 space-y-2 mb-4">
+                            {Object.entries(JSON.parse(booking.services)).map(([key, val]) => (
+                              <li key={key} className="flex justify-between border-b border-surface-border/50 pb-1">
+                                <span className="capitalize">{key}</span>
+                                <span>x{String(val)}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <div className="text-xs text-foreground/40 italic mb-4">{lang === 'tr' ? 'Ekstra hizmet seçilmedi.' : 'No extra services selected.'}</div>
+                        )}
+                        
+                        {booking.specialNotes && (
+                          <div className="mt-4">
+                            <div className="text-[9px] tracking-widest uppercase text-white/50 mb-2">{lang === 'tr' ? 'Özel Not / VIP Talep' : 'Special Note / VIP Request'}</div>
+                            <p className="text-sm text-gold italic bg-gold/5 p-4 rounded-xl border border-gold/10">"{booking.specialNotes}"</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-2 glass p-24 rounded-[4rem] text-center">
+                  <div className="text-4xl mb-6 opacity-20">📅</div>
+                  <p className="text-foreground/30 font-light italic">{lang === 'tr' ? 'Henüz aktif rezervasyon yok.' : 'No active bookings yet.'}</p>
                 </div>
               )}
             </div>

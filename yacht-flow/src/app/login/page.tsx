@@ -46,7 +46,7 @@ function LoginContent() {
     <main className="min-h-screen relative flex items-center justify-center p-6 overflow-hidden">
       {/* Background with overlay */}
       <div className="absolute inset-0 z-0">
-        <Image src="/hero-bg.png" alt="Background" fill className="object-cover opacity-20 scale-105" />
+        <Image src="/hero-bg.png" alt="Background" fill sizes="100vw" className="object-cover opacity-20 scale-105" />
         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm"></div>
       </div>
 
