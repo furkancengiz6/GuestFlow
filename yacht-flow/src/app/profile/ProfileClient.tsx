@@ -114,9 +114,12 @@ export default function ProfileClient({ user }: ProfileClientProps) {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
                 <div className="space-y-3">
-                  <label className="text-[10px] uppercase tracking-[0.2em] text-foreground/40 font-bold ml-4">{t.profile.fullName}</label>
+                  <label htmlFor="input-name" className="text-[10px] uppercase tracking-[0.2em] text-foreground/40 font-bold ml-4">{t.profile.fullName}</label>
                   {isEditing ? (
                     <input 
+                      id="input-name"
+                      title={t.profile.fullName}
+                      placeholder={t.profile.fullName}
                       type="text"
                       value={formData.name}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
@@ -135,9 +138,12 @@ export default function ProfileClient({ user }: ProfileClientProps) {
                   </div>
                 </div>
                 <div className="space-y-3">
-                  <label className="text-[10px] uppercase tracking-[0.2em] text-foreground/40 font-bold ml-4">{t.profile.phone}</label>
+                  <label htmlFor="input-phone" className="text-[10px] uppercase tracking-[0.2em] text-foreground/40 font-bold ml-4">{t.profile.phone}</label>
                   {isEditing ? (
                     <input 
+                      id="input-phone"
+                      title={t.profile.phone}
+                      placeholder={t.profile.phone}
                       type="text"
                       value={formData.phoneNumber}
                       onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
@@ -150,9 +156,12 @@ export default function ProfileClient({ user }: ProfileClientProps) {
                   )}
                 </div>
                 <div className="space-y-3">
-                  <label className="text-[10px] uppercase tracking-[0.2em] text-foreground/40 font-bold ml-4">{t.profile.company}</label>
+                  <label htmlFor="input-company" className="text-[10px] uppercase tracking-[0.2em] text-foreground/40 font-bold ml-4">{t.profile.company}</label>
                   {isEditing ? (
                     <input 
+                      id="input-company"
+                      title={t.profile.company}
+                      placeholder={t.profile.company}
                       type="text"
                       value={formData.companyName}
                       onChange={(e) => setFormData({...formData, companyName: e.target.value})}
