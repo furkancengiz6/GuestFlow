@@ -72,7 +72,7 @@ export default function BookingForm({ yachtId, pricePerDay }: { yachtId: string,
   };
 
   return (
-    <div className="glass p-8 rounded-2xl sticky top-28 border border-gold/20">
+    <div className="glass p-8 rounded-2xl border border-gold/20">
       <div className="flex items-baseline gap-2 mb-8 border-b border-surface-border pb-6">
         <span className="text-4xl font-serif text-gold">
           {t.booking.pricePerDay.replace('{price}', mounted ? computedPrice.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US') : computedPrice.toString())}

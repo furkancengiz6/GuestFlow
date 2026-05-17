@@ -6,6 +6,7 @@ import { useLanguage } from "@/locales/LanguageContext";
 import FleetFilters from "@/app/components/FleetFilters";
 import WeatherWidget from "@/app/components/WeatherWidget";
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 export default function FleetClient({ yachts }: { yachts: any[] }) {
   const { t, lang } = useLanguage();
@@ -126,27 +127,30 @@ export default function FleetClient({ yachts }: { yachts: any[] }) {
     </div>
     
     {/* Mobile Filter Overlay */}
-    <div className={`fixed inset-0 z-[100] bg-background/95 backdrop-blur-2xl lg:hidden transition-all duration-700 ${isFilterOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"}`}>
-      <div className="p-8 pt-20">
-        <button 
-          onClick={() => setIsFilterOpen(false)}
-          className="absolute top-8 right-8 text-foreground/40 hover:text-white transition-colors"
-          title={lang === 'tr' ? 'Kapat' : 'Close'}
-          aria-label={lang === 'tr' ? 'Filtreleri Kapat' : 'Close Filters'}
-        >
-          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M6 18L18 6M6 6l12 12"></path></svg>
-        </button>
-        <div className="max-w-md mx-auto">
-          <FleetFilters />
+    {mounted && typeof document !== "undefined" && createPortal(
+      <div className={`fixed inset-0 z-[100] bg-background/95 backdrop-blur-2xl lg:hidden transition-all duration-700 ${isFilterOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"}`}>
+        <div className="p-8 pt-20">
           <button 
             onClick={() => setIsFilterOpen(false)}
-            className="w-full mt-12 bg-gold text-background py-5 rounded-2xl font-bold text-xs tracking-widest uppercase shadow-2xl"
+            className="absolute top-8 right-8 text-foreground/40 hover:text-white transition-colors"
+            title={lang === 'tr' ? 'Kapat' : 'Close'}
+            aria-label={lang === 'tr' ? 'Filtreleri Kapat' : 'Close Filters'}
           >
-            Show Results
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
+          <div className="max-w-md mx-auto">
+            <FleetFilters />
+            <button 
+              onClick={() => setIsFilterOpen(false)}
+              className="w-full mt-12 bg-gold text-background py-5 rounded-2xl font-bold text-xs tracking-widest uppercase shadow-2xl"
+            >
+              Show Results
+            </button>
+          </div>
         </div>
-      </div>
-    </div>
+      </div>,
+      document.body
+    )}
     </>
   );
 }

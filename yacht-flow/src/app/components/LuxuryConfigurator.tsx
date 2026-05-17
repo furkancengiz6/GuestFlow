@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useLanguage } from "@/locales/LanguageContext";
+import { createPortal } from "react-dom";
 
 interface Extra {
   id: string;
@@ -46,7 +47,7 @@ export default function LuxuryConfigurator({ yachtName, basePrice }: { yachtName
     );
   }
 
-  return (
+  const modalContent = (
     <div className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-2xl flex items-center justify-center p-6 animate-reveal">
       <div className="bg-surface border border-surface-border w-full max-w-6xl h-[80vh] rounded-[3rem] overflow-hidden flex flex-col md:flex-row relative shadow-2xl">
         <button aria-label="Close Configurator" onClick={() => setIsOpen(false)} className="absolute top-8 right-8 text-foreground/40 hover:text-white transition-colors z-10">
@@ -162,4 +163,6 @@ export default function LuxuryConfigurator({ yachtName, basePrice }: { yachtName
       </div>
     </div>
   );
+
+  return mounted ? createPortal(modalContent, document.body) : null;
 }
