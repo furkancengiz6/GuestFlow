@@ -7,15 +7,30 @@ export const dynamic = "force-dynamic";
 export default async function FleetPage({
   searchParams,
 }: {
-  searchParams: Promise<{ 
+  searchParams?: Promise<{ 
     location?: string;
     type?: string;
     guests?: string;
     sort?: string;
-  }>;
+  }> | any;
 }) {
-  const { location, type, guests, sort } = await searchParams;
+  let location: string | undefined = undefined;
+  let type: string | undefined = undefined;
+  let guests: string | undefined = undefined;
+  let sort: string | undefined = undefined;
   let yachts: any[] = [];
+  
+  try {
+    const resolved = searchParams ? await searchParams : {};
+    if (resolved) {
+      location = resolved.location;
+      type = resolved.type;
+      guests = resolved.guests;
+      sort = resolved.sort;
+    }
+  } catch (err) {
+    console.error("Error resolving searchParams:", err);
+  }
   
   try {
     const where: any = {};
@@ -26,7 +41,7 @@ export default async function FleetPage({
     if (type) {
       where.type = { contains: type, mode: 'insensitive' };
     }
-    if (guests) {
+    if (guests && !isNaN(parseInt(guests))) {
       where.guests = { gte: parseInt(guests) };
     }
 
