@@ -6,15 +6,32 @@ import { useLanguage } from "@/locales/LanguageContext";
 import FleetFilters from "@/app/components/FleetFilters";
 import WeatherWidget from "@/app/components/WeatherWidget";
 import { useState, useEffect, Suspense } from "react";
-import { createPortal } from "react-dom";
 
-export default function FleetClient({ yachts }: { yachts: any[] }) {
+export default function FleetClient({ yachts: initialYachts }: { yachts: any[] }) {
   const { t, lang } = useLanguage();
   const [mounted, setMounted] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [yachts, setYachts] = useState<any[]>(initialYachts || []);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setMounted(true);
+    // Fetch yachts from API on client side
+    async function fetchYachts() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const res = await fetch(`/api/fleet?${params.toString()}`);
+        if (res.ok) {
+          const data = await res.json();
+          setYachts(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch yachts:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchYachts();
   }, []);
 
   const fleetTitle = t?.nav?.fleet || "Our Fleet";
@@ -59,7 +76,19 @@ export default function FleetClient({ yachts }: { yachts: any[] }) {
           </p>
         </div>
 
-        {yachts && yachts.length > 0 ? (
+        {loading ? (
+          <div className="grid md:grid-cols-2 gap-8">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="glass rounded-[2.5rem] overflow-hidden animate-pulse h-[500px]">
+                <div className="aspect-[4/3] bg-surface/30" />
+                <div className="p-8 space-y-4">
+                  <div className="h-6 bg-surface/20 rounded w-3/4" />
+                  <div className="h-4 bg-surface/10 rounded w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : yachts && yachts.length > 0 ? (
           <div className="grid md:grid-cols-2 gap-8">
             {yachts.map((yacht, index) => (
               <Link href={`/fleet/${yacht?.id}`} key={yacht?.id} className="group animate-reveal" style={{ animationDelay: `${index * 50}ms` }}>
@@ -83,7 +112,7 @@ export default function FleetClient({ yachts }: { yachts: any[] }) {
                         <h2 className="font-serif text-3xl group-hover:text-gold transition-colors">{yacht?.name || "Yacht"}</h2>
                         <div className="text-right">
                           <div className="text-2xl font-serif text-gold">
-                            €{mounted ? (yacht?.pricePerDay || 0).toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US') : (yacht?.pricePerDay || 0)}
+                            €{(yacht?.pricePerDay || 0).toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US')}
                           </div>
                           <div className="text-[8px] text-foreground/30 uppercase tracking-widest">/ Day</div>
                         </div>
@@ -119,7 +148,7 @@ export default function FleetClient({ yachts }: { yachts: any[] }) {
             <div className="text-7xl mb-8 animate-float">⚓</div>
             <h3 className="text-4xl font-serif text-white mb-6">No Vessels Matching</h3>
             <p className="text-foreground/40 font-light mb-10 max-w-md mx-auto text-lg leading-relaxed">
-              We couldn't find a vessel matching your exact criteria. Our concierge can arrange a bespoke collection for you.
+              We couldn&apos;t find a vessel matching your exact criteria. Our concierge can arrange a bespoke collection for you.
             </p>
             <Link href="/fleet">
               <button className="px-12 py-5 bg-gold text-background font-bold text-[10px] tracking-widest uppercase rounded-full shadow-2xl hover:scale-105 transition-transform">
