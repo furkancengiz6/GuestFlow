@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useLanguage } from "@/locales/LanguageContext";
 import FleetFilters from "@/app/components/FleetFilters";
 import WeatherWidget from "@/app/components/WeatherWidget";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { createPortal } from "react-dom";
 
 export default function FleetClient({ yachts }: { yachts: any[] }) {
@@ -27,7 +27,9 @@ export default function FleetClient({ yachts }: { yachts: any[] }) {
     <div className="flex flex-col lg:flex-row gap-12">
       {/* Sidebar - Desktop */}
       <aside className="hidden lg:block w-72 shrink-0 animate-reveal">
-        <FleetFilters />
+        <Suspense fallback={<div className="h-96 bg-surface/20 animate-pulse rounded-[2.5rem]" />}>
+          <FleetFilters />
+        </Suspense>
       </aside>
 
       {/* Yacht Grid */}
@@ -139,7 +141,9 @@ export default function FleetClient({ yachts }: { yachts: any[] }) {
             <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M6 18L18 6M6 6l12 12"></path></svg>
           </button>
           <div className="max-w-md mx-auto">
-            <FleetFilters />
+            <Suspense fallback={<div className="h-96 bg-surface/20 animate-pulse rounded-[2.5rem]" />}>
+              <FleetFilters />
+            </Suspense>
             <button 
               onClick={() => setIsFilterOpen(false)}
               className="w-full mt-12 bg-gold text-background py-5 rounded-2xl font-bold text-xs tracking-widest uppercase shadow-2xl"
