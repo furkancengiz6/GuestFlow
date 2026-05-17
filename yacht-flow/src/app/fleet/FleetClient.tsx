@@ -129,7 +129,7 @@ export default function FleetClient({ yachts }: { yachts: any[] }) {
     </div>
     
     {/* Mobile Filter Overlay */}
-    {mounted && typeof document !== "undefined" && createPortal(
+    {mounted && (
       <div className={`fixed inset-0 z-[100] bg-background/95 backdrop-blur-2xl lg:hidden transition-all duration-700 ${isFilterOpen ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"}`}>
         <div className="p-8 pt-20">
           <button 
@@ -152,8 +152,7 @@ export default function FleetClient({ yachts }: { yachts: any[] }) {
             </button>
           </div>
         </div>
-      </div>,
-      document.body
+      </div>
     )}
     </>
   );
