@@ -1,0 +1,7 @@
+node_modules
+.next
+.git
+ffmpeg.zip
+ffmpeg_dir
+frames_temp
+convert_webp.py
