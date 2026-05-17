@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import FleetClient from "./FleetClient";
+import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +45,9 @@ export default async function FleetPage({
 
   return (
     <main className="min-h-screen bg-background pt-32 pb-12 px-6 max-w-7xl mx-auto">
-      <FleetClient yachts={yachts} />
+      <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center text-gold">Loading Collection...</div>}>
+        <FleetClient yachts={yachts} />
+      </Suspense>
     </main>
   );
 }

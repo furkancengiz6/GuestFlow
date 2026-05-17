@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useLanguage } from "@/locales/LanguageContext";
 import { useSearchParams } from "next/navigation";
 
-export default function ManageBookingPage({ params }: { params: Promise<{ id: string }> }) {
+function ManageBookingContent({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const searchParams = useSearchParams();
   const isSuccess = searchParams.get("success") === "true";
@@ -433,5 +433,13 @@ export default function ManageBookingPage({ params }: { params: Promise<{ id: st
         </div>
       </div>
     </main>
+  );
+}
+
+export default function ManageBookingPage({ params }: { params: Promise<{ id: string }> }) {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center text-gold">Loading Voyage...</div>}>
+      <ManageBookingContent params={params} />
+    </Suspense>
   );
 }

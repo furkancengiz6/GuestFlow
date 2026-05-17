@@ -33,52 +33,57 @@ export default function RouteExplorer() {
   return (
     <div className="w-full bg-surface-dark rounded-[3rem] overflow-hidden flex flex-col lg:flex-row border border-surface-border shadow-2xl min-h-[600px]">
       {/* Map Side */}
-      <div className="flex-1 relative bg-[#0a0d14] p-12 overflow-hidden group min-h-[400px] lg:min-h-0">
-        <div className="absolute inset-0 opacity-20 pointer-events-none">
-          <svg width="100%" height="100%" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg">
-             {/* Stylized Coastline */}
-             <path d="M50 100C150 120 200 50 300 80C400 110 450 250 550 220C650 190 700 350 750 380C800 410 700 550 600 520C500 490 350 580 200 540C50 500 20 200 50 100Z" stroke="#c5a059" strokeWidth="0.5" strokeDasharray="4 4" />
-          </svg>
-        </div>
-
-        <div className="absolute inset-0">
-          {SPOTS.map((spot) => (
-            <button
-              key={spot.id}
-              onClick={() => setSelectedSpot(spot)}
-              className="absolute z-30 group/pin transform -translate-x-1/2 -translate-y-1/2 transition-all duration-500 hover:scale-125"
-              style={{ left: `${spot.coords.x}%`, top: `${spot.coords.y}%` }}
-            >
-              <div className={`w-6 h-6 md:w-4 md:h-4 rounded-full border-2 transition-all duration-500 ${selectedSpot.id === spot.id ? "bg-gold border-white scale-125 md:scale-150 shadow-[0_0_15px_rgba(197,160,89,0.5)]" : "bg-background border-gold"}`}></div>
-              <div className={`absolute top-8 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] tracking-widest uppercase font-bold transition-all duration-500 ${selectedSpot.id === spot.id ? "text-gold opacity-100" : "text-foreground/30 opacity-0 group-hover/pin:opacity-100"}`}>
-                {spot.name}
-              </div>
-            </button>
-          ))}
-          
-          {/* Animated Route Lines */}
-          <svg className="absolute inset-0 pointer-events-none" width="100%" height="100%">
-            {myRoute.length > 1 && myRoute.map((id, index) => {
-              if (index === 0) return null;
-              const start = SPOTS.find(s => s.id === myRoute[index-1])?.coords;
-              const end = SPOTS.find(s => s.id === id)?.coords;
-              if (!start || !end) return null;
-              return (
-                <line 
-                  key={index}
-                  x1={`${start.x}%`} y1={`${start.y}%`} 
-                  x2={`${end.x}%`} y2={`${end.y}%`} 
-                  stroke="#c5a059" strokeWidth="2" strokeDasharray="8 8" 
-                  className="animate-[shimmer_2s_linear_infinite]"
-                />
-              );
-            })}
-          </svg>
-        </div>
-
-        <div className="absolute top-6 left-6 md:top-12 md:left-12 z-20 pointer-events-none bg-[#0a0d14]/60 backdrop-blur-xl p-6 rounded-3xl border border-white/5 shadow-2xl">
+      <div className="flex-1 bg-[#0a0d14] p-8 md:p-12 flex flex-col relative min-h-[500px] lg:min-h-0 overflow-hidden group">
+        
+        {/* Title Block - Static on Mobile, Absolute on Desktop */}
+        <div className="lg:absolute lg:top-12 lg:left-12 z-20 pointer-events-none lg:bg-[#0a0d14]/60 lg:backdrop-blur-xl lg:p-6 lg:rounded-3xl lg:border lg:border-white/5 lg:shadow-2xl mb-8 lg:mb-0">
            <div className="text-gold tracking-[0.3em] uppercase text-[10px] mb-2 font-bold">Riviera Explorer</div>
            <h3 className="text-3xl font-serif text-white">Discover <span className="text-gold italic">Hidden Bays</span></h3>
+        </div>
+
+        {/* Interactive Map Area */}
+        <div className="flex-1 relative min-h-[300px] lg:absolute lg:inset-0 w-full">
+          <div className="absolute inset-0 opacity-20 pointer-events-none">
+            <svg width="100%" height="100%" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+               {/* Stylized Coastline */}
+               <path d="M50 100C150 120 200 50 300 80C400 110 450 250 550 220C650 190 700 350 750 380C800 410 700 550 600 520C500 490 350 580 200 540C50 500 20 200 50 100Z" stroke="#c5a059" strokeWidth="0.5" strokeDasharray="4 4" />
+            </svg>
+          </div>
+
+          <div className="absolute inset-0">
+            {SPOTS.map((spot) => (
+              <button
+                key={spot.id}
+                onClick={() => setSelectedSpot(spot)}
+                className="absolute z-30 group/pin transform -translate-x-1/2 -translate-y-1/2 transition-all duration-500 hover:scale-125"
+                style={{ left: `${spot.coords.x}%`, top: `${spot.coords.y}%` }}
+              >
+                <div className={`w-6 h-6 md:w-4 md:h-4 rounded-full border-2 transition-all duration-500 ${selectedSpot.id === spot.id ? "bg-gold border-white scale-125 md:scale-150 shadow-[0_0_15px_rgba(197,160,89,0.5)]" : "bg-background border-gold"}`}></div>
+                <div className={`absolute top-8 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] tracking-widest uppercase font-bold transition-all duration-500 ${selectedSpot.id === spot.id ? "text-gold opacity-100" : "text-foreground/30 opacity-0 group-hover/pin:opacity-100"}`}>
+                  {spot.name}
+                </div>
+              </button>
+            ))}
+            
+            {/* Animated Route Lines */}
+            <svg className="absolute inset-0 pointer-events-none" width="100%" height="100%">
+              {myRoute.length > 1 && myRoute.map((id, index) => {
+                if (index === 0) return null;
+                const start = SPOTS.find(s => s.id === myRoute[index-1])?.coords;
+                const end = SPOTS.find(s => s.id === id)?.coords;
+                if (!start || !end) return null;
+                return (
+                  <line 
+                    key={index}
+                    x1={`${start.x}%`} y1={`${start.y}%`} 
+                    x2={`${end.x}%`} y2={`${end.y}%`} 
+                    stroke="#c5a059" strokeWidth="2" strokeDasharray="8 8" 
+                    className="animate-[shimmer_2s_linear_infinite]"
+                  />
+                );
+              })}
+            </svg>
+          </div>
         </div>
       </div>
 
